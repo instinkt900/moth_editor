@@ -1,6 +1,6 @@
 #include "common.h"
 #include "delete_keyframe_action.h"
-#include "uilib/layout/layout_entity.h"
+#include "moth_ui/layout/layout_entity.h"
 
 namespace ui {
     DeleteKeyframeAction::DeleteKeyframeAction(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo, KeyframeValue oldValue)

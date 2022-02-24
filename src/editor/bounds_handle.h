@@ -1,7 +1,7 @@
 #pragma once
 
-#include "uilib/event_listener.h"
-#include "uilib/events/event_mouse.h"
+#include "moth_ui/event_listener.h"
+#include "moth_ui/events/event_mouse.h"
 
 namespace ui {
     class Node;

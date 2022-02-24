@@ -1,8 +1,8 @@
 #include "common.h"
 #include "anchor_bounds_handle.h"
-#include "uilib/node.h"
-#include "uilib/group.h"
-#include "uilib/utils/math_utils.h"
+#include "moth_ui/node.h"
+#include "moth_ui/group.h"
+#include "moth_ui/utils/math_utils.h"
 #include "bounds_widget.h"
 #include "editor_layer.h"
 

@@ -1,7 +1,7 @@
 #include "common.h"
 #include "delete_action.h"
-#include "uilib/layout/layout_entity_group.h"
-#include "uilib/group.h"
+#include "moth_ui/layout/layout_entity_group.h"
+#include "moth_ui/group.h"
 
 namespace ui {
     DeleteAction::DeleteAction(std::shared_ptr<Node> deletedNode, std::shared_ptr<Group> parentNode)

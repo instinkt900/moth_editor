@@ -1,10 +1,10 @@
 #pragma once
 
 #include "layers/layer.h"
-#include "uilib/layout/layout_entity_group.h"
-#include "uilib/group.h"
-#include "uilib/events/event_mouse.h"
-#include "uilib/events/event_key.h"
+#include "moth_ui/layout/layout_entity_group.h"
+#include "moth_ui/group.h"
+#include "moth_ui/events/event_mouse.h"
+#include "moth_ui/events/event_key.h"
 
 #include "imgui.h"
 #include "imgui-filebrowser/imfilebrowser.h"

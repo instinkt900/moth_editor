@@ -1,9 +1,9 @@
 #include "common.h"
 #include "game.h"
-#include "uilib/events/event_window_size.h"
-#include "uilib/events/event_key.h"
-#include "uilib/events/event_quit.h"
-#include "uilib/events/event_mouse.h"
+#include "moth_ui/events/event_window_size.h"
+#include "moth_ui/events/event_key.h"
+#include "moth_ui/events/event_quit.h"
+#include "moth_ui/events/event_mouse.h"
 #include "editor/editor_layer.h"
 
 #include <backends/imgui_impl_sdl.h>

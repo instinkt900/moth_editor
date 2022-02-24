@@ -1,7 +1,7 @@
 #include "common.h"
 #include "add_action.h"
-#include "uilib/layout/layout_entity_group.h"
-#include "uilib/group.h"
+#include "moth_ui/layout/layout_entity_group.h"
+#include "moth_ui/group.h"
 
 namespace ui {
     AddAction::AddAction(std::shared_ptr<Node> newNode, std::shared_ptr<Group> parentNode)

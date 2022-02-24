@@ -1,11 +1,11 @@
 #include "common.h"
 #include "keyframe_widget.h"
 #include "keyframe_context.h"
-#include "uilib/layout/layout_entity.h"
+#include "moth_ui/layout/layout_entity.h"
 #include "utils.h"
 #include "editor_layer.h"
 #include "actions/move_keyframe_action.h"
-#include "uilib/utils/imgui_ext.h"
+#include "moth_ui/utils/imgui_ext.h"
 
 namespace ui {
     KeyframeWidget::KeyframeWidget(EditorLayer& editorLayer, std::vector<KeyframeContext>& selectedKeyframes)

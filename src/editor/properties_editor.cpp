@@ -1,7 +1,7 @@
 #include "common.h"
 #include "properties_editor.h"
 #include "editor_layer.h"
-#include "uilib/layout/layout_entity_image.h"
+#include "moth_ui/layout/layout_entity_image.h"
 
 namespace ui {
     PropertiesEditor::PropertiesEditor(EditorLayer& editorLayer)

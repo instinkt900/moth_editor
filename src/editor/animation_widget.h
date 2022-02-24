@@ -1,11 +1,11 @@
 #pragma once
 
-#include "uilib/animation_track.h"
+#include "moth_ui/animation_track.h"
 #include "keyframe_context.h"
 #include "keyframe_widget.h"
-#include "uilib/animation_clip.h"
-#include "uilib/utils/imgui_ext_focus.h"
-#include "uilib/ui_fwd.h"
+#include "moth_ui/animation_clip.h"
+#include "moth_ui/utils/imgui_ext_focus.h"
+#include "moth_ui/ui_fwd.h"
 
 namespace ui {
     class EditorLayer;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "editor_action.h"
-#include "uilib/animation_clip.h"
+#include "moth_ui/animation_clip.h"
 
 namespace ui {
     class ModifyClipAction : public IEditorAction {

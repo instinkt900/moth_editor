@@ -1,8 +1,8 @@
 #pragma once
 
 #include "editor_action.h"
-#include "uilib/ui_fwd.h"
-#include "uilib/animation_track.h"
+#include "moth_ui/ui_fwd.h"
+#include "moth_ui/animation_track.h"
 
 namespace ui {
     class ModifyKeyframeAction : public IEditorAction {

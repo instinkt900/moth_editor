@@ -1,6 +1,6 @@
 #pragma once
 
-#include "uilib/layout/layout_entity.h"
+#include "moth_ui/layout/layout_entity.h"
 
 namespace ui {
     inline char const* GetEntityLabel(std::shared_ptr<LayoutEntity> entity) {

@@ -2,7 +2,7 @@
 #include "bounds_widget.h"
 #include "anchor_bounds_handle.h"
 #include "offset_bounds_handle.h"
-#include "uilib/event_dispatch.h"
+#include "moth_ui/event_dispatch.h"
 #include "editor_layer.h"
 
 namespace ui {

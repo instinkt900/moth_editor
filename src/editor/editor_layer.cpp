@@ -1,12 +1,12 @@
 #include "common.h"
 #include "editor_layer.h"
-#include "uilib/layout/layout.h"
-#include "uilib/node.h"
-#include "uilib/node_image.h"
-#include "uilib/event_dispatch.h"
+#include "moth_ui/layout/layout.h"
+#include "moth_ui/node.h"
+#include "moth_ui/node_image.h"
+#include "moth_ui/event_dispatch.h"
 #include "animation_widget.h"
-#include "uilib/animation_clip.h"
-#include "uilib/layout/layout_entity_image.h"
+#include "moth_ui/animation_clip.h"
+#include "moth_ui/layout/layout_entity_image.h"
 #include "editor/actions/add_action.h"
 #include "editor/actions/delete_action.h"
 #include "editor/actions/composite_action.h"
@@ -14,7 +14,7 @@
 #include "editor/actions/add_keyframe_action.h"
 #include "bounds_widget.h"
 #include "properties_editor.h"
-#include "uilib/utils/imgui_ext.h"
+#include "moth_ui/utils/imgui_ext.h"
 
 namespace ui {
     EditorLayer::EditorLayer()
