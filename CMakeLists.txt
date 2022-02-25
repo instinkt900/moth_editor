@@ -41,10 +41,15 @@ set(SOURCES ${SOURCES}
 	src/editor/keyframe_widget.cpp
 	src/editor/offset_bounds_handle.cpp
 	src/editor/properties_editor.cpp
+	src/event_factory.cpp
 	src/game.cpp
+	src/image.cpp
+	src/image_factory.cpp
 	src/layers/layer.cpp
 	src/layers/layer_stack.cpp
 	src/main.cpp
+	src/ui_renderer.cpp
+	src/SDL_FontCache.c
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -52,3 +57,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE src)
 target_link_libraries(${PROJECT_NAME} moth_ui ${CONAN_LIBS})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
+set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3")
+set_source_files_properties(src/SDL_FontCache.c PROPERTIES COMPILE_FLAGS "/W0")

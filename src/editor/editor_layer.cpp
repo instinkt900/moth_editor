@@ -250,7 +250,7 @@ namespace ui {
             displayRect.topLeft = { guideRect.x, guideRect.y };
             displayRect.bottomRight = { guideRect.x + guideRect.w, guideRect.y + guideRect.h };
             m_root->SetScreenRect(displayRect);
-            m_root->Draw(renderer);
+            m_root->Draw();
         }
         SDL_RenderSetLogicalSize(&renderer, oldRenderWidth, oldRenderHeight);
 

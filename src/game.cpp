@@ -5,18 +5,16 @@
 #include "moth_ui/events/event_quit.h"
 #include "moth_ui/events/event_mouse.h"
 #include "editor/editor_layer.h"
+#include "event_factory.h"
+#include "moth_ui/context.h"
+#include "image_factory.h"
+#include "ui_renderer.h"
 
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_sdlrenderer.h>
 
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-//#include <SDL_mixer.h>
-
-// TODO needed a few places but we dont want to pass this around
-// not strictly needed as we can remove its use by being smarter
-// about resource creation.
-SDL_Renderer* g_renderer = nullptr;
 
 Game::Game()
     : m_windowWidth(INIT_WINDOW_WIDTH)
@@ -45,7 +43,7 @@ int Game::Run() {
             if (ImGui::GetIO().WantCaptureMouse && (event.type == SDL_MOUSEMOTION || event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP || event.type == SDL_MOUSEWHEEL)) {
                 continue;
             }
-            if (auto const translatedEvent = Event::FromSDL(event)) {
+            if (auto const translatedEvent = EventFactory::FromSDL(event)) {
                 OnEvent(*translatedEvent);
             }
         }
@@ -72,8 +70,6 @@ bool Game::Initialise() {
         return false;
     }
 
-    g_renderer = m_renderer;
-
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
@@ -95,6 +91,10 @@ bool Game::Initialise() {
     // if (0 > Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048)) {
     //     return false;
     // }
+
+    auto imageFactory = std::make_unique<ImageFactory>(*m_renderer);
+    auto uiRenderer = std::make_unique<UIRenderer>(*m_renderer);
+    ui::Context::Init(std::move(imageFactory), std::move(uiRenderer));
 
     m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
     m_layerStack->PushLayer(std::make_unique<ui::EditorLayer>());
