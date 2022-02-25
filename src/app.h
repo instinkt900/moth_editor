@@ -2,10 +2,10 @@
 
 #include "layers/layer_stack.h"
 
-class Game {
+class App {
 public:
-    Game();
-    virtual ~Game();
+    App();
+    virtual ~App();
 
     int Run();
     void Stop() { m_running = false; }

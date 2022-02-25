@@ -18,6 +18,9 @@ public:
     void Draw(SDL_Renderer& renderer);
     void DebugDraw();
 
+    void SetWindowSize(moth_ui::IntVec2 const& dimensions);
+    void SetRenderSize(moth_ui::IntVec2 const& dimensions);
+
     int GetRenderWidth() const { return m_renderWidth; }
     int GetRenderHeight() const { return m_renderHeight; }
     int GetWindowWidth() const { return m_windowWidth; }

@@ -1,7 +1,7 @@
 #include "common.h"
-#include "game.h"
+#include "app.h"
 
 int main(int argc, char** argv) {
-    Game game;
-    return game.Run();
+    App application;
+    return application.Run();
 }

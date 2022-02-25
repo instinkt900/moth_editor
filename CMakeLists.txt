@@ -42,7 +42,7 @@ set(SOURCES ${SOURCES}
 	src/editor/offset_bounds_handle.cpp
 	src/editor/properties_editor.cpp
 	src/event_factory.cpp
-	src/game.cpp
+	src/app.cpp
 	src/image.cpp
 	src/image_factory.cpp
 	src/layers/layer.cpp

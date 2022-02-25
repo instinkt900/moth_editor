@@ -13,7 +13,7 @@ moth_ui::Key FromSDLKey(SDL_Keycode const& code);
 std::unique_ptr<moth_ui::Event> EventFactory::FromSDL(SDL_Event const& event) {
     switch (event.type) {
     case SDL_WINDOWEVENT: {
-        switch (event.window.type) {
+        switch (event.window.event) {
         case SDL_WINDOWEVENT_SIZE_CHANGED: {
             return std::make_unique<moth_ui::EventWindowSize>(event.window.data1, event.window.data2);
         default:

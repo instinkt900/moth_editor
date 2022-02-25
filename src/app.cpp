@@ -1,9 +1,7 @@
 #include "common.h"
-#include "game.h"
+#include "app.h"
 #include "moth_ui/events/event_window_size.h"
-#include "moth_ui/events/event_key.h"
 #include "moth_ui/events/event_quit.h"
-#include "moth_ui/events/event_mouse.h"
 #include "editor/editor_layer.h"
 #include "event_factory.h"
 #include "moth_ui/context.h"
@@ -13,19 +11,31 @@
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_sdlrenderer.h>
 
-#include <SDL_image.h>
-#include <SDL_ttf.h>
-
-Game::Game()
+App::App()
     : m_windowWidth(INIT_WINDOW_WIDTH)
     , m_windowHeight(INIT_WINDOW_HEIGHT) {
     m_updateTicks = 1000 / 60;
+
+    std::ifstream ifile("window_config.json");
+    if (ifile.is_open()) {
+        nlohmann::json json;
+        ifile >> json;
+        json.at("window_width").get_to(m_windowWidth);
+        json.at("window_height").get_to(m_windowHeight);
+    }
 }
 
-Game::~Game() {
+App::~App() {
+    std::ofstream ofile("window_config.json");
+    if (ofile.is_open()) {
+        nlohmann::json json;
+        json["window_width"] = m_windowWidth;
+        json["window_height"] = m_windowHeight;
+        ofile << json;
+    }
 }
 
-int Game::Run() {
+int App::Run() {
     if (!Initialise()) {
         return 1;
     }
@@ -57,12 +67,12 @@ int Game::Run() {
     return 0;
 }
 
-bool Game::Initialise() {
+bool App::Initialise() {
     if (0 > SDL_Init(SDL_INIT_EVERYTHING)) {
         return false;
     }
 
-    if (nullptr == (m_window = SDL_CreateWindow("UI Tool", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_windowWidth, m_windowHeight, SDL_WINDOW_SHOWN))) {
+    if (nullptr == (m_window = SDL_CreateWindow("UI Tool", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_windowWidth, m_windowHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE))) {
         return false;
     }
 
@@ -84,14 +94,6 @@ bool Game::Initialise() {
         return false;
     }
 
-    if (0 > TTF_Init()) {
-        return false;
-    }
-
-    // if (0 > Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048)) {
-    //     return false;
-    // }
-
     auto imageFactory = std::make_unique<ImageFactory>(*m_renderer);
     auto uiRenderer = std::make_unique<UIRenderer>(*m_renderer);
     moth_ui::Context::Init(std::move(imageFactory), std::move(uiRenderer));
@@ -102,10 +104,11 @@ bool Game::Initialise() {
     return true;
 }
 
-void Game::OnEvent(moth_ui::Event const& event) {
+void App::OnEvent(moth_ui::Event const& event) {
     if (auto windowEvent = moth_ui::event_cast<moth_ui::EventWindowSize>(event)) {
         m_windowWidth = windowEvent->GetWidth();
         m_windowHeight = windowEvent->GetHeight();
+        m_layerStack->SetWindowSize({ m_windowWidth, m_windowHeight });
     } else if (auto quitEvent = moth_ui::event_cast<moth_ui::EventQuit>(event)) {
         m_running = false;
     } else if (auto keyEvent = moth_ui::event_cast<moth_ui::EventKey>(event)) {
@@ -114,7 +117,7 @@ void Game::OnEvent(moth_ui::Event const& event) {
     m_layerStack->OnEvent(event);
 }
 
-void Game::Update() {
+void App::Update() {
     uint32_t const nowTicks = SDL_GetTicks();
     uint32_t deltaTicks = nowTicks - m_lastUpdateTicks;
     while (deltaTicks > m_updateTicks) {
@@ -126,7 +129,7 @@ void Game::Update() {
     }
 }
 
-void Game::Draw() {
+void App::Draw() {
     ImGui_ImplSDLRenderer_NewFrame();
     ImGui_ImplSDL2_NewFrame(m_window);
     ImGui::NewFrame();
@@ -141,7 +144,7 @@ void Game::Draw() {
     SDL_RenderPresent(m_renderer);
 }
 
-void Game::Shutdown() {
+void App::Shutdown() {
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
