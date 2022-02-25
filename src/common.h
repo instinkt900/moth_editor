@@ -16,6 +16,7 @@
 #include <magic_enum.hpp>
 
 #include <moth_ui/utils/rect.h>
+#include <moth_ui/ui_fwd.h>
 
 #include "smart_sdl.h"
 #include "utils.h"

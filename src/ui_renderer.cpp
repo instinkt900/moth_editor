@@ -14,17 +14,17 @@ void UIRenderer::SetRenderColor(uint32_t argb) {
     SDL_SetRenderDrawColor(&m_renderer, r, g, b, a);
 }
 
-void UIRenderer::RenderRect(IntRect const& rect) {
+void UIRenderer::RenderRect(moth_ui::IntRect const& rect) {
     SDL_Rect sdlRect{ ToSDL(rect) };
     SDL_RenderDrawRect(&m_renderer, &sdlRect);
 }
 
-void UIRenderer::RenderFilledRect(IntRect const& rect) {
+void UIRenderer::RenderFilledRect(moth_ui::IntRect const& rect) {
     SDL_Rect sdlRect{ ToSDL(rect) };
     SDL_RenderDrawRect(&m_renderer, &sdlRect);
 }
 
-void UIRenderer::RenderImage(ui::IImage& image, IntRect const& destRect) {
+void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& destRect) {
     Image& internalImage = static_cast<Image&>(image);
     auto texture = internalImage.GetTexture();
     auto const& sourceRect = internalImage.GetSourceRect();

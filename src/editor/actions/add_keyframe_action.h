@@ -4,21 +4,19 @@
 #include "moth_ui/ui_fwd.h"
 #include "moth_ui/animation_track.h"
 
-namespace ui {
-    class AddKeyframeAction : public IEditorAction {
-    public:
-        AddKeyframeAction(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo, KeyframeValue value);
-        virtual ~AddKeyframeAction();
+class AddKeyframeAction : public IEditorAction {
+public:
+    AddKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue value);
+    virtual ~AddKeyframeAction();
 
-        void Do() override;
-        void Undo() override;
+    void Do() override;
+    void Undo() override;
 
-        void OnImGui() override;
+    void OnImGui() override;
 
-    protected:
-        std::shared_ptr<LayoutEntity> m_entity;
-        AnimationTrack::Target m_target;
-        int m_frameNo;
-        KeyframeValue m_value;
-    };
-}
+protected:
+    std::shared_ptr<moth_ui::LayoutEntity> m_entity;
+    moth_ui::AnimationTrack::Target m_target;
+    int m_frameNo;
+    moth_ui::KeyframeValue m_value;
+};

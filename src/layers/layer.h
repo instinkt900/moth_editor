@@ -4,12 +4,12 @@
 
 class LayerStack;
 
-class Layer : public EventListener {
+class Layer : public moth_ui::EventListener {
 public:
     Layer();
     virtual ~Layer();
 
-    bool OnEvent(Event const& event) override;
+    bool OnEvent(moth_ui::Event const& event) override;
 
     virtual void Update(uint32_t ticks);
     virtual void Draw(SDL_Renderer& renderer);

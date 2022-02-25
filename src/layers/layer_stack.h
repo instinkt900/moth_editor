@@ -4,7 +4,7 @@
 
 class Layer;
 
-class LayerStack : public EventListener {
+class LayerStack : public moth_ui::EventListener {
 public:
     LayerStack(int renderWidth, int renderHeight, int windowWidth, int windowHeight);
     ~LayerStack();
@@ -13,7 +13,7 @@ public:
     std::unique_ptr<Layer> PopLayer();
     void RemoveLayer(Layer* layer);
 
-    bool OnEvent(Event const& event) override;
+    bool OnEvent(moth_ui::Event const& event) override;
     void Update(uint32_t ticks);
     void Draw(SDL_Renderer& renderer);
     void DebugDraw();

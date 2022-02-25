@@ -14,7 +14,7 @@ public:
 
 protected:
     bool Initialise();
-    void OnEvent(Event const& event);
+    void OnEvent(moth_ui::Event const& event);
     void Update();
     void Draw();
     void Shutdown();
@@ -33,7 +33,7 @@ private:
     uint32_t m_lastUpdateTicks = 0;
     SDL_Window* m_window = nullptr;
     SDL_Renderer* m_renderer = nullptr;
-    IntVec2 m_gameWindowPos;
+    moth_ui::IntVec2 m_gameWindowPos;
 
     std::unique_ptr<LayerStack> m_layerStack;
 };

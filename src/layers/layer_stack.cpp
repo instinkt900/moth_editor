@@ -34,7 +34,7 @@ void LayerStack::RemoveLayer(Layer* layer) {
     }
 }
 
-bool LayerStack::OnEvent(Event const& event) {
+bool LayerStack::OnEvent(moth_ui::Event const& event) {
     for (auto it = m_layers.rbegin(); it != m_layers.rend(); ++it) {
         if ((*it)->OnEvent(event)) {
             return true;

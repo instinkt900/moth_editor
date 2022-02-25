@@ -94,21 +94,21 @@ bool Game::Initialise() {
 
     auto imageFactory = std::make_unique<ImageFactory>(*m_renderer);
     auto uiRenderer = std::make_unique<UIRenderer>(*m_renderer);
-    ui::Context::Init(std::move(imageFactory), std::move(uiRenderer));
+    moth_ui::Context::Init(std::move(imageFactory), std::move(uiRenderer));
 
     m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
-    m_layerStack->PushLayer(std::make_unique<ui::EditorLayer>());
+    m_layerStack->PushLayer(std::make_unique<EditorLayer>());
 
     return true;
 }
 
-void Game::OnEvent(Event const& event) {
-    if (auto windowEvent = event_cast<EventWindowSize>(event)) {
+void Game::OnEvent(moth_ui::Event const& event) {
+    if (auto windowEvent = moth_ui::event_cast<moth_ui::EventWindowSize>(event)) {
         m_windowWidth = windowEvent->GetWidth();
         m_windowHeight = windowEvent->GetHeight();
-    } else if (auto quitEvent = event_cast<EventQuit>(event)) {
+    } else if (auto quitEvent = moth_ui::event_cast<moth_ui::EventQuit>(event)) {
         m_running = false;
-    } else if (auto keyEvent = event_cast<EventKey>(event)) {
+    } else if (auto keyEvent = moth_ui::event_cast<moth_ui::EventKey>(event)) {
     }
 
     m_layerStack->OnEvent(event);

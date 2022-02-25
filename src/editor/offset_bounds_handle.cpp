@@ -5,67 +5,65 @@
 #include "bounds_widget.h"
 #include "editor_layer.h"
 
-namespace ui {
-    OffsetBoundsHandle::OffsetBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor)
-        : BoundsHandle(widget, anchor) {
+OffsetBoundsHandle::OffsetBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor)
+    : BoundsHandle(widget, anchor) {
+}
+
+OffsetBoundsHandle::~OffsetBoundsHandle() {
+}
+
+void OffsetBoundsHandle::Draw(SDL_Renderer& renderer) {
+    if (!m_target) {
+        return;
     }
 
-    OffsetBoundsHandle::~OffsetBoundsHandle() {
-    }
+    auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
 
-    void OffsetBoundsHandle::Draw(SDL_Renderer& renderer) {
-        if (!m_target) {
-            return;
-        }
+    auto const& bounds = m_target->GetScreenRect();
 
-        auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
+    auto const dim = static_cast<moth_ui::FloatVec2>(bounds.bottomRight - bounds.topLeft);
+    moth_ui::FloatVec2 const anchor = { m_anchor.Left ? 0.0f : (m_anchor.Right ? 1.0f : 0.5f), m_anchor.Top ? 0.0f : (m_anchor.Bottom ? 1.0f : 0.5f) };
+    m_position = static_cast<moth_ui::FloatVec2>(bounds.topLeft) + dim * anchor;
 
-        auto const& bounds = m_target->GetScreenRect();
+    auto const handleSize = moth_ui::FloatVec2{ m_size, m_size };
+    auto const halfHandleSize = handleSize / 2.0f;
 
-        FloatVec2 const dim = static_cast<FloatVec2>(bounds.bottomRight - bounds.topLeft);
-        FloatVec2 const anchor = { m_anchor.Left ? 0.0f : (m_anchor.Right ? 1.0f : 0.5f), m_anchor.Top ? 0.0f : (m_anchor.Bottom ? 1.0f : 0.5f) };
-        m_position = static_cast<FloatVec2>(bounds.topLeft) + dim * anchor;
+    auto const offset = (m_position / scaleFactor) - halfHandleSize;
 
-        FloatVec2 const handleSize = FloatVec2{ m_size, m_size };
-        FloatVec2 const halfHandleSize = handleSize / 2.0f;
+    SDL_FRect const r{ offset.x, offset.y, handleSize.x, handleSize.y };
+    SDL_RenderFillRectF(&renderer, &r);
+}
 
-        FloatVec2 const offset = (m_position / scaleFactor) - halfHandleSize;
+bool OffsetBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
+    auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
+    int const halfSize = static_cast<int>(m_size / 2 * scaleFactor);
+    moth_ui::IntRect r;
+    r.topLeft = static_cast<moth_ui::IntVec2>(m_position - halfSize);
+    r.bottomRight = static_cast<moth_ui::IntVec2>(m_position + halfSize);
+    return IsInRect(pos, r);
+}
 
-        SDL_FRect const r{ offset.x, offset.y, handleSize.x, handleSize.y };
-        SDL_RenderFillRectF(&renderer, &r);
-    }
+void OffsetBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
+    auto const parent = m_target->GetParent();
+    auto const& parentRect = parent->GetScreenRect();
 
-    bool OffsetBoundsHandle::IsInBounds(IntVec2 const& pos) const {
-        auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
-        int const halfSize = static_cast<int>(m_size / 2 * scaleFactor);
-        IntRect r;
-        r.topLeft = static_cast<IntVec2>(m_position - halfSize);
-        r.bottomRight = static_cast<IntVec2>(m_position + halfSize);
-        return IsInRect(pos, r);
-    }
+    auto const parentOffset = static_cast<moth_ui::FloatVec2>(parentRect.topLeft);
+    auto const parentDimensions = static_cast<moth_ui::FloatVec2>(parentRect.bottomRight - parentRect.topLeft);
 
-    void OffsetBoundsHandle::UpdatePosition(IntVec2 const& position) {
-        auto const parent = m_target->GetParent();
-        auto const& parentRect = parent->GetScreenRect();
+    auto& bounds = m_target->GetLayoutRect();
 
-        FloatVec2 const parentOffset = static_cast<FloatVec2>(parentRect.topLeft);
-        FloatVec2 const parentDimensions = static_cast<FloatVec2>(parentRect.bottomRight - parentRect.topLeft);
+    auto const topLeftAnchorPos = parentOffset + parentDimensions * bounds.anchor.topLeft;
+    auto const bottomRightAnchorPos = parentOffset + parentDimensions * bounds.anchor.bottomRight;
 
-        auto& bounds = m_target->GetLayoutRect();
+    auto const mousePosition = static_cast<moth_ui::FloatVec2>(position);
+    auto const topLeftNewOffset = mousePosition - topLeftAnchorPos;
+    auto const bottomRightNewOffset = mousePosition - bottomRightAnchorPos;
 
-        FloatVec2 const topLeftAnchorPos = parentOffset + parentDimensions * bounds.anchor.topLeft;
-        FloatVec2 const bottomRightAnchorPos = parentOffset + parentDimensions * bounds.anchor.bottomRight;
+    auto const topLeftOffsetDelta = topLeftNewOffset - bounds.offset.topLeft;
+    auto const bottomRightOffsetDelta = bottomRightNewOffset - bounds.offset.bottomRight;
 
-        FloatVec2 const mousePosition = static_cast<FloatVec2>(position);
-        FloatVec2 const topLeftNewOffset = mousePosition - topLeftAnchorPos;
-        FloatVec2 const bottomRightNewOffset = mousePosition - bottomRightAnchorPos;
+    bounds.offset.topLeft += topLeftOffsetDelta * moth_ui::FloatVec2{ static_cast<float>(m_anchor.Left), static_cast<float>(m_anchor.Top) };
+    bounds.offset.bottomRight += bottomRightOffsetDelta * moth_ui::FloatVec2{ static_cast<float>(m_anchor.Right), static_cast<float>(m_anchor.Bottom) };
 
-        FloatVec2 const topLeftOffsetDelta = topLeftNewOffset - bounds.offset.topLeft;
-        FloatVec2 const bottomRightOffsetDelta = bottomRightNewOffset - bounds.offset.bottomRight;
-
-        bounds.offset.topLeft += topLeftOffsetDelta * FloatVec2{ static_cast<float>(m_anchor.Left), static_cast<float>(m_anchor.Top) };
-        bounds.offset.bottomRight += bottomRightOffsetDelta * FloatVec2{ static_cast<float>(m_anchor.Right), static_cast<float>(m_anchor.Bottom) };
-
-        m_target->RecalculateBounds();
-    }
+    m_target->RecalculateBounds();
 }

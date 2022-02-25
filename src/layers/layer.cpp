@@ -8,7 +8,7 @@ Layer::Layer() {
 Layer::~Layer() {
 }
 
-bool Layer::OnEvent(Event const& event) {
+bool Layer::OnEvent(moth_ui::Event const& event) {
     return false;
 }
 

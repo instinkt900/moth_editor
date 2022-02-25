@@ -4,6 +4,6 @@
 
 class EventFactory {
 public:
-    static std::unique_ptr<Event> FromSDL(SDL_Event const& event);
+    static std::unique_ptr<moth_ui::Event> FromSDL(SDL_Event const& event);
 };
 

@@ -2,20 +2,18 @@
 
 #include "editor_action.h"
 
-namespace ui {
-    class CompositeAction : public IEditorAction {
-    public:
-        CompositeAction();
-        virtual ~CompositeAction();
+class CompositeAction : public IEditorAction {
+public:
+    CompositeAction();
+    virtual ~CompositeAction();
 
-        auto& GetActions() { return m_actions; }
+    auto& GetActions() { return m_actions; }
 
-        void Do() override;
-        void Undo() override;
+    void Do() override;
+    void Undo() override;
 
-        void OnImGui() override;
+    void OnImGui() override;
 
-    protected:
-        std::vector<std::unique_ptr<IEditorAction>> m_actions;
-    };
-}
+protected:
+    std::vector<std::unique_ptr<IEditorAction>> m_actions;
+};

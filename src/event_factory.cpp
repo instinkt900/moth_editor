@@ -7,310 +7,310 @@
 #include "moth_ui/events/event_device.h"
 #include "moth_ui/events/event_mouse.h"
 
-MouseButton FromSDLMouse(uint8_t button);
-Key FromSDLKey(SDL_Keycode const& code);
+moth_ui::MouseButton FromSDLMouse(uint8_t button);
+moth_ui::Key FromSDLKey(SDL_Keycode const& code);
 
-std::unique_ptr<Event> EventFactory::FromSDL(SDL_Event const& event) {
+std::unique_ptr<moth_ui::Event> EventFactory::FromSDL(SDL_Event const& event) {
     switch (event.type) {
     case SDL_WINDOWEVENT: {
         switch (event.window.type) {
         case SDL_WINDOWEVENT_SIZE_CHANGED: {
-            return std::make_unique<EventWindowSize>(event.window.data1, event.window.data2);
+            return std::make_unique<moth_ui::EventWindowSize>(event.window.data1, event.window.data2);
         default:
             return nullptr;
         }
         }
     }
     case SDL_QUIT: {
-        return std::make_unique<EventQuit>();
+        return std::make_unique<moth_ui::EventQuit>();
     }
     case SDL_KEYUP: {
-        return std::make_unique<EventKey>(KeyAction::Up, FromSDLKey(event.key.keysym.sym));
+        return std::make_unique<moth_ui::EventKey>(moth_ui::KeyAction::Up, FromSDLKey(event.key.keysym.sym));
     }
     case SDL_KEYDOWN: {
-        return std::make_unique<EventKey>(KeyAction::Down, FromSDLKey(event.key.keysym.sym));
+        return std::make_unique<moth_ui::EventKey>(moth_ui::KeyAction::Down, FromSDLKey(event.key.keysym.sym));
     }
     case SDL_RENDER_DEVICE_RESET: {
-        return std::make_unique<EventRenderDeviceReset>();
+        return std::make_unique<moth_ui::EventRenderDeviceReset>();
     }
     case SDL_RENDER_TARGETS_RESET: {
-        return std::make_unique<EventRenderTargetReset>();
+        return std::make_unique<moth_ui::EventRenderTargetReset>();
     }
     case SDL_MOUSEBUTTONDOWN: {
-        return std::make_unique<EventMouseDown>(FromSDLMouse(event.button.button), IntVec2{ event.button.x, event.button.y });
+        return std::make_unique<moth_ui::EventMouseDown>(FromSDLMouse(event.button.button), moth_ui::IntVec2{ event.button.x, event.button.y });
     }
     case SDL_MOUSEBUTTONUP: {
-        return std::make_unique<EventMouseUp>(FromSDLMouse(event.button.button), IntVec2{ event.button.x, event.button.y });
+        return std::make_unique<moth_ui::EventMouseUp>(FromSDLMouse(event.button.button), moth_ui::IntVec2{ event.button.x, event.button.y });
     }
     case SDL_MOUSEMOTION: {
-        return std::make_unique<EventMouseMove>(IntVec2{ event.motion.x, event.motion.y }, FloatVec2{ static_cast<float>(event.motion.xrel), static_cast<float>(event.motion.yrel) });
+        return std::make_unique<moth_ui::EventMouseMove>(moth_ui::IntVec2{ event.motion.x, event.motion.y }, moth_ui::FloatVec2{ static_cast<float>(event.motion.xrel), static_cast<float>(event.motion.yrel) });
     }
     case SDL_MOUSEWHEEL: {
-        return std::make_unique<EventMouseWheel>(IntVec2{ event.wheel.x, event.wheel.y });
+        return std::make_unique<moth_ui::EventMouseWheel>(moth_ui::IntVec2{ event.wheel.x, event.wheel.y });
     }
     }
     return nullptr;
 }
 
-MouseButton FromSDLMouse(uint8_t button) {
+moth_ui::MouseButton FromSDLMouse(uint8_t button) {
     switch (button) {
     case 1:
-        return MouseButton::Left;
+        return moth_ui::MouseButton::Left;
     case 2:
-        return MouseButton::Middle;
+        return moth_ui::MouseButton::Middle;
     case 3:
-        return MouseButton::Right;
+        return moth_ui::MouseButton::Right;
     default:
-        return MouseButton::Unknown;
+        return moth_ui::MouseButton::Unknown;
     }
 }
 
-Key FromSDLKey(SDL_Keycode const& code) {
+moth_ui::Key FromSDLKey(SDL_Keycode const& code) {
     switch (code) {
     case SDLK_RETURN:
-        return Key::Return;
+        return moth_ui::Key::Return;
     case SDLK_ESCAPE:
-        return Key::Escape;
+        return moth_ui::Key::Escape;
     case SDLK_BACKSPACE:
-        return Key::Backspace;
+        return moth_ui::Key::Backspace;
     case SDLK_TAB:
-        return Key::Tab;
+        return moth_ui::Key::Tab;
     case SDLK_SPACE:
-        return Key::Space;
+        return moth_ui::Key::Space;
     case SDLK_EXCLAIM:
-        return Key::Exclaim;
+        return moth_ui::Key::Exclaim;
     case SDLK_QUOTEDBL:
-        return Key::Quotedbl;
+        return moth_ui::Key::Quotedbl;
     case SDLK_HASH:
-        return Key::Hash;
+        return moth_ui::Key::Hash;
     case SDLK_PERCENT:
-        return Key::Percent;
+        return moth_ui::Key::Percent;
     case SDLK_DOLLAR:
-        return Key::Dollar;
+        return moth_ui::Key::Dollar;
     case SDLK_AMPERSAND:
-        return Key::Ampersand;
+        return moth_ui::Key::Ampersand;
     case SDLK_QUOTE:
-        return Key::Quote;
+        return moth_ui::Key::Quote;
     case SDLK_LEFTPAREN:
-        return Key::Leftparen;
+        return moth_ui::Key::Leftparen;
     case SDLK_RIGHTPAREN:
-        return Key::Rightparen;
+        return moth_ui::Key::Rightparen;
     case SDLK_ASTERISK:
-        return Key::Asterisk;
+        return moth_ui::Key::Asterisk;
     case SDLK_PLUS:
-        return Key::Plus;
+        return moth_ui::Key::Plus;
     case SDLK_COMMA:
-        return Key::Comma;
+        return moth_ui::Key::Comma;
     case SDLK_MINUS:
-        return Key::Minus;
+        return moth_ui::Key::Minus;
     case SDLK_PERIOD:
-        return Key::Period;
+        return moth_ui::Key::Period;
     case SDLK_SLASH:
-        return Key::Slash;
+        return moth_ui::Key::Slash;
     case SDLK_0:
-        return Key::N0;
+        return moth_ui::Key::N0;
     case SDLK_1:
-        return Key::N1;
+        return moth_ui::Key::N1;
     case SDLK_2:
-        return Key::N2;
+        return moth_ui::Key::N2;
     case SDLK_3:
-        return Key::N3;
+        return moth_ui::Key::N3;
     case SDLK_4:
-        return Key::N4;
+        return moth_ui::Key::N4;
     case SDLK_5:
-        return Key::N5;
+        return moth_ui::Key::N5;
     case SDLK_6:
-        return Key::N6;
+        return moth_ui::Key::N6;
     case SDLK_7:
-        return Key::N7;
+        return moth_ui::Key::N7;
     case SDLK_8:
-        return Key::N8;
+        return moth_ui::Key::N8;
     case SDLK_9:
-        return Key::N9;
+        return moth_ui::Key::N9;
     case SDLK_COLON:
-        return Key::Colon;
+        return moth_ui::Key::Colon;
     case SDLK_SEMICOLON:
-        return Key::Semicolon;
+        return moth_ui::Key::Semicolon;
     case SDLK_LESS:
-        return Key::Less;
+        return moth_ui::Key::Less;
     case SDLK_EQUALS:
-        return Key::Equals;
+        return moth_ui::Key::Equals;
     case SDLK_GREATER:
-        return Key::Greater;
+        return moth_ui::Key::Greater;
     case SDLK_QUESTION:
-        return Key::Question;
+        return moth_ui::Key::Question;
     case SDLK_AT:
-        return Key::At;
+        return moth_ui::Key::At;
 
     case SDLK_LEFTBRACKET:
-        return Key::Leftbracket;
+        return moth_ui::Key::Leftbracket;
     case SDLK_BACKSLASH:
-        return Key::Backslash;
+        return moth_ui::Key::Backslash;
     case SDLK_RIGHTBRACKET:
-        return Key::Rightbracket;
+        return moth_ui::Key::Rightbracket;
     case SDLK_CARET:
-        return Key::Caret;
+        return moth_ui::Key::Caret;
     case SDLK_UNDERSCORE:
-        return Key::Underscore;
+        return moth_ui::Key::Underscore;
     case SDLK_BACKQUOTE:
-        return Key::Backquote;
+        return moth_ui::Key::Backquote;
     case SDLK_a:
-        return Key::A;
+        return moth_ui::Key::A;
     case SDLK_b:
-        return Key::B;
+        return moth_ui::Key::B;
     case SDLK_c:
-        return Key::C;
+        return moth_ui::Key::C;
     case SDLK_d:
-        return Key::D;
+        return moth_ui::Key::D;
     case SDLK_e:
-        return Key::E;
+        return moth_ui::Key::E;
     case SDLK_f:
-        return Key::F;
+        return moth_ui::Key::F;
     case SDLK_g:
-        return Key::G;
+        return moth_ui::Key::G;
     case SDLK_h:
-        return Key::H;
+        return moth_ui::Key::H;
     case SDLK_i:
-        return Key::I;
+        return moth_ui::Key::I;
     case SDLK_j:
-        return Key::J;
+        return moth_ui::Key::J;
     case SDLK_k:
-        return Key::K;
+        return moth_ui::Key::K;
     case SDLK_l:
-        return Key::L;
+        return moth_ui::Key::L;
     case SDLK_m:
-        return Key::M;
+        return moth_ui::Key::M;
     case SDLK_n:
-        return Key::N;
+        return moth_ui::Key::N;
     case SDLK_o:
-        return Key::O;
+        return moth_ui::Key::O;
     case SDLK_p:
-        return Key::P;
+        return moth_ui::Key::P;
     case SDLK_q:
-        return Key::Q;
+        return moth_ui::Key::Q;
     case SDLK_r:
-        return Key::R;
+        return moth_ui::Key::R;
     case SDLK_s:
-        return Key::S;
+        return moth_ui::Key::S;
     case SDLK_t:
-        return Key::T;
+        return moth_ui::Key::T;
     case SDLK_u:
-        return Key::U;
+        return moth_ui::Key::U;
     case SDLK_v:
-        return Key::V;
+        return moth_ui::Key::V;
     case SDLK_w:
-        return Key::W;
+        return moth_ui::Key::W;
     case SDLK_x:
-        return Key::X;
+        return moth_ui::Key::X;
     case SDLK_y:
-        return Key::Y;
+        return moth_ui::Key::Y;
     case SDLK_z:
-        return Key::Z;
+        return moth_ui::Key::Z;
 
     case SDLK_CAPSLOCK:
-        return Key::Capslock;
+        return moth_ui::Key::Capslock;
 
     case SDLK_F1:
-        return Key::F1;
+        return moth_ui::Key::F1;
     case SDLK_F2:
-        return Key::F2;
+        return moth_ui::Key::F2;
     case SDLK_F3:
-        return Key::F3;
+        return moth_ui::Key::F3;
     case SDLK_F4:
-        return Key::F4;
+        return moth_ui::Key::F4;
     case SDLK_F5:
-        return Key::F5;
+        return moth_ui::Key::F5;
     case SDLK_F6:
-        return Key::F6;
+        return moth_ui::Key::F6;
     case SDLK_F7:
-        return Key::F7;
+        return moth_ui::Key::F7;
     case SDLK_F8:
-        return Key::F8;
+        return moth_ui::Key::F8;
     case SDLK_F9:
-        return Key::F9;
+        return moth_ui::Key::F9;
     case SDLK_F10:
-        return Key::F10;
+        return moth_ui::Key::F10;
     case SDLK_F11:
-        return Key::F11;
+        return moth_ui::Key::F11;
     case SDLK_F12:
-        return Key::F12;
+        return moth_ui::Key::F12;
 
     case SDLK_PRINTSCREEN:
-        return Key::Printscreen;
+        return moth_ui::Key::Printscreen;
     case SDLK_SCROLLLOCK:
-        return Key::Scrolllock;
+        return moth_ui::Key::Scrolllock;
     case SDLK_PAUSE:
-        return Key::Pause;
+        return moth_ui::Key::Pause;
     case SDLK_INSERT:
-        return Key::Insert;
+        return moth_ui::Key::Insert;
     case SDLK_HOME:
-        return Key::Home;
+        return moth_ui::Key::Home;
     case SDLK_PAGEUP:
-        return Key::Pageup;
+        return moth_ui::Key::Pageup;
     case SDLK_DELETE:
-        return Key::Delete;
+        return moth_ui::Key::Delete;
     case SDLK_END:
-        return Key::End;
+        return moth_ui::Key::End;
     case SDLK_PAGEDOWN:
-        return Key::Pagedown;
+        return moth_ui::Key::Pagedown;
     case SDLK_RIGHT:
-        return Key::Right;
+        return moth_ui::Key::Right;
     case SDLK_LEFT:
-        return Key::Left;
+        return moth_ui::Key::Left;
     case SDLK_DOWN:
-        return Key::Down;
+        return moth_ui::Key::Down;
     case SDLK_UP:
-        return Key::Up;
+        return moth_ui::Key::Up;
 
     case SDLK_NUMLOCKCLEAR:
-        return Key::Numlockclear;
+        return moth_ui::Key::Numlockclear;
     case SDLK_KP_DIVIDE:
-        return Key::KP_Divide;
+        return moth_ui::Key::KP_Divide;
     case SDLK_KP_MULTIPLY:
-        return Key::KP_Multiply;
+        return moth_ui::Key::KP_Multiply;
     case SDLK_KP_MINUS:
-        return Key::KP_Minus;
+        return moth_ui::Key::KP_Minus;
     case SDLK_KP_PLUS:
-        return Key::KP_Plus;
+        return moth_ui::Key::KP_Plus;
     case SDLK_KP_ENTER:
-        return Key::KP_Enter;
+        return moth_ui::Key::KP_Enter;
     case SDLK_KP_1:
-        return Key::KP_1;
+        return moth_ui::Key::KP_1;
     case SDLK_KP_2:
-        return Key::KP_2;
+        return moth_ui::Key::KP_2;
     case SDLK_KP_3:
-        return Key::KP_3;
+        return moth_ui::Key::KP_3;
     case SDLK_KP_4:
-        return Key::KP_4;
+        return moth_ui::Key::KP_4;
     case SDLK_KP_5:
-        return Key::KP_5;
+        return moth_ui::Key::KP_5;
     case SDLK_KP_6:
-        return Key::KP_6;
+        return moth_ui::Key::KP_6;
     case SDLK_KP_7:
-        return Key::KP_7;
+        return moth_ui::Key::KP_7;
     case SDLK_KP_8:
-        return Key::KP_8;
+        return moth_ui::Key::KP_8;
     case SDLK_KP_9:
-        return Key::KP_9;
+        return moth_ui::Key::KP_9;
     case SDLK_KP_0:
-        return Key::KP_0;
+        return moth_ui::Key::KP_0;
     case SDLK_KP_PERIOD:
-        return Key::KP_Period;
+        return moth_ui::Key::KP_Period;
 
     case SDLK_LCTRL:
-        return Key::Lctrl;
+        return moth_ui::Key::Lctrl;
     case SDLK_LSHIFT:
-        return Key::Lshift;
+        return moth_ui::Key::Lshift;
     case SDLK_LALT:
-        return Key::Lalt;
+        return moth_ui::Key::Lalt;
     case SDLK_RCTRL:
-        return Key::Rctrl;
+        return moth_ui::Key::Rctrl;
     case SDLK_RSHIFT:
-        return Key::Rshift;
+        return moth_ui::Key::Rshift;
     case SDLK_RALT:
-        return Key::Ralt;
+        return moth_ui::Key::Ralt;
 
     default:
-        return Key::Unknown;
+        return moth_ui::Key::Unknown;
     }
 }

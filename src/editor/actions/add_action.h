@@ -2,21 +2,17 @@
 
 #include "editor_action.h"
 
-namespace ui {
-    class Node;
-    class Group;
+class AddAction : public IEditorAction {
+public:
+    AddAction(std::shared_ptr<moth_ui::Node> newNode, std::shared_ptr<moth_ui::Group> parentNode);
+    virtual ~AddAction();
 
-    class AddAction : public IEditorAction {
-    public:
-        AddAction(std::shared_ptr<Node> newNode, std::shared_ptr<Group> parentNode);
-        virtual ~AddAction();
+    void Do() override;
+    void Undo() override;
 
-        void Do() override;
-        void Undo() override;
+    void OnImGui() override;
 
-        void OnImGui() override;
-    protected:
-        std::shared_ptr<Node> m_newNode;
-        std::shared_ptr<Group> m_parentNode;
-    };
-}
+protected:
+    std::shared_ptr<moth_ui::Node> m_newNode;
+    std::shared_ptr<moth_ui::Group> m_parentNode;
+};
