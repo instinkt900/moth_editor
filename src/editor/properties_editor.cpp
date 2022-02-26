@@ -2,6 +2,14 @@
 #include "properties_editor.h"
 #include "editor_layer.h"
 #include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/utils/imgui_ext_inspect.h"
+#include "moth_ui/node_image.h"
+#include "utils.h"
+
+namespace {
+    ImGui::FileBrowser s_fileBrowser;
+    std::shared_ptr<moth_ui::NodeImage> s_loadingNodeImage = nullptr;
+}
 
 PropertiesEditor::PropertiesEditor(EditorLayer& editorLayer)
     : m_editorLayer(editorLayer) {
@@ -61,4 +69,39 @@ void PropertiesEditor::DrawGroupProperties() {
 }
 
 void PropertiesEditor::DrawImageProperties() {
+    auto const selection = m_editorLayer.GetSelection();
+    auto const imageNode = std::static_pointer_cast<moth_ui::NodeImage>(selection);
+    auto const imageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(selection->GetLayoutEntity());
+    // do we want to allow the animation of the source rect? would be nice
+    imgui_ext::FocusGroupInputRect(
+        "Source Rect", imageEntity->m_sourceRect,
+        [&](moth_ui::IntRect const& value) {
+            /*m_editorLayer.BeginEditBounds()*/;
+            imageEntity->m_sourceRect = value;
+            selection->ReloadEntity();
+        },
+        [&]() {
+            /*m_editorLayer.EndEditBounds();*/
+        });
+
+
+    imgui_ext::Inspect("Image", imageNode->GetImage());
+
+    if (ImGui::Button("Load Image..")) {
+        s_fileBrowser.SetTitle("Load Image..");
+        s_fileBrowser.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
+        s_fileBrowser.Open();
+        s_loadingNodeImage = imageNode;
+    }
+
+    if (s_loadingNodeImage) {
+        s_fileBrowser.Display();
+        if (s_fileBrowser.HasSelected()) {
+            auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(s_loadingNodeImage->GetLayoutEntity());
+            targetImageEntity->m_texturePath = s_fileBrowser.GetSelected().string();
+            s_loadingNodeImage->ReloadEntity();
+            s_fileBrowser.ClearSelected();
+            s_loadingNodeImage = nullptr;
+        }
+    }
 }

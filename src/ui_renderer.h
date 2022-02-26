@@ -10,7 +10,7 @@ public:
     void SetRenderColor(uint32_t argb) override;
     void RenderRect(moth_ui::IntRect const& rect) override;
     void RenderFilledRect(moth_ui::IntRect const& rect) override;
-    void RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& destRect) override;
+    void RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sourceRect, moth_ui::IntRect const& destRect) override;
 
 private:
     SDL_Renderer& m_renderer;

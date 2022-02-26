@@ -1,8 +1,9 @@
 #include "common.h"
 #include "image.h"
 
-Image::Image(TextureRef texture, moth_ui::IntRect const& sourceRect)
+Image::Image(TextureRef texture, moth_ui::IntVec2 const& textureDimensions, moth_ui::IntRect const& sourceRect)
     : m_texture(texture)
+    , m_textureDimensions(textureDimensions)
     , m_sourceRect(sourceRect) {
 }
 

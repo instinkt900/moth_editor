@@ -1,1 +1,445 @@
-{"m_animationClips":[{"m_endFrame":20,"m_fps":20.0,"m_loopType":"Loop","m_name":"Simple","m_startFrame":0}],"m_children":[{"m_id":"Square","m_sourceRect":{"bottomRight":{"x":0,"y":0},"topLeft":{"x":0,"y":0}},"m_texturePath":"D:\\Development\\ChristmasProject2021\\background.jpg","m_tracks":[{"m_keyframes":[],"m_target":"Events"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"TopOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"BottomOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"LeftOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"RightOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"TopAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":1.0}}],"m_target":"BottomAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"LeftAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":1.0}}],"m_target":"RightAnchor"}],"type":"Image"},{"m_id":"Ship","m_sourceRect":{"bottomRight":{"x":0,"y":0},"topLeft":{"x":0,"y":0}},"m_texturePath":"D:\\Development\\ChristmasProject2021\\ship003.png","m_tracks":[{"m_keyframes":[],"m_target":"Events"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":-43.08299255371094}},{"m_frame":10,"m_value":{"index":0,"value":-3.0829925537109375}},{"m_frame":20,"m_value":{"index":0,"value":-43.08299255371094}}],"m_target":"TopOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":2.7668190002441406}},{"m_frame":10,"m_value":{"index":0,"value":42.76681900024414}},{"m_frame":20,"m_value":{"index":0,"value":2.7668190002441406}}],"m_target":"BottomOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":-50.31623077392578}}],"m_target":"LeftOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":49.68379592895508}}],"m_target":"RightOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.5}}],"m_target":"TopAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.5}}],"m_target":"BottomAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.5}}],"m_target":"LeftAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.5}}],"m_target":"RightAnchor"}],"type":"Image"}],"m_id":"","m_tracks":[{"m_keyframes":[],"m_target":"Events"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"TopOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"BottomOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"LeftOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"RightOffset"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"TopAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"BottomAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"LeftAnchor"},{"m_keyframes":[{"m_frame":0,"m_value":{"index":0,"value":0.0}}],"m_target":"RightAnchor"}],"type":"Group"}
+{
+    "m_animationClips":
+    [
+        {
+            "m_endFrame": 20,
+            "m_fps": 20.0,
+            "m_loopType": "Loop",
+            "m_name": "Simple",
+            "m_startFrame": 0
+        }
+    ],
+    "m_children":
+    [
+        {
+            "m_id": "Square",
+            "m_sourceRect":
+            {
+                "bottomRight":
+                {
+                    "x": 612,
+                    "y": 383
+                },
+                "topLeft":
+                {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "m_texturePath": "D:\\Development\\ChristmasProject2021\\background.jpg",
+            "m_tracks":
+            [
+                {
+                    "m_keyframes":
+                    [],
+                    "m_target": "Events"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.0
+                            }
+                        }
+                    ],
+                    "m_target": "TopOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.0
+                            }
+                        }
+                    ],
+                    "m_target": "BottomOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.0
+                            }
+                        }
+                    ],
+                    "m_target": "LeftOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.0
+                            }
+                        }
+                    ],
+                    "m_target": "RightOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.0
+                            }
+                        }
+                    ],
+                    "m_target": "TopAnchor"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 1.0
+                            }
+                        }
+                    ],
+                    "m_target": "BottomAnchor"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.0
+                            }
+                        }
+                    ],
+                    "m_target": "LeftAnchor"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 1.0
+                            }
+                        }
+                    ],
+                    "m_target": "RightAnchor"
+                }
+            ],
+            "type": "Image"
+        },
+        {
+            "m_id": "Ship",
+            "m_sourceRect":
+            {
+                "bottomRight":
+                {
+                    "x": 124,
+                    "y": 64
+                },
+                "topLeft":
+                {
+                    "x": 0,
+                    "y": 0
+                }
+            },
+            "m_texturePath": "D:\\Development\\ChristmasProject2021\\ship003.png",
+            "m_tracks":
+            [
+                {
+                    "m_keyframes":
+                    [],
+                    "m_target": "Events"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": -43.08299255371094
+                            }
+                        },
+                        {
+                            "m_frame": 10,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": -3.0829925537109375
+                            }
+                        },
+                        {
+                            "m_frame": 20,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": -43.08299255371094
+                            }
+                        }
+                    ],
+                    "m_target": "TopOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 2.7668190002441406
+                            }
+                        },
+                        {
+                            "m_frame": 10,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 42.76681900024414
+                            }
+                        },
+                        {
+                            "m_frame": 20,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 2.7668190002441406
+                            }
+                        }
+                    ],
+                    "m_target": "BottomOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": -50.31623077392578
+                            }
+                        }
+                    ],
+                    "m_target": "LeftOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 49.68379592895508
+                            }
+                        }
+                    ],
+                    "m_target": "RightOffset"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.5
+                            }
+                        }
+                    ],
+                    "m_target": "TopAnchor"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.5
+                            }
+                        }
+                    ],
+                    "m_target": "BottomAnchor"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.5
+                            }
+                        }
+                    ],
+                    "m_target": "LeftAnchor"
+                },
+                {
+                    "m_keyframes":
+                    [
+                        {
+                            "m_frame": 0,
+                            "m_value":
+                            {
+                                "index": 0,
+                                "value": 0.5
+                            }
+                        }
+                    ],
+                    "m_target": "RightAnchor"
+                }
+            ],
+            "type": "Image"
+        }
+    ],
+    "m_id": "",
+    "m_tracks":
+    [
+        {
+            "m_keyframes":
+            [],
+            "m_target": "Events"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "TopOffset"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "BottomOffset"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "LeftOffset"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "RightOffset"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "TopAnchor"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "BottomAnchor"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "LeftAnchor"
+        },
+        {
+            "m_keyframes":
+            [
+                {
+                    "m_frame": 0,
+                    "m_value":
+                    {
+                        "index": 0,
+                        "value": 0.0
+                    }
+                }
+            ],
+            "m_target": "RightAnchor"
+        }
+    ],
+    "type": "Group"
+}

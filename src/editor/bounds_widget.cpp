@@ -75,22 +75,16 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
         return false;
     }
 
-    auto selection = m_editorLayer.GetSelection();
-
-    // if we clicked outside the bounds of the selection check for a new selection
-    if (!selection || !selection->IsVisible() || !selection->IsInBounds(event.GetPosition())) {
-        auto const oldSelection = selection;
-        selection = nullptr;
-
-        for (auto&& child : m_editorLayer.GetRoot()->GetChildren()) {
-            if (child->IsVisible() && child->IsInBounds(event.GetPosition())) {
-                selection = child;
-                break;
-            }
+    std::shared_ptr<moth_ui::Node> selection;
+    auto const& children = m_editorLayer.GetRoot()->GetChildren();
+    for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
+        auto const& child = *it;
+        if (child->IsVisible() && child->IsInBounds(event.GetPosition())) {
+            selection = child;
+            break;
         }
-
-        m_editorLayer.SetSelection(selection);
     }
+    m_editorLayer.SetSelection(selection);
 
     if (selection) {
         m_holding = true;
