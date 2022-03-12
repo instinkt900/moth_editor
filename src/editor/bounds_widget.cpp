@@ -53,10 +53,6 @@ void BoundsWidget::EndEdit() {
 void BoundsWidget::Draw(SDL_Renderer& renderer) {
     auto const selection = m_editorLayer.GetSelection();
     if (selection && selection->IsVisible() && selection->GetParent()) {
-        for (auto&& handle : m_handles) {
-            handle->SetTarget(selection.get());
-        }
-
         SDL_SetRenderDrawColor(&renderer, 0x00, 0x00, 0xFF, 0xFF);
         auto const& screenRect = selection->GetScreenRect();
         auto const scaleFactor = m_editorLayer.GetScaleFactor();
@@ -85,6 +81,9 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
         }
     }
     m_editorLayer.SetSelection(selection);
+    for (auto&& handle : m_handles) {
+        handle->SetTarget(selection.get());
+    }
 
     if (selection) {
         m_holding = true;

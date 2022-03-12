@@ -6,6 +6,7 @@
 #include <optional>
 #include <algorithm>
 #include <fstream>
+#include <stack>
 
 #include <SDL.h>
 #include <SDL_image.h>

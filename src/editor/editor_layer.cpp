@@ -286,7 +286,7 @@ void EditorLayer::SetSelectedFrame(int frameNo) {
 
 void EditorLayer::Refresh() {
     for (auto&& child : m_root->GetChildren()) {
-        child->RefreshBounds(m_selectedFrame);
+        child->Refresh(m_selectedFrame);
     }
 }
 
@@ -508,4 +508,65 @@ void EditorLayer::EndEditBounds() {
     }
 
     m_editBoundsContext.reset();
+}
+
+void EditorLayer::BeginEditColor() {
+    if (!m_editColorContext && m_selection) {
+        m_editColorContext = std::make_unique<EditColorContext>();
+        m_editColorContext->entity = m_selection->GetLayoutEntity();
+        m_editColorContext->originalColor = m_selection->GetColor();
+    } else {
+        assert(m_editColorContext->entity == m_selection->GetLayoutEntity());
+    }
+}
+
+void EditorLayer::EndEditColor() {
+    if (!m_editColorContext) {
+        return;
+    }
+    auto entity = m_editColorContext->entity;
+    auto& tracks = entity->GetAnimationTracks();
+    int const frameNo = m_selectedFrame;
+    std::unique_ptr<CompositeAction> editAction = std::make_unique<CompositeAction>();
+
+    auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
+        auto track = tracks.at(target);
+        if (auto keyframePtr = track->GetKeyframe(frameNo)) {
+            // keyframe exists
+            auto const oldValue = keyframePtr->m_value;
+            keyframePtr->m_value = value;
+            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value));
+        } else {
+            // no keyframe
+            auto& keyframe = track->GetOrCreateKeyframe(frameNo);
+            keyframe.m_value = value;
+            editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value));
+        }
+    };
+
+    auto const& newColor = m_selection->GetColor();
+    // dont use the color operators because we clamp values
+    auto const colorDeltaR = newColor.GetR() - m_editColorContext->originalColor.GetR();
+    auto const colorDeltaG = newColor.GetG() - m_editColorContext->originalColor.GetG();
+    auto const colorDeltaB = newColor.GetB() - m_editColorContext->originalColor.GetB();
+    auto const colorDeltaA = newColor.GetA() - m_editColorContext->originalColor.GetA();
+
+    if (colorDeltaR != 0) {
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorRed, newColor.GetR());
+    }
+    if (colorDeltaG != 0) {
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorGreen, newColor.GetG());
+    }
+    if (colorDeltaB != 0) {
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorBlue, newColor.GetB());
+    }
+    if (colorDeltaA != 0) {
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorAlpha, newColor.GetA());
+    }
+
+    if (!editAction->GetActions().empty()) {
+        AddEditAction(std::move(editAction));
+    }
+
+    m_editColorContext.reset();
 }

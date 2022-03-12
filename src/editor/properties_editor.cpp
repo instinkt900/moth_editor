@@ -63,6 +63,25 @@ void PropertiesEditor::DrawEntityProperties() {
         "Bounds", selection->GetLayoutRect(),
         [&](moth_ui::LayoutRect const& value) { m_editorLayer.BeginEditBounds(); selection->GetLayoutRect() = value; selection->RecalculateBounds(); },
         [&]() { m_editorLayer.EndEditBounds(); });
+
+    imgui_ext::FocusGroupInputColor(
+        "Color", selection->GetColor(),
+        [&](moth_ui::Color const& value) { m_editorLayer.BeginEditColor(); selection->SetColor(value); },
+        [&]() { m_editorLayer.EndEditColor(); });
+
+    std::string blendModeStr(magic_enum::enum_name(selection->GetBlendMode()));
+    if (ImGui::BeginCombo("Blend Mode", blendModeStr.c_str())) {
+        for (int i = 0; i < magic_enum::enum_count<moth_ui::BlendMode>(); ++i) {
+            auto const mode = magic_enum::enum_value<moth_ui::BlendMode>(i);
+            bool selected = mode == selection->GetBlendMode();
+            std::string str(magic_enum::enum_name(mode));
+            if (ImGui::Selectable(str.c_str(), selected)) {
+                selection->SetBlendMode(mode);
+                entity->SetBlendMode(mode);
+            }
+        }
+        ImGui::EndCombo();
+    }
 }
 
 void PropertiesEditor::DrawGroupProperties() {

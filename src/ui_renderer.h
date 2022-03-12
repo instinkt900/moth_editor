@@ -7,11 +7,16 @@ public:
     UIRenderer(SDL_Renderer& renderer);
     virtual ~UIRenderer() = default;
 
-    void SetRenderColor(uint32_t argb) override;
-    void RenderRect(moth_ui::IntRect const& rect) override;
-    void RenderFilledRect(moth_ui::IntRect const& rect) override;
+    void PushBlendMode(moth_ui::BlendMode mode) override;
+    void PopBlendMode() override;
+    void PushColor(moth_ui::Color const& color) override;
+    void PopColor() override;
+    void DrawRect(moth_ui::IntRect const& rect, moth_ui::Color const& color, moth_ui::BlendMode blendMode) override;
+    void DrawFilledRect(moth_ui::IntRect const& rect, moth_ui::Color const& color, moth_ui::BlendMode blendMode) override;
     void RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sourceRect, moth_ui::IntRect const& destRect) override;
 
 private:
     SDL_Renderer& m_renderer;
+    std::stack<moth_ui::Color> m_drawColor;
+    std::stack<moth_ui::BlendMode> m_blendMode;
 };

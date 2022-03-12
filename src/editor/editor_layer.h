@@ -46,6 +46,9 @@ public:
     void BeginEditBounds();
     void EndEditBounds();
 
+    void BeginEditColor();
+    void EndEditColor();
+
     auto GetScaleFactor() const { return 100.0f / m_displayZoom; }
     bool SnapToGrid() const { return m_gridSpacing > 0; }
     auto const& GetCanvasTopLeft() const { return m_canvasTopLeft; }
@@ -120,4 +123,10 @@ private:
         moth_ui::LayoutRect originalRect;
     };
     std::unique_ptr<EditBoundsContext> m_editBoundsContext;
+
+    struct EditColorContext {
+        std::shared_ptr<moth_ui::LayoutEntity> entity;
+        moth_ui::Color originalColor;
+    };
+    std::unique_ptr<EditColorContext> m_editColorContext;
 };
