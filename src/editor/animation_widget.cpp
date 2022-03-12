@@ -134,6 +134,7 @@ void AnimationWidget::SelectKeyframe(std::shared_ptr<LayoutEntity> entity, Anima
     if (!IsKeyframeSelected(entity, target, frameNo)) {
         if (auto keyframe = entity->GetAnimationTracks().at(target)->GetKeyframe(frameNo)) {
             m_selectedKeyframes.push_back({ entity, target, frameNo, keyframe });
+            m_keyframeWidget.SetOpen(true);
         }
     }
 }

@@ -16,12 +16,14 @@ KeyframeWidget::~KeyframeWidget() {
 }
 
 void KeyframeWidget::Draw() {
-    if (ImGui::Begin("Selected Keyframes")) {
-        for (auto&& context : m_selectedKeyframes) {
-            DrawKeyframe(context);
+    if (m_open) {
+        if (ImGui::Begin("Selected Keyframes", &m_open)) {
+            for (auto&& context : m_selectedKeyframes) {
+                DrawKeyframe(context);
+            }
         }
+        ImGui::End();
     }
-    ImGui::End();
 }
 
 void KeyframeWidget::DrawKeyframe(KeyframeContext& context) {
