@@ -69,18 +69,10 @@ void PropertiesEditor::DrawEntityProperties() {
         [&](moth_ui::Color const& value) { m_editorLayer.BeginEditColor(); selection->SetColor(value); },
         [&]() { m_editorLayer.EndEditColor(); });
 
-    std::string blendModeStr(magic_enum::enum_name(selection->GetBlendMode()));
-    if (ImGui::BeginCombo("Blend Mode", blendModeStr.c_str())) {
-        for (int i = 0; i < magic_enum::enum_count<moth_ui::BlendMode>(); ++i) {
-            auto const mode = magic_enum::enum_value<moth_ui::BlendMode>(i);
-            bool selected = mode == selection->GetBlendMode();
-            std::string str(magic_enum::enum_name(mode));
-            if (ImGui::Selectable(str.c_str(), selected)) {
-                selection->SetBlendMode(mode);
-                entity->SetBlendMode(mode);
-            }
-        }
-        ImGui::EndCombo();
+    auto blendMode = selection->GetBlendMode();
+    if (imgui_ext::Inspect("Blend Mode", blendMode)) {
+        selection->SetBlendMode(blendMode);
+        entity->SetBlendMode(blendMode);
     }
 }
 

@@ -5,6 +5,7 @@
 #include "moth_ui/utils/math_utils.h"
 #include "bounds_widget.h"
 #include "editor_layer.h"
+#include "moth_ui/utils/interp.h"
 
 AnchorBoundsHandle::AnchorBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor)
     : BoundsHandle(widget, anchor) {

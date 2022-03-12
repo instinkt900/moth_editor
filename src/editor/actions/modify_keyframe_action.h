@@ -6,7 +6,13 @@
 
 class ModifyKeyframeAction : public IEditorAction {
 public:
-    ModifyKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue oldValue, moth_ui::KeyframeValue newValue);
+    ModifyKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity,
+        moth_ui::AnimationTrack::Target target,
+        int frameNo,
+        moth_ui::KeyframeValue oldValue,
+        moth_ui::KeyframeValue newValue,
+        moth_ui::InterpType oldInterp,
+        moth_ui::InterpType newInterp);
     virtual ~ModifyKeyframeAction();
 
     void Do() override;
@@ -20,4 +26,6 @@ protected:
     int m_frameNo;
     moth_ui::KeyframeValue m_oldValue;
     moth_ui::KeyframeValue m_newValue;
+    moth_ui::InterpType m_oldInterp;
+    moth_ui::InterpType m_newInterp;
 };

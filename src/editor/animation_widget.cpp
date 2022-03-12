@@ -172,14 +172,14 @@ void AnimationWidget::EndMoveKeyframes() {
         if (context.frameNo != context.current->m_frame) {
             int const targetFrame = context.current->m_frame;
             context.current->m_frame = -1; // allow us to get any existing frame at the target
-            std::optional<KeyframeValue> replacedValue;
+            std::optional<Keyframe> replacedKeyframe;
             if (auto replacingKeyframe = track->GetKeyframe(targetFrame)) {
-                replacedValue = replacingKeyframe->m_value;
+                replacedKeyframe = *replacingKeyframe;
                 track->DeleteKeyframe(replacingKeyframe); // this will invalidate current
                 context.current = track->GetKeyframe(-1); // this bothers me
             }
             context.current->m_frame = targetFrame;
-            return std::make_unique<MoveKeyframeAction>(context.entity, context.target, context.frameNo, targetFrame, replacedValue);
+            return std::make_unique<MoveKeyframeAction>(context.entity, context.target, context.frameNo, targetFrame, replacedKeyframe);
         }
         return nullptr;
     };

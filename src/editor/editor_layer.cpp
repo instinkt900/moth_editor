@@ -466,7 +466,7 @@ void EditorLayer::EndEditBounds() {
             // keyframe exists
             auto const oldValue = keyframePtr->m_value;
             keyframePtr->m_value = value;
-            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value));
+            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->m_interpType, keyframePtr->m_interpType));
         } else {
             // no keyframe
             auto& keyframe = track->GetOrCreateKeyframe(frameNo);
@@ -535,7 +535,7 @@ void EditorLayer::EndEditColor() {
             // keyframe exists
             auto const oldValue = keyframePtr->m_value;
             keyframePtr->m_value = value;
-            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value));
+            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->m_interpType, keyframePtr->m_interpType));
         } else {
             // no keyframe
             auto& keyframe = track->GetOrCreateKeyframe(frameNo);

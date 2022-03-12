@@ -6,7 +6,7 @@
 
 class MoveKeyframeAction : public IEditorAction {
 public:
-    MoveKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int initialFrame, int finalFrame, std::optional<moth_ui::KeyframeValue> replacedValue);
+    MoveKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int initialFrame, int finalFrame, std::optional<moth_ui::Keyframe> replacedKeyframe);
     virtual ~MoveKeyframeAction();
 
     void Do() override;
@@ -19,5 +19,5 @@ protected:
     moth_ui::AnimationTrack::Target m_target;
     int m_initialFrame;
     int m_finalFrame;
-    std::optional<moth_ui::KeyframeValue> m_replacedValue;
+    std::optional<moth_ui::Keyframe> m_replacedKeyframe;
 };
