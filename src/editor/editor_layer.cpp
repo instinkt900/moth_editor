@@ -17,12 +17,14 @@
 #include "moth_ui/utils/imgui_ext.h"
 #include "layers/layer_stack.h"
 #include "moth_ui/events/event_quit.h"
+#include "preview_window.h"
 
 EditorLayer::EditorLayer()
     : m_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename)
     , m_boundsWidget(std::make_unique<BoundsWidget>(*this))
     , m_animationWidget(std::make_unique<AnimationWidget>(*this))
-    , m_propertiesEditor(std::make_unique<PropertiesEditor>(*this)) {
+    , m_propertiesEditor(std::make_unique<PropertiesEditor>(*this))
+    , m_previewWindow(std::make_unique<PreviewWindow>()) {
 }
 
 EditorLayer::~EditorLayer() {
@@ -55,10 +57,12 @@ bool EditorLayer::OnEvent(moth_ui::Event const& event) {
     dispatch.Dispatch(this, &EditorLayer::OnMouseUp);
     dispatch.Dispatch(this, &EditorLayer::OnMouseMove);
     dispatch.Dispatch(this, &EditorLayer::OnMouseWheel);
+    dispatch.Dispatch(m_previewWindow.get());
     return dispatch.GetHandled();
 }
 
 void EditorLayer::Update(uint32_t ticks) {
+    m_previewWindow->Update(ticks);
 }
 
 void EditorLayer::Draw(SDL_Renderer& renderer) {
@@ -71,6 +75,7 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
     DrawPropertiesPanel();
     DrawAnimationPanel();
     DrawElementsPanel();
+    DrawPreview();
     DrawUndoStack();
 
     m_fileDialog.Display();
@@ -117,6 +122,11 @@ void EditorLayer::DrawMainMenu() {
             ImGui::Checkbox("Animation", &m_visibleAnimationPanel);
             ImGui::Checkbox("Elements", &m_visibleElementsPanel);
             ImGui::Checkbox("Change Stack", &m_visibleUndoPanel);
+            if (ImGui::Checkbox("Preview", &m_visiblePreview)) {
+                if (m_visiblePreview) {
+                    m_previewWindow->Refresh(m_rootLayout);
+                }
+            }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -169,6 +179,15 @@ void EditorLayer::DrawAnimationPanel() {
     if (m_visibleAnimationPanel) {
         if (ImGui::Begin("Animation", &m_visibleAnimationPanel)) {
             m_animationWidget->Draw();
+        }
+        ImGui::End();
+    }
+}
+
+void EditorLayer::DrawPreview() {
+    if (m_visiblePreview) {
+        if (ImGui::Begin("Preview", &m_visiblePreview)) {
+            m_previewWindow->Draw();
         }
         ImGui::End();
     }

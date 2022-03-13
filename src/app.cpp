@@ -10,6 +10,8 @@
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_sdlrenderer.h>
 
+App* g_App = nullptr;
+
 App::App()
     : m_windowWidth(INIT_WINDOW_WIDTH)
     , m_windowHeight(INIT_WINDOW_HEIGHT) {
@@ -22,9 +24,12 @@ App::App()
         json.at("window_width").get_to(m_windowWidth);
         json.at("window_height").get_to(m_windowHeight);
     }
+
+    g_App = this;
 }
 
 App::~App() {
+    g_App = nullptr;
     std::ofstream ofile("window_config.json");
     if (ofile.is_open()) {
         nlohmann::json json;

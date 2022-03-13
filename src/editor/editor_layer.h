@@ -14,6 +14,7 @@ class AnimationWidget;
 class PropertiesEditor;
 class IEditorAction;
 class ChangeBoundsAction;
+class PreviewWindow;
 
 class EditorLayer : public Layer {
 public:
@@ -84,18 +85,21 @@ private:
     std::unique_ptr<BoundsWidget> m_boundsWidget;
     std::unique_ptr<AnimationWidget> m_animationWidget;
     std::unique_ptr<PropertiesEditor> m_propertiesEditor;
+    std::unique_ptr<PreviewWindow> m_previewWindow;
 
     bool m_visibleCanvasProperties = true;
     bool m_visiblePropertiesPanel = true;
     bool m_visibleAnimationPanel = true;
     bool m_visibleElementsPanel = true;
     bool m_visibleUndoPanel = false;
+    bool m_visiblePreview = false;
 
     void DrawMainMenu();
     void DrawCanvasProperties();
     void DrawPropertiesPanel();
     void DrawElementsPanel();
     void DrawAnimationPanel();
+    void DrawPreview();
     void DrawUndoStack();
     void DrawCanvas(SDL_Renderer& renderer);
 
