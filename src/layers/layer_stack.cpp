@@ -78,3 +78,9 @@ void LayerStack::SetRenderSize(moth_ui::IntVec2 const& dimensions) {
     m_renderWidth = dimensions.x;
     m_renderHeight = dimensions.y;
 }
+
+void LayerStack::BroadcastEvent(moth_ui::Event const& event) {
+    if (m_eventListener) {
+        m_eventListener->OnEvent(event);
+    }
+}

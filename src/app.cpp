@@ -1,12 +1,11 @@
 #include "common.h"
 #include "app.h"
-#include "moth_ui/events/event_window_size.h"
-#include "moth_ui/events/event_quit.h"
 #include "editor/editor_layer.h"
 #include "event_factory.h"
 #include "moth_ui/context.h"
 #include "image_factory.h"
 #include "ui_renderer.h"
+#include "moth_ui/event_dispatch.h"
 
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_sdlrenderer.h>
@@ -99,22 +98,18 @@ bool App::Initialise() {
     moth_ui::Context::Init(std::move(imageFactory), std::move(uiRenderer));
 
     m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
+    m_layerStack->SetEventListener(this);
     m_layerStack->PushLayer(std::make_unique<EditorLayer>());
 
     return true;
 }
 
-void App::OnEvent(moth_ui::Event const& event) {
-    if (auto windowEvent = moth_ui::event_cast<moth_ui::EventWindowSize>(event)) {
-        m_windowWidth = windowEvent->GetWidth();
-        m_windowHeight = windowEvent->GetHeight();
-        m_layerStack->SetWindowSize({ m_windowWidth, m_windowHeight });
-    } else if (auto quitEvent = moth_ui::event_cast<moth_ui::EventQuit>(event)) {
-        m_running = false;
-    } else if (auto keyEvent = moth_ui::event_cast<moth_ui::EventKey>(event)) {
-    }
-
-    m_layerStack->OnEvent(event);
+bool App::OnEvent(moth_ui::Event const& event) {
+    moth_ui::EventDispatch dispatch(event);
+    dispatch.Dispatch(this, &App::OnWindowSizeEvent);
+    dispatch.Dispatch(this, &App::OnQuitEvent);
+    dispatch.Dispatch(m_layerStack.get());
+    return dispatch.GetHandled();
 }
 
 void App::Update() {
@@ -152,4 +147,16 @@ void App::Shutdown() {
     SDL_DestroyWindow(m_window);
     IMG_Quit();
     SDL_Quit();
+}
+
+bool App::OnWindowSizeEvent(moth_ui::EventWindowSize const& event) {
+    m_windowWidth = event.GetWidth();
+    m_windowHeight = event.GetHeight();
+    m_layerStack->SetWindowSize({ m_windowWidth, m_windowHeight });
+    return true;
+}
+
+bool App::OnQuitEvent(moth_ui::EventQuit const& event) {
+    m_running = false;
+    return true;
 }

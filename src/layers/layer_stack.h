@@ -26,8 +26,12 @@ public:
     int GetWindowWidth() const { return m_windowWidth; }
     int GetWindowHeight() const { return m_windowHeight; }
 
+    void SetEventListener(moth_ui::EventListener* listener) { m_eventListener = listener; }
+    void BroadcastEvent(moth_ui::Event const& event);
+
 private:
     std::vector<std::unique_ptr<Layer>> m_layers;
+    moth_ui::EventListener* m_eventListener = nullptr;
 
     int m_renderWidth = 0;
     int m_renderHeight = 0;

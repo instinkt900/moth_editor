@@ -1,8 +1,10 @@
 #pragma once
 
 #include "layers/layer_stack.h"
+#include "moth_ui/events/event_window_size.h"
+#include "moth_ui/events/event_quit.h"
 
-class App {
+class App : public moth_ui::EventListener {
 public:
     App();
     virtual ~App();
@@ -10,11 +12,13 @@ public:
     int Run();
     void Stop() { m_running = false; }
 
+    bool OnEvent(moth_ui::Event const& event) override;
+
     auto GetRenderer() const { return m_renderer; }
 
 protected:
     bool Initialise();
-    void OnEvent(moth_ui::Event const& event);
+    
     void Update();
     void Draw();
     void Shutdown();
@@ -36,4 +40,7 @@ private:
     moth_ui::IntVec2 m_gameWindowPos;
 
     std::unique_ptr<LayerStack> m_layerStack;
+
+    bool OnWindowSizeEvent(moth_ui::EventWindowSize const& event);
+    bool OnQuitEvent(moth_ui::EventQuit const& event);
 };

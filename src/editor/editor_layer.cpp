@@ -15,6 +15,8 @@
 #include "bounds_widget.h"
 #include "properties_editor.h"
 #include "moth_ui/utils/imgui_ext.h"
+#include "layers/layer_stack.h"
+#include "moth_ui/events/event_quit.h"
 
 EditorLayer::EditorLayer()
     : m_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename)
@@ -104,6 +106,8 @@ void EditorLayer::DrawMainMenu() {
                 m_fileDialog.SetTypeFilters({ ".json" });
                 m_fileDialog.Open();
                 m_fileOpenMode = FileOpenMode::Save;
+            } else if (ImGui::MenuItem("Exit")) {
+                m_layerStack->BroadcastEvent(moth_ui::EventQuit{});
             }
             ImGui::EndMenu();
         }
