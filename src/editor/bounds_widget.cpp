@@ -56,8 +56,8 @@ void BoundsWidget::Draw(SDL_Renderer& renderer) {
         SDL_SetRenderDrawColor(&renderer, 0x00, 0x00, 0xFF, 0xFF);
         auto const& screenRect = selection->GetScreenRect();
         auto const scaleFactor = m_editorLayer.GetScaleFactor();
-        auto const pos = screenRect.topLeft / scaleFactor;
-        auto const size = (screenRect.bottomRight - screenRect.topLeft) / scaleFactor;
+        auto const pos = static_cast<moth_ui::FloatVec2>(screenRect.topLeft) / scaleFactor;
+        auto const size = static_cast<moth_ui::FloatVec2>(screenRect.bottomRight - screenRect.topLeft) / scaleFactor;
         SDL_Rect const rect{ static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(size.x), static_cast<int>(size.y) };
         SDL_RenderDrawRect(&renderer, &rect);
         for (auto& handle : m_handles) {

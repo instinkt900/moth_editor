@@ -4,10 +4,10 @@
 
 struct ColorComponents {
     explicit ColorComponents(moth_ui::Color const& color)
-        : r(static_cast<uint8_t>(255 * std::clamp(color.GetR(), 0.0f, 1.0f)))
-        , g(static_cast<uint8_t>(255 * std::clamp(color.GetG(), 0.0f, 1.0f)))
-        , b(static_cast<uint8_t>(255 * std::clamp(color.GetB(), 0.0f, 1.0f)))
-        , a(static_cast<uint8_t>(255 * std::clamp(color.GetA(), 0.0f, 1.0f))) {
+        : r(static_cast<uint8_t>(255 * std::clamp(color.r, 0.0f, 1.0f)))
+        , g(static_cast<uint8_t>(255 * std::clamp(color.g, 0.0f, 1.0f)))
+        , b(static_cast<uint8_t>(255 * std::clamp(color.b, 0.0f, 1.0f)))
+        , a(static_cast<uint8_t>(255 * std::clamp(color.a, 0.0f, 1.0f))) {
     }
 
     uint8_t r, g, b, a;

@@ -33,17 +33,17 @@ EditorLayer::~EditorLayer() {
 std::unique_ptr<moth_ui::Event> EditorLayer::AlterMouseEvents(moth_ui::Event const& inEvent) {
     float const scaleFactor = 100.0f / m_displayZoom;
     if (auto const mouseDownEvent = moth_ui::event_cast<moth_ui::EventMouseDown>(inEvent)) {
-        auto const position = mouseDownEvent->GetPosition() * scaleFactor;
-        return std::make_unique<moth_ui::EventMouseDown>(mouseDownEvent->GetButton(), position);
+        auto const position = static_cast<moth_ui::FloatVec2>(mouseDownEvent->GetPosition()) * scaleFactor;
+        return std::make_unique<moth_ui::EventMouseDown>(mouseDownEvent->GetButton(), static_cast<moth_ui::IntVec2>(position));
     }
     if (auto const mouseUpEvent = moth_ui::event_cast<moth_ui::EventMouseUp>(inEvent)) {
-        auto const position = mouseUpEvent->GetPosition() * scaleFactor;
-        return std::make_unique<moth_ui::EventMouseUp>(mouseUpEvent->GetButton(), position);
+        auto const position = static_cast<moth_ui::FloatVec2>(mouseUpEvent->GetPosition()) * scaleFactor;
+        return std::make_unique<moth_ui::EventMouseUp>(mouseUpEvent->GetButton(), static_cast<moth_ui::IntVec2>(position));
     }
     if (auto const mouseMoveEvent = moth_ui::event_cast<moth_ui::EventMouseMove>(inEvent)) {
-        auto const position = mouseMoveEvent->GetPosition() * scaleFactor;
-        auto const delta = mouseMoveEvent->GetDelta() * scaleFactor;
-        return std::make_unique<moth_ui::EventMouseMove>(position, delta);
+        auto const position = static_cast<moth_ui::FloatVec2>(mouseMoveEvent->GetPosition()) * scaleFactor;
+        auto const delta = static_cast<moth_ui::FloatVec2>(mouseMoveEvent->GetDelta()) * scaleFactor;
+        return std::make_unique<moth_ui::EventMouseMove>(static_cast<moth_ui::IntVec2>(position), delta);
     }
     return inEvent.Clone();
 }
@@ -569,22 +569,22 @@ void EditorLayer::EndEditColor() {
 
     auto const& newColor = m_selection->GetColor();
     // dont use the color operators because we clamp values
-    auto const colorDeltaR = newColor.GetR() - m_editColorContext->originalColor.GetR();
-    auto const colorDeltaG = newColor.GetG() - m_editColorContext->originalColor.GetG();
-    auto const colorDeltaB = newColor.GetB() - m_editColorContext->originalColor.GetB();
-    auto const colorDeltaA = newColor.GetA() - m_editColorContext->originalColor.GetA();
+    auto const colorDeltaR = newColor.r - m_editColorContext->originalColor.r;
+    auto const colorDeltaG = newColor.g - m_editColorContext->originalColor.g;
+    auto const colorDeltaB = newColor.b - m_editColorContext->originalColor.b;
+    auto const colorDeltaA = newColor.a - m_editColorContext->originalColor.a;
 
     if (colorDeltaR != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorRed, newColor.GetR());
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorRed, newColor.r);
     }
     if (colorDeltaG != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorGreen, newColor.GetG());
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorGreen, newColor.g);
     }
     if (colorDeltaB != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorBlue, newColor.GetB());
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorBlue, newColor.b);
     }
     if (colorDeltaA != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorAlpha, newColor.GetA());
+        SetTrackValue(moth_ui::AnimationTrack::Target::ColorAlpha, newColor.a);
     }
 
     if (!editAction->GetActions().empty()) {
