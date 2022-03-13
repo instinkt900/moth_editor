@@ -46,8 +46,8 @@ void KeyframeWidget::DrawKeyframe(KeyframeContext& context) {
             [&]() { EndEdit(context); });
         imgui_ext::FocusGroupInputInterpType(
             "Interp", editableKeyframe.m_interpType,
-            [&](moth_ui::InterpType newInterp) { BeginEdit(context); context.tempEditable.value().m_interpType = newInterp; },
-            [&]() { EndEdit(context); });
+            [&](moth_ui::InterpType newInterp) { BeginEdit(context); context.tempEditable.value().m_interpType = newInterp; EndEdit(context); },
+            [&]() { });
         imgui_ext::FocusGroupEnd();
         ImGui::Unindent();
     }
