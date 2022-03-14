@@ -40,6 +40,7 @@ set(SOURCES ${SOURCES}
 	src/editor/editor_layer.cpp
 	src/editor/keyframe_widget.cpp
 	src/editor/offset_bounds_handle.cpp
+	src/editor/preview_window.cpp
 	src/editor/properties_editor.cpp
 	src/event_factory.cpp
 	src/app.cpp
@@ -57,5 +58,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE src)
 target_link_libraries(${PROJECT_NAME} moth_ui ${CONAN_LIBS})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
-set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3")
+set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3 /WX")
 set_source_files_properties(src/SDL_FontCache.c PROPERTIES COMPILE_FLAGS "/W0")
