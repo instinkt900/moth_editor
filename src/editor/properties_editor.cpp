@@ -2,8 +2,10 @@
 #include "properties_editor.h"
 #include "editor_layer.h"
 #include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/utils/imgui_ext_inspect.h"
 #include "moth_ui/node_image.h"
+#include "moth_ui/node_text.h"
 #include "utils.h"
 
 namespace {
@@ -31,6 +33,9 @@ void PropertiesEditor::Draw() {
             break;
         case moth_ui::LayoutEntityType::Image:
             DrawImageProperties();
+            break;
+        case moth_ui::LayoutEntityType::Text:
+            DrawTextProperties();
             break;
         }
         imgui_ext::FocusGroupEnd();
@@ -115,4 +120,14 @@ void PropertiesEditor::DrawImageProperties() {
             s_loadingNodeImage = nullptr;
         }
     }
+}
+
+void PropertiesEditor::DrawTextProperties() {
+    auto const selection = m_editorLayer.GetSelection();
+    auto const textNode = std::static_pointer_cast<moth_ui::NodeText>(selection);
+    auto const textEntity = std::static_pointer_cast<moth_ui::LayoutEntityText>(selection->GetLayoutEntity());
+
+    imgui_ext::Inspect("Font Size", textEntity->m_fontSize);
+    imgui_ext::Inspect("Font Path", textEntity->m_fontPath);
+    imgui_ext::Inspect("Text", textEntity->m_text);
 }

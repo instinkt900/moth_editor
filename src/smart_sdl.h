@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SDL_FontCache.h"
+
 using SurfaceRef = std::shared_ptr<SDL_Surface>;
 
 inline SurfaceRef CreateSurfaceRef(SDL_Surface* surface) {
@@ -36,16 +38,16 @@ inline TextureRef CreateTextureRef(SDL_Renderer* renderer, SurfaceRef surface) {
 //    return MusicRef(Mix_LoadMUS(assetPath), Mix_FreeMusic);
 //}
 //
-//using FontRef = std::shared_ptr<TTF_Font>;
-//
-//inline FontRef CreateFontRef(char const* assetPath, int size) {
-//    return FontRef(TTF_OpenFont(assetPath, size), TTF_CloseFont);
-//}
-//
-//using CachedFontRef = std::shared_ptr<FC_Font>;
-//
-//inline CachedFontRef CreateCachedFontRef(SDL_Renderer* renderer, char const* assetPath, int size, SDL_Color const& color, int style) {
-//    auto font = FC_CreateFont();
-//    FC_LoadFont(font, renderer, assetPath, size, color, style);
-//    return CachedFontRef(font, FC_FreeFont);
-//}
+using FontRef = std::shared_ptr<TTF_Font>;
+
+inline FontRef CreateFontRef(char const* assetPath, int size) {
+    return FontRef(TTF_OpenFont(assetPath, size), TTF_CloseFont);
+}
+
+using CachedFontRef = std::shared_ptr<FC_Font>;
+
+inline CachedFontRef CreateCachedFontRef(SDL_Renderer* renderer, char const* assetPath, int size, SDL_Color const& color, int style) {
+    auto font = FC_CreateFont();
+    FC_LoadFont(font, renderer, assetPath, size, color, style);
+    return CachedFontRef(font, FC_FreeFont);
+}

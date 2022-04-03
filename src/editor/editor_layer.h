@@ -112,6 +112,7 @@ private:
     void SaveLayout(char const* path);
     void AddSubLayout(char const* path);
     void AddImage(char const* path);
+    void AddText();
     void Rebuild();
 
     bool OnKey(moth_ui::EventKey const& event);

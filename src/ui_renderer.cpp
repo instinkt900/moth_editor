@@ -1,6 +1,7 @@
 #include "common.h"
 #include "ui_renderer.h"
 #include "image.h"
+#include "font.h"
 
 struct ColorComponents {
     explicit ColorComponents(moth_ui::Color const& color)
@@ -85,4 +86,13 @@ void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sou
     SDL_SetTextureColorMod(texture.get(), components.r, components.g, components.b);
     SDL_SetTextureAlphaMod(texture.get(), components.a);
     SDL_RenderCopy(&m_renderer, texture.get(), &sdlsourceRect, &sdlDestRect);
+}
+
+void UIRenderer::RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextAlignment alignment, moth_ui::IntRect const& destRect) {
+    auto& f = static_cast<Font&>(font);
+    auto const r = ToSDL(destRect);
+    auto const align = ToSDL(alignment);
+    auto const fcFont = f.GetFontObj();
+    FC_SetDefaultColor(fcFont.get(), ToSDL(m_drawColor.top()));
+    FC_DrawBoxAlign(fcFont.get(), &m_renderer, r, align, "%s", text.c_str());
 }

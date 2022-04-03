@@ -15,6 +15,11 @@ inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity)
     case moth_ui::LayoutEntityType::Image:
         typeString = "Image";
         break;
+    case moth_ui::LayoutEntityType::Text:
+        typeString = "Text";
+        break;
+    default:
+        assert(false && "Unknown entity.");
     }
     static std::string stringBuffer;
     if (entity->GetId().empty()) {

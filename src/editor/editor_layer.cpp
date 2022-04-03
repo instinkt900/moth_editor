@@ -7,6 +7,7 @@
 #include "animation_widget.h"
 #include "moth_ui/animation_clip.h"
 #include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/layout/layout_entity_text.h"
 #include "editor/actions/add_action.h"
 #include "editor/actions/delete_action.h"
 #include "editor/actions/composite_action.h"
@@ -164,6 +165,8 @@ void EditorLayer::DrawElementsPanel() {
                 m_fileDialog.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
                 m_fileDialog.Open();
                 m_fileOpenMode = FileOpenMode::Image;
+            } else if (ImGui::Button("Text")) {
+                AddText();
             } else if (ImGui::Button("SubLayout")) {
                 m_fileDialog.SetTitle("Open..");
                 m_fileDialog.SetTypeFilters({ ".json" });
@@ -392,6 +395,22 @@ void EditorLayer::AddImage(char const* path) {
 
     auto instance = newImageLayout->Instantiate();
 
+    auto addAction = std::make_unique<AddAction>(std::move(instance), m_root);
+    addAction->Do();
+    AddEditAction(std::move(addAction));
+
+    m_root->RecalculateBounds();
+}
+
+void EditorLayer::AddText() {
+    moth_ui::LayoutRect bounds;
+    bounds.anchor.topLeft = { 0.5f, 0.5f };
+    bounds.anchor.bottomRight = { 0.5f, 0.5f };
+    bounds.offset.topLeft = { -50, -50 };
+    bounds.offset.bottomRight = { 50, 50 };
+
+    auto newTextLayout = std::make_shared<moth_ui::LayoutEntityText>(bounds);
+    auto instance = newTextLayout->Instantiate();
     auto addAction = std::make_unique<AddAction>(std::move(instance), m_root);
     addAction->Do();
     AddEditAction(std::move(addAction));
