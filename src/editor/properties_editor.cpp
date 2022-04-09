@@ -7,6 +7,7 @@
 #include "moth_ui/node_image.h"
 #include "moth_ui/node_text.h"
 #include "utils.h"
+#include "moth_ui/context.h"
 
 namespace {
     ImGui::FileBrowser s_fileBrowser;
@@ -126,8 +127,32 @@ void PropertiesEditor::DrawTextProperties() {
     auto const selection = m_editorLayer.GetSelection();
     auto const textNode = std::static_pointer_cast<moth_ui::NodeText>(selection);
     auto const textEntity = std::static_pointer_cast<moth_ui::LayoutEntityText>(selection->GetLayoutEntity());
+    bool changed = false;
 
+    auto const oldSize = textEntity->m_fontSize;
     imgui_ext::Inspect("Font Size", textEntity->m_fontSize);
-    imgui_ext::Inspect("Font Path", textEntity->m_fontPath);
+    if (oldSize != textEntity->m_fontSize) {
+        changed = true;
+    }
+
+    auto const fontNames = moth_ui::Context::GetCurrentContext().GetFontFactory().GetFontNameList();
+    if (ImGui::BeginCombo("Font", textEntity->m_fontName.c_str())) {
+        for (auto fontName : fontNames) {
+            bool selected = fontName == textEntity->m_fontName;
+            if (ImGui::Selectable(fontName.c_str(), selected)) {
+                textEntity->m_fontName = fontName;
+                changed = true;
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    changed |= imgui_ext::Inspect("Horiz Alignment", textEntity->m_horizontalAlignment);
+    changed |= imgui_ext::Inspect("Vert Alignment", textEntity->m_verticalAlignment);
+
     imgui_ext::Inspect("Text", textEntity->m_text);
+
+    if (changed) {
+        textNode->ReloadEntity();
+    }
 }

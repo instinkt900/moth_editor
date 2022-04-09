@@ -9,8 +9,10 @@ public:
     virtual ~FontFactory() = default;
 
     std::unique_ptr<moth_ui::IFont> GetDefaultFont(int size) override;
-    std::unique_ptr<moth_ui::IFont> GetFont(char const* path, int size) override;
+    std::vector<std::string> GetFontNameList() override;
+    std::unique_ptr<moth_ui::IFont> GetFont(char const* name, int size) override;
 
 private:
     SDL_Renderer& m_renderer;
+    std::map<std::string, std::string> m_fontPaths;
 };

@@ -20,14 +20,14 @@ inline SDL_Rect ToSDL(moth_ui::IntRect const& rect) {
     return { rect.topLeft.x, rect.topLeft.y, rect.bottomRight.x - rect.topLeft.x, rect.bottomRight.y - rect.topLeft.y };
 }
 
-inline FC_AlignEnum ToSDL(moth_ui::TextAlignment const& textAlign) {
+inline FC_AlignEnum ToSDL(moth_ui::TextHorizAlignment const& textAlign) {
     switch (textAlign) {
     default:
-    case moth_ui::TextAlignment::Left:
+    case moth_ui::TextHorizAlignment::Left:
         return FC_ALIGN_LEFT;
-    case moth_ui::TextAlignment::Center:
+    case moth_ui::TextHorizAlignment::Center:
         return FC_ALIGN_CENTER;
-    case moth_ui::TextAlignment::Right:
+    case moth_ui::TextHorizAlignment::Right:
         return FC_ALIGN_RIGHT;
     }
 }

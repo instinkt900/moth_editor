@@ -14,7 +14,7 @@ public:
     void DrawRect(moth_ui::IntRect const& rect, moth_ui::Color const& color, moth_ui::BlendMode blendMode) override;
     void DrawFilledRect(moth_ui::IntRect const& rect, moth_ui::Color const& color, moth_ui::BlendMode blendMode) override;
     void RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sourceRect, moth_ui::IntRect const& destRect) override;
-    void RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextAlignment alignment, moth_ui::IntRect const& destRect) override;
+    void RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextHorizAlignment horizontalAlignment, moth_ui::TextVertAlignment verticalAlignment, moth_ui::IntRect const& destRect) override;
 
 private:
     SDL_Renderer& m_renderer;

@@ -88,11 +88,42 @@ void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sou
     SDL_RenderCopy(&m_renderer, texture.get(), &sdlsourceRect, &sdlDestRect);
 }
 
-void UIRenderer::RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextAlignment alignment, moth_ui::IntRect const& destRect) {
-    auto& f = static_cast<Font&>(font);
-    auto const r = ToSDL(destRect);
-    auto const align = ToSDL(alignment);
-    auto const fcFont = f.GetFontObj();
-    FC_SetDefaultColor(fcFont.get(), ToSDL(m_drawColor.top()));
-    FC_DrawBoxAlign(fcFont.get(), &m_renderer, r, align, "%s", text.c_str());
+void UIRenderer::RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextHorizAlignment horizontalAlignment, moth_ui::TextVertAlignment verticalAlignment, moth_ui::IntRect const& destRect) {
+    auto const fcFont = static_cast<Font&>(font).GetFontObj();
+
+    auto const destWidth = destRect.bottomRight.x - destRect.topLeft.x;
+    auto const destHeight = destRect.bottomRight.y - destRect.topLeft.y;
+    auto const textHeight = FC_GetColumnHeight(fcFont.get(), destWidth, "%s", text.c_str());
+
+    auto x = static_cast<float>(destRect.topLeft.x);
+    switch (horizontalAlignment) {
+    case moth_ui::TextHorizAlignment::Left:
+        break;
+    case moth_ui::TextHorizAlignment::Center:
+        x = x + destWidth / 2;
+        break;
+    case moth_ui::TextHorizAlignment::Right:
+        x = x + destWidth;
+        break;
+    }
+
+    auto y = static_cast<float>(destRect.topLeft.y);
+    switch (verticalAlignment) {
+    case moth_ui::TextVertAlignment::Top:
+        break;
+    case moth_ui::TextVertAlignment::Middle:
+        y = y + (destHeight - textHeight) / 2;
+        break;
+    case moth_ui::TextVertAlignment::Bottom:
+        y = y + destHeight - textHeight;
+        break;
+    }
+
+    FC_Effect effect;
+    effect.alignment = ToSDL(horizontalAlignment);
+    effect.color = ToSDL(m_drawColor.top());
+    effect.scale.x = 1.0f;
+    effect.scale.y = 1.0f;
+
+    FC_DrawColumnEffect(fcFont.get(), &m_renderer, x, y, destWidth, effect, "%s", text.c_str());
 }
