@@ -13,6 +13,7 @@
 #include "editor/actions/composite_action.h"
 #include "editor/actions/modify_keyframe_action.h"
 #include "editor/actions/add_keyframe_action.h"
+#include "editor/actions/change_index_action.h"
 #include "bounds_widget.h"
 #include "properties_editor.h"
 #include "moth_ui/utils/imgui_ext.h"
@@ -422,6 +423,46 @@ void EditorLayer::Rebuild() {
     m_root = std::make_unique<moth_ui::Group>(m_rootLayout);
 }
 
+void EditorLayer::MoveSelectionUp() {
+    if (!m_selection || !m_selection->GetParent()) {
+        return;
+    }
+
+    auto parent = m_selection->GetParent();
+    auto& children = parent->GetChildren();
+    auto const it = ranges::find_if(children, [&](auto const& child) { return child == m_selection; });
+    auto const oldIndex = static_cast<int>(it - std::begin(children));
+
+    if (oldIndex == 0) {
+        return;
+    }
+
+    auto const newIndex = oldIndex - 1;
+    auto changeAction = std::make_unique<ChangeIndexAction>(m_selection, oldIndex, newIndex);
+    changeAction->Do();
+    AddEditAction(std::move(changeAction));
+}
+
+void EditorLayer::MoveSelectionDown() {
+    if (!m_selection || !m_selection->GetParent()) {
+        return;
+    }
+
+    auto parent = m_selection->GetParent();
+    auto& children = parent->GetChildren();
+    auto const it = ranges::find_if(children, [&](auto const& child) { return child == m_selection; });
+    auto const oldIndex = static_cast<int>(it - std::begin(children));
+
+    if (oldIndex == static_cast<int>(children.size() - 1)) {
+        return;
+    }
+
+    auto const newIndex = oldIndex + 1;
+    auto changeAction = std::make_unique<ChangeIndexAction>(m_selection, oldIndex, newIndex);
+    changeAction->Do();
+    AddEditAction(std::move(changeAction));
+}
+
 bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     if (event.GetAction() == moth_ui::KeyAction::Up) {
         switch (event.GetKey()) {
@@ -438,6 +479,12 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
             return true;
         case moth_ui::Key::Y:
             RedoEditAction();
+            return true;
+        case moth_ui::Key::Pageup:
+            MoveSelectionUp();
+            return true;
+        case moth_ui::Key::Pagedown:
+            MoveSelectionDown();
             return true;
         }
     }

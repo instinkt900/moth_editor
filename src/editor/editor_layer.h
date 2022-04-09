@@ -115,6 +115,9 @@ private:
     void AddText();
     void Rebuild();
 
+    void MoveSelectionUp();
+    void MoveSelectionDown();
+
     bool OnKey(moth_ui::EventKey const& event);
     bool OnMouseDown(moth_ui::EventMouseDown const& event);
     bool OnMouseUp(moth_ui::EventMouseUp const& event);
