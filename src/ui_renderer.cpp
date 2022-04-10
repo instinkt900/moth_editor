@@ -75,17 +75,35 @@ void UIRenderer::DrawFilledRect(moth_ui::IntRect const& rect, moth_ui::Color con
     SDL_RenderDrawRect(&m_renderer, &sdlRect);
 }
 
-void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sourceRect, moth_ui::IntRect const& destRect) {
+void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sourceRect, moth_ui::IntRect const& destRect, moth_ui::ImageScaleType scaleType, float scale) {
     auto const& internalImage = static_cast<Image&>(image);
     auto const texture = internalImage.GetTexture();
     auto const& textureSourceRect = internalImage.GetSourceRect();
     auto const sdlsourceRect{ ToSDL(MergeRects(textureSourceRect, sourceRect)) };
-    auto const sdlDestRect{ ToSDL(destRect) };
     ColorComponents const components{ m_drawColor.top() };
     SDL_SetTextureBlendMode(texture.get(), ToSDL(m_blendMode.top()));
     SDL_SetTextureColorMod(texture.get(), components.r, components.g, components.b);
     SDL_SetTextureAlphaMod(texture.get(), components.a);
-    SDL_RenderCopy(&m_renderer, texture.get(), &sdlsourceRect, &sdlDestRect);
+
+    if (scaleType == moth_ui::ImageScaleType::Stretch) {
+        auto const sdlDestRect{ ToSDL(destRect) };
+        SDL_RenderCopy(&m_renderer, texture.get(), &sdlsourceRect, &sdlDestRect);
+    } else if (scaleType == moth_ui::ImageScaleType::Tile) {
+        // sdl doesnt have a tiling texture ability. we need to manually tile
+        auto const destWidth = destRect.bottomRight.x - destRect.topLeft.x;
+        auto const destHeight = destRect.bottomRight.y - destRect.topLeft.y;
+        auto const imageWidth = static_cast<int>(image.GetWidth() * scale);
+        auto const imageHeight = static_cast<int>(image.GetHeight() * scale);
+        auto const sdlTotalDestRect{ ToSDL(destRect) };
+        SDL_RenderSetClipRect(&m_renderer, &sdlTotalDestRect);
+        for (auto y = destRect.topLeft.y; y < destRect.bottomRight.y; y += imageHeight) {
+            for (auto x = destRect.topLeft.x; x < destRect.bottomRight.x; x += imageWidth) {
+                SDL_Rect sdlDestRect{ x, y, imageWidth, imageHeight };
+                SDL_RenderCopy(&m_renderer, texture.get(), &sdlsourceRect, &sdlDestRect);
+            }
+        }
+        SDL_RenderSetClipRect(&m_renderer, nullptr);
+    }
 }
 
 void UIRenderer::RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextHorizAlignment horizontalAlignment, moth_ui::TextVertAlignment verticalAlignment, moth_ui::IntRect const& destRect) {

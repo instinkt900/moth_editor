@@ -101,6 +101,17 @@ void PropertiesEditor::DrawImageProperties() {
             /*m_editorLayer.EndEditBounds();*/
         });
 
+    auto const oldImageScaleType = imageEntity->m_imageScaleType;
+    imgui_ext::Inspect("Image Scale Type", imageEntity->m_imageScaleType);
+    if (imageEntity->m_imageScaleType != oldImageScaleType) {
+        selection->ReloadEntity();
+    }
+
+    auto const oldImageScale= imageEntity->m_imageScale;
+    imgui_ext::Inspect("Image Scale", imageEntity->m_imageScale);
+    if (imageEntity->m_imageScale!= oldImageScale) {
+        selection->ReloadEntity();
+    }
 
     imgui_ext::Inspect("Image", imageNode->GetImage());
 
