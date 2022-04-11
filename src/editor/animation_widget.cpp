@@ -636,7 +636,7 @@ bool AnimationWidget::DrawWidget() {
         if (arrowRect.Contains(io.MousePos) && io.MouseClicked[0]) {
             m_childExpanded[i] = !m_childExpanded[i];
         }
-        ImGui::RenderArrow(ImVec2(arrowMin.x, arrowMin.y + 2), expanded ? ImGuiDir_Down : ImGuiDir_Right);
+        ImGui::RenderArrow(ImGui::GetCurrentWindow()->DrawList, ImVec2(arrowMin.x, arrowMin.y + 2), ImGui::GetColorU32(ImGuiCol_Text), expanded ? ImGuiDir_Down : ImGuiDir_Right);
 
         ImVec2 textMin(arrowMax.x, labelMin.y);
         ImVec2 textMax(labelMax.x, labelMax.y);

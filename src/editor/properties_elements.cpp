@@ -125,7 +125,7 @@ bool PropertiesInput(char const* label, int current, std::function<void(int)> co
     auto const thisID = ImGui::GetID(label);
     auto const initialValue = current;
     editInt = current;
-    auto const changed = ImGui::InputInt(label, &editInt, 0);
+    auto const changed = ImGui::InputInt(label, &editInt);
     if (changed) {
         if (editingElementID != thisID) {
             BeginEditInt(thisID, initialValue, commitAction);
