@@ -12,6 +12,9 @@ inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity)
     case moth_ui::LayoutEntityType::Group:
         typeString = "Group";
         break;
+    case moth_ui::LayoutEntityType::Rect:
+        typeString = "Rect";
+        break;
     case moth_ui::LayoutEntityType::Image:
         typeString = "Image";
         break;
@@ -22,10 +25,10 @@ inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity)
         assert(false && "Unknown entity.");
     }
     static std::string stringBuffer;
-    if (entity->GetId().empty()) {
+    if (entity->m_id.empty()) {
         return typeString;
     } else {
-        stringBuffer = fmt::format("{} ({})", entity->GetId(), typeString);
+        stringBuffer = fmt::format("{} ({})", entity->m_id, typeString);
         return stringBuffer.c_str();
     }
 }

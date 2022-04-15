@@ -57,22 +57,20 @@ void UIRenderer::PopColor() {
     }
 }
 
-void UIRenderer::DrawRect(moth_ui::IntRect const& rect, moth_ui::Color const& color, moth_ui::BlendMode blendMode) {
+void UIRenderer::RenderRect(moth_ui::IntRect const& rect) {
     auto const sdlRect{ ToSDL(rect) };
-    auto const modColor = m_drawColor.top() * color;
-    ColorComponents components{ modColor };
-    SDL_SetRenderDrawBlendMode(&m_renderer, ToSDL(blendMode));
+    ColorComponents components{ m_drawColor.top() };
+    SDL_SetRenderDrawBlendMode(&m_renderer, ToSDL(m_blendMode.top()));
     SDL_SetRenderDrawColor(&m_renderer, components.r, components.g, components.b, components.a);
     SDL_RenderDrawRect(&m_renderer, &sdlRect);
 }
 
-void UIRenderer::DrawFilledRect(moth_ui::IntRect const& rect, moth_ui::Color const& color, moth_ui::BlendMode blendMode) {
+void UIRenderer::RenderFilledRect(moth_ui::IntRect const& rect) {
     auto const sdlRect{ ToSDL(rect) };
-    auto const modColor = m_drawColor.top() * color;
-    ColorComponents const components{ modColor };
-    SDL_SetRenderDrawBlendMode(&m_renderer, ToSDL(blendMode));
+    ColorComponents components{ m_drawColor.top() };
+    SDL_SetRenderDrawBlendMode(&m_renderer, ToSDL(m_blendMode.top()));
     SDL_SetRenderDrawColor(&m_renderer, components.r, components.g, components.b, components.a);
-    SDL_RenderDrawRect(&m_renderer, &sdlRect);
+    SDL_RenderFillRect(&m_renderer, &sdlRect);
 }
 
 void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sourceRect, moth_ui::IntRect const& destRect, moth_ui::ImageScaleType scaleType, float scale) {

@@ -15,7 +15,7 @@ MoveKeyframeAction::~MoveKeyframeAction() {
 }
 
 void MoveKeyframeAction::Do() {
-    auto& track = m_entity->GetAnimationTracks().at(m_target);
+    auto& track = m_entity->m_tracks.at(m_target);
     auto keyframe = track->GetOrCreateKeyframe(m_initialFrame);
     if (auto replacedKeyframe = track->GetKeyframe(m_finalFrame)) {
         m_replacedKeyframe = *replacedKeyframe;
@@ -28,7 +28,7 @@ void MoveKeyframeAction::Do() {
 }
 
 void MoveKeyframeAction::Undo() {
-    auto& track = m_entity->GetAnimationTracks().at(m_target);
+    auto& track = m_entity->m_tracks.at(m_target);
     auto& targetKeyframe = track->GetOrCreateKeyframe(m_initialFrame); // should add
     auto& movingKeyframe = track->GetOrCreateKeyframe(m_finalFrame);   // should exist
     targetKeyframe.m_value = movingKeyframe.m_value;

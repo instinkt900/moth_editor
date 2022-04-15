@@ -1,9 +1,11 @@
 #include "common.h"
 #include "properties_editor.h"
 #include "editor_layer.h"
+#include "moth_ui/layout/layout_entity_rect.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/utils/imgui_ext_inspect.h"
+#include "moth_ui/node_rect.h"
 #include "moth_ui/node_image.h"
 #include "moth_ui/node_text.h"
 #include "utils.h"
@@ -45,6 +47,9 @@ void PropertiesEditor::Draw() {
         case moth_ui::LayoutEntityType::Group:
             DrawGroupProperties();
             break;
+        case moth_ui::LayoutEntityType::Rect:
+            DrawRectProperties();
+            break;
         case moth_ui::LayoutEntityType::Image:
             DrawImageProperties();
             break;
@@ -64,7 +69,7 @@ void PropertiesEditor::DrawEntityProperties() {
     auto entity = selection->GetLayoutEntity();
 
     PropertiesInput(
-        "ID", entity->GetId().c_str(),
+        "ID", entity->m_id.c_str(),
         [&](char const* changedValue) {
             selection->SetId(changedValue);
         },
@@ -117,6 +122,19 @@ void PropertiesEditor::DrawEntityProperties() {
 }
 
 void PropertiesEditor::DrawGroupProperties() {
+}
+
+void PropertiesEditor::DrawRectProperties() {
+    auto const selection = m_editorLayer.GetSelection();
+    auto const rectNode = std::static_pointer_cast<moth_ui::NodeRect>(selection);
+    auto const rectEntity = std::static_pointer_cast<moth_ui::LayoutEntityRect>(selection->GetLayoutEntity());
+
+    PropertiesInput(
+        "Filled", rectEntity->m_filled,
+        [&](auto changedValue) {
+            rectEntity->m_filled = changedValue;
+            selection->ReloadEntity();
+        });
 }
 
 void PropertiesEditor::DrawImageProperties() {

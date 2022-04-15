@@ -1,6 +1,6 @@
 #include "common.h"
 #include "properties_elements.h"
-#include "moth_ui/layout/layout_types.h"
+#include "moth_ui/layout/layout_rect.h"
 
 namespace {
     ImGuiID editingElementID = {};

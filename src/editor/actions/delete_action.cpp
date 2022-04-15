@@ -22,7 +22,7 @@ void DeleteAction::Do() {
     if (std::end(parentLayoutEntity->m_children) != it) {
         parentLayoutEntity->m_children.erase(it);
     }
-    layoutEntity->SetParent(nullptr);
+    layoutEntity->m_parent = nullptr;
 }
 
 void DeleteAction::Undo() {
@@ -30,7 +30,7 @@ void DeleteAction::Undo() {
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_deletedNode->GetLayoutEntity();
     parentLayoutEntity->m_children.push_back(layoutEntity);
-    layoutEntity->SetParent(parentLayoutEntity.get());
+    layoutEntity->m_parent = parentLayoutEntity.get();
 
     // merge the actual node instances
     m_parentNode->AddChild(m_deletedNode);

@@ -13,13 +13,13 @@ AddKeyframeAction::~AddKeyframeAction() {
 }
 
 void AddKeyframeAction::Do() {
-    auto& track = m_entity->GetAnimationTracks().at(m_target);
+    auto& track = m_entity->m_tracks.at(m_target);
     auto& keyframe = track->GetOrCreateKeyframe(m_frameNo);
     keyframe.m_value = m_value;
 }
 
 void AddKeyframeAction::Undo() {
-    auto& track = m_entity->GetAnimationTracks().at(m_target);
+    auto& track = m_entity->m_tracks.at(m_target);
     track->DeleteKeyframe(m_frameNo);
 }
 

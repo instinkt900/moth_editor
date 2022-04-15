@@ -18,6 +18,7 @@ private:
 
     void DrawEntityProperties();
     void DrawGroupProperties();
+    void DrawRectProperties();
     void DrawImageProperties();
     void DrawTextProperties();
 };

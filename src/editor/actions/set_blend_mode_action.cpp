@@ -15,13 +15,13 @@ SetBlendModeAction::~SetBlendModeAction() {
 void SetBlendModeAction::Do() {
     auto layoutEntity = m_node->GetLayoutEntity();
     m_node->SetBlendMode(m_newBlendMode);
-    layoutEntity->SetBlendMode(m_newBlendMode);
+    layoutEntity->m_blend = m_newBlendMode;
 }
 
 void SetBlendModeAction::Undo() {
     auto layoutEntity = m_node->GetLayoutEntity();
     m_node->SetBlendMode(m_oldBlendMode);
-    layoutEntity->SetBlendMode(m_oldBlendMode);
+    layoutEntity->m_blend = m_oldBlendMode;
 }
 
 void SetBlendModeAction::OnImGui() {

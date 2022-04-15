@@ -22,14 +22,14 @@ ModifyKeyframeAction::~ModifyKeyframeAction() {
 }
 
 void ModifyKeyframeAction::Do() {
-    auto& track = m_entity->GetAnimationTracks().at(m_target);
+    auto& track = m_entity->m_tracks.at(m_target);
     auto keyframe = track->GetKeyframe(m_frameNo);
     keyframe->m_value = m_newValue;
     keyframe->m_interpType = m_newInterp;
 }
 
 void ModifyKeyframeAction::Undo() {
-    auto& track = m_entity->GetAnimationTracks().at(m_target);
+    auto& track = m_entity->m_tracks.at(m_target);
     auto keyframe = track->GetKeyframe(m_frameNo);
     keyframe->m_value = m_oldValue;
     keyframe->m_interpType = m_oldInterp;

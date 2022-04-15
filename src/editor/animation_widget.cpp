@@ -132,7 +132,7 @@ void AnimationWidget::OnRedo() {
 
 void AnimationWidget::SelectKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     if (!IsKeyframeSelected(entity, target, frameNo)) {
-        if (auto keyframe = entity->GetAnimationTracks().at(target)->GetKeyframe(frameNo)) {
+        if (auto keyframe = entity->m_tracks.at(target)->GetKeyframe(frameNo)) {
             m_selectedKeyframes.push_back({ entity, target, frameNo, keyframe });
             m_keyframeWidget.SetOpen(true);
         }
@@ -168,7 +168,7 @@ void AnimationWidget::ClearNonMatchingKeyframes(std::shared_ptr<LayoutEntity> en
 
 void AnimationWidget::EndMoveKeyframes() {
     auto CreateAction = [](KeyframeContext& context) -> std::unique_ptr<IEditorAction> {
-        auto& track = context.entity->GetAnimationTracks().at(context.target);
+        auto& track = context.entity->m_tracks.at(context.target);
         if (context.frameNo != context.current->m_frame) {
             int const targetFrame = context.current->m_frame;
             context.current->m_frame = -1; // allow us to get any existing frame at the target
@@ -189,8 +189,8 @@ void AnimationWidget::EndMoveKeyframes() {
         if (auto action = CreateAction(context)) {
             auto const newFrameNo = context.current->m_frame;
             actions.push_back(std::move(action));
-            context.entity->GetAnimationTracks().at(context.target)->SortKeyframes();
-            context.current = context.entity->GetAnimationTracks().at(context.target)->GetKeyframe(newFrameNo);
+            context.entity->m_tracks.at(context.target)->SortKeyframes();
+            context.current = context.entity->m_tracks.at(context.target)->GetKeyframe(newFrameNo);
             assert(context.current);
             context.frameNo = newFrameNo;
         }
@@ -218,7 +218,7 @@ void AnimationWidget::DeleteSelectedKeyframes() {
         if (context.frameNo == 0) { // dont delete frame 0
             continue;
         }
-        auto track = context.entity->GetAnimationTracks().at(context.target);
+        auto& track = context.entity->m_tracks.at(context.target);
         if (auto keyframe = track->GetKeyframe(context.frameNo)) {
             auto const oldValue = keyframe->m_value;
             track->DeleteKeyframe(context.frameNo);
@@ -276,7 +276,7 @@ bool AnimationWidget::DrawWidget() {
     int displayedTrackCount = childCount;
     for (int i = 0; i < childCount; ++i) {
         if (m_childExpanded[i]) {
-            displayedTrackCount += static_cast<int>(m_group->GetChildren()[i]->GetLayoutEntity()->GetAnimationTracks().size());
+            displayedTrackCount += static_cast<int>(m_group->GetChildren()[i]->GetLayoutEntity()->m_tracks.size());
         }
     }
     int rowCount = displayedTrackCount + 1;
@@ -414,7 +414,7 @@ bool AnimationWidget::DrawWidget() {
     draw_list->PushClipRect(childFramePos, childFramePos + childFrameSize);
 
     // clips
-    auto& animationClips = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->GetAnimationClips();
+    auto& animationClips = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->m_clips;
 
     static int clipFramePopup = -1;
     if (ImGui::BeginPopup("clip_popup")) {
@@ -556,12 +556,12 @@ bool AnimationWidget::DrawWidget() {
     if (ImGui::BeginPopup("keyframe_popup")) {
         auto child = m_group->GetChildren()[keyframePopupChildIdx];
         auto childEntity = child->GetLayoutEntity();
-        auto& childTracks = childEntity->GetAnimationTracks();
-        std::shared_ptr<AnimationTrack> track;
+        auto& childTracks = childEntity->m_tracks;
+        AnimationTrack* trackPtr = nullptr;
         moth_ui::Keyframe* existing = nullptr;
         if (keyframePopupTarget != AnimationTrack::Target::Unknown) {
-            track = childTracks.at(keyframePopupTarget);
-            existing = track->GetKeyframe(keyframePopupFrame);
+            trackPtr = childTracks.at(keyframePopupTarget).get();
+            existing = trackPtr->GetKeyframe(keyframePopupFrame);
         }
 
         if (!existing && ImGui::MenuItem("Add")) {
@@ -570,7 +570,7 @@ bool AnimationWidget::DrawWidget() {
                 std::unique_ptr<IEditorAction> action;
                 if (keyframePopupTarget != AnimationTrack::Target::Events) {
                     // non event keyframes continuous value
-                    auto const currentValue = track->GetValueAtFrame(keyframePopupFrame);
+                    auto const currentValue = trackPtr->GetValueAtFrame(keyframePopupFrame);
                     action = std::make_unique<AddKeyframeAction>(childEntity, keyframePopupTarget, keyframePopupFrame, currentValue);
                 } else {
                     // event actions are independant
@@ -582,10 +582,10 @@ bool AnimationWidget::DrawWidget() {
                 // clicked on the main track. create keyframes on all float tracks
                 std::unique_ptr<CompositeAction> compositeAction = std::make_unique<CompositeAction>();
                 for (auto&& target : AnimationTrack::ContinuousTargets) {
-                    track = childTracks.at(target);
-                    if (nullptr == track->GetKeyframe(keyframePopupFrame)) {
+                    trackPtr = childTracks.at(target).get();
+                    if (nullptr == trackPtr->GetKeyframe(keyframePopupFrame)) {
                         // only add a new frame if one doesnt exist
-                        auto const currentValue = track->GetValueAtFrame(keyframePopupFrame);
+                        auto const currentValue = trackPtr->GetValueAtFrame(keyframePopupFrame);
                         auto action = std::make_unique<AddKeyframeAction>(childEntity, target, keyframePopupFrame, currentValue);
                         action->Do();
                         compositeAction->GetActions().push_back(std::move(action));
@@ -616,7 +616,7 @@ bool AnimationWidget::DrawWidget() {
     for (int i = 0; i < childCount; ++i) {
         auto child = m_group->GetChildren()[i];
         auto childEntity = child->GetLayoutEntity();
-        auto& childTracks = childEntity->GetAnimationTracks();
+        auto& childTracks = childEntity->m_tracks;
         bool expanded = m_childExpanded[i];
         bool selected = m_editorLayer.IsSelected(child);
 

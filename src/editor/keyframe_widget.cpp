@@ -73,7 +73,7 @@ void KeyframeWidget::EndEdit(KeyframeContext& context) {
     // did the frame change?
     if (originalKeyframe.m_frame != newKeyframe.m_frame) {
         // check for an existing value
-        auto const track = context.entity->GetAnimationTracks().at(context.target);
+        auto const& track = context.entity->m_tracks.at(context.target);
         auto const existingFrame = track->GetKeyframe(newKeyframe.m_frame);
         std::optional<moth_ui::Keyframe> replacedKeyframe;
         if (existingFrame) {

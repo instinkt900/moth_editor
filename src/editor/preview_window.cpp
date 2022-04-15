@@ -69,7 +69,7 @@ void PreviewWindow::Refresh(std::shared_ptr<moth_ui::LayoutEntityGroup> layout) 
     layout->RefreshAnimationTimings();
 
     auto group = std::make_unique<moth_ui::Group>(layout);
-    auto const& clips = layout->GetAnimationClips();
+    auto const& clips = layout->m_clips;
     m_clipNames.clear();
     for (auto&& clip : clips) {
         m_clipNames.push_back(clip->m_name);

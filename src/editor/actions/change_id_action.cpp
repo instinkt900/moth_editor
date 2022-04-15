@@ -15,13 +15,13 @@ ChangeIdAction::~ChangeIdAction() {
 void ChangeIdAction::Do() {
     auto layoutEntity = m_node->GetLayoutEntity();
     m_node->SetId(m_newId);
-    layoutEntity->SetId(m_newId);
+    layoutEntity->m_id = m_newId;
 }
 
 void ChangeIdAction::Undo() {
     auto layoutEntity = m_node->GetLayoutEntity();
     m_node->SetId(m_oldId);
-    layoutEntity->SetId(m_oldId);
+    layoutEntity->m_id = m_oldId;
 }
 
 void ChangeIdAction::OnImGui() {

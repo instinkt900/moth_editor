@@ -6,6 +6,7 @@
 #include "moth_ui/event_dispatch.h"
 #include "animation_widget.h"
 #include "moth_ui/animation_clip.h"
+#include "moth_ui/layout/layout_entity_rect.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "editor/actions/add_action.h"
@@ -161,7 +162,9 @@ void EditorLayer::DrawPropertiesPanel() {
 void EditorLayer::DrawElementsPanel() {
     if (m_visibleElementsPanel) {
         if (ImGui::Begin("Elements", &m_visibleElementsPanel)) {
-            if (ImGui::Button("Image")) {
+            if (ImGui::Button("Rect")) {
+                AddRect();
+            } else if (ImGui::Button("Image")) {
                 m_fileDialog.SetTitle("Open..");
                 m_fileDialog.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
                 m_fileDialog.Open();
@@ -403,6 +406,22 @@ void EditorLayer::AddImage(char const* path) {
     m_root->RecalculateBounds();
 }
 
+void EditorLayer::AddRect() {
+    moth_ui::LayoutRect bounds;
+    bounds.anchor.topLeft = { 0.5f, 0.5f };
+    bounds.anchor.bottomRight = { 0.5f, 0.5f };
+    bounds.offset.topLeft = { -50, -50 };
+    bounds.offset.bottomRight = { 50, 50 };
+
+    auto newLayoutEntity = std::make_shared<moth_ui::LayoutEntityRect>(bounds);
+    auto instance = newLayoutEntity->Instantiate();
+    auto addAction = std::make_unique<AddAction>(std::move(instance), m_root);
+    addAction->Do();
+    AddEditAction(std::move(addAction));
+
+    m_root->RecalculateBounds();
+}
+
 void EditorLayer::AddText() {
     moth_ui::LayoutRect bounds;
     bounds.anchor.topLeft = { 0.5f, 0.5f };
@@ -545,12 +564,12 @@ void EditorLayer::EndEditBounds() {
         return;
     }
     auto entity = m_editBoundsContext->entity;
-    auto& tracks = entity->GetAnimationTracks();
+    auto& tracks = entity->m_tracks;
     int const frameNo = m_selectedFrame;
     std::unique_ptr<CompositeAction> editAction = std::make_unique<CompositeAction>();
 
     auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
-        auto track = tracks.at(target);
+        auto& track = tracks.at(target);
         if (auto keyframePtr = track->GetKeyframe(frameNo)) {
             // keyframe exists
             auto const oldValue = keyframePtr->m_value;
@@ -614,12 +633,12 @@ void EditorLayer::EndEditColor() {
         return;
     }
     auto entity = m_editColorContext->entity;
-    auto& tracks = entity->GetAnimationTracks();
+    auto& tracks = entity->m_tracks;
     int const frameNo = m_selectedFrame;
     std::unique_ptr<CompositeAction> editAction = std::make_unique<CompositeAction>();
 
     auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
-        auto track = tracks.at(target);
+        auto& track = tracks.at(target);
         if (auto keyframePtr = track->GetKeyframe(frameNo)) {
             // keyframe exists
             auto const oldValue = keyframePtr->m_value;
