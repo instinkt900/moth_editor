@@ -32,6 +32,7 @@ public:
 
     bool UseRenderSize() const override { return false; }
 
+    void PerformEditAction(std::unique_ptr<IEditorAction>&& editAction);
     void AddEditAction(std::unique_ptr<IEditorAction>&& editAction);
 
     void SetSelectedFrame(int frameNo);

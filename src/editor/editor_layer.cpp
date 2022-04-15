@@ -298,6 +298,11 @@ void EditorLayer::OnRemovedFromStack() {
     Layer::OnRemovedFromStack();
 }
 
+void EditorLayer::PerformEditAction(std::unique_ptr<IEditorAction>&& editAction) {
+    editAction->Do();
+    AddEditAction(std::move(editAction));
+}
+
 void EditorLayer::AddEditAction(std::unique_ptr<IEditorAction>&& editAction) {
     // discard anything past the current action
     while ((static_cast<int>(m_editActions.size()) - 1) > m_actionIndex) {

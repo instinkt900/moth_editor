@@ -11,18 +11,7 @@
 #include "utils.h"
 #include "moth_ui/context.h"
 #include "properties_elements.h"
-#include "actions/change_id_action.h"
-#include "actions/change_text_action.h"
-#include "actions/set_visible_action.h"
-#include "actions/show_bounds_action.h"
-#include "actions/set_blend_mode_action.h"
-#include "actions/set_image_scale_type_action.h"
-#include "actions/set_image_scale_action.h"
-#include "actions/change_image_path_action.h"
-#include "actions/change_font_size_action.h"
-#include "actions/change_font_action.h"
-#include "actions/change_h_alignment_action.h"
-#include "actions/change_v_alignment_action.h"
+#include "actions/editor_action.h"
 
 namespace {
     ImGui::FileBrowser s_fileBrowser;
@@ -64,31 +53,27 @@ void PropertiesEditor::Draw() {
 }
 
 void PropertiesEditor::DrawEntityProperties() {
-    int const frame = m_editorLayer.GetSelectedFrame();
-    auto selection = m_editorLayer.GetSelection();
-    auto entity = selection->GetLayoutEntity();
+    auto const selection = m_editorLayer.GetSelection();
+    auto const entity = selection->GetLayoutEntity();
 
     PropertiesInput(
         "ID", entity->m_id.c_str(),
-        [&](char const* changedValue) {
+        [&](auto changedValue) {
             selection->SetId(changedValue);
         },
-        [=](char const* oldValue, char const* newValue) {
-            auto changeIdAction = std::make_unique<ChangeIdAction>(selection, oldValue, newValue);
-            changeIdAction->Do();
-            m_editorLayer.AddEditAction(std::move(changeIdAction));
+        [=](std::string oldValue, std::string newValue) {
+            auto action = MakeChangeValueAction(entity->m_id, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 
     PropertiesInput("Visible", selection->IsVisible(), [&](bool value) {
-        auto setVisibleAction = std::make_unique<SetVisibleAction>(selection, value);
-        setVisibleAction->Do();
-        m_editorLayer.AddEditAction(std::move(setVisibleAction));
+        auto action = MakeVisibilityAction(selection, value);
+        m_editorLayer.PerformEditAction(std::move(action));
     });
 
     PropertiesInput("Show Bounds", selection->GetShowRect(), [&](bool value) {
-        auto showBoundsAction = std::make_unique<ShowBoundsAction>(selection, value);
-        showBoundsAction->Do();
-        m_editorLayer.AddEditAction(std::move(showBoundsAction));
+        auto action = MakeShowBoundsAction(selection, value);
+        m_editorLayer.PerformEditAction(std::move(action));
     });
 
     PropertiesInput(
@@ -115,9 +100,8 @@ void PropertiesEditor::DrawEntityProperties() {
     PropertiesInput(
         "Blend Mode", selection->GetBlendMode(),
         [&](auto oldValue, auto newValue) {
-            auto setBlendModeAction = std::make_unique<SetBlendModeAction>(selection, oldValue, newValue);
-            setBlendModeAction->Do();
-            m_editorLayer.AddEditAction(std::move(setBlendModeAction));
+            auto action = MakeChangeValueAction(entity->m_blend, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 }
 
@@ -131,9 +115,10 @@ void PropertiesEditor::DrawRectProperties() {
 
     PropertiesInput(
         "Filled", rectEntity->m_filled,
-        [&](auto changedValue) {
-            rectEntity->m_filled = changedValue;
-            selection->ReloadEntity();
+        [&](auto const newValue) {
+            auto const oldValue = rectEntity->m_filled;
+            auto action = MakeChangeValueAction(rectEntity->m_filled, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 }
 
@@ -141,21 +126,22 @@ void PropertiesEditor::DrawImageProperties() {
     auto const selection = m_editorLayer.GetSelection();
     auto const imageNode = std::static_pointer_cast<moth_ui::NodeImage>(selection);
     auto const imageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(selection->GetLayoutEntity());
+    
     // do we want to allow the animation of the source rect? would be nice
     PropertiesInput(
         "Source Rect", imageEntity->m_sourceRect,
-        [&](moth_ui::IntRect changedValue) {
-            imageEntity->m_sourceRect = changedValue;
-            selection->ReloadEntity();
+        [&](auto const newValue) {
+            auto const oldValue = imageEntity->m_sourceRect;
+            auto action = MakeChangeValueAction(imageEntity->m_sourceRect, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         },
         nullptr);
 
     PropertiesInput(
         "Image Scale Type", imageEntity->m_imageScaleType,
         [&](auto oldValue, auto newValue) {
-            auto setImageScaleTypeAction = std::make_unique<SetImageScaleTypeAction>(selection, oldValue, newValue);
-            setImageScaleTypeAction->Do();
-            m_editorLayer.AddEditAction(std::move(setImageScaleTypeAction));
+            auto action = MakeChangeValueAction(imageEntity->m_imageScaleType, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 
     PropertiesInput(
@@ -165,9 +151,8 @@ void PropertiesEditor::DrawImageProperties() {
             selection->ReloadEntity();
         },
         [=](float oldValue, float newValue) {
-            auto setImageScaleAction = std::make_unique<SetImageScaleAction>(selection, oldValue, newValue);
-            setImageScaleAction->Do();
-            m_editorLayer.AddEditAction(std::move(setImageScaleAction));
+            auto action = MakeChangeValueAction(imageEntity->m_imageScale, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 
     imgui_ext::Inspect("Image", imageNode->GetImage());
@@ -185,9 +170,8 @@ void PropertiesEditor::DrawImageProperties() {
             auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(s_loadingNodeImage->GetLayoutEntity());
             auto const oldPath = targetImageEntity->m_texturePath;
             auto const newPath = s_fileBrowser.GetSelected().string();
-            auto changeImagePathAction = std::make_unique<ChangeImagePathAction>(selection, oldPath, newPath);
-            changeImagePathAction->Do();
-            m_editorLayer.AddEditAction(std::move(changeImagePathAction));
+            auto action = MakeChangeValueAction(imageEntity->m_texturePath, oldPath, newPath, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
             s_fileBrowser.ClearSelected();
             s_loadingNodeImage = nullptr;
         }
@@ -206,39 +190,39 @@ void PropertiesEditor::DrawTextProperties() {
             textNode->ReloadEntity();
         },
         [=](int oldValue, int newValue) {
-            auto changeFontSizeAction = std::make_unique<ChangeFontSizeAction>(selection, oldValue, newValue);
-            changeFontSizeAction->Do();
-            m_editorLayer.AddEditAction(std::move(changeFontSizeAction));
+            auto action = MakeChangeValueAction(textEntity->m_fontSize, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 
     auto const fontNames = moth_ui::Context::GetCurrentContext().GetFontFactory().GetFontNameList();
-    PropertiesInput("Font", fontNames, textEntity->m_fontName,
-                    [&](auto oldValue, auto newValue) {
-                        auto changeFontAction = std::make_unique<ChangeFontAction>(selection, oldValue, newValue);
-                        changeFontAction->Do();
-                        m_editorLayer.AddEditAction(std::move(changeFontAction));
-                    });
+    PropertiesInput(
+        "Font", fontNames, textEntity->m_fontName,
+        [&](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(textEntity->m_fontName, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
 
-    PropertiesInput("H Alignment", textEntity->m_horizontalAlignment, [&](auto oldValue, auto newValue) {
-        auto changeHAlignmentAction = std::make_unique<ChangeHAlignmentAction>(selection, oldValue, newValue);
-        changeHAlignmentAction->Do();
-        m_editorLayer.AddEditAction(std::move(changeHAlignmentAction));
-    });
+    PropertiesInput(
+        "H Alignment", textEntity->m_horizontalAlignment,
+        [&](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(textEntity->m_horizontalAlignment, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
 
-    PropertiesInput("V Alignment", textEntity->m_verticalAlignment, [&](auto oldValue, auto newValue) {
-        auto changeVAlignmentAction = std::make_unique<ChangeVAlignmentAction>(selection, oldValue, newValue);
-        changeVAlignmentAction->Do();
-        m_editorLayer.AddEditAction(std::move(changeVAlignmentAction));
-    });
+    PropertiesInput(
+        "V Alignment", textEntity->m_verticalAlignment,
+        [&](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(textEntity->m_verticalAlignment, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
 
     PropertiesInput(
         "Text", textEntity->m_text.c_str(), 8,
         [&](char const* changedValue) {
             textNode->SetText(changedValue);
         },
-        [=](char const* oldValue, char const* newValue) {
-            auto changeTextAction = std::make_unique<ChangeTextAction>(textNode, oldValue, newValue);
-            changeTextAction->Do();
-            m_editorLayer.AddEditAction(std::move(changeTextAction));
+        [=](std::string oldValue, std::string newValue) {
+            auto action = MakeChangeValueAction(textEntity->m_text, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 }
