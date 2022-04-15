@@ -5,6 +5,7 @@
 #include "moth_ui/group.h"
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_key.h"
+#include "moth_ui/events/event_request_quit.h"
 
 #include "imgui.h"
 #include "imgui-filebrowser/imfilebrowser.h"
@@ -70,6 +71,7 @@ private:
     std::shared_ptr<moth_ui::Group> m_root;
     std::shared_ptr<moth_ui::Node> m_selection;
     int m_selectedFrame = 0;
+    std::string m_currentLayoutPath;
 
     int m_displayZoom = 100;
     static int constexpr s_maxZoom = 800;
@@ -82,6 +84,9 @@ private:
 
     std::vector<std::unique_ptr<IEditorAction>> m_editActions;
     int m_actionIndex = -1;
+    int m_lastSaveActionIndex = -1;
+
+    bool IsWorkPending() const { return m_lastSaveActionIndex != m_actionIndex; }
 
     std::unique_ptr<BoundsWidget> m_boundsWidget;
     std::unique_ptr<AnimationWidget> m_animationWidget;
@@ -95,6 +100,8 @@ private:
     bool m_visibleUndoPanel = false;
     bool m_visiblePreview = false;
 
+    bool m_showExitPrompt = false;
+
     void DrawMainMenu();
     void DrawCanvasProperties();
     void DrawPropertiesPanel();
@@ -103,6 +110,7 @@ private:
     void DrawPreview();
     void DrawUndoStack();
     void DrawCanvas(SDL_Renderer& renderer);
+    void DrawExitConfirm();
 
     void UndoEditAction();
     void RedoEditAction();
@@ -125,6 +133,7 @@ private:
     bool OnMouseUp(moth_ui::EventMouseUp const& event);
     bool OnMouseMove(moth_ui::EventMouseMove const& event);
     bool OnMouseWheel(moth_ui::EventMouseWheel const& event);
+    bool OnRequestQuitEvent(moth_ui::EventRequestQuit const& event);
 
     std::unique_ptr<moth_ui::Event> AlterMouseEvents(moth_ui::Event const& inEvent);
 

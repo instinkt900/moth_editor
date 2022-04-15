@@ -21,6 +21,10 @@
 #include "layers/layer_stack.h"
 #include "moth_ui/events/event_quit.h"
 #include "preview_window.h"
+#include "moth_ui/events/event_quit.h"
+#include "app.h"
+
+extern App* g_App;
 
 EditorLayer::EditorLayer()
     : m_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename)
@@ -60,12 +64,16 @@ bool EditorLayer::OnEvent(moth_ui::Event const& event) {
     dispatch.Dispatch(this, &EditorLayer::OnMouseUp);
     dispatch.Dispatch(this, &EditorLayer::OnMouseMove);
     dispatch.Dispatch(this, &EditorLayer::OnMouseWheel);
+    dispatch.Dispatch(this, &EditorLayer::OnRequestQuitEvent);
     dispatch.Dispatch(m_previewWindow.get());
     return dispatch.GetHandled();
 }
 
 void EditorLayer::Update(uint32_t ticks) {
     m_previewWindow->Update(ticks);
+
+    auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath, IsWorkPending() ? " *" : "");
+    g_App->SetWindowTitle(windowTitle);
 }
 
 void EditorLayer::Draw(SDL_Renderer& renderer) {
@@ -96,6 +104,24 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
             SaveLayout(m_fileDialog.GetSelected().string().c_str());
             m_fileDialog.ClearSelected();
         }
+    }
+
+    if (ImGui::BeginPopupModal("Exit?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextWrapped("You have unsaved work. Really quit?");
+        ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
+        if (ImGui::Button("OK", button_size)) {
+            m_layerStack->BroadcastEvent(moth_ui::EventQuit());
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", button_size)) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (m_showExitPrompt) {
+        m_showExitPrompt = false;
+        ImGui::OpenPopup("Exit?");
     }
 }
 
@@ -286,6 +312,9 @@ void EditorLayer::DrawCanvas(SDL_Renderer& renderer) {
     m_boundsWidget->Draw(renderer); // TODO we want this non scaled
 }
 
+void EditorLayer::DrawExitConfirm() {
+}
+
 void EditorLayer::DebugDraw() {
 }
 
@@ -358,6 +387,7 @@ void EditorLayer::NewLayout() {
 
 void EditorLayer::LoadLayout(char const* path) {
     m_rootLayout = moth_ui::LoadLayout(path);
+    m_currentLayoutPath = path;
     m_selectedFrame = 0;
     m_editActions.clear();
     m_selection = nullptr;
@@ -372,6 +402,9 @@ void EditorLayer::SaveLayout(char const* path) {
 
     nlohmann::json json = m_rootLayout->Serialize();
     ofile << json;
+
+    m_lastSaveActionIndex = m_actionIndex;
+    m_currentLayoutPath = path;
 }
 
 void EditorLayer::AddSubLayout(char const* path) {
@@ -543,6 +576,15 @@ bool EditorLayer::OnMouseWheel(moth_ui::EventMouseWheel const& event) {
     float const scaleFactor = 100.0f / m_displayZoom;
     m_displayZoom += static_cast<int>(event.GetDelta().y * 6 / scaleFactor);
     return false;
+}
+
+bool EditorLayer::OnRequestQuitEvent(moth_ui::EventRequestQuit const& event) {
+    if (IsWorkPending()) {
+        m_showExitPrompt = true;
+    } else {
+        m_layerStack->BroadcastEvent(moth_ui::EventQuit());
+    }
+    return true;
 }
 
 void EditorLayer::SetSelection(std::shared_ptr<moth_ui::Node> selection) {

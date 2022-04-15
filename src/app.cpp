@@ -119,6 +119,10 @@ bool App::OnEvent(moth_ui::Event const& event) {
     return dispatch.GetHandled();
 }
 
+void App::SetWindowTitle(std::string const& title) {
+    SDL_SetWindowTitle(m_window, title.c_str());
+}
+
 void App::Update() {
     uint32_t const nowTicks = SDL_GetTicks();
     uint32_t deltaTicks = nowTicks - m_lastUpdateTicks;

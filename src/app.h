@@ -16,6 +16,8 @@ public:
 
     auto GetRenderer() const { return m_renderer; }
 
+    void SetWindowTitle(std::string const& title);
+
 protected:
     bool Initialise();
     

@@ -2,7 +2,7 @@
 #include "event_factory.h"
 
 #include "moth_ui/events/event_window_size.h"
-#include "moth_ui/events/event_quit.h"
+#include "moth_ui/events/event_request_quit.h"
 #include "moth_ui/events/event_key.h"
 #include "moth_ui/events/event_device.h"
 #include "moth_ui/events/event_mouse.h"
@@ -22,7 +22,7 @@ std::unique_ptr<moth_ui::Event> EventFactory::FromSDL(SDL_Event const& event) {
         }
     }
     case SDL_QUIT: {
-        return std::make_unique<moth_ui::EventQuit>();
+        return std::make_unique<moth_ui::EventRequestQuit>();
     }
     case SDL_KEYUP: {
         return std::make_unique<moth_ui::EventKey>(moth_ui::KeyAction::Up, FromSDLKey(event.key.keysym.sym));
