@@ -6,6 +6,7 @@
 #include "moth_ui/event_dispatch.h"
 #include "animation_widget.h"
 #include "moth_ui/animation_clip.h"
+#include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_rect.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
@@ -377,7 +378,7 @@ void EditorLayer::ClearEditActions() {
 }
 
 void EditorLayer::NewLayout() {
-    m_rootLayout = std::make_shared<moth_ui::LayoutEntityGroup>(moth_ui::LayoutRect{});
+    m_rootLayout = std::make_shared<moth_ui::Layout>();
     m_selectedFrame = 0;
     m_editActions.clear();
     m_selection = nullptr;
@@ -385,7 +386,7 @@ void EditorLayer::NewLayout() {
 }
 
 void EditorLayer::LoadLayout(char const* path) {
-    m_rootLayout = moth_ui::LoadLayout(path);
+    m_rootLayout = moth_ui::Layout::Load(path);
     m_currentLayoutPath = path;
     m_selectedFrame = 0;
     m_editActions.clear();
@@ -407,7 +408,7 @@ void EditorLayer::SaveLayout(char const* path) {
 }
 
 void EditorLayer::AddSubLayout(char const* path) {
-    auto newSubLayout = moth_ui::LoadLayout(path);
+    auto newSubLayout = moth_ui::Layout::LoadSublayout(path);
     moth_ui::LayoutRect bounds;
     bounds.anchor.topLeft = { 0.5f, 0.5f };
     bounds.anchor.bottomRight = { 0.5f, 0.5f };

@@ -12,6 +12,9 @@ inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity)
     case moth_ui::LayoutEntityType::Group:
         typeString = "Group";
         break;
+    case moth_ui::LayoutEntityType::Ref:
+        typeString = "Ref";
+        break;
     case moth_ui::LayoutEntityType::Rect:
         typeString = "Rect";
         break;
