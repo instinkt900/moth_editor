@@ -160,14 +160,14 @@ void App::Shutdown() {
     SDL_Quit();
 }
 
-bool App::OnWindowSizeEvent(moth_ui::EventWindowSize const& event) {
+bool App::OnWindowSizeEvent(EventWindowSize const& event) {
     m_windowWidth = event.GetWidth();
     m_windowHeight = event.GetHeight();
     m_layerStack->SetWindowSize({ m_windowWidth, m_windowHeight });
     return true;
 }
 
-bool App::OnQuitEvent(moth_ui::EventQuit const& event) {
+bool App::OnQuitEvent(EventQuit const& event) {
     m_running = false;
     return true;
 }

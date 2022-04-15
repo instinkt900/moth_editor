@@ -19,9 +19,8 @@
 #include "properties_editor.h"
 #include "moth_ui/utils/imgui_ext.h"
 #include "layers/layer_stack.h"
-#include "moth_ui/events/event_quit.h"
 #include "preview_window.h"
-#include "moth_ui/events/event_quit.h"
+#include "events/event.h"
 #include "app.h"
 
 extern App* g_App;
@@ -110,7 +109,7 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
         ImGui::TextWrapped("You have unsaved work. Really quit?");
         ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
         if (ImGui::Button("OK", button_size)) {
-            m_layerStack->BroadcastEvent(moth_ui::EventQuit());
+            m_layerStack->BroadcastEvent(EventQuit());
         }
         ImGui::SameLine();
         if (ImGui::Button("Cancel", button_size)) {
@@ -141,7 +140,7 @@ void EditorLayer::DrawMainMenu() {
                 m_fileDialog.Open();
                 m_fileOpenMode = FileOpenMode::Save;
             } else if (ImGui::MenuItem("Exit")) {
-                m_layerStack->BroadcastEvent(moth_ui::EventQuit{});
+                m_layerStack->BroadcastEvent(EventQuit{});
             }
             ImGui::EndMenu();
         }
@@ -578,11 +577,11 @@ bool EditorLayer::OnMouseWheel(moth_ui::EventMouseWheel const& event) {
     return false;
 }
 
-bool EditorLayer::OnRequestQuitEvent(moth_ui::EventRequestQuit const& event) {
+bool EditorLayer::OnRequestQuitEvent(EventRequestQuit const& event) {
     if (IsWorkPending()) {
         m_showExitPrompt = true;
     } else {
-        m_layerStack->BroadcastEvent(moth_ui::EventQuit());
+        m_layerStack->BroadcastEvent(EventQuit());
     }
     return true;
 }

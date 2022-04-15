@@ -1,11 +1,9 @@
 #include "common.h"
 #include "event_factory.h"
 
-#include "moth_ui/events/event_window_size.h"
-#include "moth_ui/events/event_request_quit.h"
 #include "moth_ui/events/event_key.h"
-#include "moth_ui/events/event_device.h"
 #include "moth_ui/events/event_mouse.h"
+#include "events/event.h"
 
 moth_ui::MouseButton FromSDLMouse(uint8_t button);
 moth_ui::Key FromSDLKey(SDL_Keycode const& code);
@@ -15,14 +13,14 @@ std::unique_ptr<moth_ui::Event> EventFactory::FromSDL(SDL_Event const& event) {
     case SDL_WINDOWEVENT: {
         switch (event.window.event) {
         case SDL_WINDOWEVENT_SIZE_CHANGED: {
-            return std::make_unique<moth_ui::EventWindowSize>(event.window.data1, event.window.data2);
+            return std::make_unique<EventWindowSize>(event.window.data1, event.window.data2);
         default:
             return nullptr;
         }
         }
     }
     case SDL_QUIT: {
-        return std::make_unique<moth_ui::EventRequestQuit>();
+        return std::make_unique<EventRequestQuit>();
     }
     case SDL_KEYUP: {
         return std::make_unique<moth_ui::EventKey>(moth_ui::KeyAction::Up, FromSDLKey(event.key.keysym.sym));
@@ -31,10 +29,10 @@ std::unique_ptr<moth_ui::Event> EventFactory::FromSDL(SDL_Event const& event) {
         return std::make_unique<moth_ui::EventKey>(moth_ui::KeyAction::Down, FromSDLKey(event.key.keysym.sym));
     }
     case SDL_RENDER_DEVICE_RESET: {
-        return std::make_unique<moth_ui::EventRenderDeviceReset>();
+        return std::make_unique<EventRenderDeviceReset>();
     }
     case SDL_RENDER_TARGETS_RESET: {
-        return std::make_unique<moth_ui::EventRenderTargetReset>();
+        return std::make_unique<EventRenderTargetReset>();
     }
     case SDL_MOUSEBUTTONDOWN: {
         return std::make_unique<moth_ui::EventMouseDown>(FromSDLMouse(event.button.button), moth_ui::IntVec2{ event.button.x, event.button.y });

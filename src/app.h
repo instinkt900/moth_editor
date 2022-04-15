@@ -1,8 +1,7 @@
 #pragma once
 
 #include "layers/layer_stack.h"
-#include "moth_ui/events/event_window_size.h"
-#include "moth_ui/events/event_quit.h"
+#include "events/event.h"
 
 class App : public moth_ui::EventListener {
 public:
@@ -43,6 +42,6 @@ private:
 
     std::unique_ptr<LayerStack> m_layerStack;
 
-    bool OnWindowSizeEvent(moth_ui::EventWindowSize const& event);
-    bool OnQuitEvent(moth_ui::EventQuit const& event);
+    bool OnWindowSizeEvent(EventWindowSize const& event);
+    bool OnQuitEvent(EventQuit const& event);
 };

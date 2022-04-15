@@ -5,7 +5,7 @@
 #include "moth_ui/group.h"
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_key.h"
-#include "moth_ui/events/event_request_quit.h"
+#include "events/event.h"
 
 #include "imgui.h"
 #include "imgui-filebrowser/imfilebrowser.h"
@@ -133,7 +133,7 @@ private:
     bool OnMouseUp(moth_ui::EventMouseUp const& event);
     bool OnMouseMove(moth_ui::EventMouseMove const& event);
     bool OnMouseWheel(moth_ui::EventMouseWheel const& event);
-    bool OnRequestQuitEvent(moth_ui::EventRequestQuit const& event);
+    bool OnRequestQuitEvent(EventRequestQuit const& event);
 
     std::unique_ptr<moth_ui::Event> AlterMouseEvents(moth_ui::Event const& inEvent);
 
