@@ -411,7 +411,7 @@ void EditorLayer::SaveLayout(char const* path) {
 }
 
 void EditorLayer::AddSubLayout(char const* path) {
-    auto newSubLayout = moth_ui::Layout::LoadSublayout(path);
+    auto newSubLayout = std::make_shared<moth_ui::LayoutEntityRef>(path, *moth_ui::Layout::Load(path));
     moth_ui::LayoutRect bounds;
     bounds.anchor.topLeft = { 0.5f, 0.5f };
     bounds.anchor.bottomRight = { 0.5f, 0.5f };
