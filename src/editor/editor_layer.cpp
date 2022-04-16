@@ -10,6 +10,7 @@
 #include "moth_ui/layout/layout_entity_rect.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
+#include "moth_ui/layout/layout_entity_clip.h"
 #include "editor/actions/add_action.h"
 #include "editor/actions/delete_action.h"
 #include "editor/actions/composite_action.h"
@@ -190,6 +191,8 @@ void EditorLayer::DrawElementsPanel() {
         if (ImGui::Begin("Elements", &m_visibleElementsPanel)) {
             if (ImGui::Button("Rect")) {
                 AddRect();
+            } else if (ImGui::Button("Clip")) {
+                AddClip();
             } else if (ImGui::Button("Image")) {
                 m_fileDialog.SetTitle("Open..");
                 m_fileDialog.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
@@ -472,6 +475,21 @@ void EditorLayer::AddText() {
     auto addAction = std::make_unique<AddAction>(std::move(instance), m_root);
     addAction->Do();
     AddEditAction(std::move(addAction));
+
+    m_root->RecalculateBounds();
+}
+
+void EditorLayer::AddClip() {
+    moth_ui::LayoutRect bounds;
+    bounds.anchor.topLeft = { 0.5f, 0.5f };
+    bounds.anchor.bottomRight = { 0.5f, 0.5f };
+    bounds.offset.topLeft = { -50, -50 };
+    bounds.offset.bottomRight = { 50, 50 };
+
+    auto newLayout = std::make_shared<moth_ui::LayoutEntityClip>(bounds);
+    auto instance = newLayout->Instantiate();
+    auto addAction = std::make_unique<AddAction>(std::move(instance), m_root);
+    PerformEditAction(std::move(addAction));
 
     m_root->RecalculateBounds();
 }

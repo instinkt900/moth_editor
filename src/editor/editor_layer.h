@@ -76,7 +76,7 @@ private:
     int m_displayZoom = 100;
     static int constexpr s_maxZoom = 800;
     static int constexpr s_minZoom = 30;
-    moth_ui::IntVec2 m_displaySize{ 200, 200 };
+    moth_ui::IntVec2 m_displaySize{ 640, 480 };
     moth_ui::FloatVec2 m_canvasOffset{ 0, 0 };
     bool m_canvasGrabbed = false;
     int m_gridSpacing = 5;
@@ -123,6 +123,7 @@ private:
     void AddImage(char const* path);
     void AddRect();
     void AddText();
+    void AddClip();
     void Rebuild();
 
     void MoveSelectionUp();

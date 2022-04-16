@@ -57,6 +57,40 @@ void UIRenderer::PopColor() {
     }
 }
 
+moth_ui::IntRect ClipRect(moth_ui::IntRect const& parentRect, moth_ui::IntRect const& childRect) {
+    moth_ui::IntRect result;
+    result.topLeft.x = std::max(parentRect.topLeft.x, childRect.topLeft.x);
+    result.topLeft.y = std::max(parentRect.topLeft.y, childRect.topLeft.y);
+    result.bottomRight.x = std::min(parentRect.bottomRight.x, childRect.bottomRight.x);
+    result.bottomRight.y = std::min(parentRect.bottomRight.y, childRect.bottomRight.y);
+    return result;
+}
+
+void UIRenderer::PushClip(moth_ui::IntRect const& rect) {
+    if (m_clip.empty()) {
+        m_clip.push(rect);
+    } else {
+        // want to clip rect within the current clip
+        auto const parentRect = m_clip.top();
+        auto const newRect = ClipRect(parentRect, rect);
+        m_clip.push(newRect);
+    }
+
+    auto const currentRect = ToSDL(m_clip.top());
+    SDL_RenderSetClipRect(&m_renderer, &currentRect);
+}
+
+void UIRenderer::PopClip() {
+    m_clip.pop();
+
+    if (m_clip.empty()) {
+        SDL_RenderSetClipRect(&m_renderer, nullptr);
+    } else {
+        auto const currentRect = ToSDL(m_clip.top());
+        SDL_RenderSetClipRect(&m_renderer, &currentRect);
+    }
+}
+
 void UIRenderer::RenderRect(moth_ui::IntRect const& rect) {
     auto const sdlRect{ ToSDL(rect) };
     ColorComponents components{ m_drawColor.top() };
