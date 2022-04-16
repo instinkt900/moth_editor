@@ -677,7 +677,7 @@ bool AnimationWidget::DrawWidget() {
                 }
             }
 
-            for (auto&& keyframe : track->GetKeyframes()) {
+            for (auto&& keyframe : track->m_keyframes) {
                 ImVec2 keyP1(childTrackPos.x + keyframe.m_frame * framePixelWidth + 2, rowYPos + 2);
                 ImVec2 keyP2(childTrackPos.x + keyframe.m_frame * framePixelWidth + framePixelWidth - 1, rowYPos + ItemHeight - 2);
                 ImRect keyRect(keyP1, keyP2);
