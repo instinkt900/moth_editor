@@ -1,6 +1,6 @@
 #include "common.h"
-#include "properties_editor.h"
-#include "editor_layer.h"
+#include "editor_panel_properties.h"
+#include "../editor_layer.h"
 #include "moth_ui/layout/layout_entity_rect.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
@@ -8,24 +8,21 @@
 #include "moth_ui/node_rect.h"
 #include "moth_ui/node_image.h"
 #include "moth_ui/node_text.h"
-#include "utils.h"
+#include "../utils.h"
 #include "moth_ui/context.h"
-#include "properties_elements.h"
-#include "actions/editor_action.h"
+#include "../properties_elements.h"
+#include "../actions/editor_action.h"
 
 namespace {
     ImGui::FileBrowser s_fileBrowser;
     std::shared_ptr<moth_ui::NodeImage> s_loadingNodeImage = nullptr;
 }
 
-PropertiesEditor::PropertiesEditor(EditorLayer& editorLayer)
-    : m_editorLayer(editorLayer) {
+EditorPanelProperties::EditorPanelProperties(EditorLayer& editorLayer, bool visible)
+    : EditorPanel(editorLayer, "Properties", visible, true) {
 }
 
-PropertiesEditor::~PropertiesEditor() {
-}
-
-void PropertiesEditor::Draw() {
+void EditorPanelProperties::DrawContents() {
     if (auto selection = m_editorLayer.GetSelection()) {
         auto entity = selection->GetLayoutEntity();
         imgui_ext::FocusGroupBegin(&m_focusContext);
@@ -34,7 +31,6 @@ void PropertiesEditor::Draw() {
         case moth_ui::LayoutEntityType::Entity:
             break;
         case moth_ui::LayoutEntityType::Group:
-            DrawGroupProperties();
             break;
         case moth_ui::LayoutEntityType::Rect:
             DrawRectProperties();
@@ -52,7 +48,7 @@ void PropertiesEditor::Draw() {
     }
 }
 
-void PropertiesEditor::DrawEntityProperties() {
+void EditorPanelProperties::DrawEntityProperties() {
     auto const selection = m_editorLayer.GetSelection();
     auto const entity = selection->GetLayoutEntity();
 
@@ -105,10 +101,7 @@ void PropertiesEditor::DrawEntityProperties() {
         });
 }
 
-void PropertiesEditor::DrawGroupProperties() {
-}
-
-void PropertiesEditor::DrawRectProperties() {
+void EditorPanelProperties::DrawRectProperties() {
     auto const selection = m_editorLayer.GetSelection();
     auto const rectNode = std::static_pointer_cast<moth_ui::NodeRect>(selection);
     auto const rectEntity = std::static_pointer_cast<moth_ui::LayoutEntityRect>(selection->GetLayoutEntity());
@@ -122,11 +115,11 @@ void PropertiesEditor::DrawRectProperties() {
         });
 }
 
-void PropertiesEditor::DrawImageProperties() {
+void EditorPanelProperties::DrawImageProperties() {
     auto const selection = m_editorLayer.GetSelection();
     auto const imageNode = std::static_pointer_cast<moth_ui::NodeImage>(selection);
     auto const imageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(selection->GetLayoutEntity());
-    
+
     // do we want to allow the animation of the source rect? would be nice
     PropertiesInput(
         "Source Rect", imageEntity->m_sourceRect,
@@ -178,7 +171,7 @@ void PropertiesEditor::DrawImageProperties() {
     }
 }
 
-void PropertiesEditor::DrawTextProperties() {
+void EditorPanelProperties::DrawTextProperties() {
     auto const selection = m_editorLayer.GetSelection();
     auto const textNode = std::static_pointer_cast<moth_ui::NodeText>(selection);
     auto const textEntity = std::static_pointer_cast<moth_ui::LayoutEntityText>(selection->GetLayoutEntity());

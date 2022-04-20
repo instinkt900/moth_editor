@@ -1,26 +1,21 @@
 #pragma once
 
+#include "editor_panel.h"
 #include "moth_ui/animation_track.h"
-#include "keyframe_context.h"
-#include "keyframe_widget.h"
 #include "moth_ui/animation_clip.h"
 #include "moth_ui/utils/imgui_ext_focus.h"
-#include "moth_ui/ui_fwd.h"
+#include "../keyframe_context.h"
 
-class EditorLayer;
-class CompositeAction;
-
-class AnimationWidget {
+class EditorPanelAnimation : public EditorPanel {
 public:
-    AnimationWidget(EditorLayer& editorLayer);
+    EditorPanelAnimation(EditorLayer& editorLayer, bool visible);
+    virtual ~EditorPanelAnimation() = default;
 
-    void Draw();
-
-    void OnUndo();
-    void OnRedo();
+    std::vector<KeyframeContext>& GetSelectedKeyframes() { return m_selectedKeyframes; };
 
 private:
-    EditorLayer& m_editorLayer;
+    void DrawContents() override;
+
     moth_ui::Group* m_group = nullptr;
 
     bool DrawWidget();
@@ -37,7 +32,6 @@ private:
     void DrawSelectedClipWindow();
 
     std::vector<KeyframeContext> m_selectedKeyframes;
-    KeyframeWidget m_keyframeWidget;
     moth_ui::AnimationClip* m_selectedClip = nullptr;
 
     void SelectKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);

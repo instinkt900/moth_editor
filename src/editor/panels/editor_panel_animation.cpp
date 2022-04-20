@@ -1,17 +1,13 @@
 #include "common.h"
-#include "animation_widget.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/group.h"
-#include "moth_ui/animation_clip.h"
-#include "moth_ui/animation_track.h"
+#include "editor_panel_animation.h"
+#include "../editor_layer.h"
+#include "../utils.h"
+#include "../actions/composite_action.h"
+#include "../actions/modify_clip_action.h"
+#include "../actions/move_keyframe_action.h"
+#include "../actions/add_keyframe_action.h"
+#include "../actions/delete_keyframe_action.h"
 #include "imgui_internal.h"
-#include "editor_layer.h"
-#include "utils.h"
-#include "actions/composite_action.h"
-#include "actions/modify_clip_action.h"
-#include "actions/move_keyframe_action.h"
-#include "actions/add_keyframe_action.h"
-#include "actions/delete_keyframe_action.h"
 
 #undef min
 #undef max
@@ -41,25 +37,32 @@ static ImVec2 operator+(const ImVec2& a, const ImVec2& b) {
 }
 #endif
 
-AnimationWidget::AnimationWidget(EditorLayer& editorLayer)
-    : m_editorLayer(editorLayer)
-    , m_keyframeWidget(m_editorLayer, m_selectedKeyframes) {
+EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visible)
+    : EditorPanel(editorLayer, "Animation", visible, true) {
 }
 
-char const* AnimationWidget::GetChildLabel(int index) const {
+void EditorPanelAnimation::DrawContents() {
+    m_currentFrame = m_editorLayer.GetSelectedFrame();
+    DrawWidget();
+    m_editorLayer.SetSelectedFrame(m_currentFrame);
+
+    DrawSelectedClipWindow();
+}
+
+char const* EditorPanelAnimation::GetChildLabel(int index) const {
     auto child = m_group->GetChildren()[index];
     static std::string stringBuffer;
     stringBuffer = fmt::format("{}: {}", index, GetEntityLabel(child->GetLayoutEntity()));
     return stringBuffer.c_str();
 }
 
-char const* AnimationWidget::GetTrackLabel(AnimationTrack::Target target) const {
+char const* EditorPanelAnimation::GetTrackLabel(AnimationTrack::Target target) const {
     static std::string temp_string;
     temp_string = magic_enum::enum_name(target);
     return temp_string.c_str();
 }
 
-void AnimationWidget::DrawSelectedClipWindow() {
+void EditorPanelAnimation::DrawSelectedClipWindow() {
     if (m_selectedClip && m_clipWindowShown) {
         if (ImGui::Begin("Selected Clip", &m_clipWindowShown)) {
 
@@ -110,36 +113,15 @@ void AnimationWidget::DrawSelectedClipWindow() {
     }
 }
 
-void AnimationWidget::Draw() {
-    m_currentFrame = m_editorLayer.GetSelectedFrame();
-    DrawWidget();
-    m_editorLayer.SetSelectedFrame(m_currentFrame);
-
-    if (!m_selectedKeyframes.empty()) {
-        m_keyframeWidget.Draw();
-    }
-
-    DrawSelectedClipWindow();
-}
-
-void AnimationWidget::OnUndo() {
-    ClearSelectedKeyframes();
-}
-
-void AnimationWidget::OnRedo() {
-    ClearSelectedKeyframes();
-}
-
-void AnimationWidget::SelectKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+void EditorPanelAnimation::SelectKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     if (!IsKeyframeSelected(entity, target, frameNo)) {
         if (auto keyframe = entity->m_tracks.at(target)->GetKeyframe(frameNo)) {
             m_selectedKeyframes.push_back({ entity, target, frameNo, keyframe });
-            m_keyframeWidget.SetOpen(true);
         }
     }
 }
 
-void AnimationWidget::DeselectKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+void EditorPanelAnimation::DeselectKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     auto const it = std::find_if(std::begin(m_selectedKeyframes), std::end(m_selectedKeyframes), [&](auto context) {
         return context.entity == entity && context.target == target && context.frameNo == frameNo;
     });
@@ -148,25 +130,25 @@ void AnimationWidget::DeselectKeyframe(std::shared_ptr<LayoutEntity> entity, Ani
     }
 }
 
-bool AnimationWidget::IsKeyframeSelected(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+bool EditorPanelAnimation::IsKeyframeSelected(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     auto const it = std::find_if(std::begin(m_selectedKeyframes), std::end(m_selectedKeyframes), [&](auto context) {
         return context.entity == entity && context.target == target && context.frameNo == frameNo;
     });
     return std::end(m_selectedKeyframes) != it;
 }
 
-void AnimationWidget::ClearSelectedKeyframes() {
+void EditorPanelAnimation::ClearSelectedKeyframes() {
     m_selectedKeyframes.clear();
 }
 
-void AnimationWidget::ClearNonMatchingKeyframes(std::shared_ptr<LayoutEntity> entity, int frameNo) {
+void EditorPanelAnimation::ClearNonMatchingKeyframes(std::shared_ptr<LayoutEntity> entity, int frameNo) {
     m_selectedKeyframes.erase(std::remove_if(std::begin(m_selectedKeyframes), std::end(m_selectedKeyframes), [&](auto& context) {
                                   return context.entity != entity || context.frameNo != frameNo;
                               }),
                               std::end(m_selectedKeyframes));
 }
 
-void AnimationWidget::EndMoveKeyframes() {
+void EditorPanelAnimation::EndMoveKeyframes() {
     auto CreateAction = [](KeyframeContext& context) -> std::unique_ptr<IEditorAction> {
         auto& track = context.entity->m_tracks.at(context.target);
         if (context.frameNo != context.current->m_frame) {
@@ -208,7 +190,7 @@ void AnimationWidget::EndMoveKeyframes() {
     m_editorLayer.Refresh();
 }
 
-void AnimationWidget::DeleteSelectedKeyframes() {
+void EditorPanelAnimation::DeleteSelectedKeyframes() {
     if (m_selectedKeyframes.empty()) {
         return;
     }
@@ -240,14 +222,14 @@ void AnimationWidget::DeleteSelectedKeyframes() {
     m_editorLayer.Refresh();
 }
 
-void AnimationWidget::BeginEditClip(AnimationClip& clip) {
+void EditorPanelAnimation::BeginEditClip(AnimationClip& clip) {
     if (m_targetClip != &clip) {
         m_targetClip = &clip;
         m_preModifyClipValues = clip;
     }
 }
 
-void AnimationWidget::EndEditClip() {
+void EditorPanelAnimation::EndEditClip() {
     if (m_targetClip && m_preModifyClipValues != *m_targetClip) {
         auto action = std::make_unique<ModifyClipAction>(m_targetClip, m_preModifyClipValues);
         m_editorLayer.AddEditAction(std::move(action));
@@ -255,7 +237,7 @@ void AnimationWidget::EndEditClip() {
     m_targetClip = nullptr;
 }
 
-bool AnimationWidget::DrawWidget() {
+bool EditorPanelAnimation::DrawWidget() {
     m_group = m_editorLayer.GetRoot();
     m_childExpanded.resize(m_group->GetChildCount());
 

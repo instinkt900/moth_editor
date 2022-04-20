@@ -4,7 +4,6 @@
 #include "moth_ui/node.h"
 #include "moth_ui/node_image.h"
 #include "moth_ui/event_dispatch.h"
-#include "animation_widget.h"
 #include "moth_ui/animation_clip.h"
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_rect.h"
@@ -18,28 +17,57 @@
 #include "editor/actions/add_keyframe_action.h"
 #include "editor/actions/change_index_action.h"
 #include "bounds_widget.h"
-#include "properties_editor.h"
 #include "moth_ui/utils/imgui_ext.h"
 #include "layers/layer_stack.h"
-#include "preview_window.h"
 #include "events/event.h"
 #include "app.h"
+#include "imgui_internal.h"
+#include "panels/editor_panel_layout_list.h"
+#include "panels/editor_panel_image_list.h"
+#include "panels/editor_panel_canvas_properties.h"
+#include "panels/editor_panel_project_properties.h"
+#include "panels/editor_panel_properties.h"
+#include "panels/editor_panel_elements.h"
+#include "panels/editor_panel_animation.h"
+#include "panels/editor_panel_keyframes.h"
+#include "panels/editor_panel_undo_stack.h"
+#include "panels/editor_panel_preview.h"
 
 extern App* g_App;
 
-EditorLayer::EditorLayer()
-    : m_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename)
-    , m_boundsWidget(std::make_unique<BoundsWidget>(*this))
-    , m_animationWidget(std::make_unique<AnimationWidget>(*this))
-    , m_propertiesEditor(std::make_unique<PropertiesEditor>(*this))
-    , m_previewWindow(std::make_unique<PreviewWindow>()) {
+namespace {
+    enum class FileOpenMode {
+        Unknown,
+        OpenProject,
+        SaveProject,
+    };
+    static FileOpenMode s_fileOpenMode = FileOpenMode::Unknown;
+    static ImGui::FileBrowser s_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename);
 }
 
-EditorLayer::~EditorLayer() {
+EditorLayer::EditorLayer()
+    : m_boundsWidget(std::make_unique<BoundsWidget>(*this)) {
+    m_layoutProject.m_layoutRoot = ".";
+    m_layoutProject.m_imageRoot = ".";
+
+    AddEditorPanel<EditorPanelCanvasProperties>(*this, true);
+    AddEditorPanel<EditorPanelProjectProperties>(*this, false);
+    AddEditorPanel<EditorPanelLayoutList>(*this, true);
+    AddEditorPanel<EditorPanelImageList>(*this, true);
+    AddEditorPanel<EditorPanelProperties>(*this, true);
+    AddEditorPanel<EditorPanelElements>(*this, true);
+    auto const animationPanel = AddEditorPanel<EditorPanelAnimation>(*this, true);
+    AddEditorPanel<EditorPanelKeyframes>(*this, *animationPanel);
+    AddEditorPanel<EditorPanelUndoStack>(*this, false);
+    AddEditorPanel<EditorPanelPreview>(*this, false);
+
+    for (auto& [type, panel] : m_panels) {
+        panel->Refresh();
+    }
 }
 
 std::unique_ptr<moth_ui::Event> EditorLayer::AlterMouseEvents(moth_ui::Event const& inEvent) {
-    float const scaleFactor = 100.0f / m_displayZoom;
+    float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
     if (auto const mouseDownEvent = moth_ui::event_cast<moth_ui::EventMouseDown>(inEvent)) {
         auto const position = static_cast<moth_ui::FloatVec2>(mouseDownEvent->GetPosition()) * scaleFactor;
         return std::make_unique<moth_ui::EventMouseDown>(mouseDownEvent->GetButton(), static_cast<moth_ui::IntVec2>(position));
@@ -66,12 +94,16 @@ bool EditorLayer::OnEvent(moth_ui::Event const& event) {
     dispatch.Dispatch(this, &EditorLayer::OnMouseMove);
     dispatch.Dispatch(this, &EditorLayer::OnMouseWheel);
     dispatch.Dispatch(this, &EditorLayer::OnRequestQuitEvent);
-    dispatch.Dispatch(m_previewWindow.get());
+    for (auto& [type, panel] : m_panels) {
+        dispatch.Dispatch(panel.get());
+    }
     return dispatch.GetHandled();
 }
 
 void EditorLayer::Update(uint32_t ticks) {
-    m_previewWindow->Update(ticks);
+    for (auto& [type, panel] : m_panels) {
+        panel->Update(ticks);
+    }
 
     auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath, IsWorkPending() ? " *" : "");
     g_App->SetWindowTitle(windowTitle);
@@ -80,82 +112,65 @@ void EditorLayer::Update(uint32_t ticks) {
 void EditorLayer::Draw(SDL_Renderer& renderer) {
     ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
+    m_confirmPrompt.Draw();
+
     DrawCanvas(renderer);
-
     DrawMainMenu();
-    DrawCanvasProperties();
-    DrawPropertiesPanel();
-    DrawAnimationPanel();
-    DrawElementsPanel();
-    DrawPreview();
-    DrawUndoStack();
 
-    m_fileDialog.Display();
-    if (m_fileDialog.HasSelected()) {
-        if (m_fileOpenMode == FileOpenMode::Layout) {
-            LoadLayout(m_fileDialog.GetSelected().string().c_str());
-            m_fileDialog.ClearSelected();
-        } else if (m_fileOpenMode == FileOpenMode::SubLayout) {
-            AddSubLayout(m_fileDialog.GetSelected().string().c_str());
-            m_fileDialog.ClearSelected();
-        } else if (m_fileOpenMode == FileOpenMode::Image) {
-            AddImage(m_fileDialog.GetSelected().string().c_str());
-            m_fileDialog.ClearSelected();
-        } else if (m_fileOpenMode == FileOpenMode::Save) {
-            SaveLayout(m_fileDialog.GetSelected().string().c_str());
-            m_fileDialog.ClearSelected();
-        }
+    for (auto& [type, panel] : m_panels) {
+        panel->Draw();
     }
 
-    if (ImGui::BeginPopupModal("Exit?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped("You have unsaved work. Really quit?");
-        ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
-        if (ImGui::Button("OK", button_size)) {
-            m_layerStack->BroadcastEvent(EventQuit());
+    s_fileDialog.Display();
+    if (s_fileDialog.HasSelected()) {
+        if (s_fileOpenMode == FileOpenMode::OpenProject) {
+            LoadProject(s_fileDialog.GetSelected().string().c_str());
+            s_fileDialog.ClearSelected();
+        } else if (s_fileOpenMode == FileOpenMode::SaveProject) {
+            SaveProject(s_fileDialog.GetSelected().string().c_str());
+            s_fileDialog.ClearSelected();
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", button_size)) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-
-    if (m_showExitPrompt) {
-        m_showExitPrompt = false;
-        ImGui::OpenPopup("Exit?");
     }
 }
 
 void EditorLayer::DrawMainMenu() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New", "Ctrl+N")) {
+            if (ImGui::MenuItem("New Project", "Ctrl+N")) {
                 NewLayout();
-            } else if (ImGui::MenuItem("Open..", "Ctrl+O")) {
-                m_fileDialog.SetTitle("Open..");
-                m_fileDialog.SetTypeFilters({ ".json" });
-                m_fileDialog.Open();
-                m_fileOpenMode = FileOpenMode::Layout;
-            } else if (ImGui::MenuItem("Save..", "Ctrl+S")) {
-                m_fileDialog.SetTitle("Save..");
-                m_fileDialog.SetTypeFilters({ ".json" });
-                m_fileDialog.Open();
-                m_fileOpenMode = FileOpenMode::Save;
-            } else if (ImGui::MenuItem("Exit")) {
+            } 
+            if (ImGui::MenuItem("Open Project..")) {
+                s_fileDialog.SetTitle("Open Project..");
+                s_fileDialog.SetTypeFilters({ ".json" });
+                s_fileDialog.Open();
+                s_fileOpenMode = FileOpenMode::OpenProject;
+            }
+            if (ImGui::MenuItem("Save Project", nullptr, nullptr, !m_layoutProject.m_loadedPath.empty())) {
+                SaveProject(m_layoutProject.m_loadedPath.c_str());
+            }
+            if (ImGui::MenuItem("Save Project As..")) {
+                s_fileDialog.SetTitle("Save Project..");
+                s_fileDialog.SetTypeFilters({ ".json" });
+                s_fileDialog.Open();
+                s_fileOpenMode = FileOpenMode::SaveProject;
+            }
+            if (ImGui::MenuItem("Save Layout", nullptr, nullptr, !m_currentLayoutPath.empty())) {
+                SaveLayout(m_currentLayoutPath.c_str());
+            }
+            if (ImGui::MenuItem("Exit")) {
                 m_layerStack->BroadcastEvent(EventQuit{});
             }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
-            ImGui::Checkbox("Canvas Properties", &m_visibleCanvasProperties);
-            ImGui::Checkbox("Properties", &m_visiblePropertiesPanel);
-            ImGui::Checkbox("Animation", &m_visibleAnimationPanel);
-            ImGui::Checkbox("Elements", &m_visibleElementsPanel);
-            ImGui::Checkbox("Change Stack", &m_visibleUndoPanel);
-            if (ImGui::Checkbox("Preview", &m_visiblePreview)) {
-                if (m_visiblePreview) {
-                    m_previewWindow->Refresh(m_rootLayout);
+            std::map<std::string, bool*> sortedVisBools;
+            for (auto& [type, panel] : m_panels) {
+                if (panel->IsExposed()) {
+                    sortedVisBools.insert(std::make_pair(panel->GetTitle(), &panel->m_visible));
                 }
+            }
+            for (auto&& [title, visible] : sortedVisBools) {
+                ImGui::Checkbox(title.c_str(), visible);
             }
             ImGui::EndMenu();
         }
@@ -163,105 +178,18 @@ void EditorLayer::DrawMainMenu() {
     }
 }
 
-void EditorLayer::DrawCanvasProperties() {
-    if (m_visibleCanvasProperties) {
-        if (ImGui::Begin("Canvas Properties", &m_visibleCanvasProperties)) {
-            imgui_ext::InputIntVec2("Display Size", &m_displaySize);
-            ImGui::InputInt("Display Zoom", &m_displayZoom);
-            m_displayZoom = std::clamp(m_displayZoom, s_minZoom, s_maxZoom);
-            imgui_ext::InputFloatVec2("Display Offset", &m_canvasOffset);
-            ImGui::InputInt("Grid Spacing", &m_gridSpacing);
-            m_gridSpacing = std::clamp(m_gridSpacing, 0, m_displaySize.x / 2);
-        }
-        ImGui::End();
-    }
-}
-
-void EditorLayer::DrawPropertiesPanel() {
-    if (m_visiblePropertiesPanel) {
-        if (ImGui::Begin("Properties", &m_visiblePropertiesPanel)) {
-            m_propertiesEditor->Draw();
-        }
-        ImGui::End();
-    }
-}
-
-void EditorLayer::DrawElementsPanel() {
-    if (m_visibleElementsPanel) {
-        if (ImGui::Begin("Elements", &m_visibleElementsPanel)) {
-            if (ImGui::Button("Rect")) {
-                AddRect();
-            } else if (ImGui::Button("Clip")) {
-                AddClip();
-            } else if (ImGui::Button("Image")) {
-                m_fileDialog.SetTitle("Open..");
-                m_fileDialog.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
-                m_fileDialog.Open();
-                m_fileOpenMode = FileOpenMode::Image;
-            } else if (ImGui::Button("Text")) {
-                AddText();
-            } else if (ImGui::Button("SubLayout")) {
-                m_fileDialog.SetTitle("Open..");
-                m_fileDialog.SetTypeFilters({ ".json" });
-                m_fileDialog.Open();
-                m_fileOpenMode = FileOpenMode::SubLayout;
-            }
-        }
-        ImGui::End();
-    }
-}
-
-void EditorLayer::DrawAnimationPanel() {
-    if (m_visibleAnimationPanel) {
-        if (ImGui::Begin("Animation", &m_visibleAnimationPanel)) {
-            m_animationWidget->Draw();
-        }
-        ImGui::End();
-    }
-}
-
-void EditorLayer::DrawPreview() {
-    if (m_visiblePreview) {
-        if (ImGui::Begin("Preview", &m_visiblePreview)) {
-            m_previewWindow->Draw();
-        }
-        ImGui::End();
-    }
-}
-
-void EditorLayer::DrawUndoStack() {
-    if (m_visibleUndoPanel) {
-        if (ImGui::Begin("Undo Stack", &m_visibleUndoPanel)) {
-            int i = 0;
-            for (auto&& edit : m_editActions) {
-                ImGui::PushID(edit.get());
-                if (i == m_actionIndex) {
-                    ImGui::PushStyleColor(ImGuiCol_Header, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                }
-                edit->OnImGui();
-                if (i == m_actionIndex) {
-                    ImGui::PopStyleColor();
-                }
-                ImGui::PopID();
-                ++i;
-            }
-        }
-        ImGui::End();
-    }
-}
-
 void EditorLayer::DrawCanvas(SDL_Renderer& renderer) {
     SDL_SetRenderDrawColor(&renderer, 0xAA, 0xAA, 0xAA, 0xFF);
     SDL_RenderClear(&renderer);
 
-    float const scaleFactor = 100.0f / m_displayZoom;
+    float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
 
     // first draw the canvas and the grid lines before scaling so  they stay at fine resolution
 
     moth_ui::FloatVec2 const layerSize{ static_cast<float>(GetWidth()), static_cast<float>(GetHeight()) };
-    moth_ui::FloatVec2 const displaySize{ static_cast<float>(m_displaySize.x), static_cast<float>(m_displaySize.y) };
+    moth_ui::FloatVec2 const displaySize{ static_cast<float>(m_canvasProperties.m_size.x), static_cast<float>(m_canvasProperties.m_size.y) };
     auto const preScaleSize = displaySize / scaleFactor;
-    auto const preScaleOffset = m_canvasOffset + (layerSize - (displaySize / scaleFactor)) / 2.0f;
+    auto const preScaleOffset = m_canvasProperties.m_offset + (layerSize - (displaySize / scaleFactor)) / 2.0f;
 
     SDL_FRect canvasRect{ preScaleOffset.x,
                           preScaleOffset.y,
@@ -273,22 +201,22 @@ void EditorLayer::DrawCanvas(SDL_Renderer& renderer) {
     SDL_RenderFillRectF(&renderer, &canvasRect);
 
     // grid lines
-    if (m_gridSpacing > 0) {
-        int const vertGridCount = (m_displaySize.x - 1) / m_gridSpacing;
-        int const horizGridCount = (m_displaySize.y - 1) / m_gridSpacing;
+    if (m_canvasProperties.m_gridSpacing > 0) {
+        int const vertGridCount = (m_canvasProperties.m_size.x - 1) / m_canvasProperties.m_gridSpacing;
+        int const horizGridCount = (m_canvasProperties.m_size.y - 1) / m_canvasProperties.m_gridSpacing;
         int index = 0;
-        float gridX = m_gridSpacing / scaleFactor;
+        float gridX = m_canvasProperties.m_gridSpacing / scaleFactor;
         SDL_SetRenderDrawColor(&renderer, 0xDD, 0xDD, 0xDD, 0xFF);
         for (int i = 0; i < vertGridCount; ++i) {
             int const x = static_cast<int>(gridX);
             SDL_RenderDrawLineF(&renderer, canvasRect.x + x, canvasRect.y, canvasRect.x + x, canvasRect.y + canvasRect.h - 1);
-            gridX += m_gridSpacing / scaleFactor;
+            gridX += m_canvasProperties.m_gridSpacing / scaleFactor;
         }
-        float gridY = m_gridSpacing / scaleFactor;
+        float gridY = m_canvasProperties.m_gridSpacing / scaleFactor;
         for (int i = 0; i < horizGridCount; ++i) {
             int const y = static_cast<int>(gridY);
             SDL_RenderDrawLineF(&renderer, canvasRect.x, canvasRect.y + y, canvasRect.x + canvasRect.w - 1, canvasRect.y + y);
-            gridY += m_gridSpacing / scaleFactor;
+            gridY += m_canvasProperties.m_gridSpacing / scaleFactor;
         }
     }
 
@@ -297,10 +225,10 @@ void EditorLayer::DrawCanvas(SDL_Renderer& renderer) {
     SDL_RenderGetLogicalSize(&renderer, &oldRenderWidth, &oldRenderHeight);
     int const newRenderWidth = static_cast<int>(oldRenderWidth * scaleFactor);
     int const newRenderHeight = static_cast<int>(oldRenderHeight * scaleFactor);
-    int const newRenderOffsetX = static_cast<int>(m_canvasOffset.x * scaleFactor);
-    int const newRenderOffsetY = static_cast<int>(m_canvasOffset.y * scaleFactor);
+    int const newRenderOffsetX = static_cast<int>(m_canvasProperties.m_offset.x * scaleFactor);
+    int const newRenderOffsetY = static_cast<int>(m_canvasProperties.m_offset.y * scaleFactor);
     SDL_RenderSetLogicalSize(&renderer, newRenderWidth, newRenderHeight);
-    SDL_Rect guideRect{ newRenderOffsetX + (newRenderWidth - m_displaySize.x) / 2, newRenderOffsetY + (newRenderHeight - m_displaySize.y) / 2, m_displaySize.x, m_displaySize.y };
+    SDL_Rect guideRect{ newRenderOffsetX + (newRenderWidth - m_canvasProperties.m_size.x) / 2, newRenderOffsetY + (newRenderHeight - m_canvasProperties.m_size.y) / 2, m_canvasProperties.m_size.x, m_canvasProperties.m_size.y };
     m_canvasTopLeft = { guideRect.x, guideRect.y };
 
     if (m_root) {
@@ -313,9 +241,6 @@ void EditorLayer::DrawCanvas(SDL_Renderer& renderer) {
     SDL_RenderSetLogicalSize(&renderer, oldRenderWidth, oldRenderHeight);
 
     m_boundsWidget->Draw(renderer); // TODO we want this non scaled
-}
-
-void EditorLayer::DrawExitConfirm() {
 }
 
 void EditorLayer::DebugDraw() {
@@ -362,7 +287,6 @@ void EditorLayer::UndoEditAction() {
         m_editActions[m_actionIndex]->Undo();
         --m_actionIndex;
         Refresh();
-        m_animationWidget->OnUndo();
     }
 }
 
@@ -371,30 +295,105 @@ void EditorLayer::RedoEditAction() {
         ++m_actionIndex;
         m_editActions[m_actionIndex]->Do();
         Refresh();
-        m_animationWidget->OnRedo();
     }
 }
 
 void EditorLayer::ClearEditActions() {
     m_editActions.clear();
     m_actionIndex = -1;
+    m_actionIndex = -1;
+    m_lastSaveActionIndex = -1;
 }
 
-void EditorLayer::NewLayout() {
-    m_rootLayout = std::make_shared<moth_ui::Layout>();
-    m_selectedFrame = 0;
-    m_editActions.clear();
-    m_selection = nullptr;
-    Rebuild();
+void EditorLayer::NewLayout(bool discard) {
+    if (!discard && IsWorkPending()) {
+        m_confirmPrompt.SetTitle("Save?");
+        m_confirmPrompt.SetMessage("You have unsaved work? Save?");
+        m_confirmPrompt.SetPositiveText("Save");
+        m_confirmPrompt.SetNegativeText("Discard");
+        m_confirmPrompt.SetPositiveAction([this]() {
+            SaveLayout(m_currentLayoutPath.c_str());
+            NewLayout();
+        });
+        m_confirmPrompt.SetNegativeAction([this]() {
+            NewLayout(true);
+        });
+        m_confirmPrompt.Open();
+    } else {
+        m_rootLayout = std::make_shared<moth_ui::Layout>();
+        m_selectedFrame = 0;
+        m_selection = nullptr;
+        ClearEditActions();
+        Rebuild();
+    }
 }
 
-void EditorLayer::LoadLayout(char const* path) {
-    m_rootLayout = moth_ui::Layout::Load(path);
-    m_currentLayoutPath = path;
-    m_selectedFrame = 0;
-    m_editActions.clear();
-    m_selection = nullptr;
-    Rebuild();
+void EditorLayer::LoadProject(char const* path) {
+    std::ifstream ifile(path);
+    if (!ifile.is_open()) {
+        return;
+    }
+
+    nlohmann::json json;
+    ifile >> json;
+
+    m_layoutProject = json;
+
+    std::filesystem::path projectPath(path);
+    std::filesystem::path layoutPath = projectPath.parent_path() / m_layoutProject.m_layoutRoot;
+    std::filesystem::path imagePath = projectPath.parent_path() / m_layoutProject.m_imageRoot;
+
+    m_layoutProject.m_layoutRoot = layoutPath.string();
+    m_layoutProject.m_imageRoot = imagePath.string();
+    m_layoutProject.m_loadedPath = projectPath.string();
+
+    GetEditorPanel<EditorPanelLayoutList>()->Refresh();
+    GetEditorPanel<EditorPanelImageList>()->Refresh();
+
+    NewLayout();
+}
+
+void EditorLayer::SaveProject(char const* path) {
+    std::ofstream ofile(path);
+    if (!ofile.is_open()) {
+        return;
+    }
+
+    // only save out relative paths to the project file
+    std::filesystem::path projectPath(path);
+    std::filesystem::path layoutsPath(m_layoutProject.m_layoutRoot);
+    std::filesystem::path imagesPath(m_layoutProject.m_imageRoot);
+
+    LayoutProject projectCopy = m_layoutProject;
+    projectCopy.m_layoutRoot = std::filesystem::relative(projectCopy.m_layoutRoot, projectPath.parent_path()).string();
+    projectCopy.m_imageRoot = std::filesystem::relative(projectCopy.m_imageRoot, projectPath.parent_path()).string();
+    nlohmann::json json = projectCopy;
+    ofile << json;
+}
+
+void EditorLayer::LoadLayout(char const* path, bool discard) {
+    if (!discard && IsWorkPending()) {
+        std::string const pathStr = path;
+        m_confirmPrompt.SetTitle("Save?");
+        m_confirmPrompt.SetMessage("You have unsaved work? Save?");
+        m_confirmPrompt.SetPositiveText("Save");
+        m_confirmPrompt.SetNegativeText("Discard");
+        m_confirmPrompt.SetPositiveAction([this, pathStr]() {
+            SaveLayout(m_currentLayoutPath.c_str());
+            LoadLayout(pathStr.c_str());
+        });
+        m_confirmPrompt.SetNegativeAction([this, pathStr]() {
+            LoadLayout(pathStr.c_str(), true);
+        });
+        m_confirmPrompt.Open();
+    } else {
+        m_rootLayout = moth_ui::Layout::Load(path);
+        m_currentLayoutPath = path;
+        m_selectedFrame = 0;
+        m_selection = nullptr;
+        ClearEditActions();
+        Rebuild();
+    }
 }
 
 void EditorLayer::SaveLayout(char const* path) {
@@ -584,21 +583,30 @@ bool EditorLayer::OnMouseUp(moth_ui::EventMouseUp const& event) {
 bool EditorLayer::OnMouseMove(moth_ui::EventMouseMove const& event) {
     if (m_canvasGrabbed) {
         // undo the mouse scaling so if we're zoomed in moving isnt slow
-        float const scaleFactor = 100.0f / m_displayZoom;
-        m_canvasOffset += event.GetDelta() / scaleFactor;
+        float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
+        m_canvasProperties.m_offset += event.GetDelta() / scaleFactor;
     }
     return false;
 }
 
 bool EditorLayer::OnMouseWheel(moth_ui::EventMouseWheel const& event) {
-    float const scaleFactor = 100.0f / m_displayZoom;
-    m_displayZoom += static_cast<int>(event.GetDelta().y * 6 / scaleFactor);
+    float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
+    m_canvasProperties.m_zoom += static_cast<int>(event.GetDelta().y * 6 / scaleFactor);
     return false;
 }
 
 bool EditorLayer::OnRequestQuitEvent(EventRequestQuit const& event) {
     if (IsWorkPending()) {
-        m_showExitPrompt = true;
+        m_confirmPrompt.SetTitle("Exit?");
+        m_confirmPrompt.SetMessage("You have unsaved work? Exit?");
+        m_confirmPrompt.SetPositiveText("Exit");
+        m_confirmPrompt.SetNegativeText("Cancel");
+        m_confirmPrompt.SetPositiveAction([this]() {
+            m_layerStack->BroadcastEvent(EventQuit());
+        });
+        m_confirmPrompt.SetNegativeAction([]() {
+        });
+        m_confirmPrompt.Open();
     } else {
         m_layerStack->BroadcastEvent(EventQuit());
     }

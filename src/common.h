@@ -16,6 +16,7 @@
 #include <imgui.h>
 #include <magic_enum.hpp>
 
+#include <range/v3/algorithm/find.hpp>
 #include <range/v3/algorithm/find_if.hpp>
 
 #include <moth_ui/utils/rect.h>

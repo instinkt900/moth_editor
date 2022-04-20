@@ -7,20 +7,21 @@
 #include "moth_ui/events/event_key.h"
 #include "events/event.h"
 
+#include "layout_project.h"
+#include "panels/editor_panel.h"
+
+#include "confirm_prompt.h"
+
 #include "imgui.h"
 #include "imgui-filebrowser/imfilebrowser.h"
 
 class BoundsWidget;
-class AnimationWidget;
-class PropertiesEditor;
 class IEditorAction;
-class ChangeBoundsAction;
-class PreviewWindow;
 
 class EditorLayer : public Layer {
 public:
     EditorLayer();
-    virtual ~EditorLayer();
+    virtual ~EditorLayer() = default;
 
     bool OnEvent(moth_ui::Event const& event) override;
 
@@ -33,13 +34,16 @@ public:
 
     bool UseRenderSize() const override { return false; }
 
-    void PerformEditAction(std::unique_ptr<IEditorAction>&& editAction);
-    void AddEditAction(std::unique_ptr<IEditorAction>&& editAction);
+    struct CanvasProperties {
+        moth_ui::IntVec2 m_size{ 640, 480 };
+        moth_ui::FloatVec2 m_offset{ 0, 0 };
+        int m_zoom = 100;
+        int m_gridSpacing = 5;
+    };
 
     void SetSelectedFrame(int frameNo);
     int GetSelectedFrame() const { return m_selectedFrame; }
 
-    moth_ui::Group* GetRoot() const { return m_root.get(); }
     void SetSelection(std::shared_ptr<moth_ui::Node> selection);
     std::shared_ptr<moth_ui::Node> GetSelection() const { return m_selection; }
     bool IsSelected(std::shared_ptr<moth_ui::Node> node) const { return m_selection == node; }
@@ -52,78 +56,102 @@ public:
     void BeginEditColor();
     void EndEditColor();
 
-    auto GetScaleFactor() const { return 100.0f / m_displayZoom; }
-    bool SnapToGrid() const { return m_gridSpacing > 0; }
-    auto const& GetCanvasTopLeft() const { return m_canvasTopLeft; }
-    auto GetGridSpacing() const { return m_gridSpacing; }
+    void PerformEditAction(std::unique_ptr<IEditorAction>&& editAction);
+    void AddEditAction(std::unique_ptr<IEditorAction>&& editAction);
+    int GetEditActionPos() const { return m_actionIndex; }
 
-private:
-    enum class FileOpenMode {
-        Unknown,
-        Layout,
-        SubLayout,
-        Image,
-        Save,
-    };
-    ImGui::FileBrowser m_fileDialog;
-    FileOpenMode m_fileOpenMode = FileOpenMode::Unknown;
-    std::shared_ptr<moth_ui::LayoutEntityGroup> m_rootLayout;
-    std::shared_ptr<moth_ui::Group> m_root;
-    std::shared_ptr<moth_ui::Node> m_selection;
-    int m_selectedFrame = 0;
-    std::string m_currentLayoutPath;
+    LayoutProject& GetLayoutProject() { return m_layoutProject; }
+    CanvasProperties& GetCanvasProperties() { return m_canvasProperties; }
+    std::vector<std::unique_ptr<IEditorAction>> const& GetEditActions() const { return m_editActions; }
 
-    int m_displayZoom = 100;
-    static int constexpr s_maxZoom = 800;
-    static int constexpr s_minZoom = 30;
-    moth_ui::IntVec2 m_displaySize{ 640, 480 };
-    moth_ui::FloatVec2 m_canvasOffset{ 0, 0 };
-    bool m_canvasGrabbed = false;
-    int m_gridSpacing = 5;
-    moth_ui::IntVec2 m_canvasTopLeft;
+    float GetScaleFactor() const { return 100.0f / m_canvasProperties.m_zoom; }
+    bool SnapToGrid() const { return m_canvasProperties.m_gridSpacing > 0; }
+    moth_ui::IntVec2 const& GetCanvasTopLeft() const { return m_canvasTopLeft; }
+    int GetGridSpacing() const { return m_canvasProperties.m_gridSpacing; }
 
-    std::vector<std::unique_ptr<IEditorAction>> m_editActions;
-    int m_actionIndex = -1;
-    int m_lastSaveActionIndex = -1;
+    void NewLayout(bool discard = false);
+    void LoadLayout(char const* path, bool discard = false);
 
-    bool IsWorkPending() const { return m_lastSaveActionIndex != m_actionIndex; }
+    moth_ui::Group* GetRoot() const { return m_root.get(); }
+    std::shared_ptr<moth_ui::Layout> GetCurrentLayout() { return m_rootLayout; }
 
-    std::unique_ptr<BoundsWidget> m_boundsWidget;
-    std::unique_ptr<AnimationWidget> m_animationWidget;
-    std::unique_ptr<PropertiesEditor> m_propertiesEditor;
-    std::unique_ptr<PreviewWindow> m_previewWindow;
-
-    bool m_visibleCanvasProperties = true;
-    bool m_visiblePropertiesPanel = true;
-    bool m_visibleAnimationPanel = true;
-    bool m_visibleElementsPanel = true;
-    bool m_visibleUndoPanel = false;
-    bool m_visiblePreview = false;
-
-    bool m_showExitPrompt = false;
-
-    void DrawMainMenu();
-    void DrawCanvasProperties();
-    void DrawPropertiesPanel();
-    void DrawElementsPanel();
-    void DrawAnimationPanel();
-    void DrawPreview();
-    void DrawUndoStack();
-    void DrawCanvas(SDL_Renderer& renderer);
-    void DrawExitConfirm();
-
-    void UndoEditAction();
-    void RedoEditAction();
-    void ClearEditActions();
-
-    void NewLayout();
-    void LoadLayout(char const* path);
-    void SaveLayout(char const* path);
     void AddSubLayout(char const* path);
     void AddImage(char const* path);
     void AddRect();
     void AddText();
     void AddClip();
+
+    template <typename T, typename... Args>
+    T* AddEditorPanel(Args&& ...args) {
+        auto const id = typeid(T).hash_code();
+        auto newPanel = std::make_unique<T>(std::forward<Args>(args)...);
+        auto const newPanelPtr = newPanel.get();
+        m_panels[id] = std::move(newPanel);
+        return newPanelPtr;
+    }
+
+    template <typename T>
+    T* GetEditorPanel() {
+        auto const id = typeid(T).hash_code();
+        auto const it = m_panels.find(id);
+        if (std::end(m_panels) != it) {
+            return static_cast<T*>(it->second.get());
+        }
+        return nullptr;
+    }
+
+    template<typename T>
+    void SetEditorPanelVisible(bool visible) {
+        if (auto const panel = GetEditorPanel<T>()) {
+            panel->m_visible = visible;
+        }
+    }
+
+private:
+    CanvasProperties m_canvasProperties;
+    bool m_canvasGrabbed = false;
+    moth_ui::IntVec2 m_canvasTopLeft;
+
+    std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
+    std::unique_ptr<BoundsWidget> m_boundsWidget;
+
+    LayoutProject m_layoutProject;
+
+    std::string m_currentLayoutPath;
+    std::shared_ptr<moth_ui::Layout> m_rootLayout;
+    std::shared_ptr<moth_ui::Group> m_root;
+    std::shared_ptr<moth_ui::Node> m_selection;
+
+    int m_selectedFrame = 0;
+
+    struct EditBoundsContext {
+        std::shared_ptr<moth_ui::LayoutEntity> entity;
+        moth_ui::LayoutRect originalRect;
+    };
+
+    struct EditColorContext {
+        std::shared_ptr<moth_ui::LayoutEntity> entity;
+        moth_ui::Color originalColor;
+    };
+
+    std::unique_ptr<EditBoundsContext> m_editBoundsContext;
+    std::unique_ptr<EditColorContext> m_editColorContext;
+    std::vector<std::unique_ptr<IEditorAction>> m_editActions;
+    int m_actionIndex = -1;
+    int m_lastSaveActionIndex = -1;
+    bool IsWorkPending() const { return m_lastSaveActionIndex != m_actionIndex; }
+    ConfirmPrompt m_confirmPrompt;
+
+    void DrawMainMenu();
+    void DrawCanvas(SDL_Renderer& renderer);
+
+    void UndoEditAction();
+    void RedoEditAction();
+    void ClearEditActions();
+
+    void LoadProject(char const* path);
+    void SaveProject(char const* path);
+    void SaveLayout(char const* path);
     void Rebuild();
 
     void MoveSelectionUp();
@@ -137,16 +165,4 @@ private:
     bool OnRequestQuitEvent(EventRequestQuit const& event);
 
     std::unique_ptr<moth_ui::Event> AlterMouseEvents(moth_ui::Event const& inEvent);
-
-    struct EditBoundsContext {
-        std::shared_ptr<moth_ui::LayoutEntity> entity;
-        moth_ui::LayoutRect originalRect;
-    };
-    std::unique_ptr<EditBoundsContext> m_editBoundsContext;
-
-    struct EditColorContext {
-        std::shared_ptr<moth_ui::LayoutEntity> entity;
-        moth_ui::Color originalColor;
-    };
-    std::unique_ptr<EditColorContext> m_editColorContext;
 };

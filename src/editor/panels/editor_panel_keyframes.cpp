@@ -1,33 +1,32 @@
 #include "common.h"
-#include "keyframe_widget.h"
-#include "keyframe_context.h"
-#include "moth_ui/layout/layout_entity.h"
-#include "utils.h"
-#include "editor_layer.h"
-#include "actions/move_keyframe_action.h"
-#include "actions/modify_keyframe_action.h"
-#include "moth_ui/utils/imgui_ext.h"
+#include "editor_panel_keyframes.h"
+#include "../keyframe_context.h"
+#include "../utils.h"
+#include "../actions/move_keyframe_action.h"
+#include "../actions/modify_keyframe_action.h"
+#include "../editor_layer.h"
+#include "editor_panel_animation.h"
 
-KeyframeWidget::KeyframeWidget(EditorLayer& editorLayer, std::vector<KeyframeContext>& selectedKeyframes)
-    : m_editorLayer(editorLayer)
-    , m_selectedKeyframes(selectedKeyframes) {
+EditorPanelKeyframes::EditorPanelKeyframes(EditorLayer& editorLayer, EditorPanelAnimation& animationPanel)
+    : EditorPanel(editorLayer, "Keyframe", false, false)
+    , m_selectedKeyframes(animationPanel.GetSelectedKeyframes()) {
 }
 
-KeyframeWidget::~KeyframeWidget() {
+void EditorPanelKeyframes::Update(uint32_t ticks) {
+    m_visible = !m_selectedKeyframes.empty();
 }
 
-void KeyframeWidget::Draw() {
-    if (m_open) {
-        if (ImGui::Begin("Selected Keyframes", &m_open)) {
-            for (auto&& context : m_selectedKeyframes) {
-                DrawKeyframe(context);
-            }
-        }
-        ImGui::End();
+void EditorPanelKeyframes::DrawContents() {
+    for (auto&& context : m_selectedKeyframes) {
+        DrawKeyframeValues(context);
     }
 }
 
-void KeyframeWidget::DrawKeyframe(KeyframeContext& context) {
+void EditorPanelKeyframes::OnClose() {
+    m_selectedKeyframes.clear();
+}
+
+void EditorPanelKeyframes::DrawKeyframeValues(KeyframeContext& context) {
     ImGui::PushID(&context);
     ImGui::SetNextItemOpen(true);
     std::string const title = fmt::format("{} {} {}", GetEntityLabel(context.entity), magic_enum::enum_name(context.target), context.frameNo);
@@ -47,14 +46,14 @@ void KeyframeWidget::DrawKeyframe(KeyframeContext& context) {
         imgui_ext::FocusGroupInputInterpType(
             "Interp", editableKeyframe.m_interpType,
             [&](moth_ui::InterpType newInterp) { BeginEdit(context); context.tempEditable.value().m_interpType = newInterp; EndEdit(context); },
-            [&]() { });
+            [&]() {});
         imgui_ext::FocusGroupEnd();
         ImGui::Unindent();
     }
     ImGui::PopID();
 }
 
-void KeyframeWidget::BeginEdit(KeyframeContext& context) {
+void EditorPanelKeyframes::BeginEdit(KeyframeContext& context) {
     if (m_originalKeyframe.has_value()) {
         return;
     }
@@ -62,7 +61,7 @@ void KeyframeWidget::BeginEdit(KeyframeContext& context) {
     context.tempEditable = *context.current;
 }
 
-void KeyframeWidget::EndEdit(KeyframeContext& context) {
+void EditorPanelKeyframes::EndEdit(KeyframeContext& context) {
     if (!m_originalKeyframe.has_value()) {
         return;
     }
@@ -88,8 +87,7 @@ void KeyframeWidget::EndEdit(KeyframeContext& context) {
     }
 
     // did the value or interp change?
-    if (originalKeyframe.m_value != newKeyframe.m_value
-        || originalKeyframe.m_interpType != newKeyframe.m_interpType) {
+    if (originalKeyframe.m_value != newKeyframe.m_value || originalKeyframe.m_interpType != newKeyframe.m_interpType) {
         context.current->m_value = newKeyframe.m_value;
         context.current->m_interpType = newKeyframe.m_interpType;
         auto modifyAction = std::make_unique<ModifyKeyframeAction>(context.entity, context.target, originalKeyframe.m_frame, originalKeyframe.m_value, newKeyframe.m_value, originalKeyframe.m_interpType, newKeyframe.m_interpType);
@@ -99,4 +97,3 @@ void KeyframeWidget::EndEdit(KeyframeContext& context) {
     context.tempEditable.reset();
     m_originalKeyframe.reset();
 }
-

@@ -1,28 +1,47 @@
 #include "common.h"
-#include "preview_window.h"
-#include "app.h"
-#include "moth_ui/node.h"
-#include "moth_ui/group.h"
+#include "editor_panel_preview.h"
 #include "moth_ui/layout/layout_entity_group.h"
 #include "moth_ui/animation_clip.h"
+#include "moth_ui/group.h"
+#include "app.h"
+#include "moth_ui/layout/layout.h"
+#include "../editor_layer.h"
 
 extern App* g_App;
 
-PreviewWindow::PreviewWindow() {
+EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
+    : EditorPanel(editorLayer, "Preview", visible, true) {
 }
 
+void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
+    layout->RefreshAnimationTimings();
 
-bool PreviewWindow::OnEvent(moth_ui::Event const& event) {
+    auto group = std::make_unique<moth_ui::Group>(layout);
+    auto const& clips = layout->m_clips;
+    m_clipNames.clear();
+    for (auto&& clip : clips) {
+        m_clipNames.push_back(clip->m_name);
+    }
+    m_root = std::move(group);
+}
+
+bool EditorPanelPreview::OnEvent(moth_ui::Event const& event) {
     return false;
 }
 
-void PreviewWindow::Update(uint32_t ticks) {
-    if (m_root) {
+void EditorPanelPreview::Update(uint32_t ticks) {
+    if (m_visible && !m_wasVisible) {
+        SetLayout(m_editorLayer.GetCurrentLayout());
+    }
+
+    m_wasVisible = m_visible;
+
+    if (m_visible && m_root) {
         m_root->Update(ticks);
     }
 }
 
-void PreviewWindow::Draw() {
+void EditorPanelPreview::DrawContents() {
     if (m_root) {
         ImGui::Text("Animation");
         ImGui::SameLine();
@@ -64,20 +83,7 @@ void PreviewWindow::Draw() {
     }
 }
 
-void PreviewWindow::Refresh(std::shared_ptr<moth_ui::LayoutEntityGroup> layout) {
-
-    layout->RefreshAnimationTimings();
-
-    auto group = std::make_unique<moth_ui::Group>(layout);
-    auto const& clips = layout->m_clips;
-    m_clipNames.clear();
-    for (auto&& clip : clips) {
-        m_clipNames.push_back(clip->m_name);
-    }
-    m_root = std::move(group);
-}
-
-void PreviewWindow::UpdateRenderSurface(moth_ui::IntVec2 surfaceSize) {
+void EditorPanelPreview::UpdateRenderSurface(moth_ui::IntVec2 surfaceSize) {
     if (!m_renderSurface || m_currentSurfaceSize != surfaceSize) {
         m_currentSurfaceSize = surfaceSize;
         m_renderSurface = CreateTextureRef(SDL_CreateTexture(g_App->GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, m_currentSurfaceSize.x, m_currentSurfaceSize.y));

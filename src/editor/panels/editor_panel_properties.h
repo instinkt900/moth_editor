@@ -1,23 +1,19 @@
 #pragma once
 
+#include "editor_panel.h"
 #include "moth_ui/utils/imgui_ext_focus.h"
 
-class EditorLayer;
-
-class PropertiesEditor {
+class EditorPanelProperties : public EditorPanel {
 public:
-    PropertiesEditor(EditorLayer& editorLayer);
-    ~PropertiesEditor();
-
-    void Draw();
+    EditorPanelProperties(EditorLayer& editorLayer, bool visible);
+    virtual ~EditorPanelProperties() = default;
 
 private:
-    EditorLayer& m_editorLayer;
+    void DrawContents() override;
 
     imgui_ext::FocusGroupContext m_focusContext;
 
     void DrawEntityProperties();
-    void DrawGroupProperties();
     void DrawRectProperties();
     void DrawImageProperties();
     void DrawTextProperties();
