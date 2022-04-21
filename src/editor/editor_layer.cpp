@@ -38,6 +38,8 @@ extern App* g_App;
 namespace {
     enum class FileOpenMode {
         Unknown,
+        OpenLayout,
+        SaveLayout,
         OpenProject,
         SaveProject,
     };
@@ -129,6 +131,12 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
         } else if (s_fileOpenMode == FileOpenMode::SaveProject) {
             SaveProject(s_fileDialog.GetSelected().string().c_str());
             s_fileDialog.ClearSelected();
+        } else if (s_fileOpenMode == FileOpenMode::OpenLayout) {
+            LoadLayout(s_fileDialog.GetSelected().string().c_str());
+            s_fileDialog.ClearSelected();
+        } else if (s_fileOpenMode == FileOpenMode::SaveLayout) {
+            SaveLayout(s_fileDialog.GetSelected().string().c_str());
+            s_fileDialog.ClearSelected();
         }
     }
 }
@@ -136,9 +144,24 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
 void EditorLayer::DrawMainMenu() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New Project", "Ctrl+N")) {
+            if (ImGui::MenuItem("New Layout")) {
                 NewLayout();
             } 
+            if (ImGui::MenuItem("Open Layout")) {
+                s_fileDialog.SetTitle("Open Layout..");
+                s_fileDialog.SetTypeFilters({ ".json" });
+                s_fileDialog.Open();
+                s_fileOpenMode = FileOpenMode::OpenLayout;
+            }
+            if (ImGui::MenuItem("Save Layout", nullptr, nullptr, !m_currentLayoutPath.empty())) {
+                SaveLayout(m_currentLayoutPath.c_str());
+            }
+            if (ImGui::MenuItem("Save Layout As")) {
+                s_fileDialog.SetTitle("Save Layout As..");
+                s_fileDialog.SetTypeFilters({ ".json" });
+                s_fileDialog.Open();
+                s_fileOpenMode = FileOpenMode::SaveLayout;
+            }
             if (ImGui::MenuItem("Open Project..")) {
                 s_fileDialog.SetTitle("Open Project..");
                 s_fileDialog.SetTypeFilters({ ".json" });
@@ -153,9 +176,6 @@ void EditorLayer::DrawMainMenu() {
                 s_fileDialog.SetTypeFilters({ ".json" });
                 s_fileDialog.Open();
                 s_fileOpenMode = FileOpenMode::SaveProject;
-            }
-            if (ImGui::MenuItem("Save Layout", nullptr, nullptr, !m_currentLayoutPath.empty())) {
-                SaveLayout(m_currentLayoutPath.c_str());
             }
             if (ImGui::MenuItem("Exit")) {
                 m_layerStack->BroadcastEvent(EventQuit{});
@@ -397,16 +417,10 @@ void EditorLayer::LoadLayout(char const* path, bool discard) {
 }
 
 void EditorLayer::SaveLayout(char const* path) {
-    std::ofstream ofile(path);
-    if (!ofile.is_open()) {
-        return;
+    if (m_rootLayout->Save(path)) {
+        m_lastSaveActionIndex = m_actionIndex;
+        m_currentLayoutPath = path;
     }
-
-    nlohmann::json json = m_rootLayout->Serialize();
-    ofile << json;
-
-    m_lastSaveActionIndex = m_actionIndex;
-    m_currentLayoutPath = path;
 }
 
 void EditorLayer::AddSubLayout(char const* path) {
@@ -435,7 +449,7 @@ void EditorLayer::AddImage(char const* path) {
     bounds.offset.bottomRight = { 50, 50 };
 
     auto newImageLayout = std::make_shared<moth_ui::LayoutEntityImage>(bounds);
-    newImageLayout->m_texturePath = path;
+    newImageLayout->m_imagePath = path;
 
     auto instance = newImageLayout->Instantiate();
 

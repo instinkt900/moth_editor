@@ -120,16 +120,6 @@ void EditorPanelProperties::DrawImageProperties() {
     auto const imageNode = std::static_pointer_cast<moth_ui::NodeImage>(selection);
     auto const imageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(selection->GetLayoutEntity());
 
-    // do we want to allow the animation of the source rect? would be nice
-    PropertiesInput(
-        "Source Rect", imageEntity->m_sourceRect,
-        [&](auto const newValue) {
-            auto const oldValue = imageEntity->m_sourceRect;
-            auto action = MakeChangeValueAction(imageEntity->m_sourceRect, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
-            m_editorLayer.PerformEditAction(std::move(action));
-        },
-        nullptr);
-
     PropertiesInput(
         "Image Scale Type", imageEntity->m_imageScaleType,
         [&](auto oldValue, auto newValue) {
@@ -161,9 +151,9 @@ void EditorPanelProperties::DrawImageProperties() {
         s_fileBrowser.Display();
         if (s_fileBrowser.HasSelected()) {
             auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(s_loadingNodeImage->GetLayoutEntity());
-            auto const oldPath = targetImageEntity->m_texturePath;
+            auto const oldPath = targetImageEntity->m_imagePath;
             auto const newPath = s_fileBrowser.GetSelected().string();
-            auto action = MakeChangeValueAction(imageEntity->m_texturePath, oldPath, newPath, [selection]() { selection->ReloadEntity(); });
+            auto action = MakeChangeValueAction(imageEntity->m_imagePath, oldPath, newPath, [selection]() { selection->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
             s_fileBrowser.ClearSelected();
             s_loadingNodeImage = nullptr;

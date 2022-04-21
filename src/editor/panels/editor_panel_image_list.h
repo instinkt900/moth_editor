@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor_panel.h"
+#include "../content_list.h"
 
 class EditorPanelImageList : public EditorPanel {
 public:
@@ -10,13 +11,7 @@ public:
     void Refresh() override;
 
 private:
-    struct ImageInfo {
-        std::string m_path;
-        std::string m_name;
-    };
-
-    int m_selectedIndex = -1;
-    std::vector<ImageInfo> m_imageList;
+    ContentList m_contentList;
 
     void DrawContents() override;
 };

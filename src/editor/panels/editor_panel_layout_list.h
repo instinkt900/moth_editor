@@ -2,6 +2,7 @@
 
 #include "editor_panel.h"
 #include "../confirm_prompt.h"
+#include "../content_list.h"
 
 class EditorPanelLayoutList : public EditorPanel {
 public:
@@ -11,14 +12,7 @@ public:
     void Refresh() override;
 
 private:
-    struct LayoutInfo {
-        std::string m_path;
-        std::string m_name;
-    };
-
-    int m_selectedIndex = -1;
-    std::vector<LayoutInfo> m_layoutList;
-    std::filesystem::path m_currentPath;
+    ContentList m_contentList;
     ConfirmPrompt m_deleteConfirm;
 
     void DrawContents() override;

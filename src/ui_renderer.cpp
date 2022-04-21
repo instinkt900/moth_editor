@@ -107,11 +107,11 @@ void UIRenderer::RenderFilledRect(moth_ui::IntRect const& rect) {
     SDL_RenderFillRect(&m_renderer, &sdlRect);
 }
 
-void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& sourceRect, moth_ui::IntRect const& destRect, moth_ui::ImageScaleType scaleType, float scale) {
+void UIRenderer::RenderImage(moth_ui::IImage& image, moth_ui::IntRect const& destRect, moth_ui::ImageScaleType scaleType, float scale) {
     auto const& internalImage = static_cast<Image&>(image);
     auto const texture = internalImage.GetTexture();
     auto const& textureSourceRect = internalImage.GetSourceRect();
-    auto const sdlsourceRect{ ToSDL(MergeRects(textureSourceRect, sourceRect)) };
+    auto const sdlsourceRect{ ToSDL(textureSourceRect) };
     ColorComponents const components{ m_drawColor.top() };
     SDL_SetTextureBlendMode(texture.get(), ToSDL(m_blendMode.top()));
     SDL_SetTextureColorMod(texture.get(), components.r, components.g, components.b);

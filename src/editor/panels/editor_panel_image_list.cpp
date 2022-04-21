@@ -14,39 +14,37 @@ namespace {
 }
 
 EditorPanelImageList::EditorPanelImageList(EditorLayer& editorLayer, bool visible)
-    : EditorPanel(editorLayer, "Image List", visible, true) {
+    : EditorPanel(editorLayer, "Image List", visible, true)
+    , m_contentList({}) {
+    m_contentList.SetDisplayNameAction([](std::filesystem::path const& path) {
+        return path.filename().string();
+    });
+
+    m_contentList.SetDoubleClickAction([this](std::filesystem::path const& path) {
+        m_editorLayer.AddImage(path.string().c_str());
+    });
+
+    m_contentList.SetChangeDirectoryAction([this](std::filesystem::path const& path) {
+        auto& project = m_editorLayer.GetLayoutProject();
+        project.m_imageRoot = path.string();
+    });
+
+    m_contentList.SetDisplayFilter([](std::filesystem::path const& path) {
+        if (std::filesystem::is_directory(path)) {
+            return true;
+        } else if (!path.has_extension() || !IsSupportedExtension(path.extension().string())) {
+            return false;
+        }
+        return true;
+    });
 }
 
 void EditorPanelImageList::Refresh() {
-    m_selectedIndex = -1;
-    m_imageList.clear();
-    auto& projectInfo = m_editorLayer.GetLayoutProject();
-    for (auto& entry : std::filesystem::directory_iterator(projectInfo.m_imageRoot)) {
-        auto const& filePath = entry.path();
-        if (filePath.has_extension()) {
-            auto const fileExtension = filePath.extension().string();
-            if (IsSupportedExtension(fileExtension)) {
-                ImageInfo info{
-                    filePath.string(),
-                    filePath.filename().string()
-                };
-                m_imageList.push_back(info);
-            }
-        }
-    }
+    auto& project = m_editorLayer.GetLayoutProject();
+    m_contentList.SetPath(project.m_imageRoot);
+    m_contentList.Refresh();
 }
 
 void EditorPanelImageList::DrawContents() {
-    ImGui::BeginListBox("##image_list", ImVec2(-FLT_MIN, -FLT_MIN));
-    for (int i = 0; i < m_imageList.size(); ++i) {
-        auto& imageInfo = m_imageList[i];
-        bool selected = m_selectedIndex == i;
-        if (ImGui::Selectable(imageInfo.m_name.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick)) {
-            m_selectedIndex = i;
-            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-                m_editorLayer.AddImage(imageInfo.m_path.c_str());
-            }
-        }
-    }
-    ImGui::EndListBox();
+    m_contentList.Draw();
 }

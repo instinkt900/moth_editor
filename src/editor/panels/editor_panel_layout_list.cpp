@@ -4,31 +4,40 @@
 #include "moth_ui/layout/layout.h"
 
 EditorPanelLayoutList::EditorPanelLayoutList(EditorLayer& editorLayer, bool visible)
-    : EditorPanel(editorLayer, "Layout List", visible, true) {
+    : EditorPanel(editorLayer, "Layout List", visible, true)
+    , m_contentList({}) {
     m_deleteConfirm.SetTitle("Delete?");
     m_deleteConfirm.SetMessage("Are you sure you wish to delete this file?");
     m_deleteConfirm.SetPositiveText("Delete");
     m_deleteConfirm.SetNegativeText("Cancel");
+
+    m_contentList.SetDisplayNameAction([](std::filesystem::path const& path) {
+        return path.stem().string();
+    });
+
+    m_contentList.SetDoubleClickAction([this](std::filesystem::path const& path) {
+        m_editorLayer.LoadLayout(path.string().c_str());
+    });
+
+    m_contentList.SetChangeDirectoryAction([this](std::filesystem::path const& path) {
+        auto& project = m_editorLayer.GetLayoutProject();
+        project.m_layoutRoot = path.string();
+    });
+
+    m_contentList.SetDisplayFilter([](std::filesystem::path const& path) {
+        if (std::filesystem::is_directory(path)) {
+            return true;
+        } else if (!path.has_extension() || path.extension() != ".json") {
+            return false;
+        }
+        return true;
+    });
 }
 
 void EditorPanelLayoutList::Refresh() {
-    m_selectedIndex = -1;
-    m_layoutList.clear();
     auto& projectInfo = m_editorLayer.GetLayoutProject();
-    for (auto& entry : std::filesystem::directory_iterator(projectInfo.m_layoutRoot)) {
-        auto const& filePath = entry.path();
-        if (filePath.has_extension()) {
-            auto const fileExtension = filePath.extension().string();
-            if (fileExtension == ".json") {
-                LayoutInfo info{
-                    filePath.string(),
-                    filePath.stem().string()
-                };
-                m_layoutList.push_back(info);
-            }
-        }
-    }
-    m_currentPath = projectInfo.m_layoutRoot;
+    m_contentList.SetPath(projectInfo.m_layoutRoot);
+    m_contentList.Refresh();
 }
 
 void EditorPanelLayoutList::DrawContents() {
@@ -53,12 +62,12 @@ void EditorPanelLayoutList::DrawContents() {
         if (ImGui::Button("OK", button_size)) {
             ImGui::CloseCurrentPopup();
             auto const layoutFilename = fmt::format("{}.json", nameBuffer);
-            auto const newLayoutPath = m_currentPath / layoutFilename;
+            auto const newLayoutPath = m_contentList.GetPath() / layoutFilename;
             if (std::filesystem::exists(newLayoutPath)) {
                 fileExistsPopup = true;
             } else {
                 auto const newLayout = std::make_shared<moth_ui::Layout>();
-                auto const json = newLayout->Serialize();
+                auto const json = newLayout->Serialize({});
                 std::ofstream ofile(newLayoutPath.string());
                 if (ofile.is_open()) {
                     ofile << json;
@@ -83,25 +92,14 @@ void EditorPanelLayoutList::DrawContents() {
     }
     ImGui::SameLine();
     if (ImGui::Button("Delete Layout")) {
-        if (m_selectedIndex != -1) {
-            m_deleteConfirm.SetPositiveAction([this]() {
-                auto& layoutInfo = m_layoutList[m_selectedIndex];
-                std::filesystem::remove(layoutInfo.m_path);
+        auto const& currentSelection = m_contentList.GetCurrentSelection();
+        if (std::filesystem::exists(currentSelection) && std::filesystem::is_regular_file(currentSelection)) {
+            m_deleteConfirm.SetPositiveAction([this, currentSelection]() {
+                std::filesystem::remove(currentSelection);
                 Refresh();
             });
             m_deleteConfirm.Open();
         }
     }
-    ImGui::BeginListBox("##layout_list", ImVec2(-FLT_MIN, -FLT_MIN));
-    for (int i = 0; i < m_layoutList.size(); ++i) {
-        auto& layoutInfo = m_layoutList[i];
-        bool selected = m_selectedIndex == i;
-        if (ImGui::Selectable(layoutInfo.m_name.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick)) {
-            m_selectedIndex = i;
-            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-                m_editorLayer.LoadLayout(layoutInfo.m_path.c_str());
-            }
-        }
-    }
-    ImGui::EndListBox();
+    m_contentList.Draw();
 }
