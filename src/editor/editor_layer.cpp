@@ -10,6 +10,7 @@
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout_entity_clip.h"
+#include "moth_ui/layout/layout_entity_9slice.h"
 #include "editor/actions/add_action.h"
 #include "editor/actions/delete_action.h"
 #include "editor/actions/composite_action.h"
@@ -500,6 +501,22 @@ void EditorLayer::AddClip() {
     bounds.offset.bottomRight = { 50, 50 };
 
     auto newLayout = std::make_shared<moth_ui::LayoutEntityClip>(bounds);
+    auto instance = newLayout->Instantiate();
+    auto addAction = std::make_unique<AddAction>(std::move(instance), m_root);
+    PerformEditAction(std::move(addAction));
+
+    m_root->RecalculateBounds();
+}
+
+void EditorLayer::Add9Slice(char const* path) {
+    moth_ui::LayoutRect bounds;
+    bounds.anchor.topLeft = { 0.5f, 0.5f };
+    bounds.anchor.bottomRight = { 0.5f, 0.5f };
+    bounds.offset.topLeft = { -50, -50 };
+    bounds.offset.bottomRight = { 50, 50 };
+
+    auto newLayout = std::make_shared<moth_ui::LayoutEntity9Slice>(bounds);
+    newLayout->m_imagePath = path;
     auto instance = newLayout->Instantiate();
     auto addAction = std::make_unique<AddAction>(std::move(instance), m_root);
     PerformEditAction(std::move(addAction));

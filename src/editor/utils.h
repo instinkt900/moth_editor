@@ -27,6 +27,9 @@ inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity)
     case moth_ui::LayoutEntityType::Clip:
         typeString = "Clip";
         break;
+    case moth_ui::LayoutEntityType::NineSlice:
+        typeString = "9Slice";
+        break;
     default:
         assert(false && "Unknown entity.");
     }
@@ -40,8 +43,11 @@ inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity)
 }
 
 namespace imgui_ext {
-    inline void Inspect(char const* name, moth_ui::IImage* value) {
-        auto const image = static_cast<Image*>(value);
+    inline void Inspect(char const* name, moth_ui::IImage const* value) {
+        if (value == nullptr) {
+            return;
+        }
+        auto const image = static_cast<Image const*>(value);
         auto const texture = image->GetTexture();
         auto const& sourceRect = image->GetSourceRect();
         auto const textureDimensions = static_cast<moth_ui::FloatVec2>(image->GetTextureDimensions());

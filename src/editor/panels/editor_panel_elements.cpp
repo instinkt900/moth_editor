@@ -7,6 +7,7 @@ namespace {
         Unknown,
         SubLayout,
         Image,
+        NineSlice,
     };
 
     ImGui::FileBrowser s_fileBrowser;
@@ -28,6 +29,9 @@ void EditorPanelElements::DrawContents() {
         } else if (s_fileOpenMode == FileOpenMode::Image) {
             m_editorLayer.AddImage(s_fileBrowser.GetSelected().string().c_str());
             s_fileBrowser.ClearSelected();
+        } else if (s_fileOpenMode == FileOpenMode::NineSlice) {
+            m_editorLayer.Add9Slice(s_fileBrowser.GetSelected().string().c_str());
+            s_fileBrowser.ClearSelected();
         }
     }
 
@@ -47,5 +51,10 @@ void EditorPanelElements::DrawContents() {
         s_fileBrowser.SetTypeFilters({ ".json" });
         s_fileBrowser.Open();
         s_fileOpenMode = FileOpenMode::SubLayout;
+    } else if (ImGui::Button("9Slice")) {
+        s_fileBrowser.SetTitle("Open..");
+        s_fileBrowser.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
+        s_fileBrowser.Open();
+        s_fileOpenMode = FileOpenMode::NineSlice;
     }
 }

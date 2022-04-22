@@ -125,7 +125,7 @@ bool PropertiesInput(char const* label, int current, std::function<void(int)> co
     auto const thisID = ImGui::GetID(label);
     auto const initialValue = current;
     editInt = current;
-    auto const changed = ImGui::InputInt(label, &editInt);
+    auto const changed = ImGui::InputInt(label, &editInt, 0);
     if (changed) {
         if (editingElementID != thisID) {
             BeginEditInt(thisID, initialValue, commitAction);
@@ -272,6 +272,7 @@ bool PropertiesInput(char const* label, moth_ui::LayoutRect value, std::function
 }
 
 bool PropertiesInput(char const* label, moth_ui::IntRect value, std::function<void(moth_ui::IntRect)> const& changeAction, std::function<void(moth_ui::IntRect, moth_ui::IntRect)> const& commitAction) {
+    ImGui::PushID(label);
     auto const thisID = ImGui::GetID(label);
     auto const initialValue = value;
     editRect = value;
@@ -279,13 +280,13 @@ bool PropertiesInput(char const* label, moth_ui::IntRect value, std::function<vo
     bool hasFocus = false;
 
     if (ImGui::CollapsingHeader(label)) {
-        changed |= ImGui::InputInt("Top", &editRect.topLeft.y);
+        changed |= ImGui::InputInt("Top", &editRect.topLeft.y, 0);
         hasFocus |= ImGui::IsItemFocused();
-        changed |= ImGui::InputInt("Left", &editRect.topLeft.x);
+        changed |= ImGui::InputInt("Left", &editRect.topLeft.x, 0);
         hasFocus |= ImGui::IsItemFocused();
-        changed |= ImGui::InputInt("Bottom", &editRect.bottomRight.y);
+        changed |= ImGui::InputInt("Bottom", &editRect.bottomRight.y, 0);
         hasFocus |= ImGui::IsItemFocused();
-        changed |= ImGui::InputInt("Right", &editRect.bottomRight.x);
+        changed |= ImGui::InputInt("Right", &editRect.bottomRight.x, 0);
         hasFocus |= ImGui::IsItemFocused();
     }
 
@@ -302,6 +303,7 @@ bool PropertiesInput(char const* label, moth_ui::IntRect value, std::function<vo
         EndEdit();
     }
 
+    ImGui::PopID();
     return changed;
 }
 

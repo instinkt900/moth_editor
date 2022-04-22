@@ -80,6 +80,7 @@ public:
     void AddRect();
     void AddText();
     void AddClip();
+    void Add9Slice(char const* path);
 
     template <typename T, typename... Args>
     T* AddEditorPanel(Args&& ...args) {
