@@ -17,5 +17,4 @@ private:
     void DrawRectProperties();
     void DrawImageProperties();
     void DrawTextProperties();
-    void Draw9SliceProperties();
 };

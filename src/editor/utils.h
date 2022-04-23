@@ -27,9 +27,6 @@ inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity)
     case moth_ui::LayoutEntityType::Clip:
         typeString = "Clip";
         break;
-    case moth_ui::LayoutEntityType::NineSlice:
-        typeString = "9Slice";
-        break;
     default:
         assert(false && "Unknown entity.");
     }

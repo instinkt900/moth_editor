@@ -72,15 +72,8 @@ public:
     void NewLayout(bool discard = false);
     void LoadLayout(char const* path, bool discard = false);
 
-    moth_ui::Group* GetRoot() const { return m_root.get(); }
+    std::shared_ptr<moth_ui::Group> GetRoot() const { return m_root; }
     std::shared_ptr<moth_ui::Layout> GetCurrentLayout() { return m_rootLayout; }
-
-    void AddSubLayout(char const* path);
-    void AddImage(char const* path);
-    void AddRect();
-    void AddText();
-    void AddClip();
-    void Add9Slice(char const* path);
 
     template <typename T, typename... Args>
     T* AddEditorPanel(Args&& ...args) {

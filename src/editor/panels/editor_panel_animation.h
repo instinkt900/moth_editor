@@ -16,7 +16,7 @@ public:
 private:
     void DrawContents() override;
 
-    moth_ui::Group* m_group = nullptr;
+    std::shared_ptr<moth_ui::Group> m_group = nullptr;
 
     bool DrawWidget();
     char const* GetChildLabel(int index) const;
