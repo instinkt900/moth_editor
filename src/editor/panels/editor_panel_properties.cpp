@@ -205,10 +205,10 @@ void EditorPanelProperties::DrawImageProperties() {
             FloatVec2 const slice1 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(imageNode->GetSourceSlices()[1]));
             FloatVec2 const slice2 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(imageNode->GetSourceSlices()[2]));
 
-            drawList->AddLine(ImVec2{ slice1.x, srcMin.y }, ImVec2{ slice1.x, srcMax.y }, 0xFFFFFF00);
-            drawList->AddLine(ImVec2{ slice2.x, srcMin.y }, ImVec2{ slice2.x, srcMax.y }, 0xFFFFFF00);
-            drawList->AddLine(ImVec2{ srcMin.x, slice1.y }, ImVec2{ srcMax.x, slice1.y }, 0xFFFFFF00);
-            drawList->AddLine(ImVec2{ srcMin.x, slice2.y }, ImVec2{ srcMax.x, slice2.y }, 0xFFFFFF00);
+            drawList->AddLine(ImVec2{ slice1.x, srcMin.y }, ImVec2{ slice1.x, srcMax.y }, 0xFF004477);
+            drawList->AddLine(ImVec2{ slice2.x, srcMin.y }, ImVec2{ slice2.x, srcMax.y }, 0xFF004477);
+            drawList->AddLine(ImVec2{ srcMin.x, slice1.y }, ImVec2{ srcMax.x, slice1.y }, 0xFF004477);
+            drawList->AddLine(ImVec2{ srcMin.x, slice2.y }, ImVec2{ srcMax.x, slice2.y }, 0xFF004477);
         }
     }
 

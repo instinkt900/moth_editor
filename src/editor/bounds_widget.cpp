@@ -4,6 +4,8 @@
 #include "offset_bounds_handle.h"
 #include "moth_ui/event_dispatch.h"
 #include "moth_ui/group.h"
+#include "moth_ui/node_image.h"
+#include "moth_ui/layout/layout_entity_image.h"
 #include "editor_layer.h"
 
 BoundsWidget::BoundsWidget(EditorLayer& editorLayer)
@@ -54,13 +56,31 @@ void BoundsWidget::EndEdit() {
 void BoundsWidget::Draw(SDL_Renderer& renderer) {
     auto const selection = m_editorLayer.GetSelection();
     if (selection && selection->IsVisible() && selection->GetParent()) {
-        SDL_SetRenderDrawColor(&renderer, 0x00, 0x00, 0xFF, 0xFF);
-        auto const& screenRect = selection->GetScreenRect();
+        auto const screenRect = static_cast<moth_ui::FloatRect>(selection->GetScreenRect());
         auto const scaleFactor = m_editorLayer.GetScaleFactor();
-        auto const pos = static_cast<moth_ui::FloatVec2>(screenRect.topLeft) / scaleFactor;
-        auto const size = static_cast<moth_ui::FloatVec2>(screenRect.bottomRight - screenRect.topLeft) / scaleFactor;
-        SDL_Rect const rect{ static_cast<int>(pos.x), static_cast<int>(pos.y), static_cast<int>(size.x), static_cast<int>(size.y) };
-        SDL_RenderDrawRect(&renderer, &rect);
+        auto const canvasPos = static_cast<moth_ui::IntVec2>(screenRect.topLeft / scaleFactor);
+        auto const canvasSize = static_cast<moth_ui::IntVec2>((screenRect.bottomRight - screenRect.topLeft) / scaleFactor);
+
+        auto layoutEntity = selection->GetLayoutEntity();
+        if (layoutEntity && layoutEntity->GetType() == moth_ui::LayoutEntityType::Image) {
+            auto imageNode = std::static_pointer_cast<moth_ui::NodeImage>(selection);
+            auto imageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(layoutEntity);
+            if (imageEntity->m_imageScaleType == moth_ui::ImageScaleType::NineSlice) {
+                auto const slice1 = static_cast<moth_ui::IntVec2>(static_cast<moth_ui::FloatVec2>(imageNode->GetTargetSlices()[1]) / scaleFactor);
+                auto const slice2 = static_cast<moth_ui::IntVec2>(static_cast<moth_ui::FloatVec2>(imageNode->GetTargetSlices()[2]) / scaleFactor);
+
+                SDL_SetRenderDrawColor(&renderer, 0x77, 0x44, 0x00, 0xFF);
+                SDL_RenderDrawLine(&renderer, slice1.x, canvasPos.y, slice1.x, canvasPos.y + canvasSize.y);
+                SDL_RenderDrawLine(&renderer, slice2.x, canvasPos.y, slice2.x, canvasPos.y + canvasSize.y);
+                SDL_RenderDrawLine(&renderer, canvasPos.x, slice1.y, canvasPos.x + canvasSize.x, slice1.y);
+                SDL_RenderDrawLine(&renderer, canvasPos.x, slice2.y, canvasPos.x + canvasSize.x, slice2.y);
+            }
+        }
+
+        SDL_Rect const sdlBoundsRect{ canvasPos.x, canvasPos.y, canvasSize.x, canvasSize.y };
+        SDL_SetRenderDrawColor(&renderer, 0x00, 0x00, 0xFF, 0xFF);
+        SDL_RenderDrawRect(&renderer, &sdlBoundsRect);
+
         for (auto& handle : m_handles) {
             handle->Draw(renderer);
         }
