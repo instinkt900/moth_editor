@@ -15,6 +15,9 @@
 
 #include "imgui-filebrowser/imfilebrowser.h"
 
+#undef min
+#undef max
+
 namespace {
     ImGui::FileBrowser s_fileBrowser;
     std::shared_ptr<moth_ui::NodeImage> s_loadingNodeImage = nullptr;
@@ -141,6 +144,17 @@ void EditorPanelProperties::DrawImageProperties() {
         });
 
     PropertiesInput(
+        "Source Rect", imageEntity->m_sourceRect,
+        [&](auto newValue) {
+            imageEntity->m_sourceRect = newValue;
+            selection->ReloadEntity();
+        },
+        [=](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(imageEntity->m_sourceRect, oldValue, newValue, [selection]() { selection->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
+    PropertiesInput(
         "Target Borders", imageEntity->m_targetBorders,
         [&](auto newValue) {
             imageEntity->m_targetBorders = newValue;
@@ -163,6 +177,40 @@ void EditorPanelProperties::DrawImageProperties() {
         });
 
     imgui_ext::Inspect("Image", imageNode->GetImage());
+
+    {
+        using namespace moth_ui;
+
+        FloatVec2 const previewImageMin{ ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y };
+        FloatVec2 const previewImageMax{ ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y };
+        FloatVec2 const previewImageSize = previewImageMax - previewImageMin;
+        FloatVec2 const sourceImageDimensions = static_cast<FloatVec2>(imageNode->GetImage()->GetDimensions());
+        FloatVec2 const imageToPreviewFactor = previewImageSize / sourceImageDimensions;
+        FloatRect const sourceRect = static_cast<FloatRect>(imageNode->GetSourceRect());
+
+        auto const ImageToPreview = [&](FloatVec2 const& srcVec) -> FloatVec2 {
+            return srcVec * imageToPreviewFactor;
+        };
+
+        FloatVec2 const srcMin = previewImageMin + ImageToPreview(sourceRect.topLeft);
+        FloatVec2 const srcMax = previewImageMin + ImageToPreview(sourceRect.bottomRight);
+
+        auto drawList = ImGui::GetWindowDrawList();
+
+        // source rect preview
+        drawList->AddRect(ImVec2{ srcMin.x, srcMin.y }, ImVec2{ srcMax.x, srcMax.y }, 0xFF00FFFF);
+
+        // 9 slice preview
+        if (imageNode->GetImageScaleType() == moth_ui::ImageScaleType::NineSlice) {
+            FloatVec2 const slice1 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(imageNode->GetSourceSlices()[1]));
+            FloatVec2 const slice2 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(imageNode->GetSourceSlices()[2]));
+
+            drawList->AddLine(ImVec2{ slice1.x, srcMin.y }, ImVec2{ slice1.x, srcMax.y }, 0xFFFFFF00);
+            drawList->AddLine(ImVec2{ slice2.x, srcMin.y }, ImVec2{ slice2.x, srcMax.y }, 0xFFFFFF00);
+            drawList->AddLine(ImVec2{ srcMin.x, slice1.y }, ImVec2{ srcMax.x, slice1.y }, 0xFFFFFF00);
+            drawList->AddLine(ImVec2{ srcMin.x, slice2.y }, ImVec2{ srcMax.x, slice2.y }, 0xFFFFFF00);
+        }
+    }
 
     if (ImGui::Button("Load Image..")) {
         s_fileBrowser.SetTitle("Load Image..");

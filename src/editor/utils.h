@@ -30,7 +30,5 @@ namespace imgui_ext {
         auto const scale = ImageWidth / imageDimensions.x;
         auto const scaledDimensions = static_cast<moth_ui::FloatVec2>(imageDimensions) * scale;
         ImGui::Image(texture.get(), ImVec2(scaledDimensions.x, scaledDimensions.y), ImVec2(uv0.x, uv0.y), ImVec2(uv1.x, uv1.y));
-
-        // TODO show the source rect on top of this image. Will probably need to write a custom ImGui::Image like implementation
     }
 }

@@ -220,35 +220,35 @@ bool PropertiesInput(char const* label, moth_ui::Color color, std::function<void
 }
 
 bool PropertiesInput(char const* label, moth_ui::LayoutRect value, std::function<void(moth_ui::LayoutRect)> const& changeAction, std::function<void(moth_ui::LayoutRect, moth_ui::LayoutRect)> const& commitAction) {
+    ImGui::PushID(label);
     auto const thisID = ImGui::GetID(label);
     auto const initialValue = value;
-    editLayoutRect = value;
     bool changed = false;
     bool hasFocus = false;
 
     if (ImGui::CollapsingHeader(label)) {
         if (ImGui::TreeNode("Anchor")) {
             ImGui::PushItemWidth(50);
-            changed |= ImGui::InputFloat("Top", &editLayoutRect.anchor.topLeft.y, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Top", &value.anchor.topLeft.y, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Left", &editLayoutRect.anchor.topLeft.x, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Left", &value.anchor.topLeft.x, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Bottom", &editLayoutRect.anchor.bottomRight.y, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Bottom", &value.anchor.bottomRight.y, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Right", &editLayoutRect.anchor.bottomRight.x, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Right", &value.anchor.bottomRight.x, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
             ImGui::PopItemWidth();
             ImGui::TreePop();
         }
         if (ImGui::TreeNode("Offset")) {
             ImGui::PushItemWidth(50);
-            changed |= ImGui::InputFloat("Top", &editLayoutRect.offset.topLeft.y, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Top", &value.offset.topLeft.y, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Left", &editLayoutRect.offset.topLeft.x, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Left", &value.offset.topLeft.x, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Bottom", &editLayoutRect.offset.bottomRight.y, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Bottom", &value.offset.bottomRight.y, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Right", &editLayoutRect.offset.bottomRight.x, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("Right", &value.offset.bottomRight.x, 0, 0, "%.2f");
             hasFocus |= ImGui::IsItemFocused();
             ImGui::PopItemWidth();
             ImGui::TreePop();
@@ -256,6 +256,7 @@ bool PropertiesInput(char const* label, moth_ui::LayoutRect value, std::function
     }
 
     if (changed) {
+        editLayoutRect = value;
         if (editingElementID != thisID) {
             BeginEditLayoutRect(thisID, initialValue, commitAction);
         }
@@ -268,6 +269,7 @@ bool PropertiesInput(char const* label, moth_ui::LayoutRect value, std::function
         EndEdit();
     }
 
+    ImGui::PopID();
     return changed;
 }
 
@@ -275,22 +277,22 @@ bool PropertiesInput(char const* label, moth_ui::IntRect value, std::function<vo
     ImGui::PushID(label);
     auto const thisID = ImGui::GetID(label);
     auto const initialValue = value;
-    editRect = value;
     bool changed = false;
     bool hasFocus = false;
 
     if (ImGui::CollapsingHeader(label)) {
-        changed |= ImGui::InputInt("Top", &editRect.topLeft.y, 0);
+        changed |= ImGui::InputInt("Top", &value.topLeft.y, 0);
         hasFocus |= ImGui::IsItemFocused();
-        changed |= ImGui::InputInt("Left", &editRect.topLeft.x, 0);
+        changed |= ImGui::InputInt("Left", &value.topLeft.x, 0);
         hasFocus |= ImGui::IsItemFocused();
-        changed |= ImGui::InputInt("Bottom", &editRect.bottomRight.y, 0);
+        changed |= ImGui::InputInt("Bottom", &value.bottomRight.y, 0);
         hasFocus |= ImGui::IsItemFocused();
-        changed |= ImGui::InputInt("Right", &editRect.bottomRight.x, 0);
+        changed |= ImGui::InputInt("Right", &value.bottomRight.x, 0);
         hasFocus |= ImGui::IsItemFocused();
     }
 
     if (changed) {
+        editRect = value;        
         if (editingElementID != thisID) {
             BeginEditRect(thisID, initialValue, commitAction);
         }
