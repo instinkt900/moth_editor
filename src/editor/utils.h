@@ -4,39 +4,13 @@
 #include "image.h"
 
 inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity) {
-    char const* typeString = nullptr;
-    switch (entity->GetType()) {
-    case moth_ui::LayoutEntityType::Entity:
-        typeString = "Entity";
-        break;
-    case moth_ui::LayoutEntityType::Group:
-        typeString = "Group";
-        break;
-    case moth_ui::LayoutEntityType::Ref:
-        typeString = "Ref";
-        break;
-    case moth_ui::LayoutEntityType::Rect:
-        typeString = "Rect";
-        break;
-    case moth_ui::LayoutEntityType::Image:
-        typeString = "Image";
-        break;
-    case moth_ui::LayoutEntityType::Text:
-        typeString = "Text";
-        break;
-    case moth_ui::LayoutEntityType::Clip:
-        typeString = "Clip";
-        break;
-    default:
-        assert(false && "Unknown entity.");
-    }
     static std::string stringBuffer;
     if (entity->m_id.empty()) {
-        return typeString;
+        stringBuffer = magic_enum::enum_name(entity->GetType());
     } else {
-        stringBuffer = fmt::format("{} ({})", entity->m_id, typeString);
-        return stringBuffer.c_str();
+        stringBuffer = fmt::format("{} ({})", entity->m_id, magic_enum::enum_name(entity->GetType()));
     }
+    return stringBuffer.c_str();
 }
 
 namespace imgui_ext {

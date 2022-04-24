@@ -22,11 +22,23 @@ std::unique_ptr<moth_ui::Event> EventFactory::FromSDL(SDL_Event const& event) {
     case SDL_QUIT: {
         return std::make_unique<EventRequestQuit>();
     }
-    case SDL_KEYUP: {
-        return std::make_unique<moth_ui::EventKey>(moth_ui::KeyAction::Up, FromSDLKey(event.key.keysym.sym));
-    }
+    case SDL_KEYUP:
     case SDL_KEYDOWN: {
-        return std::make_unique<moth_ui::EventKey>(moth_ui::KeyAction::Down, FromSDLKey(event.key.keysym.sym));
+        moth_ui::KeyAction action = event.type == SDL_KEYUP ? moth_ui::KeyAction::Up : moth_ui::KeyAction::Down;
+        int mods = 0;
+        if ((event.key.keysym.mod & KMOD_LSHIFT) != 0)
+            mods |= moth_ui::KeyMod_LeftShift;
+        if ((event.key.keysym.mod & KMOD_RSHIFT) != 0)
+            mods |= moth_ui::KeyMod_RightShift;
+        if ((event.key.keysym.mod & KMOD_LALT) != 0)
+            mods |= moth_ui::KeyMod_LeftAlt;
+        if ((event.key.keysym.mod & KMOD_RALT) != 0)
+            mods |= moth_ui::KeyMod_RightAlt;
+        if ((event.key.keysym.mod & KMOD_LCTRL) != 0)
+            mods |= moth_ui::KeyMod_LeftCtrl;
+        if ((event.key.keysym.mod & KMOD_RCTRL) != 0)
+            mods |= moth_ui::KeyMod_RightCtrl;
+        return std::make_unique<moth_ui::EventKey>(action, FromSDLKey(event.key.keysym.sym), mods);
     }
     case SDL_RENDER_DEVICE_RESET: {
         return std::make_unique<EventRenderDeviceReset>();

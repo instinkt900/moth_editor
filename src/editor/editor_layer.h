@@ -146,6 +146,10 @@ private:
     void MoveSelectionUp();
     void MoveSelectionDown();
 
+    std::shared_ptr<moth_ui::LayoutEntity> m_copiedEntity;
+    void CopyEntity();
+    void PasteEntity();
+
     bool OnKey(moth_ui::EventKey const& event);
     bool OnMouseDown(moth_ui::EventMouseDown const& event);
     bool OnMouseUp(moth_ui::EventMouseUp const& event);

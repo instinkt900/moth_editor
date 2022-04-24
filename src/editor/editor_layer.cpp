@@ -3,6 +3,8 @@
 #include "app.h"
 #include "bounds_widget.h"
 
+#include "actions/add_action.h"
+
 #include "panels/editor_panel_layout_list.h"
 #include "panels/editor_panel_image_list.h"
 #include "panels/editor_panel_canvas_properties.h"
@@ -461,6 +463,22 @@ void EditorLayer::MoveSelectionDown() {
     AddEditAction(std::move(changeAction));
 }
 
+void EditorLayer::CopyEntity() {
+    if (m_selection) {
+        m_copiedEntity = m_selection->GetLayoutEntity();
+    }
+}
+
+void EditorLayer::PasteEntity() {
+    if (m_copiedEntity) {
+        auto copiedEntity = m_copiedEntity->Clone();
+        auto copyInstance = copiedEntity->Instantiate();
+        auto addAction = std::make_unique<AddAction>(std::move(copyInstance), m_root);
+        PerformEditAction(std::move(addAction));
+        m_root->RecalculateBounds();
+    }
+}
+
 bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     if (event.GetAction() == moth_ui::KeyAction::Up) {
         switch (event.GetKey()) {
@@ -473,10 +491,24 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
             }
             return true;
         case moth_ui::Key::Z:
-            UndoEditAction();
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                UndoEditAction();
+            }
             return true;
         case moth_ui::Key::Y:
-            RedoEditAction();
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                RedoEditAction();
+            }
+            return true;
+        case moth_ui::Key::C:
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                CopyEntity();
+            }
+            return true;
+        case moth_ui::Key::V:
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                PasteEntity();
+            }
             return true;
         case moth_ui::Key::Pageup:
             MoveSelectionUp();
