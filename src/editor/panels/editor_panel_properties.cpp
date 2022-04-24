@@ -13,6 +13,8 @@
 #include "../properties_elements.h"
 #include "../actions/editor_action.h"
 
+#include "imgui-filebrowser/imfilebrowser.h"
+
 namespace {
     ImGui::FileBrowser s_fileBrowser;
     std::shared_ptr<moth_ui::NodeImage> s_loadingNodeImage = nullptr;

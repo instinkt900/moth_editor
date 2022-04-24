@@ -3,6 +3,7 @@
 #include "anchor_bounds_handle.h"
 #include "offset_bounds_handle.h"
 #include "moth_ui/event_dispatch.h"
+#include "moth_ui/group.h"
 #include "editor_layer.h"
 
 BoundsWidget::BoundsWidget(EditorLayer& editorLayer)

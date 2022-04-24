@@ -3,6 +3,7 @@
 #include "../editor_layer.h"
 #include "../actions/add_action.h"
 #include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/group.h"
 
 namespace {
     static std::vector<std::string> const s_supportedExtensions{

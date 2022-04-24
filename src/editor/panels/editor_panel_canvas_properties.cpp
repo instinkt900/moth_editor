@@ -1,6 +1,7 @@
 #include "common.h"
 #include "editor_panel_canvas_properties.h"
 #include "../editor_layer.h"
+#include "../utils.h"
 
 namespace {
     static int constexpr s_maxZoom = 800;

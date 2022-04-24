@@ -1,6 +1,6 @@
 #include "common.h"
 #include "offset_bounds_handle.h"
-#include "moth_ui/node.h"
+#include "moth_ui/group.h"
 #include "moth_ui/layout/layout_entity.h"
 #include "bounds_widget.h"
 #include "editor_layer.h"

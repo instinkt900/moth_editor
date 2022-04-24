@@ -7,6 +7,9 @@
 #include "moth_ui/layout/layout_entity_clip.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "../actions/add_action.h"
+#include "moth_ui/group.h"
+
+#include "imgui-filebrowser/imfilebrowser.h"
 
 namespace {
     enum class FileOpenMode {

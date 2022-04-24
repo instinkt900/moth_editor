@@ -8,6 +8,8 @@
 #include "../actions/add_keyframe_action.h"
 #include "../actions/delete_keyframe_action.h"
 #include "imgui_internal.h"
+#include "moth_ui/group.h"
+#include "moth_ui/layout/layout_entity_group.h"
 
 #undef min
 #undef max

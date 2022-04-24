@@ -4,6 +4,8 @@
 #include "editor_panel_layout_list.h"
 #include "editor_panel_image_list.h"
 
+#include "imgui-filebrowser/imfilebrowser.h"
+
 #undef min
 #undef max
 
