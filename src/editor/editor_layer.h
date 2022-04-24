@@ -1,22 +1,17 @@
 #pragma once
 
 #include "layers/layer.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/group.h"
-#include "moth_ui/events/event_mouse.h"
-#include "moth_ui/events/event_key.h"
 #include "events/event.h"
-
 #include "layout_project.h"
-#include "panels/editor_panel.h"
-
 #include "confirm_prompt.h"
 
-#include "imgui.h"
-#include "imgui-filebrowser/imfilebrowser.h"
+#include "moth_ui/layout/layout_rect.h"
+#include "moth_ui/events/event_mouse.h"
+#include "moth_ui/events/event_key.h"
 
 class BoundsWidget;
 class IEditorAction;
+class EditorPanel;
 
 class EditorLayer : public Layer {
 public:
