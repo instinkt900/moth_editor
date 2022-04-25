@@ -6,6 +6,7 @@
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_clip.h"
 #include "moth_ui/layout/layout_entity_text.h"
+#include "moth_ui/layout/layout.h"
 #include "../actions/add_action.h"
 #include "moth_ui/group.h"
 
@@ -55,7 +56,7 @@ namespace {
             "Sublayout",
             [](EditorLayer& editorLayer) {
                 s_fileBrowser.SetTitle("Open..");
-                s_fileBrowser.SetTypeFilters({ ".json" });
+                s_fileBrowser.SetTypeFilters({ moth_ui::Layout::Extension });
                 s_fileBrowser.Open();
                 s_fileOpenMode = FileOpenMode::SubLayout;
             },
@@ -80,7 +81,17 @@ void EditorPanelElements::DrawContents() {
     s_fileBrowser.Display();
     if (s_fileBrowser.HasSelected()) {
         if (s_fileOpenMode == FileOpenMode::SubLayout) {
-            AddEntity<moth_ui::LayoutEntityRef>(m_editorLayer, s_fileBrowser.GetSelected().string().c_str());
+            std::shared_ptr<moth_ui::Layout> referencedLayout;
+            auto const loadResult = moth_ui::Layout::Load(s_fileBrowser.GetSelected().string().c_str(), &referencedLayout);
+            if (loadResult == moth_ui::Layout::LoadResult::Success) {
+                AddEntity<moth_ui::LayoutEntityRef>(m_editorLayer, *referencedLayout);
+            } else {
+                if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
+                    m_editorLayer.ShowError("File not found.");
+                } else if (loadResult == moth_ui::Layout::LoadResult::IncorrectFormat) {
+                    m_editorLayer.ShowError("File was not valid.");
+                }
+            }
             s_fileBrowser.ClearSelected();
         } else if (s_fileOpenMode == FileOpenMode::Image) {
             AddEntity<moth_ui::LayoutEntityImage>(m_editorLayer, s_fileBrowser.GetSelected().string().c_str());

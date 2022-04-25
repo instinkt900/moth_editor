@@ -110,6 +110,19 @@ void EditorLayer::Update(uint32_t ticks) {
 void EditorLayer::Draw(SDL_Renderer& renderer) {
     ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
+    if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::TextWrapped(m_lastErrorMsg.c_str());
+        ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
+        if (ImGui::Button("OK", button_size)) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    if (m_errorPending) {
+        ImGui::OpenPopup("Error");
+        m_errorPending = false;
+    }
+
     m_confirmPrompt.Draw();
 
     DrawCanvas(renderer);
@@ -415,12 +428,22 @@ void EditorLayer::LoadLayout(char const* path, bool discard) {
         });
         m_confirmPrompt.Open();
     } else {
-        m_rootLayout = moth_ui::Layout::Load(path);
-        m_currentLayoutPath = path;
-        m_selectedFrame = 0;
-        m_selection = nullptr;
-        ClearEditActions();
-        Rebuild();
+        std::shared_ptr<moth_ui::Layout> newLayout;
+        auto const loadResult = moth_ui::Layout::Load(path, &newLayout);
+        if (loadResult == moth_ui::Layout::LoadResult::Success) {
+            m_rootLayout = newLayout;
+            m_currentLayoutPath = path;
+            m_selectedFrame = 0;
+            m_selection = nullptr;
+            ClearEditActions();
+            Rebuild();
+        } else {
+            if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
+                ShowError("File not found.");
+            } else if (loadResult == moth_ui::Layout::LoadResult::IncorrectFormat) {
+                ShowError("File was not valid.");
+            }
+        }
     }
 }
 
@@ -481,7 +504,7 @@ void EditorLayer::MenuFuncNewLayout() {
 
 void EditorLayer::MenuFuncOpenLayout() {
     s_fileDialog.SetTitle("Open Layout..");
-    s_fileDialog.SetTypeFilters({ ".json" });
+    s_fileDialog.SetTypeFilters({ moth_ui::Layout::Extension });
     s_fileDialog.Open();
     s_fileOpenMode = FileOpenMode::OpenLayout;
 }
@@ -494,7 +517,7 @@ void EditorLayer::MenuFuncSaveLayout() {
 
 void EditorLayer::MenuFuncSaveLayoutAs() {
     s_fileDialog.SetTitle("Save Layout As..");
-    s_fileDialog.SetTypeFilters({ ".json" });
+    s_fileDialog.SetTypeFilters({ moth_ui::Layout::Extension });
     s_fileDialog.Open();
     s_fileOpenMode = FileOpenMode::SaveLayout;
 }
@@ -803,4 +826,9 @@ void EditorLayer::EndEditColor() {
     }
 
     m_editColorContext.reset();
+}
+
+void EditorLayer::ShowError(std::string const& message) {
+    m_lastErrorMsg = message;
+    m_errorPending = true;
 }

@@ -96,6 +96,8 @@ public:
         }
     }
 
+    void ShowError(std::string const& message);
+
 private:
     CanvasProperties m_canvasProperties;
     bool m_canvasGrabbed = false;
@@ -131,6 +133,9 @@ private:
     int m_lastSaveActionIndex = -1;
     bool IsWorkPending() const { return m_lastSaveActionIndex != m_actionIndex; }
     ConfirmPrompt m_confirmPrompt;
+
+    std::string m_lastErrorMsg;
+    bool m_errorPending = false;
 
     void DrawMainMenu();
     void DrawCanvas(SDL_Renderer& renderer);

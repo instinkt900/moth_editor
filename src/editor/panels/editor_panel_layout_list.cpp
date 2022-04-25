@@ -12,7 +12,7 @@ EditorPanelLayoutList::EditorPanelLayoutList(EditorLayer& editorLayer, bool visi
     m_deleteConfirm.SetNegativeText("Cancel");
 
     m_contentList.SetDisplayNameAction([](std::filesystem::path const& path) {
-        return path.stem().string();
+        return path.filename().string();
     });
 
     m_contentList.SetDoubleClickAction([this](std::filesystem::path const& path) {
@@ -27,7 +27,7 @@ EditorPanelLayoutList::EditorPanelLayoutList(EditorLayer& editorLayer, bool visi
     m_contentList.SetDisplayFilter([](std::filesystem::path const& path) {
         if (std::filesystem::is_directory(path)) {
             return true;
-        } else if (!path.has_extension() || path.extension() != ".json") {
+        } else if (!path.has_extension() || path.extension() != moth_ui::Layout::Extension) {
             return false;
         }
         return true;
@@ -61,7 +61,7 @@ void EditorPanelLayoutList::DrawContents() {
         ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
         if (ImGui::Button("OK", button_size)) {
             ImGui::CloseCurrentPopup();
-            auto const layoutFilename = fmt::format("{}.json", nameBuffer);
+            auto const layoutFilename = fmt::format("{}{}", nameBuffer, moth_ui::Layout::Extension);
             auto const newLayoutPath = m_contentList.GetPath() / layoutFilename;
             if (std::filesystem::exists(newLayoutPath)) {
                 fileExistsPopup = true;
