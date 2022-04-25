@@ -140,53 +140,65 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
 void EditorLayer::DrawMainMenu() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("New Layout")) {
-                NewLayout();
-            } 
-            if (ImGui::MenuItem("Open Layout")) {
-                s_fileDialog.SetTitle("Open Layout..");
-                s_fileDialog.SetTypeFilters({ ".json" });
-                s_fileDialog.Open();
-                s_fileOpenMode = FileOpenMode::OpenLayout;
+            if (ImGui::MenuItem("New Layout", "Ctrl+N")) {
+                MenuFuncNewLayout();
             }
-            if (ImGui::MenuItem("Save Layout", nullptr, nullptr, !m_currentLayoutPath.empty())) {
-                SaveLayout(m_currentLayoutPath.c_str());
+            if (ImGui::MenuItem("Open Layout", "Ctrl+O")) {
+                MenuFuncOpenLayout();
             }
-            if (ImGui::MenuItem("Save Layout As")) {
-                s_fileDialog.SetTitle("Save Layout As..");
-                s_fileDialog.SetTypeFilters({ ".json" });
-                s_fileDialog.Open();
-                s_fileOpenMode = FileOpenMode::SaveLayout;
+            if (ImGui::MenuItem("Save Layout", "Ctrl+S", nullptr, !m_currentLayoutPath.empty())) {
+                MenuFuncSaveLayout();
             }
+            if (ImGui::MenuItem("Save Layout As", "Ctrl+Shift+S")) {
+                MenuFuncSaveLayoutAs();
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Open Project..")) {
-                s_fileDialog.SetTitle("Open Project..");
-                s_fileDialog.SetTypeFilters({ ".json" });
-                s_fileDialog.Open();
-                s_fileOpenMode = FileOpenMode::OpenProject;
+                MenuFuncOpenProject();
             }
             if (ImGui::MenuItem("Save Project", nullptr, nullptr, !m_layoutProject.m_loadedPath.empty())) {
-                SaveProject(m_layoutProject.m_loadedPath.c_str());
+                MenuFuncSaveProject();
             }
             if (ImGui::MenuItem("Save Project As..")) {
-                s_fileDialog.SetTitle("Save Project..");
-                s_fileDialog.SetTypeFilters({ ".json" });
-                s_fileDialog.Open();
-                s_fileOpenMode = FileOpenMode::SaveProject;
+                MenuFuncSaveProjectAs();
             }
+            ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
                 m_layerStack->BroadcastEvent(EventQuit{});
             }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("View")) {
-            std::map<std::string, bool*> sortedVisBools;
-            for (auto& [type, panel] : m_panels) {
-                if (panel->IsExposed()) {
-                    sortedVisBools.insert(std::make_pair(panel->GetTitle(), &panel->m_visible));
-                }
+        if (ImGui::BeginMenu("Edit")) {
+            if (ImGui::MenuItem("Cut", "Ctrl+X", nullptr, m_selection != nullptr)) {
+                CutEntity();
             }
-            for (auto&& [title, visible] : sortedVisBools) {
-                ImGui::Checkbox(title.c_str(), visible);
+            if (ImGui::MenuItem("Copy", "Ctrl+C", nullptr, m_selection != nullptr)) {
+                CopyEntity();
+            }
+            if (ImGui::MenuItem("Paste", "Ctrl+V", nullptr, m_copiedEntity != nullptr)) {
+                PasteEntity();
+            }
+            if (ImGui::MenuItem("Delete", "Del", nullptr, m_copiedEntity != nullptr)) {
+                DeleteEntity();
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("View")) {
+            if (ImGui::MenuItem("Reset Canvas", "F")) {
+                ResetCanvas();
+            }
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Panels")) {
+                std::map<std::string, bool*> sortedVisBools;
+                for (auto& [type, panel] : m_panels) {
+                    if (panel->IsExposed()) {
+                        sortedVisBools.insert(std::make_pair(panel->GetTitle(), &panel->m_visible));
+                    }
+                }
+                for (auto&& [title, visible] : sortedVisBools) {
+                    ImGui::Checkbox(title.c_str(), visible);
+                }
+                ImGui::EndMenu();
             }
             ImGui::EndMenu();
         }
@@ -463,10 +475,59 @@ void EditorLayer::MoveSelectionDown() {
     AddEditAction(std::move(changeAction));
 }
 
+void EditorLayer::MenuFuncNewLayout() {
+    NewLayout();
+}
+
+void EditorLayer::MenuFuncOpenLayout() {
+    s_fileDialog.SetTitle("Open Layout..");
+    s_fileDialog.SetTypeFilters({ ".json" });
+    s_fileDialog.Open();
+    s_fileOpenMode = FileOpenMode::OpenLayout;
+}
+
+void EditorLayer::MenuFuncSaveLayout() {
+    if (!m_currentLayoutPath.empty()) {
+        SaveLayout(m_currentLayoutPath.c_str());
+    }
+}
+
+void EditorLayer::MenuFuncSaveLayoutAs() {
+    s_fileDialog.SetTitle("Save Layout As..");
+    s_fileDialog.SetTypeFilters({ ".json" });
+    s_fileDialog.Open();
+    s_fileOpenMode = FileOpenMode::SaveLayout;
+}
+
+void EditorLayer::MenuFuncOpenProject() {
+    s_fileDialog.SetTitle("Open Project..");
+    s_fileDialog.SetTypeFilters({ ".json" });
+    s_fileDialog.Open();
+    s_fileOpenMode = FileOpenMode::OpenProject;
+}
+
+void EditorLayer::MenuFuncSaveProject() {
+    if (!m_layoutProject.m_loadedPath.empty()) {
+        SaveProject(m_layoutProject.m_loadedPath.c_str());
+    }
+}
+
+void EditorLayer::MenuFuncSaveProjectAs() {
+    s_fileDialog.SetTitle("Save Project..");
+    s_fileDialog.SetTypeFilters({ ".json" });
+    s_fileDialog.Open();
+    s_fileOpenMode = FileOpenMode::SaveProject;
+}
+
 void EditorLayer::CopyEntity() {
     if (m_selection) {
         m_copiedEntity = m_selection->GetLayoutEntity();
     }
+}
+
+void EditorLayer::CutEntity() {
+    CopyEntity();
+    DeleteEntity();
 }
 
 void EditorLayer::PasteEntity() {
@@ -479,17 +540,48 @@ void EditorLayer::PasteEntity() {
     }
 }
 
+void EditorLayer::DeleteEntity() {
+    if (m_selection) {
+        PerformEditAction(std::make_unique<DeleteAction>(m_selection, m_root));
+        SetSelection(nullptr);
+    }
+}
+
+void EditorLayer::ResetCanvas() {
+    m_canvasProperties = {};
+}
+
 bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     if (event.GetAction() == moth_ui::KeyAction::Up) {
         switch (event.GetKey()) {
         case moth_ui::Key::Delete:
             if (m_selection) {
-                auto delAction = std::make_unique<DeleteAction>(m_selection, m_root);
-                delAction->Do();
-                AddEditAction(std::move(delAction));
+                PerformEditAction(std::make_unique<DeleteAction>(m_selection, m_root));
                 SetSelection(nullptr);
             }
             return true;
+        case moth_ui::Key::F:
+            ResetCanvas();
+            break;
+        case moth_ui::Key::N:
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                MenuFuncNewLayout();
+            }
+            break;
+        case moth_ui::Key::O:
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                MenuFuncOpenLayout();
+            }
+            break;
+        case moth_ui::Key::S: {
+            auto const anyCtrlPressed = (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0;
+            auto const anyShiftPressed = (event.GetMods() & moth_ui::KeyMod_Shift) != 0;
+            if (anyCtrlPressed && anyShiftPressed) {
+                MenuFuncSaveLayoutAs();
+            } else if (anyCtrlPressed) {
+                MenuFuncSaveLayout();
+            }
+        } break;
         case moth_ui::Key::Z:
             if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 UndoEditAction();
@@ -503,6 +595,11 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
         case moth_ui::Key::C:
             if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 CopyEntity();
+            }
+            return true;
+        case moth_ui::Key::X:
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                CutEntity();
             }
             return true;
         case moth_ui::Key::V:

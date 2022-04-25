@@ -110,6 +110,7 @@ private:
     std::shared_ptr<moth_ui::Layout> m_rootLayout;
     std::shared_ptr<moth_ui::Group> m_root;
     std::shared_ptr<moth_ui::Node> m_selection;
+    std::shared_ptr<moth_ui::LayoutEntity> m_copiedEntity;
 
     int m_selectedFrame = 0;
 
@@ -146,9 +147,20 @@ private:
     void MoveSelectionUp();
     void MoveSelectionDown();
 
-    std::shared_ptr<moth_ui::LayoutEntity> m_copiedEntity;
+    void MenuFuncNewLayout();
+    void MenuFuncOpenLayout();
+    void MenuFuncSaveLayout();
+    void MenuFuncSaveLayoutAs();
+    void MenuFuncOpenProject();
+    void MenuFuncSaveProject();
+    void MenuFuncSaveProjectAs();
+
     void CopyEntity();
+    void CutEntity();
     void PasteEntity();
+    void DeleteEntity();
+
+    void ResetCanvas();
 
     bool OnKey(moth_ui::EventKey const& event);
     bool OnMouseDown(moth_ui::EventMouseDown const& event);

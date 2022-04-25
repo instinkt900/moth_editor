@@ -15,10 +15,10 @@ EditorPanelCanvasProperties::EditorPanelCanvasProperties(EditorLayer& editorLaye
 void EditorPanelCanvasProperties::DrawContents() {
     auto& canvasProperties = m_editorLayer.GetCanvasProperties();
 
-    imgui_ext::InputIntVec2("Display Size", &canvasProperties.m_size);
-    ImGui::InputInt("Display Zoom", &canvasProperties.m_zoom);
+    imgui_ext::InputIntVec2("Canvas Size", &canvasProperties.m_size);
+    ImGui::InputInt("Canvas Zoom", &canvasProperties.m_zoom);
     canvasProperties.m_zoom = std::clamp(canvasProperties.m_zoom, s_minZoom, s_maxZoom);
-    imgui_ext::InputFloatVec2("Display Offset", &canvasProperties.m_offset);
+    //imgui_ext::InputFloatVec2("Canvas Offset", &canvasProperties.m_offset);
     ImGui::InputInt("Grid Spacing", &canvasProperties.m_gridSpacing);
     canvasProperties.m_gridSpacing = std::clamp(canvasProperties.m_gridSpacing, 0, canvasProperties.m_size.x / 2);
 }

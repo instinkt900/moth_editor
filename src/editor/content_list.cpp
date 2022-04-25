@@ -66,25 +66,26 @@ void ContentList::Refresh() {
 
 void ContentList::Draw() {
     ImGui::PushID(this);
-    ImGui::BeginListBox("##content_list", ImVec2(-FLT_MIN, -FLT_MIN));
-    for (int i = 0; i < m_currentList.size(); ++i) {
-        auto const& entryInfo = m_currentList[i];
-        bool const selected = m_selectedIndex == i;
-        if (ImGui::Selectable(entryInfo.m_displayName.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick)) {
-            m_selectedIndex = i;
-            if (m_clickAction) {
-                m_clickAction(entryInfo.m_path);
-            }
-            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-                if (entryInfo.m_type == ListEntryType::Directory) {
-                    SetPath(entryInfo.m_path);
-                    break;
-                } else if (m_doubleClickAction) {
-                    m_doubleClickAction(entryInfo.m_path);
+    if (ImGui::BeginListBox("##content_list", ImVec2(-FLT_MIN, -FLT_MIN))) {
+        for (int i = 0; i < m_currentList.size(); ++i) {
+            auto const& entryInfo = m_currentList[i];
+            bool const selected = m_selectedIndex == i;
+            if (ImGui::Selectable(entryInfo.m_displayName.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick)) {
+                m_selectedIndex = i;
+                if (m_clickAction) {
+                    m_clickAction(entryInfo.m_path);
+                }
+                if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+                    if (entryInfo.m_type == ListEntryType::Directory) {
+                        SetPath(entryInfo.m_path);
+                        break;
+                    } else if (m_doubleClickAction) {
+                        m_doubleClickAction(entryInfo.m_path);
+                    }
                 }
             }
         }
+        ImGui::EndListBox();
     }
-    ImGui::EndListBox();
     ImGui::PopID();
 }
