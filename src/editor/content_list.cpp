@@ -84,6 +84,10 @@ void ContentList::Draw() {
                     }
                 }
             }
+
+            if (m_perEntryAction) {
+                m_perEntryAction(entryInfo.m_path);
+            }
         }
         ImGui::EndListBox();
     }

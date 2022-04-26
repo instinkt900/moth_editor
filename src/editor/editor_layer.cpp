@@ -5,8 +5,7 @@
 
 #include "actions/add_action.h"
 
-#include "panels/editor_panel_layout_list.h"
-#include "panels/editor_panel_image_list.h"
+#include "panels/editor_panel_asset_list.h"
 #include "panels/editor_panel_canvas_properties.h"
 #include "panels/editor_panel_project_properties.h"
 #include "panels/editor_panel_properties.h"
@@ -51,8 +50,7 @@ EditorLayer::EditorLayer() {
     AddEditorPanel<EditorPanelCanvas>(*this, true);
     AddEditorPanel<EditorPanelCanvasProperties>(*this, true);
     AddEditorPanel<EditorPanelProjectProperties>(*this, false);
-    AddEditorPanel<EditorPanelLayoutList>(*this, true);
-    AddEditorPanel<EditorPanelImageList>(*this, true);
+    AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
     auto const animationPanel = AddEditorPanel<EditorPanelAnimation>(*this, true);
@@ -299,8 +297,7 @@ void EditorLayer::LoadProject(char const* path) {
     m_layoutProject.m_imageRoot = imagePath.string();
     m_layoutProject.m_loadedPath = projectPath.string();
 
-    GetEditorPanel<EditorPanelLayoutList>()->Refresh();
-    GetEditorPanel<EditorPanelImageList>()->Refresh();
+    GetEditorPanel<EditorPanelAssetList>()->Refresh();
 
     NewLayout();
 }

@@ -12,6 +12,7 @@ public:
     void SetClickAction(std::function<void(std::filesystem::path const&)> const& action) { m_clickAction = action; }
     void SetDoubleClickAction(std::function<void(std::filesystem::path const&)> const& action) { m_doubleClickAction = action; }
     void SetChangeDirectoryAction(std::function<void(std::filesystem::path const&)> const& action) { m_changeDirectoryAction = action; }
+    void SetPerEntryAction(std::function<void(std::filesystem::path const&)> const& action) { m_perEntryAction = action; }
     void SetDisplayFilter(std::function<bool(std::filesystem::path const&)> const& action) { m_displayFilterAction = action; }
 
     void Refresh();
@@ -38,4 +39,5 @@ private:
     std::function<void(std::filesystem::path const&)> m_doubleClickAction;
     std::function<void(std::filesystem::path const&)> m_changeDirectoryAction;
     std::function<bool(std::filesystem::path const&)> m_displayFilterAction;
+    std::function<void(std::filesystem::path const&)> m_perEntryAction;
 };

@@ -6,6 +6,10 @@
 #include "editor/bounds_widget.h"
 #include "moth_ui/events/event_mouse.h"
 #include "imgui_internal.h"
+#include "../element_utils.h"
+#include "moth_ui/layout/layout_entity_ref.h"
+#include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/layout/layout.h"
 
 extern App* g_App;
 
@@ -57,7 +61,7 @@ void EditorPanelCanvas::DrawContents() {
             }
 
             auto const dragDelta = moth_ui::FloatVec2{ ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).x, ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).y };
-            
+
             canvasProperties.m_offset = m_initialCanvasOffset + (moth_ui::FloatVec2{ dragDelta.x, dragDelta.y } / scaleFactor);
         } else {
             m_dragging = false;
@@ -164,5 +168,25 @@ void EditorPanelCanvas::UpdateDisplayTexture(SDL_Renderer& renderer, moth_ui::In
 }
 
 void EditorPanelCanvas::EndPanel() {
+    auto const windowPos = ImGui::GetWindowPos();
+    auto const windowSize = ImGui::GetWindowSize();
+    ImRect const windowContentRect{ windowPos + ImVec2{ 5, 5 }, windowPos + windowSize - ImVec2{ 5, 5 } };
+    auto const windowID = ImGui::GetCurrentWindow()->ID;
+
+    if (ImGui::BeginDragDropTargetCustom(windowContentRect, windowID)) {
+        if (auto const payload = ImGui::AcceptDragDropPayload("layout_path", 0)) {
+            std::string* layoutPath = static_cast<std::string*>(payload->Data);
+            std::shared_ptr<moth_ui::Layout> newLayout;
+            auto loadResult = moth_ui::Layout::Load(layoutPath->c_str(), &newLayout);
+            if (loadResult == moth_ui::Layout::LoadResult::Success) {
+                AddEntity<moth_ui::LayoutEntityRef>(m_editorLayer, *newLayout);
+            }
+        } else if (auto const payload = ImGui::AcceptDragDropPayload("image_path", 0)) {
+            std::string* layoutPath = static_cast<std::string*>(payload->Data);
+            AddEntity<moth_ui::LayoutEntityImage>(m_editorLayer, layoutPath->c_str());
+        }
+        ImGui::EndDragDropTarget();
+    }
+
     ImGui::End();
 }

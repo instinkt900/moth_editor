@@ -4,10 +4,10 @@
 #include "../confirm_prompt.h"
 #include "../content_list.h"
 
-class EditorPanelLayoutList : public EditorPanel {
+class EditorPanelAssetList : public EditorPanel {
 public:
-    EditorPanelLayoutList(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelLayoutList() = default;
+    EditorPanelAssetList(EditorLayer& editorLayer, bool visible);
+    virtual ~EditorPanelAssetList() = default;
 
     void Refresh() override;
 

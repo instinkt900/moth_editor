@@ -1,8 +1,7 @@
 #include "common.h"
 #include "editor_panel_project_properties.h"
 #include "../editor_layer.h"
-#include "editor_panel_layout_list.h"
-#include "editor_panel_image_list.h"
+#include "editor_panel_asset_list.h"
 
 #include "imgui-filebrowser/imfilebrowser.h"
 
@@ -31,8 +30,7 @@ void EditorPanelProjectProperties::OnClose() {
     auto& layoutProject = m_editorLayer.GetLayoutProject();
     layoutProject = m_tempProject;
 
-    m_editorLayer.GetEditorPanel<EditorPanelLayoutList>()->Refresh();
-    m_editorLayer.GetEditorPanel<EditorPanelImageList>()->Refresh();
+    m_editorLayer.GetEditorPanel<EditorPanelAssetList>()->Refresh();
 }
 
 void EditorPanelProjectProperties::DrawContents() {

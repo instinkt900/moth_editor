@@ -7,8 +7,8 @@
 #include "moth_ui/layout/layout_entity_clip.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout.h"
-#include "../actions/add_action.h"
 #include "moth_ui/group.h"
+#include "../element_utils.h"
 
 #include "imgui-filebrowser/imfilebrowser.h"
 
@@ -22,21 +22,6 @@ namespace {
 
     ImGui::FileBrowser s_fileBrowser;
     FileOpenMode s_fileOpenMode = FileOpenMode::Unknown;
-
-    template<typename T, typename... Args>
-    void AddEntity(EditorLayer& editorLayer, Args&&... args) {
-        moth_ui::LayoutRect bounds;
-        bounds.anchor.topLeft = { 0.5f, 0.5f };
-        bounds.anchor.bottomRight = { 0.5f, 0.5f };
-        bounds.offset.topLeft = { -50, -50 };
-        bounds.offset.bottomRight = { 50, 50 };
-
-        auto newLayoutEntity = std::make_shared<T>(bounds, std::forward<Args>(args)...);
-        auto instance = newLayoutEntity->Instantiate();
-        auto addAction = std::make_unique<AddAction>(std::move(instance), editorLayer.GetRoot());
-        editorLayer.PerformEditAction(std::move(addAction));
-        editorLayer.GetRoot()->RecalculateBounds();
-    }
 
     std::vector<std::pair<char const*, std::function<void(EditorLayer&)>>> ElementButtons = {
         {
