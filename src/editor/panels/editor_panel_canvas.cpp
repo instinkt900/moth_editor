@@ -50,7 +50,7 @@ void EditorPanelCanvas::DrawContents() {
     ImRect const windowContentRect{ windowPos + inputPadding, windowPos + windowSize - (inputPadding + inputPadding) };
     auto const mousePos = ImGui::GetMousePos();
 
-    if (windowContentRect.Contains(mousePos)) {
+    if (ImGui::IsWindowFocused() && windowContentRect.Contains(mousePos)) {
         auto& canvasProperties = m_editorLayer.GetCanvasProperties();
         float const scaleFactor = 100.0f / canvasProperties.m_zoom;
 
