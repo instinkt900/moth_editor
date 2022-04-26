@@ -7,7 +7,6 @@
 
 #include "panels/editor_panel_asset_list.h"
 #include "panels/editor_panel_canvas_properties.h"
-#include "panels/editor_panel_project_properties.h"
 #include "panels/editor_panel_properties.h"
 #include "panels/editor_panel_elements.h"
 #include "panels/editor_panel_animation.h"
@@ -36,20 +35,14 @@ namespace {
         Unknown,
         OpenLayout,
         SaveLayout,
-        OpenProject,
-        SaveProject,
     };
     static FileOpenMode s_fileOpenMode = FileOpenMode::Unknown;
     static ImGui::FileBrowser s_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename);
 }
 
 EditorLayer::EditorLayer() {
-    m_layoutProject.m_layoutRoot = ".";
-    m_layoutProject.m_imageRoot = ".";
-
     AddEditorPanel<EditorPanelCanvas>(*this, true);
     AddEditorPanel<EditorPanelCanvasProperties>(*this, true);
-    AddEditorPanel<EditorPanelProjectProperties>(*this, false);
     AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
@@ -108,13 +101,7 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
 
     s_fileDialog.Display();
     if (s_fileDialog.HasSelected()) {
-        if (s_fileOpenMode == FileOpenMode::OpenProject) {
-            LoadProject(s_fileDialog.GetSelected().string().c_str());
-            s_fileDialog.ClearSelected();
-        } else if (s_fileOpenMode == FileOpenMode::SaveProject) {
-            SaveProject(s_fileDialog.GetSelected().string().c_str());
-            s_fileDialog.ClearSelected();
-        } else if (s_fileOpenMode == FileOpenMode::OpenLayout) {
+        if (s_fileOpenMode == FileOpenMode::OpenLayout) {
             LoadLayout(s_fileDialog.GetSelected().string().c_str());
             s_fileDialog.ClearSelected();
         } else if (s_fileOpenMode == FileOpenMode::SaveLayout) {
@@ -138,16 +125,6 @@ void EditorLayer::DrawMainMenu() {
             }
             if (ImGui::MenuItem("Save Layout As", "Ctrl+Shift+S")) {
                 MenuFuncSaveLayoutAs();
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Open Project..")) {
-                MenuFuncOpenProject();
-            }
-            if (ImGui::MenuItem("Save Project", nullptr, nullptr, !m_layoutProject.m_loadedPath.empty())) {
-                MenuFuncSaveProject();
-            }
-            if (ImGui::MenuItem("Save Project As..")) {
-                MenuFuncSaveProjectAs();
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
@@ -278,48 +255,6 @@ void EditorLayer::NewLayout(bool discard) {
     }
 }
 
-void EditorLayer::LoadProject(char const* path) {
-    std::ifstream ifile(path);
-    if (!ifile.is_open()) {
-        return;
-    }
-
-    nlohmann::json json;
-    ifile >> json;
-
-    m_layoutProject = json;
-
-    std::filesystem::path projectPath(path);
-    std::filesystem::path layoutPath = projectPath.parent_path() / m_layoutProject.m_layoutRoot;
-    std::filesystem::path imagePath = projectPath.parent_path() / m_layoutProject.m_imageRoot;
-
-    m_layoutProject.m_layoutRoot = layoutPath.string();
-    m_layoutProject.m_imageRoot = imagePath.string();
-    m_layoutProject.m_loadedPath = projectPath.string();
-
-    GetEditorPanel<EditorPanelAssetList>()->Refresh();
-
-    NewLayout();
-}
-
-void EditorLayer::SaveProject(char const* path) {
-    std::ofstream ofile(path);
-    if (!ofile.is_open()) {
-        return;
-    }
-
-    // only save out relative paths to the project file
-    std::filesystem::path projectPath(path);
-    std::filesystem::path layoutsPath(m_layoutProject.m_layoutRoot);
-    std::filesystem::path imagesPath(m_layoutProject.m_imageRoot);
-
-    LayoutProject projectCopy = m_layoutProject;
-    projectCopy.m_layoutRoot = std::filesystem::relative(projectCopy.m_layoutRoot, projectPath.parent_path()).string();
-    projectCopy.m_imageRoot = std::filesystem::relative(projectCopy.m_imageRoot, projectPath.parent_path()).string();
-    nlohmann::json json = projectCopy;
-    ofile << json;
-}
-
 void EditorLayer::LoadLayout(char const* path, bool discard) {
     if (!discard && IsWorkPending()) {
         std::string const pathStr = path;
@@ -428,26 +363,6 @@ void EditorLayer::MenuFuncSaveLayoutAs() {
     s_fileDialog.SetTypeFilters({ moth_ui::Layout::Extension });
     s_fileDialog.Open();
     s_fileOpenMode = FileOpenMode::SaveLayout;
-}
-
-void EditorLayer::MenuFuncOpenProject() {
-    s_fileDialog.SetTitle("Open Project..");
-    s_fileDialog.SetTypeFilters({ ".json" });
-    s_fileDialog.Open();
-    s_fileOpenMode = FileOpenMode::OpenProject;
-}
-
-void EditorLayer::MenuFuncSaveProject() {
-    if (!m_layoutProject.m_loadedPath.empty()) {
-        SaveProject(m_layoutProject.m_loadedPath.c_str());
-    }
-}
-
-void EditorLayer::MenuFuncSaveProjectAs() {
-    s_fileDialog.SetTitle("Save Project..");
-    s_fileDialog.SetTypeFilters({ ".json" });
-    s_fileDialog.Open();
-    s_fileOpenMode = FileOpenMode::SaveProject;
 }
 
 void EditorLayer::CopyEntity() {

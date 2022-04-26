@@ -2,7 +2,6 @@
 
 #include "layers/layer.h"
 #include "events/event.h"
-#include "layout_project.h"
 #include "confirm_prompt.h"
 
 #include "moth_ui/layout/layout_rect.h"
@@ -56,7 +55,6 @@ public:
     void AddEditAction(std::unique_ptr<IEditorAction>&& editAction);
     int GetEditActionPos() const { return m_actionIndex; }
 
-    LayoutProject& GetLayoutProject() { return m_layoutProject; }
     CanvasProperties& GetCanvasProperties() { return m_canvasProperties; }
     std::vector<std::unique_ptr<IEditorAction>> const& GetEditActions() const { return m_editActions; }
 
@@ -102,8 +100,6 @@ private:
 
     std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
 
-    LayoutProject m_layoutProject;
-
     std::string m_currentLayoutPath;
     std::shared_ptr<moth_ui::Layout> m_rootLayout;
     std::shared_ptr<moth_ui::Group> m_root;
@@ -139,8 +135,6 @@ private:
     void RedoEditAction();
     void ClearEditActions();
 
-    void LoadProject(char const* path);
-    void SaveProject(char const* path);
     void SaveLayout(char const* path);
     void Rebuild();
 
@@ -151,9 +145,6 @@ private:
     void MenuFuncOpenLayout();
     void MenuFuncSaveLayout();
     void MenuFuncSaveLayoutAs();
-    void MenuFuncOpenProject();
-    void MenuFuncSaveProject();
-    void MenuFuncSaveProjectAs();
 
     void CopyEntity();
     void CutEntity();

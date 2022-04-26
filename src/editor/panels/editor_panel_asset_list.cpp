@@ -19,11 +19,7 @@ namespace {
 
 EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Asset List", visible, true)
-    , m_contentList({}) {
-    m_deleteConfirm.SetTitle("Delete?");
-    m_deleteConfirm.SetMessage("Are you sure you wish to delete this file?");
-    m_deleteConfirm.SetPositiveText("Delete");
-    m_deleteConfirm.SetNegativeText("Cancel");
+    , m_contentList(".") {
 
     m_contentList.SetDisplayNameAction([](std::filesystem::path const& path) {
         return path.filename().string();
@@ -33,11 +29,6 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
         if (path.extension().string() == moth_ui::Layout::Extension) {
             m_editorLayer.LoadLayout(path.string().c_str());
         }
-    });
-
-    m_contentList.SetChangeDirectoryAction([this](std::filesystem::path const& path) {
-        auto& project = m_editorLayer.GetLayoutProject();
-        project.m_layoutRoot = path.string();
     });
 
     m_contentList.SetPerEntryAction([](std::filesystem::path const& path) {
@@ -67,26 +58,9 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
 }
 
 void EditorPanelAssetList::Refresh() {
-    auto& projectInfo = m_editorLayer.GetLayoutProject();
-    m_contentList.SetPath(projectInfo.m_layoutRoot);
     m_contentList.Refresh();
 }
 
 void EditorPanelAssetList::DrawContents() {
-    static char nameBuffer[1024] = { 0 };
-    bool fileExistsPopup = false;
-
-    m_deleteConfirm.Draw();
-
-    //if (ImGui::Button("Delete Layout")) {
-    //    auto const& currentSelection = m_contentList.GetCurrentSelection();
-    //    if (std::filesystem::exists(currentSelection) && std::filesystem::is_regular_file(currentSelection)) {
-    //        m_deleteConfirm.SetPositiveAction([this, currentSelection]() {
-    //            std::filesystem::remove(currentSelection);
-    //            Refresh();
-    //        });
-    //        m_deleteConfirm.Open();
-    //    }
-    //}
     m_contentList.Draw();
 }

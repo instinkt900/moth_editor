@@ -13,7 +13,6 @@ public:
 
 private:
     ContentList m_contentList;
-    ConfirmPrompt m_deleteConfirm;
 
     void DrawContents() override;
 };
