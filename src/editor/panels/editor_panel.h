@@ -41,5 +41,7 @@ protected:
 
     virtual void OnOpen() {}
     virtual void OnClose() {}
+    virtual bool BeginPanel();
     virtual void DrawContents() = 0;
+    virtual void EndPanel();
 };

@@ -34,6 +34,7 @@ public:
         moth_ui::FloatVec2 m_offset{ 0, 0 };
         int m_zoom = 100;
         int m_gridSpacing = 5;
+        moth_ui::IntVec2 m_topLeft;
     };
 
     void SetSelectedFrame(int frameNo);
@@ -59,11 +60,6 @@ public:
     CanvasProperties& GetCanvasProperties() { return m_canvasProperties; }
     std::vector<std::unique_ptr<IEditorAction>> const& GetEditActions() const { return m_editActions; }
 
-    float GetScaleFactor() const { return 100.0f / m_canvasProperties.m_zoom; }
-    bool SnapToGrid() const { return m_canvasProperties.m_gridSpacing > 0; }
-    moth_ui::IntVec2 const& GetCanvasTopLeft() const { return m_canvasTopLeft; }
-    int GetGridSpacing() const { return m_canvasProperties.m_gridSpacing; }
-
     void NewLayout(bool discard = false);
     void LoadLayout(char const* path, bool discard = false);
 
@@ -71,7 +67,7 @@ public:
     std::shared_ptr<moth_ui::Layout> GetCurrentLayout() { return m_rootLayout; }
 
     template <typename T, typename... Args>
-    T* AddEditorPanel(Args&& ...args) {
+    T* AddEditorPanel(Args&&... args) {
         auto const id = typeid(T).hash_code();
         auto newPanel = std::make_unique<T>(std::forward<Args>(args)...);
         auto const newPanelPtr = newPanel.get();
@@ -89,7 +85,7 @@ public:
         return nullptr;
     }
 
-    template<typename T>
+    template <typename T>
     void SetEditorPanelVisible(bool visible) {
         if (auto const panel = GetEditorPanel<T>()) {
             panel->m_visible = visible;
@@ -98,13 +94,13 @@ public:
 
     void ShowError(std::string const& message);
 
+    ImGuiID GetDockID() const { return m_rootDockId; }
+
 private:
+    ImGuiID m_rootDockId;
     CanvasProperties m_canvasProperties;
-    bool m_canvasGrabbed = false;
-    moth_ui::IntVec2 m_canvasTopLeft;
 
     std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
-    std::unique_ptr<BoundsWidget> m_boundsWidget;
 
     LayoutProject m_layoutProject;
 
@@ -138,7 +134,6 @@ private:
     bool m_errorPending = false;
 
     void DrawMainMenu();
-    void DrawCanvas(SDL_Renderer& renderer);
 
     void UndoEditAction();
     void RedoEditAction();
@@ -168,11 +163,5 @@ private:
     void ResetCanvas();
 
     bool OnKey(moth_ui::EventKey const& event);
-    bool OnMouseDown(moth_ui::EventMouseDown const& event);
-    bool OnMouseUp(moth_ui::EventMouseUp const& event);
-    bool OnMouseMove(moth_ui::EventMouseMove const& event);
-    bool OnMouseWheel(moth_ui::EventMouseWheel const& event);
     bool OnRequestQuitEvent(EventRequestQuit const& event);
-
-    std::unique_ptr<moth_ui::Event> AlterMouseEvents(moth_ui::Event const& inEvent);
 };

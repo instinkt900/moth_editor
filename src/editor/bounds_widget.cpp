@@ -57,7 +57,7 @@ void BoundsWidget::Draw(SDL_Renderer& renderer) {
     auto const selection = m_editorLayer.GetSelection();
     if (selection && selection->IsVisible() && selection->GetParent()) {
         auto const screenRect = static_cast<moth_ui::FloatRect>(selection->GetScreenRect());
-        auto const scaleFactor = m_editorLayer.GetScaleFactor();
+        auto const scaleFactor = 100.0f / m_editorLayer.GetCanvasProperties().m_zoom;
         auto const canvasPos = static_cast<moth_ui::IntVec2>(screenRect.topLeft / scaleFactor);
         auto const canvasSize = static_cast<moth_ui::IntVec2>((screenRect.bottomRight - screenRect.topLeft) / scaleFactor);
 
@@ -108,7 +108,7 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
 
     if (selection) {
         m_holding = true;
-        auto const& canvasTopLeft = m_editorLayer.GetCanvasTopLeft();
+        auto const& canvasTopLeft = m_editorLayer.GetCanvasProperties().m_topLeft;
         m_grabPosition = SnapToGrid(event.GetPosition() - canvasTopLeft);
         BeginEdit();
         return true;
@@ -117,8 +117,8 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
 }
 
 moth_ui::IntVec2 BoundsWidget::SnapToGrid(moth_ui::IntVec2 const& original) {
-    if (m_editorLayer.SnapToGrid()) {
-        int const spacing = m_editorLayer.GetGridSpacing();
+    if (m_editorLayer.GetCanvasProperties().m_gridSpacing > 0) {
+        int const spacing = m_editorLayer.GetCanvasProperties().m_gridSpacing;
         float const s = static_cast<float>(spacing);
         int const x = static_cast<int>(std::round(original.x / s) * s);
         int const y = static_cast<int>(std::round(original.y / s) * s);
@@ -142,7 +142,7 @@ bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
 bool BoundsWidget::OnMouseMove(moth_ui::EventMouseMove const& event) {
     if (m_holding) {
         if (auto const selection = m_editorLayer.GetSelection()) {
-            auto const& canvasTopLeft = m_editorLayer.GetCanvasTopLeft();
+            auto const& canvasTopLeft = m_editorLayer.GetCanvasProperties().m_topLeft;
             auto const windowMousePos = event.GetPosition();
             auto const canvasRelative = SnapToGrid(windowMousePos - canvasTopLeft);
             auto const delta = canvasRelative - m_grabPosition;

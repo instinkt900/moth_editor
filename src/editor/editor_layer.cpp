@@ -15,6 +15,7 @@
 #include "panels/editor_panel_keyframes.h"
 #include "panels/editor_panel_undo_stack.h"
 #include "panels/editor_panel_preview.h"
+#include "panels/editor_panel_canvas.h"
 
 #include "editor/actions/delete_action.h"
 #include "editor/actions/composite_action.h"
@@ -43,11 +44,11 @@ namespace {
     static ImGui::FileBrowser s_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename);
 }
 
-EditorLayer::EditorLayer()
-    : m_boundsWidget(std::make_unique<BoundsWidget>(*this)) {
+EditorLayer::EditorLayer() {
     m_layoutProject.m_layoutRoot = ".";
     m_layoutProject.m_imageRoot = ".";
 
+    AddEditorPanel<EditorPanelCanvas>(*this, true);
     AddEditorPanel<EditorPanelCanvasProperties>(*this, true);
     AddEditorPanel<EditorPanelProjectProperties>(*this, false);
     AddEditorPanel<EditorPanelLayoutList>(*this, true);
@@ -64,33 +65,9 @@ EditorLayer::EditorLayer()
     }
 }
 
-std::unique_ptr<moth_ui::Event> EditorLayer::AlterMouseEvents(moth_ui::Event const& inEvent) {
-    float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
-    if (auto const mouseDownEvent = moth_ui::event_cast<moth_ui::EventMouseDown>(inEvent)) {
-        auto const position = static_cast<moth_ui::FloatVec2>(mouseDownEvent->GetPosition()) * scaleFactor;
-        return std::make_unique<moth_ui::EventMouseDown>(mouseDownEvent->GetButton(), static_cast<moth_ui::IntVec2>(position));
-    }
-    if (auto const mouseUpEvent = moth_ui::event_cast<moth_ui::EventMouseUp>(inEvent)) {
-        auto const position = static_cast<moth_ui::FloatVec2>(mouseUpEvent->GetPosition()) * scaleFactor;
-        return std::make_unique<moth_ui::EventMouseUp>(mouseUpEvent->GetButton(), static_cast<moth_ui::IntVec2>(position));
-    }
-    if (auto const mouseMoveEvent = moth_ui::event_cast<moth_ui::EventMouseMove>(inEvent)) {
-        auto const position = static_cast<moth_ui::FloatVec2>(mouseMoveEvent->GetPosition()) * scaleFactor;
-        auto const delta = static_cast<moth_ui::FloatVec2>(mouseMoveEvent->GetDelta()) * scaleFactor;
-        return std::make_unique<moth_ui::EventMouseMove>(static_cast<moth_ui::IntVec2>(position), delta);
-    }
-    return inEvent.Clone();
-}
-
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
-    auto const alteredEvent = AlterMouseEvents(event);
-    moth_ui::EventDispatch dispatch(*alteredEvent);
-    dispatch.Dispatch(m_boundsWidget.get());
+    moth_ui::EventDispatch dispatch(event);
     dispatch.Dispatch(this, &EditorLayer::OnKey);
-    dispatch.Dispatch(this, &EditorLayer::OnMouseDown);
-    dispatch.Dispatch(this, &EditorLayer::OnMouseUp);
-    dispatch.Dispatch(this, &EditorLayer::OnMouseMove);
-    dispatch.Dispatch(this, &EditorLayer::OnMouseWheel);
     dispatch.Dispatch(this, &EditorLayer::OnRequestQuitEvent);
     for (auto& [type, panel] : m_panels) {
         dispatch.Dispatch(panel.get());
@@ -108,7 +85,7 @@ void EditorLayer::Update(uint32_t ticks) {
 }
 
 void EditorLayer::Draw(SDL_Renderer& renderer) {
-    ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+    m_rootDockId = ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
     if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped(m_lastErrorMsg.c_str());
@@ -125,7 +102,6 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
 
     m_confirmPrompt.Draw();
 
-    DrawCanvas(renderer);
     DrawMainMenu();
 
     for (auto& [type, panel] : m_panels) {
@@ -217,71 +193,6 @@ void EditorLayer::DrawMainMenu() {
         }
         ImGui::EndMainMenuBar();
     }
-}
-
-void EditorLayer::DrawCanvas(SDL_Renderer& renderer) {
-    SDL_SetRenderDrawColor(&renderer, 0xAA, 0xAA, 0xAA, 0xFF);
-    SDL_RenderClear(&renderer);
-
-    float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
-
-    // first draw the canvas and the grid lines before scaling so  they stay at fine resolution
-
-    moth_ui::FloatVec2 const layerSize{ static_cast<float>(GetWidth()), static_cast<float>(GetHeight()) };
-    moth_ui::FloatVec2 const displaySize{ static_cast<float>(m_canvasProperties.m_size.x), static_cast<float>(m_canvasProperties.m_size.y) };
-    auto const preScaleSize = displaySize / scaleFactor;
-    auto const preScaleOffset = m_canvasProperties.m_offset + (layerSize - (displaySize / scaleFactor)) / 2.0f;
-
-    SDL_FRect canvasRect{ preScaleOffset.x,
-                          preScaleOffset.y,
-                          preScaleSize.x,
-                          preScaleSize.y };
-
-    // canvas
-    SDL_SetRenderDrawColor(&renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    SDL_RenderFillRectF(&renderer, &canvasRect);
-
-    // grid lines
-    if (m_canvasProperties.m_gridSpacing > 0) {
-        int const vertGridCount = (m_canvasProperties.m_size.x - 1) / m_canvasProperties.m_gridSpacing;
-        int const horizGridCount = (m_canvasProperties.m_size.y - 1) / m_canvasProperties.m_gridSpacing;
-        int index = 0;
-        float gridX = m_canvasProperties.m_gridSpacing / scaleFactor;
-        SDL_SetRenderDrawColor(&renderer, 0xDD, 0xDD, 0xDD, 0xFF);
-        for (int i = 0; i < vertGridCount; ++i) {
-            int const x = static_cast<int>(gridX);
-            SDL_RenderDrawLineF(&renderer, canvasRect.x + x, canvasRect.y, canvasRect.x + x, canvasRect.y + canvasRect.h - 1);
-            gridX += m_canvasProperties.m_gridSpacing / scaleFactor;
-        }
-        float gridY = m_canvasProperties.m_gridSpacing / scaleFactor;
-        for (int i = 0; i < horizGridCount; ++i) {
-            int const y = static_cast<int>(gridY);
-            SDL_RenderDrawLineF(&renderer, canvasRect.x, canvasRect.y + y, canvasRect.x + canvasRect.w - 1, canvasRect.y + y);
-            gridY += m_canvasProperties.m_gridSpacing / scaleFactor;
-        }
-    }
-
-    // setup scaling and draw the layout
-    int oldRenderWidth, oldRenderHeight;
-    SDL_RenderGetLogicalSize(&renderer, &oldRenderWidth, &oldRenderHeight);
-    int const newRenderWidth = static_cast<int>(oldRenderWidth * scaleFactor);
-    int const newRenderHeight = static_cast<int>(oldRenderHeight * scaleFactor);
-    int const newRenderOffsetX = static_cast<int>(m_canvasProperties.m_offset.x * scaleFactor);
-    int const newRenderOffsetY = static_cast<int>(m_canvasProperties.m_offset.y * scaleFactor);
-    SDL_RenderSetLogicalSize(&renderer, newRenderWidth, newRenderHeight);
-    SDL_Rect guideRect{ newRenderOffsetX + (newRenderWidth - m_canvasProperties.m_size.x) / 2, newRenderOffsetY + (newRenderHeight - m_canvasProperties.m_size.y) / 2, m_canvasProperties.m_size.x, m_canvasProperties.m_size.y };
-    m_canvasTopLeft = { guideRect.x, guideRect.y };
-
-    if (m_root) {
-        moth_ui::IntRect displayRect;
-        displayRect.topLeft = { guideRect.x, guideRect.y };
-        displayRect.bottomRight = { guideRect.x + guideRect.w, guideRect.y + guideRect.h };
-        m_root->SetScreenRect(displayRect);
-        m_root->Draw();
-    }
-    SDL_RenderSetLogicalSize(&renderer, oldRenderWidth, oldRenderHeight);
-
-    m_boundsWidget->Draw(renderer); // TODO we want this non scaled
 }
 
 void EditorLayer::DebugDraw() {
@@ -638,36 +549,6 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
             return true;
         }
     }
-    return false;
-}
-
-bool EditorLayer::OnMouseDown(moth_ui::EventMouseDown const& event) {
-    if (event.GetButton() == moth_ui::MouseButton::Middle) {
-        m_canvasGrabbed = true;
-        return true;
-    }
-    return false;
-}
-
-bool EditorLayer::OnMouseUp(moth_ui::EventMouseUp const& event) {
-    if (event.GetButton() == moth_ui::MouseButton::Middle) {
-        m_canvasGrabbed = false;
-    }
-    return false;
-}
-
-bool EditorLayer::OnMouseMove(moth_ui::EventMouseMove const& event) {
-    if (m_canvasGrabbed) {
-        // undo the mouse scaling so if we're zoomed in moving isnt slow
-        float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
-        m_canvasProperties.m_offset += event.GetDelta() / scaleFactor;
-    }
-    return false;
-}
-
-bool EditorLayer::OnMouseWheel(moth_ui::EventMouseWheel const& event) {
-    float const scaleFactor = 100.0f / m_canvasProperties.m_zoom;
-    m_canvasProperties.m_zoom += static_cast<int>(event.GetDelta().y * 6 / scaleFactor);
     return false;
 }
 

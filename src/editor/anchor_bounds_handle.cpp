@@ -35,7 +35,7 @@ void AnchorBoundsHandle::Draw(SDL_Renderer& renderer) {
     float y2 = 0;
     float const offset = halfSize + 3.0f;
 
-    auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
+    auto const scaleFactor = 100.0f / m_widget.GetEditorLayer().GetCanvasProperties().m_zoom;
     auto const scaledPosition = m_position / scaleFactor;
 
     if (!m_anchor.Top || !m_anchor.Bottom) {
@@ -54,7 +54,7 @@ void AnchorBoundsHandle::Draw(SDL_Renderer& renderer) {
 }
 
 bool AnchorBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
-    auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
+    auto const scaleFactor = 100.0f / m_widget.GetEditorLayer().GetCanvasProperties().m_zoom;
 
     moth_ui::FloatVec2 const anchor{ m_anchor.Left ? 0.0f : (m_anchor.Right ? 1.0f : 0.5f), m_anchor.Top ? 0.0f : (m_anchor.Bottom ? 1.0f : 0.5f) };
 

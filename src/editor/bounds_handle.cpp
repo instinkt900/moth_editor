@@ -67,7 +67,7 @@ bool BoundsHandle::OnMouseMove(moth_ui::EventMouseMove const& event) {
 
     if (m_holding) {
         auto& editorLayer = m_widget.GetEditorLayer();
-        auto const& canvasTopLeft = editorLayer.GetCanvasTopLeft();
+        auto const& canvasTopLeft = editorLayer.GetCanvasProperties().m_topLeft;
         auto const windowMousePos = event.GetPosition();
         auto const canvasRelative = m_widget.SnapToGrid(windowMousePos - canvasTopLeft);
         auto const newPosition = canvasTopLeft + canvasRelative;

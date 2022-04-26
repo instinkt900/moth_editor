@@ -17,7 +17,7 @@ void OffsetBoundsHandle::Draw(SDL_Renderer& renderer) {
         return;
     }
 
-    auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
+    auto const scaleFactor = 100.0f / m_widget.GetEditorLayer().GetCanvasProperties().m_zoom;
 
     auto const& bounds = m_target->GetScreenRect();
 
@@ -35,7 +35,7 @@ void OffsetBoundsHandle::Draw(SDL_Renderer& renderer) {
 }
 
 bool OffsetBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
-    auto const scaleFactor = m_widget.GetEditorLayer().GetScaleFactor();
+    auto const scaleFactor = 100.0f / m_widget.GetEditorLayer().GetCanvasProperties().m_zoom;
     int const halfSize = static_cast<int>(m_size / 2 * scaleFactor);
     moth_ui::IntRect r;
     r.topLeft = static_cast<moth_ui::IntVec2>(m_position - halfSize);

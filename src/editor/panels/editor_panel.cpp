@@ -18,9 +18,17 @@ void EditorPanel::Draw() {
     m_wasVisible = m_visible;
 
     if (m_visible) {
-        if (ImGui::Begin(m_title.c_str(), &m_visible)) {
+        if (BeginPanel()) {
             DrawContents();
         }
-        ImGui::End();
+        EndPanel();
     }
+}
+
+bool EditorPanel::BeginPanel() {
+    return ImGui::Begin(m_title.c_str(), &m_visible);
+}
+
+void EditorPanel::EndPanel() {
+    ImGui::End();
 }
