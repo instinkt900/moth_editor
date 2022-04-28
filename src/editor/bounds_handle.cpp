@@ -2,7 +2,7 @@
 #include "bounds_handle.h"
 #include "moth_ui/event_dispatch.h"
 #include "bounds_widget.h"
-#include "editor_layer.h"
+#include "panels/editor_panel_canvas.h"
 
 BoundsHandle::BoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor)
     : m_widget(widget)
@@ -66,12 +66,9 @@ bool BoundsHandle::OnMouseMove(moth_ui::EventMouseMove const& event) {
     }
 
     if (m_holding) {
-        auto& editorLayer = m_widget.GetEditorLayer();
-        auto const& canvasTopLeft = editorLayer.GetCanvasProperties().m_topLeft;
-        auto const windowMousePos = event.GetPosition();
-        auto const canvasRelative = m_widget.SnapToGrid(windowMousePos - canvasTopLeft);
-        auto const newPosition = canvasTopLeft + canvasRelative;
-        UpdatePosition(newPosition);
+        auto& canvasPanel = m_widget.GetCanvasPanel();
+        auto const worldPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::AppSpace, EditorPanelCanvas::CoordSpace::WorldSpace, int>(event.GetPosition());
+        UpdatePosition(m_widget.GetCanvasPanel().SnapToGrid(worldPosition));
     }
     return false;
 }

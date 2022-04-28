@@ -3,12 +3,12 @@
 #include "moth_ui/event_listener.h"
 #include "moth_ui/events/event_mouse.h"
 
-class EditorLayer;
+class EditorPanelCanvas;
 class BoundsHandle;
 
 class BoundsWidget : public moth_ui::EventListener {
 public:
-    BoundsWidget(EditorLayer& editorLayer);
+    BoundsWidget(EditorPanelCanvas& canvasPanel);
     ~BoundsWidget();
 
     void BeginEdit();
@@ -17,21 +17,15 @@ public:
     bool OnEvent(moth_ui::Event const& event) override;
     void Draw(SDL_Renderer& renderer);
 
-    EditorLayer& GetEditorLayer() { return m_editorLayer; }
+    void SetSelection(std::shared_ptr<moth_ui::Node> node);
+    std::shared_ptr<moth_ui::Node> GetSelection() const { return m_node; }
 
     moth_ui::IntVec2 SnapToGrid(moth_ui::IntVec2 const& original);
 
+    EditorPanelCanvas& GetCanvasPanel() const { return m_canvasPanel; }
+
 private:
-    EditorLayer& m_editorLayer;
-
+    EditorPanelCanvas& m_canvasPanel;
+    std::shared_ptr<moth_ui::Node> m_node;
     std::array<std::unique_ptr<BoundsHandle>, 16> m_handles;
-
-    bool m_holding = false;
-    moth_ui::IntVec2 m_grabPosition;
-
-    bool OnMouseDown(moth_ui::EventMouseDown const& event);
-    bool OnMouseUp(moth_ui::EventMouseUp const& event);
-    bool OnMouseMove(moth_ui::EventMouseMove const& event);
-
-    void UpdatePosition(moth_ui::IntVec2 const& position);
 };

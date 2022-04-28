@@ -41,8 +41,8 @@ namespace {
 }
 
 EditorLayer::EditorLayer() {
-    AddEditorPanel<EditorPanelCanvas>(*this, true);
-    AddEditorPanel<EditorPanelCanvasProperties>(*this, true);
+    auto const canvasPanel = AddEditorPanel<EditorPanelCanvas>(*this, true);
+    AddEditorPanel<EditorPanelCanvasProperties>(*this, true, *canvasPanel);
     AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
@@ -133,16 +133,16 @@ void EditorLayer::DrawMainMenu() {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("Cut", "Ctrl+X", nullptr, m_selection != nullptr)) {
+            if (ImGui::MenuItem("Cut", "Ctrl+X", nullptr, !m_selection.empty())) {
                 CutEntity();
             }
-            if (ImGui::MenuItem("Copy", "Ctrl+C", nullptr, m_selection != nullptr)) {
+            if (ImGui::MenuItem("Copy", "Ctrl+C", nullptr, !m_selection.empty())) {
                 CopyEntity();
             }
-            if (ImGui::MenuItem("Paste", "Ctrl+V", nullptr, m_copiedEntity != nullptr)) {
+            if (ImGui::MenuItem("Paste", "Ctrl+V", nullptr, !m_copiedEntities.empty())) {
                 PasteEntity();
             }
-            if (ImGui::MenuItem("Delete", "Del", nullptr, m_copiedEntity != nullptr)) {
+            if (ImGui::MenuItem("Delete", "Del", nullptr, !m_copiedEntities.empty())) {
                 DeleteEntity();
             }
             ImGui::EndMenu();
@@ -249,8 +249,9 @@ void EditorLayer::NewLayout(bool discard) {
     } else {
         m_rootLayout = std::make_shared<moth_ui::Layout>();
         m_selectedFrame = 0;
-        m_selection = nullptr;
+        ClearSelection();
         ClearEditActions();
+        m_lockedNodes.clear();
         Rebuild();
     }
 }
@@ -277,8 +278,9 @@ void EditorLayer::LoadLayout(char const* path, bool discard) {
             m_rootLayout = newLayout;
             m_currentLayoutPath = path;
             m_selectedFrame = 0;
-            m_selection = nullptr;
+            ClearSelection();
             ClearEditActions();
+            m_lockedNodes.clear();
             Rebuild();
         } else {
             if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
@@ -302,43 +304,61 @@ void EditorLayer::Rebuild() {
 }
 
 void EditorLayer::MoveSelectionUp() {
-    if (!m_selection || !m_selection->GetParent()) {
-        return;
+    auto compAction = std::make_unique<CompositeAction>();
+
+    // might need to do this more carefully since the order we do this matters
+    for (auto&& node : m_selection) {
+        if (!node || !node->GetParent()) {
+            continue;
+        }
+
+        auto parent = node->GetParent();
+        auto& children = parent->GetChildren();
+        auto const it = ranges::find_if(children, [&](auto const& child) { return child == node; });
+        auto const oldIndex = static_cast<int>(it - std::begin(children));
+
+        if (oldIndex == 0) {
+            continue;
+        }
+
+        auto const newIndex = oldIndex - 1;
+        auto changeAction = std::make_unique<ChangeIndexAction>(node, oldIndex, newIndex);
+        changeAction->Do();
+        compAction->GetActions().push_back(std::move(changeAction));
     }
 
-    auto parent = m_selection->GetParent();
-    auto& children = parent->GetChildren();
-    auto const it = ranges::find_if(children, [&](auto const& child) { return child == m_selection; });
-    auto const oldIndex = static_cast<int>(it - std::begin(children));
-
-    if (oldIndex == 0) {
-        return;
+    if (!compAction->GetActions().empty()) {
+        AddEditAction(std::move(compAction));
     }
-
-    auto const newIndex = oldIndex - 1;
-    auto changeAction = std::make_unique<ChangeIndexAction>(m_selection, oldIndex, newIndex);
-    changeAction->Do();
-    AddEditAction(std::move(changeAction));
 }
 
 void EditorLayer::MoveSelectionDown() {
-    if (!m_selection || !m_selection->GetParent()) {
-        return;
+    auto compAction = std::make_unique<CompositeAction>();
+
+    // might need to do this more carefully since the order we do this matters
+    for (auto&& node : m_selection) {
+        if (!node || !node->GetParent()) {
+            continue;
+        }
+
+        auto parent = node->GetParent();
+        auto& children = parent->GetChildren();
+        auto const it = ranges::find_if(children, [&](auto const& child) { return child == node; });
+        auto const oldIndex = static_cast<int>(it - std::begin(children));
+
+        if (oldIndex == static_cast<int>(children.size() - 1)) {
+            continue;
+        }
+
+        auto const newIndex = oldIndex + 1;
+        auto changeAction = std::make_unique<ChangeIndexAction>(node, oldIndex, newIndex);
+        changeAction->Do();
+        compAction->GetActions().push_back(std::move(changeAction));
     }
 
-    auto parent = m_selection->GetParent();
-    auto& children = parent->GetChildren();
-    auto const it = ranges::find_if(children, [&](auto const& child) { return child == m_selection; });
-    auto const oldIndex = static_cast<int>(it - std::begin(children));
-
-    if (oldIndex == static_cast<int>(children.size() - 1)) {
-        return;
+    if (!compAction->GetActions().empty()) {
+        AddEditAction(std::move(compAction));
     }
-
-    auto const newIndex = oldIndex + 1;
-    auto changeAction = std::make_unique<ChangeIndexAction>(m_selection, oldIndex, newIndex);
-    changeAction->Do();
-    AddEditAction(std::move(changeAction));
 }
 
 void EditorLayer::MenuFuncNewLayout() {
@@ -366,8 +386,9 @@ void EditorLayer::MenuFuncSaveLayoutAs() {
 }
 
 void EditorLayer::CopyEntity() {
-    if (m_selection) {
-        m_copiedEntity = m_selection->GetLayoutEntity();
+    m_copiedEntities.clear();
+    for (auto&& node : m_selection) {
+        m_copiedEntities.push_back(node->GetLayoutEntity());
     }
 }
 
@@ -377,34 +398,43 @@ void EditorLayer::CutEntity() {
 }
 
 void EditorLayer::PasteEntity() {
-    if (m_copiedEntity) {
-        auto copiedEntity = m_copiedEntity->Clone();
-        auto copyInstance = copiedEntity->Instantiate();
+    auto compAction = std::make_unique<CompositeAction>();
+    for (auto&& copiedEntity : m_copiedEntities) {
+        auto clonedEntity = copiedEntity->Clone();
+        auto copyInstance = clonedEntity->Instantiate();
         auto addAction = std::make_unique<AddAction>(std::move(copyInstance), m_root);
-        PerformEditAction(std::move(addAction));
+        compAction->GetActions().push_back(std::move(addAction));
+    }
+
+    if (!compAction->GetActions().empty()) {
+        PerformEditAction(std::move(compAction));
         m_root->RecalculateBounds();
     }
 }
 
 void EditorLayer::DeleteEntity() {
-    if (m_selection) {
-        PerformEditAction(std::make_unique<DeleteAction>(m_selection, m_root));
-        SetSelection(nullptr);
+    auto compAction = std::make_unique<CompositeAction>();
+    for (auto&& node : m_selection) {
+        compAction->GetActions().push_back(std::make_unique<DeleteAction>(node, m_root));
     }
+
+    if (!compAction->GetActions().empty()) {
+        PerformEditAction(std::move(compAction));
+        m_root->RecalculateBounds();
+    }
+
+    ClearSelection();
 }
 
 void EditorLayer::ResetCanvas() {
-    m_canvasProperties = {};
+    //m_canvasProperties = {};
 }
 
 bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     if (event.GetAction() == moth_ui::KeyAction::Up) {
         switch (event.GetKey()) {
         case moth_ui::Key::Delete:
-            if (m_selection) {
-                PerformEditAction(std::make_unique<DeleteAction>(m_selection, m_root));
-                SetSelection(nullptr);
-            }
+            DeleteEntity();
             return true;
         case moth_ui::Key::F:
             ResetCanvas();
@@ -482,91 +512,129 @@ bool EditorLayer::OnRequestQuitEvent(EventRequestQuit const& event) {
     return true;
 }
 
-void EditorLayer::SetSelection(std::shared_ptr<moth_ui::Node> selection) {
-    if (selection != m_selection) {
-        if (m_editBoundsContext) {
-            EndEditBounds();
-        }
-    }
-    m_selection = selection;
+void EditorLayer::ClearSelection() {
+    m_selection.clear();
 }
 
-void EditorLayer::BeginEditBounds() {
-    if (!m_editBoundsContext && m_selection) {
-        m_editBoundsContext = std::make_unique<EditBoundsContext>();
-        m_editBoundsContext->entity = m_selection->GetLayoutEntity();
-        m_editBoundsContext->originalRect = m_selection->GetLayoutRect();
+void EditorLayer::AddSelection(std::shared_ptr<moth_ui::Node> node) {
+    if (!m_editBoundsContext.empty()) {
+        EndEditBounds();
+    }
+    m_selection.push_back(node);
+}
+bool EditorLayer::IsSelected(std::shared_ptr<moth_ui::Node> node) const {
+    return std::end(m_selection) != std::find(std::begin(m_selection), std::end(m_selection), node);
+}
+
+void EditorLayer::LockNode(std::shared_ptr<moth_ui::Node> node) {
+    m_lockedNodes.insert(node);
+}
+
+void EditorLayer::UnlockNode(std::shared_ptr<moth_ui::Node> node) {
+    m_lockedNodes.erase(node);
+}
+
+bool EditorLayer::IsLocked(std::shared_ptr<moth_ui::Node> node) const {
+    return std::end(m_lockedNodes) != m_lockedNodes.find(node);
+}
+
+void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
+    if (node) {
+        if (m_editBoundsContext.empty()) {
+            auto context = std::make_unique<EditBoundsContext>();
+            context->node = node;
+            context->entity = node->GetLayoutEntity();
+            context->originalRect = node->GetLayoutRect();
+            m_editBoundsContext.push_back(std::move(context));
+        } else {
+            assert((*m_editBoundsContext.begin())->entity == node->GetLayoutEntity());
+        }
     } else {
-        assert(m_editBoundsContext->entity == m_selection->GetLayoutEntity());
+        if (m_editBoundsContext.empty()) {
+            for (auto&& selectedNode : m_selection) {
+                auto context = std::make_unique<EditBoundsContext>();
+                context->node = selectedNode;
+                context->entity = selectedNode->GetLayoutEntity();
+                context->originalRect = selectedNode->GetLayoutRect();
+                m_editBoundsContext.push_back(std::move(context));
+            }
+        } else {
+            assert(m_editBoundsContext.size() == m_selection.size());
+        }
     }
 }
 
 void EditorLayer::EndEditBounds() {
-    if (!m_editBoundsContext) {
+    if (m_editBoundsContext.empty()) {
         return;
     }
-    auto entity = m_editBoundsContext->entity;
-    auto& tracks = entity->m_tracks;
-    int const frameNo = m_selectedFrame;
+
     std::unique_ptr<CompositeAction> editAction = std::make_unique<CompositeAction>();
 
-    auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
-        auto& track = tracks.at(target);
-        if (auto keyframePtr = track->GetKeyframe(frameNo)) {
-            // keyframe exists
-            auto const oldValue = keyframePtr->m_value;
-            keyframePtr->m_value = value;
-            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->m_interpType, keyframePtr->m_interpType));
-        } else {
-            // no keyframe
-            auto& keyframe = track->GetOrCreateKeyframe(frameNo);
-            keyframe.m_value = value;
-            editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value));
+    for (auto&& context : m_editBoundsContext) {
+        auto entity = context->entity;
+        auto& tracks = entity->m_tracks;
+        int const frameNo = m_selectedFrame;
+
+        auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
+            auto& track = tracks.at(target);
+            if (auto keyframePtr = track->GetKeyframe(frameNo)) {
+                // keyframe exists
+                auto const oldValue = keyframePtr->m_value;
+                keyframePtr->m_value = value;
+                editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->m_interpType, keyframePtr->m_interpType));
+            } else {
+                // no keyframe
+                auto& keyframe = track->GetOrCreateKeyframe(frameNo);
+                keyframe.m_value = value;
+                editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value));
+            }
+        };
+
+        auto const& newRect = context->node->GetLayoutRect();
+        auto const rectDelta = newRect - context->originalRect;
+
+        if (rectDelta.anchor.topLeft.x != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::LeftAnchor, newRect.anchor.topLeft.x);
         }
-    };
-
-    auto const& newRect = m_selection->GetLayoutRect();
-    auto const rectDelta = newRect - m_editBoundsContext->originalRect;
-
-    if (rectDelta.anchor.topLeft.x != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::LeftAnchor, newRect.anchor.topLeft.x);
-    }
-    if (rectDelta.anchor.topLeft.y != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::TopAnchor, newRect.anchor.topLeft.y);
-    }
-    if (rectDelta.anchor.bottomRight.x != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::RightAnchor, newRect.anchor.bottomRight.x);
-    }
-    if (rectDelta.anchor.bottomRight.y != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::BottomAnchor, newRect.anchor.bottomRight.y);
-    }
-    if (rectDelta.offset.topLeft.x != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::LeftOffset, newRect.offset.topLeft.x);
-    }
-    if (rectDelta.offset.topLeft.y != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::TopOffset, newRect.offset.topLeft.y);
-    }
-    if (rectDelta.offset.bottomRight.x != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::RightOffset, newRect.offset.bottomRight.x);
-    }
-    if (rectDelta.offset.bottomRight.y != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::BottomOffset, newRect.offset.bottomRight.y);
+        if (rectDelta.anchor.topLeft.y != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::TopAnchor, newRect.anchor.topLeft.y);
+        }
+        if (rectDelta.anchor.bottomRight.x != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::RightAnchor, newRect.anchor.bottomRight.x);
+        }
+        if (rectDelta.anchor.bottomRight.y != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::BottomAnchor, newRect.anchor.bottomRight.y);
+        }
+        if (rectDelta.offset.topLeft.x != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::LeftOffset, newRect.offset.topLeft.x);
+        }
+        if (rectDelta.offset.topLeft.y != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::TopOffset, newRect.offset.topLeft.y);
+        }
+        if (rectDelta.offset.bottomRight.x != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::RightOffset, newRect.offset.bottomRight.x);
+        }
+        if (rectDelta.offset.bottomRight.y != 0) {
+            SetTrackValue(moth_ui::AnimationTrack::Target::BottomOffset, newRect.offset.bottomRight.y);
+        }
     }
 
     if (!editAction->GetActions().empty()) {
         AddEditAction(std::move(editAction));
     }
 
-    m_editBoundsContext.reset();
+    m_editBoundsContext.clear();
 }
 
-void EditorLayer::BeginEditColor() {
-    if (!m_editColorContext && m_selection) {
+void EditorLayer::BeginEditColor(std::shared_ptr<moth_ui::Node> node) {
+    if (!m_editColorContext && node) {
         m_editColorContext = std::make_unique<EditColorContext>();
-        m_editColorContext->entity = m_selection->GetLayoutEntity();
-        m_editColorContext->originalColor = m_selection->GetColor();
+        m_editColorContext->node = node;
+        m_editColorContext->entity = node->GetLayoutEntity();
+        m_editColorContext->originalColor = node->GetColor();
     } else {
-        assert(m_editColorContext->entity == m_selection->GetLayoutEntity());
+        assert(m_editColorContext->entity == node->GetLayoutEntity());
     }
 }
 
@@ -594,7 +662,7 @@ void EditorLayer::EndEditColor() {
         }
     };
 
-    auto const& newColor = m_selection->GetColor();
+    auto const& newColor = m_editColorContext->node->GetColor();
     // dont use the color operators because we clamp values
     auto const colorDeltaR = newColor.r - m_editColorContext->originalColor.r;
     auto const colorDeltaG = newColor.g - m_editColorContext->originalColor.g;

@@ -10,6 +10,7 @@
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout.h"
+#include "imgui_internal.h"
 
 extern App* g_App;
 
@@ -24,7 +25,7 @@ static ImVec2 operator-(const ImVec2& a, const ImVec2& b) {
 
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
-    , m_boundsWidget(std::make_unique<BoundsWidget>(editorLayer)) {
+    , m_boundsWidget(std::make_unique<BoundsWidget>(*this)) {
 }
 
 bool EditorPanelCanvas::BeginPanel() {
@@ -39,130 +40,115 @@ bool EditorPanelCanvas::BeginPanel() {
 
 void EditorPanelCanvas::DrawContents() {
     moth_ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
+
     UpdateDisplayTexture(*g_App->GetRenderer(), windowRegionSize);
     ImGui::Image(m_displayTexture.get(), ImVec2(static_cast<float>(windowRegionSize.x), static_cast<float>(windowRegionSize.y)));
 
-    auto const windowPos = ImGui::GetWindowPos();
-    auto const windowSize = ImGui::GetWindowSize();
-    auto const windowContentMin = ImGui::GetWindowContentRegionMin();
-    auto const windowContentMax = ImGui::GetWindowContentRegionMax();
-    ImVec2 const inputPadding{ 10, 10 };
-    ImRect const windowContentRect{ windowPos + inputPadding, windowPos + windowSize - (inputPadding + inputPadding) };
-    auto const mousePos = ImGui::GetMousePos();
+    auto const drawList = ImGui::GetWindowDrawList();
 
-    if (ImGui::IsWindowFocused() && windowContentRect.Contains(mousePos)) {
-        auto& canvasProperties = m_editorLayer.GetCanvasProperties();
-        float const scaleFactor = 100.0f / canvasProperties.m_zoom;
-
-        if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
-            if (!m_dragging) {
-                m_dragging = true;
-                m_initialCanvasOffset = canvasProperties.m_offset;
-            }
-
-            auto const dragDelta = moth_ui::FloatVec2{ ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).x, ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).y };
-
-            canvasProperties.m_offset = m_initialCanvasOffset + (moth_ui::FloatVec2{ dragDelta.x, dragDelta.y } / scaleFactor);
-        } else {
-            m_dragging = false;
-        }
-
-        auto const io = ImGui::GetIO();
-        if (io.MouseWheel != 0) {
-            canvasProperties.m_zoom += static_cast<int>(io.MouseWheel * 6 / scaleFactor);
-        }
-
-        moth_ui::FloatVec2 mousePosF{ mousePos.x - windowPos.x - windowContentMin.x, mousePos.y - windowPos.y - windowContentMin.y };
-        if (!m_wasLeftDown && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            m_wasLeftDown = true;
-            m_boundsWidget->OnEvent(moth_ui::EventMouseDown(moth_ui::MouseButton::Left, static_cast<moth_ui::IntVec2>(mousePosF * scaleFactor)));
-        } else if (m_wasLeftDown && !ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-            m_wasLeftDown = false;
-            m_boundsWidget->OnEvent(moth_ui::EventMouseUp(moth_ui::MouseButton::Left, static_cast<moth_ui::IntVec2>(mousePosF * scaleFactor)));
-        }
-        if (mousePosF != m_lastMousePos) {
-            m_boundsWidget->OnEvent(moth_ui::EventMouseMove(static_cast<moth_ui::IntVec2>(mousePosF * scaleFactor), (mousePosF - m_lastMousePos) * scaleFactor));
-            m_lastMousePos = mousePosF;
+    // draw selected item rects
+    {
+        auto const& selection = m_editorLayer.GetSelection();
+        for (auto&& node : selection) {
+            auto const rect = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::AppSpace, float>(node->GetScreenRect());
+            drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y }, 0xFFFF00FF);
         }
     }
+
+    // draw the selection rect if we have one
+    {
+        if (m_mouseDown) {
+            auto const minX = static_cast<float>(std::min(m_dragSelectStart.x, m_dragSelectEnd.x));
+            auto const maxX = static_cast<float>(std::max(m_dragSelectStart.x, m_dragSelectEnd.x));
+            auto const minY = static_cast<float>(std::min(m_dragSelectStart.y, m_dragSelectEnd.y));
+            auto const maxY = static_cast<float>(std::max(m_dragSelectStart.y, m_dragSelectEnd.y));
+            if ((maxX - minX) > 3 || (maxY - minY) > 3) {
+                drawList->AddRect(ImVec2{ minX, minY }, ImVec2{ maxX, maxY }, 0xFFFFFFFF);
+            }
+        }
+    }
+
+    auto const selection = m_editorLayer.GetSelection();
+    if (selection.size() == 1 && !m_editorLayer.IsLocked(selection[0])) {
+        m_boundsWidget->SetSelection(selection[0]);
+    } else {
+        m_boundsWidget->SetSelection(nullptr);
+    }
+    m_boundsWidget->Draw(*g_App->GetRenderer());
+
+    UpdateInput();
 }
 
-void EditorPanelCanvas::UpdateDisplayTexture(SDL_Renderer& renderer, moth_ui::IntVec2 const displaySize) {
-    if (!m_displayTexture || m_currentDisplaySize != displaySize) {
-        m_currentDisplaySize = displaySize;
-        m_displayTexture = CreateTextureRef(SDL_CreateTexture(g_App->GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, m_currentDisplaySize.x, m_currentDisplaySize.y));
+void EditorPanelCanvas::UpdateDisplayTexture(SDL_Renderer& renderer, moth_ui::IntVec2 const& windowSize) {
+    if (!m_displayTexture || m_canvasWindowSize != windowSize) {
+        m_displayTexture = CreateTextureRef(SDL_CreateTexture(g_App->GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowSize.x, windowSize.y));
     }
+
+    m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(ImGui::GetWindowPos().x), static_cast<int>(ImGui::GetWindowPos().y) };
+    m_canvasWindowSize = windowSize;
 
     auto const oldRenderTarget = SDL_GetRenderTarget(&renderer);
     SDL_SetRenderTarget(&renderer, m_displayTexture.get());
     SDL_SetRenderDrawColor(&renderer, 0xAA, 0xAA, 0xAA, 0xFF);
     SDL_RenderClear(&renderer);
 
-    auto const& canvasProperties = m_editorLayer.GetCanvasProperties();
-
-    float const scaleFactor = 100.0f / canvasProperties.m_zoom;
-
-    auto const displaySizeF = static_cast<moth_ui::FloatVec2>(displaySize);
-    auto const canvasSizeF = static_cast<moth_ui::FloatVec2>(canvasProperties.m_size);
-    auto const preScaleSize = canvasSizeF / scaleFactor;
-    auto const preScaleOffset = canvasProperties.m_offset + (displaySizeF - (canvasSizeF / scaleFactor)) / 2.0f;
-
-    SDL_FRect canvasRect{ preScaleOffset.x,
-                          preScaleOffset.y,
-                          preScaleSize.x,
-                          preScaleSize.y };
-
     // clear the canvas area
     {
-
         SDL_SetRenderDrawColor(&renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-        SDL_RenderFillRectF(&renderer, &canvasRect);
+        moth_ui::IntRect canvasRect;
+        canvasRect.topLeft = { 0, 0 };
+        canvasRect.bottomRight = m_canvasSize;
+        auto const sdlRectF = ToSDL(ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect));
+        SDL_RenderFillRectF(&renderer, &sdlRectF);
     }
 
     // grid lines
     {
-        if (canvasProperties.m_gridSpacing > 0) {
-            int const vertGridCount = (canvasProperties.m_size.x - 1) / canvasProperties.m_gridSpacing;
-            int const horizGridCount = (canvasProperties.m_size.y - 1) / canvasProperties.m_gridSpacing;
-            int index = 0;
-            float gridX = canvasProperties.m_gridSpacing / scaleFactor;
-            SDL_SetRenderDrawColor(&renderer, 0xDD, 0xDD, 0xDD, 0xFF);
-            for (int i = 0; i < vertGridCount; ++i) {
-                int const x = static_cast<int>(gridX);
-                SDL_RenderDrawLineF(&renderer, canvasRect.x + x, canvasRect.y, canvasRect.x + x, canvasRect.y + canvasRect.h - 1);
-                gridX += canvasProperties.m_gridSpacing / scaleFactor;
+        SDL_SetRenderDrawColor(&renderer, 0xDD, 0xDD, 0xDD, 0xFF);
+        if (m_canvasGridSpacing > 0) {
+            for (int x = m_canvasGridSpacing; x < m_canvasSize.x; x += m_canvasGridSpacing) {
+                moth_ui::IntVec2 const p0{ x, 0 };
+                moth_ui::IntVec2 const p1{ x, m_canvasSize.y };
+                auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
+                auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
+                SDL_RenderDrawLineF(&renderer, p0Scaled.x, p0Scaled.y, p1Scaled.x, p1Scaled.y);
             }
-            float gridY = canvasProperties.m_gridSpacing / scaleFactor;
-            for (int i = 0; i < horizGridCount; ++i) {
-                int const y = static_cast<int>(gridY);
-                SDL_RenderDrawLineF(&renderer, canvasRect.x, canvasRect.y + y, canvasRect.x + canvasRect.w - 1, canvasRect.y + y);
-                gridY += canvasProperties.m_gridSpacing / scaleFactor;
+            for (int y = m_canvasGridSpacing; y < m_canvasSize.y; y += m_canvasGridSpacing) {
+                moth_ui::IntVec2 const p0{ 0, y };
+                moth_ui::IntVec2 const p1{ m_canvasSize.x, y };
+                auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
+                auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
+                SDL_RenderDrawLineF(&renderer, p0Scaled.x, p0Scaled.y, p1Scaled.x, p1Scaled.y);
             }
         }
     }
 
     // setup scaling and draw the layout
-    int oldRenderWidth, oldRenderHeight;
-    SDL_RenderGetLogicalSize(&renderer, &oldRenderWidth, &oldRenderHeight);
-    int const newRenderWidth = static_cast<int>(oldRenderWidth * scaleFactor);
-    int const newRenderHeight = static_cast<int>(oldRenderHeight * scaleFactor);
-    int const newRenderOffsetX = static_cast<int>(canvasProperties.m_offset.x * scaleFactor);
-    int const newRenderOffsetY = static_cast<int>(canvasProperties.m_offset.y * scaleFactor);
-    SDL_RenderSetLogicalSize(&renderer, newRenderWidth, newRenderHeight);
     {
-        SDL_Rect guideRect{ newRenderOffsetX + (newRenderWidth - canvasProperties.m_size.x) / 2, newRenderOffsetY + (newRenderHeight - canvasProperties.m_size.y) / 2, canvasProperties.m_size.x, canvasProperties.m_size.y };
-        m_editorLayer.GetCanvasProperties().m_topLeft = { guideRect.x, guideRect.y };
-        if (auto const root = m_editorLayer.GetRoot()) {
-            moth_ui::IntRect displayRect;
-            displayRect.topLeft = { guideRect.x, guideRect.y };
-            displayRect.bottomRight = { guideRect.x + guideRect.w, guideRect.y + guideRect.h };
-            root->SetScreenRect(displayRect);
-            root->Draw();
-        }
-    }
-    SDL_RenderSetLogicalSize(&renderer, oldRenderWidth, oldRenderHeight); // reset logical sizing
+        auto const scaleFactor = m_canvasZoom / 100.0f;
+        auto const newRenderWidth = static_cast<int>(windowSize.x / scaleFactor);
+        auto const newRenderHeight = static_cast<int>(windowSize.y / scaleFactor);
+        auto const newRenderOffsetX = static_cast<int>(m_canvasOffset.x / scaleFactor);
+        auto const newRenderOffsetY = static_cast<int>(m_canvasOffset.y / scaleFactor);
 
-    m_boundsWidget->Draw(renderer);
+        SDL_RenderSetLogicalSize(&renderer, newRenderWidth, newRenderHeight);
+        {
+            SDL_Rect const guideRect{
+                newRenderOffsetX + (newRenderWidth - m_canvasSize.x) / 2,
+                newRenderOffsetY + (newRenderHeight - m_canvasSize.y) / 2,
+                m_canvasSize.x,
+                m_canvasSize.y
+            };
+            if (auto const root = m_editorLayer.GetRoot()) {
+                moth_ui::IntRect displayRect;
+                displayRect.topLeft = { guideRect.x, guideRect.y };
+                displayRect.bottomRight = { guideRect.x + guideRect.w, guideRect.y + guideRect.h };
+                root->SetScreenRect(displayRect);
+                root->Draw();
+            }
+        }
+        SDL_RenderSetLogicalSize(&renderer, m_canvasWindowSize.x, m_canvasWindowSize.y); // reset logical sizing
+    }
 
     SDL_SetRenderTarget(&renderer, oldRenderTarget);
 }
@@ -189,4 +175,146 @@ void EditorPanelCanvas::EndPanel() {
     }
 
     ImGui::End();
+}
+
+moth_ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth_ui::IntVec2 const& original) {
+    if (m_canvasGridSpacing > 0) {
+        float const s = static_cast<float>(m_canvasGridSpacing);
+        int const x = static_cast<int>(std::round(original.x / s) * s);
+        int const y = static_cast<int>(std::round(original.y / s) * s);
+        return { x, y };
+    } else {
+        return original;
+    }
+}
+
+void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
+    bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseDown(moth_ui::MouseButton::Left, appPosition));
+
+    if (!m_holdingSelection) {
+        auto const worldPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(appPosition);
+        auto const selection = m_editorLayer.GetSelection();
+        for (auto&& node : selection) {
+            if (node->IsInBounds(worldPosition)) {
+                m_holdingSelection = true;
+                m_grabPosition = SnapToGrid(worldPosition);
+                m_editorLayer.BeginEditBounds();
+                handled = true;
+                break;
+            }
+        }
+    }
+
+    if (!handled && !m_mouseDown) {
+        m_mouseDown = true;
+        m_dragSelectStart = appPosition;
+        m_dragSelectEnd = appPosition;
+    }
+}
+
+void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
+    bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseUp(moth_ui::MouseButton::Left, appPosition));
+
+    if (m_holdingSelection) {
+        m_editorLayer.EndEditBounds();
+        m_holdingSelection = false;
+    }
+
+    if (!handled && m_mouseDown) {
+        m_dragSelectEnd = appPosition;
+
+        auto const minX = std::min(m_dragSelectStart.x, m_dragSelectEnd.x);
+        auto const maxX = std::max(m_dragSelectStart.x, m_dragSelectEnd.x);
+        auto const minY = std::min(m_dragSelectStart.y, m_dragSelectEnd.y);
+        auto const maxY = std::max(m_dragSelectStart.y, m_dragSelectEnd.y);
+
+        moth_ui::IntRect selectionRect;
+        selectionRect.topLeft = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(moth_ui::IntVec2{ minX, minY });
+        selectionRect.bottomRight = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(moth_ui::IntVec2{ maxX, maxY });
+
+        if (!ImGui::GetIO().KeyCtrl) {
+            m_editorLayer.ClearSelection();
+            m_boundsWidget->SetSelection(nullptr);
+        }
+        SelectInRect(selectionRect);
+    }
+
+    m_mouseDown = false;
+}
+
+void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
+    bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseMove(appPosition, static_cast<moth_ui::FloatVec2>(appPosition - m_lastMousePos)));
+
+    if (m_holdingSelection) {
+        auto const worldPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(appPosition);
+        auto const newPosition = SnapToGrid(worldPosition);
+        auto const delta = newPosition - m_grabPosition;
+        m_grabPosition = newPosition;
+
+        auto const selection = m_editorLayer.GetSelection();
+        for (auto&& node : selection) {
+            auto& bounds = node->GetLayoutRect();
+            bounds.offset.topLeft += static_cast<moth_ui::FloatVec2>(delta);
+            bounds.offset.bottomRight += static_cast<moth_ui::FloatVec2>(delta);
+            node->RecalculateBounds();
+        }
+    }
+
+    if (m_mouseDown) {
+        m_dragSelectEnd = appPosition;
+    }
+}
+
+void EditorPanelCanvas::SelectInRect(moth_ui::IntRect const& selectionRect) {
+    bool const single = selectionRect.w() <= 3 || selectionRect.h() <= 3;
+    auto const& children = m_editorLayer.GetRoot()->GetChildren();
+    for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
+        auto const& child = *it;
+        if (child->IsVisible() && !m_editorLayer.IsLocked(child)) {
+            auto const& screenRect = child->GetScreenRect();
+            if (moth_ui::Intersects(selectionRect, screenRect)) {
+                m_editorLayer.AddSelection(child);
+                m_boundsWidget->SetSelection(child);
+                if (single) {
+                    break;
+                }
+            }
+        }
+    }
+}
+
+void EditorPanelCanvas::UpdateInput() {
+    auto const mousePos = moth_ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+
+    if (ImGui::IsWindowHovered()) {
+        float const scaleFactor = m_canvasZoom / 100.0f;
+
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
+            if (!m_draggingCanvas) {
+                m_draggingCanvas = true;
+                m_initialCanvasOffset = m_canvasOffset;
+            }
+
+            auto const dragDelta = moth_ui::FloatVec2{ ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).x, ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).y };
+
+            m_canvasOffset = m_initialCanvasOffset + (moth_ui::FloatVec2{ dragDelta.x, dragDelta.y });
+        } else {
+            m_draggingCanvas = false;
+        }
+
+        auto const io = ImGui::GetIO();
+        if (io.MouseWheel != 0) {
+            m_canvasZoom += static_cast<int>(io.MouseWheel * 6 * scaleFactor);
+        }
+
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            OnMouseClicked(moth_ui::IntVec2{ mousePos.x, mousePos.y });
+        } else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+            OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });
+        }
+        if (m_lastMousePos != mousePos) {
+            OnMouseMoved(moth_ui::IntVec2{ mousePos.x, mousePos.y });
+            m_lastMousePos = mousePos;
+        }
+    }
 }

@@ -4,6 +4,7 @@
 #include "moth_ui/layout/layout_entity.h"
 #include "bounds_widget.h"
 #include "editor_layer.h"
+#include "panels/editor_panel_canvas.h"
 
 OffsetBoundsHandle::OffsetBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor)
     : BoundsHandle(widget, anchor) {
@@ -17,29 +18,33 @@ void OffsetBoundsHandle::Draw(SDL_Renderer& renderer) {
         return;
     }
 
-    auto const scaleFactor = 100.0f / m_widget.GetEditorLayer().GetCanvasProperties().m_zoom;
+    auto const bounds = static_cast<moth_ui::FloatRect>(m_target->GetScreenRect());
+    auto const dimensions = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
 
-    auto const& bounds = m_target->GetScreenRect();
+    moth_ui::FloatVec2 const anchor{
+        m_anchor.Left ? 0.0f : (m_anchor.Right ? 1.0f : 0.5f),
+        m_anchor.Top ? 0.0f : (m_anchor.Bottom ? 1.0f : 0.5f)
+    };
 
-    auto const dim = static_cast<moth_ui::FloatVec2>(bounds.bottomRight - bounds.topLeft);
-    moth_ui::FloatVec2 const anchor = { m_anchor.Left ? 0.0f : (m_anchor.Right ? 1.0f : 0.5f), m_anchor.Top ? 0.0f : (m_anchor.Bottom ? 1.0f : 0.5f) };
-    m_position = static_cast<moth_ui::FloatVec2>(bounds.topLeft) + dim * anchor;
+    m_position = bounds.topLeft + dimensions * anchor;
 
     auto const handleSize = moth_ui::FloatVec2{ m_size, m_size };
     auto const halfHandleSize = handleSize / 2.0f;
 
-    auto const offset = (m_position / scaleFactor) - halfHandleSize;
-
-    SDL_FRect const r{ offset.x, offset.y, handleSize.x, handleSize.y };
-    SDL_RenderFillRectF(&renderer, &r);
+    auto& canvasPanel = m_widget.GetCanvasPanel();
+    auto const drawList = ImGui::GetWindowDrawList();
+    auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
+    drawList->AddRectFilled(ImVec2{ drawPosition.x - halfHandleSize.x, drawPosition.y - halfHandleSize.y }, ImVec2{ drawPosition.x + halfHandleSize.x, drawPosition.y + halfHandleSize.y }, 0xFFFF0000);
 }
 
 bool OffsetBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
-    auto const scaleFactor = 100.0f / m_widget.GetEditorLayer().GetCanvasProperties().m_zoom;
-    int const halfSize = static_cast<int>(m_size / 2 * scaleFactor);
+    auto& canvasPanel = m_widget.GetCanvasPanel();
+    auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
+    auto const halfSize = static_cast<int>(m_size / 2);
+
     moth_ui::IntRect r;
-    r.topLeft = static_cast<moth_ui::IntVec2>(m_position - halfSize);
-    r.bottomRight = static_cast<moth_ui::IntVec2>(m_position + halfSize);
+    r.topLeft = static_cast<moth_ui::IntVec2>(drawPosition - halfSize);
+    r.bottomRight = static_cast<moth_ui::IntVec2>(drawPosition + halfSize);
     return IsInRect(pos, r);
 }
 

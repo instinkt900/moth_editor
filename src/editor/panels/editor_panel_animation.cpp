@@ -626,7 +626,8 @@ bool EditorPanelAnimation::DrawWidget() {
         ImVec2 textMax(labelMax.x, labelMax.y);
         ImRect textRect(textMin, textMax);
         if (textRect.Contains(io.MousePos) && io.MouseClicked[0]) {
-            m_editorLayer.SetSelection(child);
+            m_editorLayer.ClearSelection();
+            m_editorLayer.AddSelection(child);
         }
         ImVec2 textPos(textMin.x, textMin.y + 2);
         draw_list->AddText(textPos, 0xFFFFFFFF, GetChildLabel(i));

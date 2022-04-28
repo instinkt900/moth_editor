@@ -2,23 +2,22 @@
 #include "editor_panel_canvas_properties.h"
 #include "../editor_layer.h"
 #include "../utils.h"
+#include "editor_panel_canvas.h"
 
 namespace {
     static int constexpr s_maxZoom = 800;
     static int constexpr s_minZoom = 30;
 }
 
-EditorPanelCanvasProperties::EditorPanelCanvasProperties(EditorLayer& editorLayer, bool visible)
-    : EditorPanel(editorLayer, "Canvas Properties", visible, true) {
+EditorPanelCanvasProperties::EditorPanelCanvasProperties(EditorLayer& editorLayer, bool visible, EditorPanelCanvas& canvasPanel)
+    : EditorPanel(editorLayer, "Canvas Properties", visible, true)
+    , m_canvasPanel(canvasPanel) {
 }
 
 void EditorPanelCanvasProperties::DrawContents() {
-    auto& canvasProperties = m_editorLayer.GetCanvasProperties();
-
-    imgui_ext::InputIntVec2("Canvas Size", &canvasProperties.m_size);
-    ImGui::InputInt("Canvas Zoom", &canvasProperties.m_zoom);
-    canvasProperties.m_zoom = std::clamp(canvasProperties.m_zoom, s_minZoom, s_maxZoom);
-    //imgui_ext::InputFloatVec2("Canvas Offset", &canvasProperties.m_offset);
-    ImGui::InputInt("Grid Spacing", &canvasProperties.m_gridSpacing);
-    canvasProperties.m_gridSpacing = std::clamp(canvasProperties.m_gridSpacing, 0, canvasProperties.m_size.x / 2);
+    imgui_ext::InputIntVec2("Canvas Size", &m_canvasPanel.m_canvasSize);
+    ImGui::InputInt("Canvas Zoom", &m_canvasPanel.m_canvasZoom);
+    m_canvasPanel.m_canvasZoom = std::clamp(m_canvasPanel.m_canvasZoom, s_minZoom, s_maxZoom);
+    ImGui::InputInt("Grid Spacing", &m_canvasPanel.m_canvasGridSpacing);
+    m_canvasPanel.m_canvasGridSpacing = std::clamp(m_canvasPanel.m_canvasGridSpacing, 0, m_canvasPanel.m_canvasSize.x / 2);
 }

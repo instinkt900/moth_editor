@@ -75,5 +75,8 @@ std::unique_ptr<IEditorAction> MakeChangeValueAction(T& valueRef, T oldValue, T 
     return std::unique_ptr<IEditorAction>(new ChangeValueAction(valueRef, oldValue, newValue, postAction));
 }
 
+class EditorLayer;
+
 std::unique_ptr<IEditorAction> MakeVisibilityAction(std::shared_ptr<moth_ui::Node> node, bool visible);
+std::unique_ptr<IEditorAction> MakeLockAction(std::shared_ptr<moth_ui::Node> node, bool locked, EditorLayer& editorLayer);
 std::unique_ptr<IEditorAction> MakeShowBoundsAction(std::shared_ptr<moth_ui::Node> node, bool visible);

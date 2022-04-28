@@ -7,9 +7,10 @@
 #include "moth_ui/node_image.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "editor_layer.h"
+#include "panels/editor_panel_canvas.h"
 
-BoundsWidget::BoundsWidget(EditorLayer& editorLayer)
-    : m_editorLayer(editorLayer) {
+BoundsWidget::BoundsWidget(EditorPanelCanvas& canvasPanel)
+    : m_canvasPanel(canvasPanel) {
     // anchor manipulators
     m_handles[0] = std::make_unique<AnchorBoundsHandle>(*this, BoundsHandle::TopLeft);
     m_handles[1] = std::make_unique<AnchorBoundsHandle>(*this, BoundsHandle::TopRight);
@@ -39,47 +40,40 @@ bool BoundsWidget::OnEvent(moth_ui::Event const& event) {
     for (auto&& handle : m_handles) {
         dispatch.Dispatch(handle.get());
     }
-    dispatch.Dispatch(this, &BoundsWidget::OnMouseDown);
-    dispatch.Dispatch(this, &BoundsWidget::OnMouseUp);
-    dispatch.Dispatch(this, &BoundsWidget::OnMouseMove);
     return dispatch.GetHandled();
 }
 
 void BoundsWidget::BeginEdit() {
-    m_editorLayer.BeginEditBounds();
+    m_canvasPanel.GetEditorLayer().BeginEditBounds();
 }
 
 void BoundsWidget::EndEdit() {
-    m_editorLayer.EndEditBounds();
+    m_canvasPanel.GetEditorLayer().EndEditBounds();
 }
 
 void BoundsWidget::Draw(SDL_Renderer& renderer) {
-    auto const selection = m_editorLayer.GetSelection();
-    if (selection && selection->IsVisible() && selection->GetParent()) {
-        auto const screenRect = static_cast<moth_ui::FloatRect>(selection->GetScreenRect());
-        auto const scaleFactor = 100.0f / m_editorLayer.GetCanvasProperties().m_zoom;
-        auto const canvasPos = static_cast<moth_ui::IntVec2>(screenRect.topLeft / scaleFactor);
-        auto const canvasSize = static_cast<moth_ui::IntVec2>((screenRect.bottomRight - screenRect.topLeft) / scaleFactor);
+    if (m_node && m_node->IsVisible() && m_node->GetParent()) {
+        auto const drawList = ImGui::GetWindowDrawList();
+        auto const rect = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(m_node->GetScreenRect());
 
-        auto layoutEntity = selection->GetLayoutEntity();
+        // 9 slice indicators
+        auto layoutEntity = m_node->GetLayoutEntity();
         if (layoutEntity && layoutEntity->GetType() == moth_ui::LayoutEntityType::Image) {
-            auto imageNode = std::static_pointer_cast<moth_ui::NodeImage>(selection);
+            auto imageNode = std::static_pointer_cast<moth_ui::NodeImage>(m_node);
             auto imageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(layoutEntity);
             if (imageEntity->m_imageScaleType == moth_ui::ImageScaleType::NineSlice) {
-                auto const slice1 = static_cast<moth_ui::IntVec2>(static_cast<moth_ui::FloatVec2>(imageNode->GetTargetSlices()[1]) / scaleFactor);
-                auto const slice2 = static_cast<moth_ui::IntVec2>(static_cast<moth_ui::FloatVec2>(imageNode->GetTargetSlices()[2]) / scaleFactor);
+                auto const slice1 = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(imageNode->GetTargetSlices()[1]);
+                auto const slice2 = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(imageNode->GetTargetSlices()[2]);
 
-                SDL_SetRenderDrawColor(&renderer, 0x77, 0x44, 0x00, 0xFF);
-                SDL_RenderDrawLine(&renderer, slice1.x, canvasPos.y, slice1.x, canvasPos.y + canvasSize.y);
-                SDL_RenderDrawLine(&renderer, slice2.x, canvasPos.y, slice2.x, canvasPos.y + canvasSize.y);
-                SDL_RenderDrawLine(&renderer, canvasPos.x, slice1.y, canvasPos.x + canvasSize.x, slice1.y);
-                SDL_RenderDrawLine(&renderer, canvasPos.x, slice2.y, canvasPos.x + canvasSize.x, slice2.y);
+                drawList->AddLine(ImVec2{ slice1.x, rect.topLeft.y }, ImVec2{ slice1.x, rect.bottomRight.y }, 0xFF004477);
+                drawList->AddLine(ImVec2{ slice2.x, rect.topLeft.y }, ImVec2{ slice2.x, rect.bottomRight.y }, 0xFF004477);
+                drawList->AddLine(ImVec2{ rect.topLeft.x, slice1.y }, ImVec2{ rect.bottomRight.x, slice1.y }, 0xFF004477);
+                drawList->AddLine(ImVec2{ rect.topLeft.x, slice2.y }, ImVec2{ rect.bottomRight.x, slice2.y }, 0xFF004477);
             }
         }
 
-        SDL_Rect const sdlBoundsRect{ canvasPos.x, canvasPos.y, canvasSize.x, canvasSize.y };
-        SDL_SetRenderDrawColor(&renderer, 0x00, 0x00, 0xFF, 0xFF);
-        SDL_RenderDrawRect(&renderer, &sdlBoundsRect);
+        // overall bounds
+        drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y }, 0xFFFF0000);
 
         for (auto& handle : m_handles) {
             handle->Draw(renderer);
@@ -87,73 +81,9 @@ void BoundsWidget::Draw(SDL_Renderer& renderer) {
     }
 }
 
-bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
-    if (event.GetButton() != moth_ui::MouseButton::Left) {
-        return false;
-    }
-
-    std::shared_ptr<moth_ui::Node> selection;
-    auto const& children = m_editorLayer.GetRoot()->GetChildren();
-    for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
-        auto const& child = *it;
-        if (child->IsVisible() && child->IsInBounds(event.GetPosition())) {
-            selection = child;
-            break;
-        }
-    }
-    m_editorLayer.SetSelection(selection);
+void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
+    m_node = node;
     for (auto&& handle : m_handles) {
-        handle->SetTarget(selection.get());
+        handle->SetTarget(m_node.get());
     }
-
-    if (selection) {
-        m_holding = true;
-        auto const& canvasTopLeft = m_editorLayer.GetCanvasProperties().m_topLeft;
-        m_grabPosition = SnapToGrid(event.GetPosition() - canvasTopLeft);
-        BeginEdit();
-        return true;
-    }
-    return false;
-}
-
-moth_ui::IntVec2 BoundsWidget::SnapToGrid(moth_ui::IntVec2 const& original) {
-    if (m_editorLayer.GetCanvasProperties().m_gridSpacing > 0) {
-        int const spacing = m_editorLayer.GetCanvasProperties().m_gridSpacing;
-        float const s = static_cast<float>(spacing);
-        int const x = static_cast<int>(std::round(original.x / s) * s);
-        int const y = static_cast<int>(std::round(original.y / s) * s);
-        return { x, y };
-    } else {
-        return original;
-    }
-}
-
-bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
-    if (event.GetButton() != moth_ui::MouseButton::Left) {
-        return false;
-    }
-    if (m_holding) {
-        m_holding = false;
-        EndEdit();
-    }
-    return false;
-}
-
-bool BoundsWidget::OnMouseMove(moth_ui::EventMouseMove const& event) {
-    if (m_holding) {
-        if (auto const selection = m_editorLayer.GetSelection()) {
-            auto const& canvasTopLeft = m_editorLayer.GetCanvasProperties().m_topLeft;
-            auto const windowMousePos = event.GetPosition();
-            auto const canvasRelative = SnapToGrid(windowMousePos - canvasTopLeft);
-            auto const delta = canvasRelative - m_grabPosition;
-            m_grabPosition = canvasRelative;
-
-            auto& bounds = selection->GetLayoutRect();
-            bounds.offset.topLeft += static_cast<moth_ui::FloatVec2>(delta);
-            bounds.offset.bottomRight += static_cast<moth_ui::FloatVec2>(delta);
-
-            selection->RecalculateBounds();
-        }
-    }
-    return false;
 }

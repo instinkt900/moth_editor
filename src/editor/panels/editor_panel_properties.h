@@ -13,8 +13,8 @@ private:
 
     imgui_ext::FocusGroupContext m_focusContext;
 
-    void DrawEntityProperties();
-    void DrawRectProperties();
-    void DrawImageProperties();
-    void DrawTextProperties();
+    void DrawEntityProperties(std::shared_ptr<moth_ui::Node> node);
+    void DrawRectProperties(std::shared_ptr<moth_ui::Node> node);
+    void DrawImageProperties(std::shared_ptr<moth_ui::Node> node);
+    void DrawTextProperties(std::shared_ptr<moth_ui::Node> node);
 };

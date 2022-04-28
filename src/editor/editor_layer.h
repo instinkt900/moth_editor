@@ -28,34 +28,30 @@ public:
 
     bool UseRenderSize() const override { return false; }
 
-    struct CanvasProperties {
-        moth_ui::IntVec2 m_size{ 640, 480 };
-        moth_ui::FloatVec2 m_offset{ 0, 0 };
-        int m_zoom = 100;
-        int m_gridSpacing = 5;
-        moth_ui::IntVec2 m_topLeft;
-    };
-
     void SetSelectedFrame(int frameNo);
     int GetSelectedFrame() const { return m_selectedFrame; }
 
-    void SetSelection(std::shared_ptr<moth_ui::Node> selection);
-    std::shared_ptr<moth_ui::Node> GetSelection() const { return m_selection; }
-    bool IsSelected(std::shared_ptr<moth_ui::Node> node) const { return m_selection == node; }
+    void ClearSelection();
+    void AddSelection(std::shared_ptr<moth_ui::Node> node);
+    std::vector<std::shared_ptr<moth_ui::Node>> const& GetSelection() const { return m_selection; }
+    bool IsSelected(std::shared_ptr<moth_ui::Node> node) const;
+
+    void LockNode(std::shared_ptr<moth_ui::Node> node);
+    void UnlockNode(std::shared_ptr<moth_ui::Node> node);
+    bool IsLocked(std::shared_ptr<moth_ui::Node> node) const;
 
     void Refresh();
 
-    void BeginEditBounds();
+    void BeginEditBounds(std::shared_ptr<moth_ui::Node> node = nullptr);
     void EndEditBounds();
 
-    void BeginEditColor();
+    void BeginEditColor(std::shared_ptr<moth_ui::Node> node);
     void EndEditColor();
 
     void PerformEditAction(std::unique_ptr<IEditorAction>&& editAction);
     void AddEditAction(std::unique_ptr<IEditorAction>&& editAction);
     int GetEditActionPos() const { return m_actionIndex; }
 
-    CanvasProperties& GetCanvasProperties() { return m_canvasProperties; }
     std::vector<std::unique_ptr<IEditorAction>> const& GetEditActions() const { return m_editActions; }
 
     void NewLayout(bool discard = false);
@@ -96,29 +92,31 @@ public:
 
 private:
     ImGuiID m_rootDockId;
-    CanvasProperties m_canvasProperties;
 
     std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
 
     std::string m_currentLayoutPath;
     std::shared_ptr<moth_ui::Layout> m_rootLayout;
     std::shared_ptr<moth_ui::Group> m_root;
-    std::shared_ptr<moth_ui::Node> m_selection;
-    std::shared_ptr<moth_ui::LayoutEntity> m_copiedEntity;
+    std::vector<std::shared_ptr<moth_ui::Node>> m_selection;
+    std::set<std::shared_ptr<moth_ui::Node>> m_lockedNodes;
+    std::vector<std::shared_ptr<moth_ui::LayoutEntity>> m_copiedEntities;
 
     int m_selectedFrame = 0;
 
     struct EditBoundsContext {
+        std::shared_ptr<moth_ui::Node> node;
         std::shared_ptr<moth_ui::LayoutEntity> entity;
         moth_ui::LayoutRect originalRect;
     };
 
     struct EditColorContext {
+        std::shared_ptr<moth_ui::Node> node;
         std::shared_ptr<moth_ui::LayoutEntity> entity;
         moth_ui::Color originalColor;
     };
 
-    std::unique_ptr<EditBoundsContext> m_editBoundsContext;
+    std::vector<std::unique_ptr<EditBoundsContext>> m_editBoundsContext;
     std::unique_ptr<EditColorContext> m_editColorContext;
     std::vector<std::unique_ptr<IEditorAction>> m_editActions;
     int m_actionIndex = -1;

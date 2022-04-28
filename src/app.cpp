@@ -56,7 +56,7 @@ int App::Run() {
                 continue;
             }
             if (ImGui::GetIO().WantCaptureMouse && (event.type == SDL_MOUSEMOTION || event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP || event.type == SDL_MOUSEWHEEL)) {
-                continue;
+                //continue;
             }
             if (auto const translatedEvent = EventFactory::FromSDL(event)) {
                 OnEvent(*translatedEvent);
