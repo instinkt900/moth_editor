@@ -30,7 +30,7 @@ EditorPanelProperties::EditorPanelProperties(EditorLayer& editorLayer, bool visi
 void EditorPanelProperties::DrawContents() {
     auto& selection = m_editorLayer.GetSelection();
     if (!selection.empty()) {
-        auto node = selection[0];
+        auto const node = *std::begin(selection);
         auto entity = node->GetLayoutEntity();
         imgui_ext::FocusGroupBegin(&m_focusContext);
         DrawEntityProperties(node);

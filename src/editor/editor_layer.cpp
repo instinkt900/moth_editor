@@ -520,10 +520,18 @@ void EditorLayer::AddSelection(std::shared_ptr<moth_ui::Node> node) {
     if (!m_editBoundsContext.empty()) {
         EndEditBounds();
     }
-    m_selection.push_back(node);
+    m_selection.insert(node);
 }
+
+void EditorLayer::RemoveSelection(std::shared_ptr<moth_ui::Node> node) {
+    if (!m_editBoundsContext.empty()) {
+        EndEditBounds();
+    }
+    m_selection.erase(node);
+}
+
 bool EditorLayer::IsSelected(std::shared_ptr<moth_ui::Node> node) const {
-    return std::end(m_selection) != std::find(std::begin(m_selection), std::end(m_selection), node);
+    return std::end(m_selection) != m_selection.find(node);
 }
 
 void EditorLayer::LockNode(std::shared_ptr<moth_ui::Node> node) {

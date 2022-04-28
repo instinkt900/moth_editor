@@ -33,7 +33,8 @@ public:
 
     void ClearSelection();
     void AddSelection(std::shared_ptr<moth_ui::Node> node);
-    std::vector<std::shared_ptr<moth_ui::Node>> const& GetSelection() const { return m_selection; }
+    void RemoveSelection(std::shared_ptr<moth_ui::Node> node);
+    std::set<std::shared_ptr<moth_ui::Node>> const& GetSelection() const { return m_selection; }
     bool IsSelected(std::shared_ptr<moth_ui::Node> node) const;
 
     void LockNode(std::shared_ptr<moth_ui::Node> node);
@@ -98,7 +99,7 @@ private:
     std::string m_currentLayoutPath;
     std::shared_ptr<moth_ui::Layout> m_rootLayout;
     std::shared_ptr<moth_ui::Group> m_root;
-    std::vector<std::shared_ptr<moth_ui::Node>> m_selection;
+    std::set<std::shared_ptr<moth_ui::Node>> m_selection;
     std::set<std::shared_ptr<moth_ui::Node>> m_lockedNodes;
     std::vector<std::shared_ptr<moth_ui::LayoutEntity>> m_copiedEntities;
 

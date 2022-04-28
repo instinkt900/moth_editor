@@ -122,7 +122,7 @@ private:
 
     std::unique_ptr<BoundsWidget> m_boundsWidget;
 
-    bool m_mouseDown = false;
+    bool m_dragSelecting = false;
     moth_ui::IntVec2 m_dragSelectStart;
     moth_ui::IntVec2 m_dragSelectEnd;
 

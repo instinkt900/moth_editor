@@ -57,7 +57,7 @@ void EditorPanelCanvas::DrawContents() {
 
     // draw the selection rect if we have one
     {
-        if (m_mouseDown) {
+        if (m_dragSelecting) {
             auto const minX = static_cast<float>(std::min(m_dragSelectStart.x, m_dragSelectEnd.x));
             auto const maxX = static_cast<float>(std::max(m_dragSelectStart.x, m_dragSelectEnd.x));
             auto const minY = static_cast<float>(std::min(m_dragSelectStart.y, m_dragSelectEnd.y));
@@ -69,8 +69,9 @@ void EditorPanelCanvas::DrawContents() {
     }
 
     auto const selection = m_editorLayer.GetSelection();
-    if (selection.size() == 1 && !m_editorLayer.IsLocked(selection[0])) {
-        m_boundsWidget->SetSelection(selection[0]);
+    auto const firstIt = std::begin(selection);
+    if (selection.size() == 1 && !m_editorLayer.IsLocked(*firstIt)) {
+        m_boundsWidget->SetSelection(*firstIt);
     } else {
         m_boundsWidget->SetSelection(nullptr);
     }
@@ -199,14 +200,14 @@ void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
                 m_holdingSelection = true;
                 m_grabPosition = SnapToGrid(worldPosition);
                 m_editorLayer.BeginEditBounds();
-                handled = true;
+                //handled = true;
                 break;
             }
         }
     }
 
-    if (!handled && !m_mouseDown) {
-        m_mouseDown = true;
+    if (!handled && !m_dragSelecting) {
+        m_dragSelecting = true;
         m_dragSelectStart = appPosition;
         m_dragSelectEnd = appPosition;
     }
@@ -220,7 +221,7 @@ void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
         m_holdingSelection = false;
     }
 
-    if (!handled && m_mouseDown) {
+    if (!handled && m_dragSelecting) {
         m_dragSelectEnd = appPosition;
 
         auto const minX = std::min(m_dragSelectStart.x, m_dragSelectEnd.x);
@@ -234,12 +235,11 @@ void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
 
         if (!ImGui::GetIO().KeyCtrl) {
             m_editorLayer.ClearSelection();
-            m_boundsWidget->SetSelection(nullptr);
         }
         SelectInRect(selectionRect);
     }
 
-    m_mouseDown = false;
+    m_dragSelecting = false;
 }
 
 void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
@@ -258,9 +258,10 @@ void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
             bounds.offset.bottomRight += static_cast<moth_ui::FloatVec2>(delta);
             node->RecalculateBounds();
         }
+        m_dragSelecting = false;
     }
 
-    if (m_mouseDown) {
+    if (m_dragSelecting) {
         m_dragSelectEnd = appPosition;
     }
 }
@@ -273,8 +274,11 @@ void EditorPanelCanvas::SelectInRect(moth_ui::IntRect const& selectionRect) {
         if (child->IsVisible() && !m_editorLayer.IsLocked(child)) {
             auto const& screenRect = child->GetScreenRect();
             if (moth_ui::Intersects(selectionRect, screenRect)) {
-                m_editorLayer.AddSelection(child);
-                m_boundsWidget->SetSelection(child);
+                if (single && m_editorLayer.IsSelected(child)) {
+                    m_editorLayer.RemoveSelection(child);
+                } else {
+                    m_editorLayer.AddSelection(child);
+                }
                 if (single) {
                     break;
                 }
@@ -309,12 +313,15 @@ void EditorPanelCanvas::UpdateInput() {
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
             OnMouseClicked(moth_ui::IntVec2{ mousePos.x, mousePos.y });
-        } else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-            OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });
         }
         if (m_lastMousePos != mousePos) {
             OnMouseMoved(moth_ui::IntVec2{ mousePos.x, mousePos.y });
             m_lastMousePos = mousePos;
         }
+    }
+
+    // always want to accept released so we dont end up stuck down
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+        OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });
     }
 }

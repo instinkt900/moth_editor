@@ -332,7 +332,7 @@ bool EditorPanelAnimation::DrawWidget() {
     ImRect topRect(ImVec2(canvas_pos.x + legendWidth, canvas_pos.y), ImVec2(canvas_pos.x + canvas_size.x, canvas_pos.y + ItemHeight));
 
     // moving current frame
-    if (!MovingClip && !MovingCurrentFrame && !MovingScrollBar && movingEntry == -1 && m_currentFrame >= 0 && topRect.Contains(io.MousePos) && io.MouseDown[0]) {
+    if (!MovingClip && !MovingCurrentFrame && !MovingScrollBar && movingEntry == -1 && m_currentFrame >= 0 && topRect.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         MovingCurrentFrame = true;
     }
     if (MovingCurrentFrame) {
@@ -343,7 +343,7 @@ bool EditorPanelAnimation::DrawWidget() {
             if (m_currentFrame >= m_maxFrame)
                 m_currentFrame = m_maxFrame;
         }
-        if (!io.MouseDown[0])
+        if (!io.MouseDown[ImGuiMouseButton_Left])
             MovingCurrentFrame = false;
     }
 
@@ -626,8 +626,14 @@ bool EditorPanelAnimation::DrawWidget() {
         ImVec2 textMax(labelMax.x, labelMax.y);
         ImRect textRect(textMin, textMax);
         if (textRect.Contains(io.MousePos) && io.MouseClicked[0]) {
-            m_editorLayer.ClearSelection();
-            m_editorLayer.AddSelection(child);
+            if (!io.KeyCtrl) {
+                m_editorLayer.ClearSelection();
+            }
+            if (m_editorLayer.IsSelected(child)) {
+                m_editorLayer.RemoveSelection(child);
+            } else {
+                m_editorLayer.AddSelection(child);
+            }
         }
         ImVec2 textPos(textMin.x, textMin.y + 2);
         draw_list->AddText(textPos, 0xFFFFFFFF, GetChildLabel(i));
