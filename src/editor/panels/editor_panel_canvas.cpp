@@ -14,15 +14,6 @@
 
 extern App* g_App;
 
-#ifndef IMGUI_DEFINE_MATH_OPERATORS
-static ImVec2 operator+(const ImVec2& a, const ImVec2& b) {
-    return ImVec2(a.x + b.x, a.y + b.y);
-}
-static ImVec2 operator-(const ImVec2& a, const ImVec2& b) {
-    return ImVec2(a.x - b.x, a.y - b.y);
-}
-#endif
-
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
     , m_boundsWidget(std::make_unique<BoundsWidget>(*this)) {

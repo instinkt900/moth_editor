@@ -33,12 +33,6 @@ namespace {
     }
 }
 
-#ifndef IMGUI_DEFINE_MATH_OPERATORS
-static ImVec2 operator+(const ImVec2& a, const ImVec2& b) {
-    return ImVec2(a.x + b.x, a.y + b.y);
-}
-#endif
-
 EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Animation", visible, true) {
 }

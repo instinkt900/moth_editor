@@ -275,6 +275,36 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::Node> no
         });
 
     PropertiesInput(
+        "Drop Shadow", textEntity->m_dropShadow,
+        [&](auto newValue) {
+            auto const oldValue = textEntity->m_dropShadow;
+            auto action = MakeChangeValueAction(textEntity->m_dropShadow, oldValue, newValue, [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
+    PropertiesInput(
+        "Drop Shadow Offset", textEntity->m_dropShadowOffset,
+        [&](auto changedValue) {
+            textEntity->m_dropShadowOffset = changedValue;
+            textNode->ReloadEntity();
+        },
+        [=](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(textEntity->m_dropShadowOffset, oldValue, newValue, [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
+    PropertiesInput(
+        "Drop Shadow Color", textEntity->m_dropShadowColor,
+        [&](auto changedValue) {
+            textEntity->m_dropShadowColor = changedValue;
+            textNode->ReloadEntity();
+        },
+        [=](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(textEntity->m_dropShadowColor, oldValue, newValue, [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
+    PropertiesInput(
         "Text", textEntity->m_text.c_str(), 8,
         [&](char const* changedValue) {
             textNode->SetText(changedValue);

@@ -5,7 +5,8 @@ bool PropertiesInput(char const* label, int current, std::function<void(int)> co
 bool PropertiesInput(char const* label, float current, std::function<void(float)> const& changeAction, std::function<void(float, float)> const& commitAction);
 bool PropertiesInput(char const* label, char const* text, std::function<void(char const*)> const& changeAction, std::function<void(char const*, char const*)> const& commitAction);
 bool PropertiesInput(char const* label, char const* text, int lines, std::function<void(char const*)> const& changeAction, std::function<void(char const*, char const*)> const& commitAction);
-bool PropertiesInput(char const* label, moth_ui::Color color, std::function<void(moth_ui::Color color)> const& changeAction, std::function<void(moth_ui::Color, moth_ui::Color)> const& commitAction);
+bool PropertiesInput(char const* label, moth_ui::IntVec2 vec, std::function<void(moth_ui::IntVec2)> const& changeAction, std::function<void(moth_ui::IntVec2, moth_ui::IntVec2)> const& commitAction);
+bool PropertiesInput(char const* label, moth_ui::Color color, std::function<void(moth_ui::Color)> const& changeAction, std::function<void(moth_ui::Color, moth_ui::Color)> const& commitAction);
 bool PropertiesInput(char const* label, moth_ui::LayoutRect value, std::function<void(moth_ui::LayoutRect)> const& changeAction, std::function<void(moth_ui::LayoutRect, moth_ui::LayoutRect)> const& commitAction);
 bool PropertiesInput(char const* label, moth_ui::IntRect value, std::function<void(moth_ui::IntRect)> const& changeAction, std::function<void(moth_ui::IntRect, moth_ui::IntRect)> const& commitAction);
 template <typename T, typename F = std::function<void(T, T)>, std::enable_if_t<std::is_enum_v<T>, bool> = true>

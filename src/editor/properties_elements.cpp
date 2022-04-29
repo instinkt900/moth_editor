@@ -13,6 +13,8 @@ namespace {
     float editFloat;
     moth_ui::Color preEditColor;
     moth_ui::Color editColor;
+    moth_ui::IntVec2 preEditVec2;
+    moth_ui::IntVec2 editVec2;
     moth_ui::LayoutRect preEditLayoutRect;
     moth_ui::LayoutRect editLayoutRect;
     moth_ui::IntRect preEditRect;
@@ -21,6 +23,7 @@ namespace {
     std::function<void(char const*, char const*)> editCompleteCallback;
     std::function<void(int, int)> commitIntAction;
     std::function<void(float, float)> commitFloatAction;
+    std::function<void(moth_ui::IntVec2, moth_ui::IntVec2)> commitVec2Action;
     std::function<void(moth_ui::Color, moth_ui::Color)> commitColorAction;
     std::function<void(moth_ui::LayoutRect, moth_ui::LayoutRect)> commitLayoutRectAction;
     std::function<void(moth_ui::IntRect, moth_ui::IntRect)> commitRectAction;
@@ -52,6 +55,9 @@ namespace {
         if (editCompleteCallback) {
             editCompleteCallback(preEditText.c_str(), editBuffer.data());
         }
+        if (commitVec2Action) {
+            commitVec2Action(preEditVec2, editVec2);
+        }
         if (commitColorAction) {
             commitColorAction(preEditColor, editColor);
         }
@@ -68,6 +74,7 @@ namespace {
             commitIntAction(preEditInt, editInt);
         }
         editCompleteCallback = nullptr;
+        commitVec2Action = nullptr;
         commitColorAction = nullptr;
         commitRectAction = nullptr;
         commitFloatAction = nullptr;
@@ -92,6 +99,12 @@ namespace {
         editingElementID = id;
         preEditFloat = initialValue;
         commitFloatAction = commitAction;
+    }
+
+    void BeginEditVec2(ImGuiID id, moth_ui::IntVec2 initialVec, std::function<void(moth_ui::IntVec2, moth_ui::IntVec2)> const& commitAction) {
+        editingElementID = id;
+        preEditVec2 = initialVec;
+        commitVec2Action = commitAction;
     }
 
     void BeginEditColor(ImGuiID id, moth_ui::Color initialColor, std::function<void(moth_ui::Color, moth_ui::Color)> const& commitAction) {
@@ -199,6 +212,26 @@ bool PropertiesInput(char const* label, char const* text, int lines, std::functi
     return changed;
 }
 
+bool PropertiesInput(char const* label, moth_ui::IntVec2 vec, std::function<void(moth_ui::IntVec2)> const& changeAction, std::function<void(moth_ui::IntVec2, moth_ui::IntVec2)> const& commitAction) {
+    auto const thisID = ImGui::GetID(label);
+    auto const initialVec = vec;
+    editVec2 = vec;
+    auto const changed = ImGui::InputInt2(label, editVec2.data, 0);
+    if (changed) {
+        if (editingElementID != thisID) {
+            BeginEditVec2(thisID, initialVec, commitAction);
+        }
+        if (changeAction) {
+            changeAction(editVec2);
+        }
+    }
+    auto const hasFocus = ImGui::IsItemFocused();
+    if (editingElementID == thisID && !hasFocus) {
+        EndEdit();
+    }
+    return changed;
+}
+
 bool PropertiesInput(char const* label, moth_ui::Color color, std::function<void(moth_ui::Color color)> const& changeAction, std::function<void(moth_ui::Color, moth_ui::Color)> const& commitAction) {
     auto const thisID = ImGui::GetID(label);
     auto const initialColor = color;
@@ -292,7 +325,7 @@ bool PropertiesInput(char const* label, moth_ui::IntRect value, std::function<vo
     }
 
     if (changed) {
-        editRect = value;        
+        editRect = value;
         if (editingElementID != thisID) {
             BeginEditRect(thisID, initialValue, commitAction);
         }
