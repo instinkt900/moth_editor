@@ -248,6 +248,7 @@ void EditorLayer::NewLayout(bool discard) {
         m_confirmPrompt.Open();
     } else {
         m_rootLayout = std::make_shared<moth_ui::Layout>();
+        m_currentLayoutPath.clear();
         m_selectedFrame = 0;
         ClearSelection();
         ClearEditActions();
@@ -400,7 +401,7 @@ void EditorLayer::CutEntity() {
 void EditorLayer::PasteEntity() {
     auto compAction = std::make_unique<CompositeAction>();
     for (auto&& copiedEntity : m_copiedEntities) {
-        auto clonedEntity = copiedEntity->Clone();
+        auto clonedEntity = copiedEntity->Clone(moth_ui::LayoutEntity::CloneType::Deep);
         auto copyInstance = clonedEntity->Instantiate();
         auto addAction = std::make_unique<AddAction>(std::move(copyInstance), m_root);
         compAction->GetActions().push_back(std::move(addAction));

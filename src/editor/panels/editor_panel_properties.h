@@ -13,8 +13,10 @@ private:
 
     imgui_ext::FocusGroupContext m_focusContext;
 
-    void DrawEntityProperties(std::shared_ptr<moth_ui::Node> node);
-    void DrawRectProperties(std::shared_ptr<moth_ui::Node> node);
-    void DrawImageProperties(std::shared_ptr<moth_ui::Node> node);
-    void DrawTextProperties(std::shared_ptr<moth_ui::Node> node);
+    void DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren = true);
+    void DrawCommonProperties(std::shared_ptr<moth_ui::Node> node);
+    void DrawRectProperties(std::shared_ptr<moth_ui::NodeRect> node);
+    void DrawImageProperties(std::shared_ptr<moth_ui::NodeImage> node);
+    void DrawTextProperties(std::shared_ptr<moth_ui::NodeText> node);
+    void DrawRefProperties(std::shared_ptr<moth_ui::Group> node, bool recurseChildren);
 };
