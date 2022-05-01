@@ -11,6 +11,8 @@ public:
 private:
     void DrawContents() override;
 
+    moth_ui::Node* m_lastSelection = nullptr;
+
     imgui_ext::FocusGroupContext m_focusContext;
 
     void DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren = true);
@@ -19,4 +21,5 @@ private:
     void DrawImageProperties(std::shared_ptr<moth_ui::NodeImage> node);
     void DrawTextProperties(std::shared_ptr<moth_ui::NodeText> node);
     void DrawRefProperties(std::shared_ptr<moth_ui::Group> node, bool recurseChildren);
+    void DrawLayoutProperties(std::shared_ptr<moth_ui::Group> node);
 };

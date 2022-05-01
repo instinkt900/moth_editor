@@ -5,6 +5,7 @@
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout_entity_ref.h"
+#include "moth_ui/layout/layout.h"
 #include "moth_ui/utils/imgui_ext_inspect.h"
 #include "moth_ui/node_rect.h"
 #include "moth_ui/node_image.h"
@@ -30,21 +31,36 @@ EditorPanelProperties::EditorPanelProperties(EditorLayer& editorLayer, bool visi
 }
 
 void EditorPanelProperties::DrawContents() {
+    std::shared_ptr<moth_ui::Node> node;
+
     auto& selection = m_editorLayer.GetSelection();
-    if (!selection.empty()) {
-        auto const node = *std::begin(selection);
+    if (selection.empty()) {
+        node = m_editorLayer.GetRoot();
         auto entity = node->GetLayoutEntity();
         imgui_ext::FocusGroupBegin(&m_focusContext);
         DrawNodeProperties(node);
         imgui_ext::FocusGroupEnd();
     } else {
+        auto const node = *std::begin(selection);
+        auto entity = node->GetLayoutEntity();
+        imgui_ext::FocusGroupBegin(&m_focusContext);
+        DrawNodeProperties(node);
+        imgui_ext::FocusGroupEnd();
+    }
+
+    if (node.get() != m_lastSelection) {
         PropertiesInputClear();
     }
+    m_lastSelection = node.get();
 }
-void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren) {
-    DrawCommonProperties(node);
 
+void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren) {
     auto const entity = node->GetLayoutEntity();
+
+    if (entity->GetType() != moth_ui::LayoutEntityType::Layout) {
+        DrawCommonProperties(node);
+    }
+
     switch (entity->GetType()) {
     case moth_ui::LayoutEntityType::Entity:
     case moth_ui::LayoutEntityType::Group:
@@ -61,6 +77,9 @@ void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> no
         break;
     case moth_ui::LayoutEntityType::Ref:
         DrawRefProperties(std::static_pointer_cast<moth_ui::Group>(node), recurseChildren);
+        break;
+    case moth_ui::LayoutEntityType::Layout:
+        DrawLayoutProperties(std::static_pointer_cast<moth_ui::Group>(node));
         break;
     }
 }
@@ -359,4 +378,18 @@ void EditorPanelProperties::DrawRefProperties(std::shared_ptr<moth_ui::Group> no
             ImGui::TreePop();
         }
     }
+}
+
+void EditorPanelProperties::DrawLayoutProperties(std::shared_ptr<moth_ui::Group> node) {
+    auto const entity = std::static_pointer_cast<moth_ui::Layout>(node->GetLayoutEntity());
+
+    PropertiesInput(
+        "Class", entity->m_class.c_str(), 
+        [&](std::string changedValue) {
+            entity->m_class = changedValue;
+        },
+        [=](std::string oldValue, std::string newValue) {
+            auto action = MakeChangeValueAction(entity->m_class, oldValue, newValue, nullptr);
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
 }
