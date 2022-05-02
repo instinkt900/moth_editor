@@ -7,6 +7,7 @@
 #include "font_factory.h"
 #include "ui_renderer.h"
 #include "moth_ui/event_dispatch.h"
+#include "moth_ui/node_factory.h"
 
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_sdlrenderer.h>
@@ -102,7 +103,9 @@ bool App::Initialise() {
     auto imageFactory = std::make_unique<ImageFactory>(*m_renderer);
     auto fontFactory = std::make_unique<FontFactory>(*m_renderer);
     auto uiRenderer = std::make_unique<UIRenderer>(*m_renderer);
-    moth_ui::Context::Init(std::move(imageFactory), std::move(fontFactory), std::move(uiRenderer));
+    auto nodeFactory = std::make_unique<moth_ui::NodeFactory>();
+    auto uiContext = std::make_shared<moth_ui::Context>(std::move(imageFactory), std::move(fontFactory), std::move(uiRenderer), std::move(nodeFactory));
+    moth_ui::Context::SetCurrentContext(uiContext);
 
     m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
     m_layerStack->SetEventListener(this);

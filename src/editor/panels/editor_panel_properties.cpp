@@ -278,7 +278,7 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    auto const fontNames = moth_ui::Context::GetCurrentContext().GetFontFactory().GetFontNameList();
+    auto const fontNames = moth_ui::Context::GetCurrentContext()->GetFontFactory().GetFontNameList();
     PropertiesInput(
         "Font", fontNames, entity->m_fontName,
         [&](auto oldValue, auto newValue) {
