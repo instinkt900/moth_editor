@@ -205,7 +205,7 @@ void EditorLayer::SetSelectedFrame(int frameNo) {
 
 void EditorLayer::Refresh() {
     for (auto&& child : m_root->GetChildren()) {
-        child->Refresh(m_selectedFrame);
+        child->Refresh(static_cast<float>(m_selectedFrame));
     }
 }
 

@@ -14,8 +14,6 @@ EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
 }
 
 void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
-    layout->RefreshAnimationTimings();
-
     auto group = std::make_unique<moth_ui::Group>(layout);
     auto const& clips = layout->m_clips;
     m_clipNames.clear();

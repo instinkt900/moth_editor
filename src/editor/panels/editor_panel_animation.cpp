@@ -548,7 +548,7 @@ bool EditorPanelAnimation::DrawWidget() {
                 std::unique_ptr<IEditorAction> action;
                 if (keyframePopupTarget != AnimationTrack::Target::Events) {
                     // non event keyframes continuous value
-                    auto const currentValue = trackPtr->GetValueAtFrame(keyframePopupFrame);
+                    auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(keyframePopupFrame));
                     action = std::make_unique<AddKeyframeAction>(childEntity, keyframePopupTarget, keyframePopupFrame, currentValue);
                 } else {
                     // event actions are independant
@@ -563,7 +563,7 @@ bool EditorPanelAnimation::DrawWidget() {
                     trackPtr = childTracks.at(target).get();
                     if (nullptr == trackPtr->GetKeyframe(keyframePopupFrame)) {
                         // only add a new frame if one doesnt exist
-                        auto const currentValue = trackPtr->GetValueAtFrame(keyframePopupFrame);
+                        auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(keyframePopupFrame));
                         auto action = std::make_unique<AddKeyframeAction>(childEntity, target, keyframePopupFrame, currentValue);
                         action->Do();
                         compositeAction->GetActions().push_back(std::move(action));
