@@ -7,6 +7,7 @@
 #include "../actions/move_keyframe_action.h"
 #include "../actions/add_keyframe_action.h"
 #include "../actions/delete_keyframe_action.h"
+#include "../actions/modify_keyframe_action.h"
 #include "imgui_internal.h"
 #include "moth_ui/group.h"
 #include "moth_ui/layout/layout_entity_group.h"
@@ -119,7 +120,7 @@ void EditorPanelAnimation::SelectKeyframe(std::shared_ptr<LayoutEntity> entity, 
 
 void EditorPanelAnimation::DeselectKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     auto const it = std::find_if(std::begin(m_selectedKeyframes), std::end(m_selectedKeyframes), [&](auto context) {
-        return context.entity == entity && context.target == target && context.frameNo == frameNo;
+        return context.entity == entity && context.target == target && context.current->m_frame == frameNo;
     });
     if (std::end(m_selectedKeyframes) != it) {
         m_selectedKeyframes.erase(it);
@@ -128,9 +129,21 @@ void EditorPanelAnimation::DeselectKeyframe(std::shared_ptr<LayoutEntity> entity
 
 bool EditorPanelAnimation::IsKeyframeSelected(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     auto const it = std::find_if(std::begin(m_selectedKeyframes), std::end(m_selectedKeyframes), [&](auto context) {
-        return context.entity == entity && context.target == target && context.frameNo == frameNo;
+        return context.entity == entity && context.target == target && context.current->m_frame == frameNo;
     });
     return std::end(m_selectedKeyframes) != it;
+}
+
+KeyframeContext* EditorPanelAnimation::GetSelectedContext(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+    auto const it = std::find_if(std::begin(m_selectedKeyframes), std::end(m_selectedKeyframes), [&](auto context) {
+        return context.entity == entity && context.target == target && context.current->m_frame == frameNo;
+    });
+
+    if (std::end(m_selectedKeyframes) != it) {
+        return &(*it);
+    }
+
+    return nullptr;
 }
 
 void EditorPanelAnimation::ClearSelectedKeyframes() {
@@ -144,33 +157,58 @@ void EditorPanelAnimation::ClearNonMatchingKeyframes(std::shared_ptr<LayoutEntit
                               std::end(m_selectedKeyframes));
 }
 
-void EditorPanelAnimation::EndMoveKeyframes() {
-    auto CreateAction = [](KeyframeContext& context) -> std::unique_ptr<IEditorAction> {
-        auto& track = context.entity->m_tracks.at(context.target);
-        if (context.frameNo != context.current->m_frame) {
-            int const targetFrame = context.current->m_frame;
-            context.current->m_frame = -1; // allow us to get any existing frame at the target
-            std::optional<Keyframe> replacedKeyframe;
-            if (auto replacingKeyframe = track->GetKeyframe(targetFrame)) {
-                replacedKeyframe = *replacingKeyframe;
-                track->DeleteKeyframe(replacingKeyframe); // this will invalidate current
-                context.current = track->GetKeyframe(-1); // this bothers me
-            }
-            context.current->m_frame = targetFrame;
-            return std::make_unique<MoveKeyframeAction>(context.entity, context.target, context.frameNo, targetFrame, replacedKeyframe);
+std::unique_ptr<IEditorAction> CreateMoveAction(KeyframeContext& context) {
+    auto& track = context.entity->m_tracks.at(context.target);
+    if (context.frameNo != context.current->m_frame) {
+        int const targetFrame = context.current->m_frame;
+        context.current->m_frame = -1; // allow us to get any existing frame at the target
+        std::optional<Keyframe> replacedKeyframe;
+        if (auto replacingKeyframe = track->GetKeyframe(targetFrame)) {
+            replacedKeyframe = *replacingKeyframe;
+            track->DeleteKeyframe(replacingKeyframe); // this will invalidate current
+            context.current = track->GetKeyframe(-1); // this bothers me
         }
-        return nullptr;
-    };
+        auto const oldFrame = context.frameNo;
+        context.current->m_frame = targetFrame;
+        context.frameNo = targetFrame;
+        return std::make_unique<MoveKeyframeAction>(context.entity, context.target, oldFrame, targetFrame, replacedKeyframe);
+    }
+    return nullptr;
+}
 
+std::unique_ptr<IEditorAction> CreateDuplicateAction(KeyframeContext& context) {
+    auto& track = context.entity->m_tracks.at(context.target);
+    if (context.frameNo != context.current->m_frame) {
+        int const targetFrame = context.current->m_frame;
+        context.current->m_frame = -1; // allow us to get any existing frame at the target
+        std::unique_ptr<IEditorAction> action;
+        if (auto replacingKeyframe = track->GetKeyframe(targetFrame)) {
+            context.current->m_frame = context.frameNo;
+            context.frameNo = targetFrame;
+            action = std::make_unique<ModifyKeyframeAction>(context.entity, context.target, targetFrame, replacingKeyframe->m_value, context.current->m_value, replacingKeyframe->m_interpType, context.current->m_interpType);
+        } else {
+            context.current->m_frame = context.frameNo;
+            context.frameNo = targetFrame;
+            action = std::make_unique<AddKeyframeAction>(context.entity, context.target, targetFrame, context.current->m_value, context.current->m_interpType);
+        }
+        action->Do();
+        return action;
+    }
+    return nullptr;
+}
+
+void EditorPanelAnimation::EndMoveKeyframes() {
     std::vector<std::unique_ptr<IEditorAction>> actions;
+
+    auto& io = ImGui::GetIO();
+    auto ActionFunc = io.KeyAlt ? &CreateDuplicateAction : &CreateMoveAction;
+
     for (auto&& context : m_selectedKeyframes) {
-        if (auto action = CreateAction(context)) {
-            auto const newFrameNo = context.current->m_frame;
+        if (auto action = ActionFunc(context)) {
             actions.push_back(std::move(action));
             context.entity->m_tracks.at(context.target)->SortKeyframes();
-            context.current = context.entity->m_tracks.at(context.target)->GetKeyframe(newFrameNo);
+            context.current = context.entity->m_tracks.at(context.target)->GetKeyframe(context.frameNo);
             assert(context.current);
-            context.frameNo = newFrameNo;
         }
     }
 
@@ -549,10 +587,10 @@ bool EditorPanelAnimation::DrawWidget() {
                 if (keyframePopupTarget != AnimationTrack::Target::Events) {
                     // non event keyframes continuous value
                     auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(keyframePopupFrame));
-                    action = std::make_unique<AddKeyframeAction>(childEntity, keyframePopupTarget, keyframePopupFrame, currentValue);
+                    action = std::make_unique<AddKeyframeAction>(childEntity, keyframePopupTarget, keyframePopupFrame, currentValue, moth_ui::InterpType::Linear);
                 } else {
                     // event actions are independant
-                    action = std::make_unique<AddKeyframeAction>(childEntity, keyframePopupTarget, keyframePopupFrame, "");
+                    action = std::make_unique<AddKeyframeAction>(childEntity, keyframePopupTarget, keyframePopupFrame, "", moth_ui::InterpType::Linear);
                 }
                 action->Do();
                 m_editorLayer.AddEditAction(std::move(action));
@@ -564,7 +602,7 @@ bool EditorPanelAnimation::DrawWidget() {
                     if (nullptr == trackPtr->GetKeyframe(keyframePopupFrame)) {
                         // only add a new frame if one doesnt exist
                         auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(keyframePopupFrame));
-                        auto action = std::make_unique<AddKeyframeAction>(childEntity, target, keyframePopupFrame, currentValue);
+                        auto action = std::make_unique<AddKeyframeAction>(childEntity, target, keyframePopupFrame, currentValue, moth_ui::InterpType::Linear);
                         action->Do();
                         compositeAction->GetActions().push_back(std::move(action));
                     }
@@ -668,10 +706,16 @@ bool EditorPanelAnimation::DrawWidget() {
                 ImRect keyRect(keyP1, keyP2);
                 bool selected = IsKeyframeSelected(childEntity, target, keyframe.m_frame);
                 if (keyP1.x <= (canvas_size.x + contentMin.x) && keyP2.x >= (contentMin.x + legendWidth)) {
+                    if (KeyframeGrabbed && selected && io.KeyAlt) {
+                        auto context = GetSelectedContext(childEntity, target, keyframe.m_frame);
+                        ImVec2 oldKeyP1(childTrackPos.x + context->frameNo * framePixelWidth + 2, rowYPos + 2);
+                        ImVec2 oldKeyP2(childTrackPos.x + context->frameNo * framePixelWidth + framePixelWidth - 1, rowYPos + ItemHeight - 2);
+                        draw_list->AddRectFilled(oldKeyP1, oldKeyP2, keyframeColorSelected, 4);
+                    }
                     draw_list->AddRectFilled(keyP1, keyP2, selected ? keyframeColorSelected : keyframeColor, 4);
                 }
 
-                if (!MovingScrollBar && !MovingCurrentFrame) {
+                if (!MovingScrollBar && !MovingCurrentFrame && !ImGui::IsPopupOpen("keyframe_popup")) {
                     if (keyRect.Contains(io.MousePos)) {
                         if (ImRect(childFramePos, childFramePos + childFrameSize).Contains(io.MousePos)) {
                             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {

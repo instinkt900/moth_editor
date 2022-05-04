@@ -596,7 +596,7 @@ void EditorLayer::EndEditBounds() {
                 // no keyframe
                 auto& keyframe = track->GetOrCreateKeyframe(frameNo);
                 keyframe.m_value = value;
-                editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value));
+                editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth_ui::InterpType::Linear));
             }
         };
 
@@ -667,7 +667,7 @@ void EditorLayer::EndEditColor() {
             // no keyframe
             auto& keyframe = track->GetOrCreateKeyframe(frameNo);
             keyframe.m_value = value;
-            editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value));
+            editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth_ui::InterpType::Linear));
         }
     };
 

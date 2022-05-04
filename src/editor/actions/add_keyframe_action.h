@@ -6,7 +6,7 @@
 
 class AddKeyframeAction : public IEditorAction {
 public:
-    AddKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue value);
+    AddKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue value, moth_ui::InterpType interp);
     virtual ~AddKeyframeAction();
 
     void Do() override;
@@ -19,4 +19,5 @@ protected:
     moth_ui::AnimationTrack::Target m_target;
     int m_frameNo;
     moth_ui::KeyframeValue m_value;
+    moth_ui::InterpType m_interp;
 };

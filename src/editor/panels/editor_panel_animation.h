@@ -37,6 +37,8 @@ private:
     void SelectKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
     void DeselectKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
     bool IsKeyframeSelected(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
+    KeyframeContext* GetSelectedContext(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
+
     void ClearSelectedKeyframes();
     void ClearNonMatchingKeyframes(std::shared_ptr<moth_ui::LayoutEntity> entity, int frameNo);
 
