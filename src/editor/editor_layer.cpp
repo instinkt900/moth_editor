@@ -434,9 +434,6 @@ void EditorLayer::ResetCanvas() {
 bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     if (event.GetAction() == moth_ui::KeyAction::Up) {
         switch (event.GetKey()) {
-        case moth_ui::Key::Delete:
-            DeleteEntity();
-            return true;
         case moth_ui::Key::F:
             ResetCanvas();
             break;

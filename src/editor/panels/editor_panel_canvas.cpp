@@ -311,6 +311,12 @@ void EditorPanelCanvas::UpdateInput() {
         }
     }
 
+    if (ImGui::IsWindowFocused()) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
+            m_editorLayer.DeleteEntity();
+        }
+    }
+
     // always want to accept released so we dont end up stuck down
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });

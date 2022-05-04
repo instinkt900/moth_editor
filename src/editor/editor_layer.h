@@ -91,6 +91,8 @@ public:
 
     ImGuiID GetDockID() const { return m_rootDockId; }
 
+    void DeleteEntity();
+
 private:
     ImGuiID m_rootDockId;
 
@@ -148,7 +150,6 @@ private:
     void CopyEntity();
     void CutEntity();
     void PasteEntity();
-    void DeleteEntity();
 
     void ResetCanvas();
 

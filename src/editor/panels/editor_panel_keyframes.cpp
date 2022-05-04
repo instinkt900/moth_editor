@@ -13,7 +13,7 @@ EditorPanelKeyframes::EditorPanelKeyframes(EditorLayer& editorLayer, EditorPanel
 }
 
 void EditorPanelKeyframes::Update(uint32_t ticks) {
-    m_visible = !m_selectedKeyframes.empty();
+    //m_visible = !m_selectedKeyframes.empty();
 }
 
 void EditorPanelKeyframes::DrawContents() {

@@ -310,6 +310,12 @@ bool EditorPanelAnimation::DrawWidget() {
     static bool MovingCurrentFrame = false;
     static bool KeyframeGrabbed = false;
     static bool MovingClip = false;
+    static bool BoxSelecting = false;
+    static bool DoBoxSelect = false;
+
+    static ImVec2 BoxSelectStart;
+    static ImVec2 BoxSelectEnd;
+    ImRect boxSelectBox(BoxSelectStart, BoxSelectEnd);
 
     // zoom in/out
     const int visibleFrameCount = (int)floorf((canvas_size.x - legendWidth) / framePixelWidth);
@@ -626,7 +632,7 @@ bool EditorPanelAnimation::DrawWidget() {
     ImVec2 tracksMin(contentMin.x + legendWidth - firstFrameUsed * framePixelWidth, childFramePos.y);
     ImVec2 tracksMax(childFramePos.x + childFrameSize.x, childFramePos.y + childFrameSize.y);
     ImRect tracksFrame(tracksMin, tracksMax);
-    bool pendingKeyframeSelectionClear = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && tracksFrame.Contains(io.MousePos);
+    bool pendingKeyframeSelectionClear = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && tracksFrame.Contains(io.MousePos) && !io.KeyCtrl;
 
     // track rows
     for (int i = 0; i < childCount; ++i) {
@@ -741,21 +747,30 @@ bool EditorPanelAnimation::DrawWidget() {
                         }
                     }
                 }
+                if (DoBoxSelect) {
+                    if (keyRect.Overlaps(boxSelectBox)) {
+                        SelectKeyframe(childEntity, target, keyframe.m_frame);
+                    }
+                }
             }
 
             subColorSelector = !subColorSelector;
         }
 
         ImRect rowRect(rowMin, rowMax);
-        if (!ImGui::IsPopupOpen("keyframe_popup") && rowRect.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-            keyframePopupChildIdx = i;
-            keyframePopupTarget = AnimationTrack::Target::Unknown;
-            keyframePopupFrame = static_cast<int>((io.MousePos.x - rowMin.x) / framePixelWidth);
-            ImGui::OpenPopup("keyframe_popup");
+        if (rowRect.Contains(io.MousePos)) {
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::IsPopupOpen("keyframe_popup")) {
+                keyframePopupChildIdx = i;
+                keyframePopupTarget = AnimationTrack::Target::Unknown;
+                keyframePopupFrame = static_cast<int>((io.MousePos.x - rowMin.x) / framePixelWidth);
+                ImGui::OpenPopup("keyframe_popup");
+            }
         }
 
         rowYPos += ItemHeight;
     }
+
+    DoBoxSelect = false;
 
     // moving
     if (KeyframeGrabbed) {
@@ -783,6 +798,23 @@ bool EditorPanelAnimation::DrawWidget() {
         ClearSelectedKeyframes();
     }
 
+    if (ImGui::IsWindowFocused()) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            if (KeyframeGrabbed) {
+                for (auto&& context : m_selectedKeyframes) {
+                    context.current->m_frame = context.frameNo;
+                }
+                KeyframeGrabbed = false;
+            } else if (BoxSelecting) {
+                BoxSelecting = false;
+            } else {
+                ClearSelectedKeyframes();
+            }
+        } else if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
+            DeleteSelectedKeyframes();
+        }
+    }
+
     // vertical frame lines in content area
     for (int i = m_minFrame; i <= m_maxFrame; i += frameStep) {
         drawLineContent(i);
@@ -803,6 +835,7 @@ bool EditorPanelAnimation::DrawWidget() {
 
     ImGui::EndChildFrame();
     ImGui::PopStyleColor();
+
     if (hasScrollBar) {
         ImGui::InvisibleButton("scrollBar", scrollBarSize);
         ImVec2 scrollBarMin = ImGui::GetItemRectMin();
@@ -819,7 +852,6 @@ bool EditorPanelAnimation::DrawWidget() {
         bool inScrollBar = scrollBarRect.Contains(io.MousePos);
 
         draw_list->AddRectFilled(scrollBarA, scrollBarB, 0xFF101010, 8);
-
 
         ImVec2 scrollBarC(scrollBarMin.x + legendWidth + startFrameOffset, scrollBarMin.y);
         ImVec2 scrollBarD(scrollBarMin.x + legendWidth + barWidthInPixels + startFrameOffset, scrollBarMax.y - 2);
@@ -892,6 +924,29 @@ bool EditorPanelAnimation::DrawWidget() {
                     sizingLBar = true;
             }
         }
+    }
+
+    if (BoxSelecting) {
+        BoxSelectEnd = io.MousePos;
+
+        ImVec2 boxMin, boxMax;
+        boxMin.x = std::min(BoxSelectStart.x, BoxSelectEnd.x);
+        boxMin.y = std::min(BoxSelectStart.y, BoxSelectEnd.y);
+        boxMax.x = std::max(BoxSelectStart.x, BoxSelectEnd.x);
+        boxMax.y = std::max(BoxSelectStart.y, BoxSelectEnd.y);
+
+        draw_list->AddRect(boxMin, boxMax, 0xFFFFFFFF);
+
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+            BoxSelecting = false;
+
+            BoxSelectStart = boxMin;
+            BoxSelectEnd = boxMax;
+            DoBoxSelect = true;
+        }
+    } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !KeyframeGrabbed && !MovingCurrentFrame && !MovingClip && !MovingScrollBar) {
+        BoxSelecting = true;
+        BoxSelectStart = io.MousePos;
     }
 
     ImGui::EndGroup();
