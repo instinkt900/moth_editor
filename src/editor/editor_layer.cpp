@@ -105,7 +105,11 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
             LoadLayout(s_fileDialog.GetSelected().string().c_str());
             s_fileDialog.ClearSelected();
         } else if (s_fileOpenMode == FileOpenMode::SaveLayout) {
-            SaveLayout(s_fileDialog.GetSelected().string().c_str());
+            auto filePath = s_fileDialog.GetSelected();
+            if (!filePath.has_extension()) {
+                filePath.replace_extension(moth_ui::Layout::Extension);
+            }
+            SaveLayout(filePath.string().c_str());
             s_fileDialog.ClearSelected();
         }
     }
