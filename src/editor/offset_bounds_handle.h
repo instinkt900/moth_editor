@@ -10,7 +10,7 @@ public:
     void Draw(SDL_Renderer& renderer) override;
 
 private:
-    float m_size = 10.0f;
+    float m_size = 12.0f;
 
     bool IsInBounds(moth_ui::IntVec2 const& pos) const override;
     void UpdatePosition(moth_ui::IntVec2 const& position) override;

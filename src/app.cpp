@@ -22,7 +22,7 @@ App::App()
     m_updateTicks = 1000 / 60;
 
     m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
-    std::ifstream persistenceFile(m_persistentFilePath.string(), std::ios::in | std::ios::out);
+    std::ifstream persistenceFile(m_persistentFilePath.string());
     if (persistenceFile.is_open()) {
         try {
             persistenceFile >> m_persistentState;

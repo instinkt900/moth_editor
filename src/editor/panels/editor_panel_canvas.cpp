@@ -156,16 +156,29 @@ void EditorPanelCanvas::EndPanel() {
     auto const windowID = ImGui::GetCurrentWindow()->ID;
 
     if (ImGui::BeginDragDropTargetCustom(windowContentRect, windowID)) {
+        auto const mousePos = moth_ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+        auto const canvasPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::CanvasSpace, int>(mousePos);
+
         if (auto const payload = ImGui::AcceptDragDropPayload("layout_path", 0)) {
             std::string* layoutPath = static_cast<std::string*>(payload->Data);
             std::shared_ptr<moth_ui::Layout> newLayout;
             auto loadResult = moth_ui::Layout::Load(layoutPath->c_str(), &newLayout);
             if (loadResult == moth_ui::Layout::LoadResult::Success) {
-                AddEntity<moth_ui::LayoutEntityRef>(m_editorLayer, *newLayout);
+                moth_ui::LayoutRect bounds;
+                bounds.anchor.topLeft = { 0, 0 };
+                bounds.anchor.bottomRight = { 0, 0 };
+                bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
+                bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
+                AddEntityWithBounds<moth_ui::LayoutEntityRef>(m_editorLayer, bounds, *newLayout);
             }
         } else if (auto const payload = ImGui::AcceptDragDropPayload("image_path", 0)) {
             std::string* layoutPath = static_cast<std::string*>(payload->Data);
-            AddEntity<moth_ui::LayoutEntityImage>(m_editorLayer, layoutPath->c_str());
+            moth_ui::LayoutRect bounds;
+            bounds.anchor.topLeft = { 0, 0 };
+            bounds.anchor.bottomRight = { 0, 0 };
+            bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
+            bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
+            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, layoutPath->c_str());
         }
         ImGui::EndDragDropTarget();
     }
@@ -187,7 +200,7 @@ moth_ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth_ui::IntVec2 const& original)
 void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
     bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseDown(moth_ui::MouseButton::Left, appPosition));
 
-    if (!m_holdingSelection) {
+    if (!handled && !m_holdingSelection) {
         auto const worldPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(appPosition);
         auto const selection = m_editorLayer.GetSelection();
         for (auto&& node : selection) {
