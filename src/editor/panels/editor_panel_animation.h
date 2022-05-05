@@ -11,6 +11,8 @@ public:
     EditorPanelAnimation(EditorLayer& editorLayer, bool visible);
     virtual ~EditorPanelAnimation() = default;
 
+    void OnLayoutLoaded() override;
+
     std::vector<KeyframeContext>& GetSelectedKeyframes() { return m_selectedKeyframes; };
 
 private:
@@ -42,6 +44,7 @@ private:
     void ClearSelectedKeyframes();
     void ClearNonMatchingKeyframes(std::shared_ptr<moth_ui::LayoutEntity> entity, int frameNo);
 
+    void DeleteSelectedClip();
     void DeleteSelectedKeyframes();
 
     void EndMoveKeyframes();
@@ -50,6 +53,9 @@ private:
     int m_maxFrame = 100;
     int m_currentFrame = 0;
     int m_firstFrame = 0;
+
+    float m_framePixelWidth = 10.f;
+    float m_framePixelWidthTarget = 10.f;
 
     std::vector<bool> m_childExpanded;
 };

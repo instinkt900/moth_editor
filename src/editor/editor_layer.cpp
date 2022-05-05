@@ -47,7 +47,7 @@ EditorLayer::EditorLayer() {
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
     auto const animationPanel = AddEditorPanel<EditorPanelAnimation>(*this, true);
-    AddEditorPanel<EditorPanelKeyframes>(*this, *animationPanel);
+    //AddEditorPanel<EditorPanelKeyframes>(*this, *animationPanel);
     AddEditorPanel<EditorPanelUndoStack>(*this, false);
     AddEditorPanel<EditorPanelPreview>(*this, false);
 
@@ -254,6 +254,9 @@ void EditorLayer::NewLayout(bool discard) {
         ClearEditActions();
         m_lockedNodes.clear();
         Rebuild();
+        for (auto&& [panelId, panel] : m_panels) {
+            panel->OnLayoutLoaded();
+        }
     }
 }
 
@@ -283,6 +286,9 @@ void EditorLayer::LoadLayout(char const* path, bool discard) {
             ClearEditActions();
             m_lockedNodes.clear();
             Rebuild();
+            for (auto&& [panelId, panel] : m_panels) {
+                panel->OnLayoutLoaded();
+            }
         } else {
             if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
                 ShowError("File not found.");

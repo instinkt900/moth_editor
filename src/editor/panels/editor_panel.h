@@ -25,6 +25,7 @@ public:
     std::string const& GetTitle() const { return m_title; }
     bool IsExposed() const { return m_exposed; }
 
+    virtual void OnLayoutLoaded() {}
     virtual void Refresh() {}
 
     virtual bool OnEvent(moth_ui::Event const& event) { return false; }

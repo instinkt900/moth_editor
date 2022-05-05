@@ -8,6 +8,8 @@
 #include "../actions/add_keyframe_action.h"
 #include "../actions/delete_keyframe_action.h"
 #include "../actions/modify_keyframe_action.h"
+#include "../actions/add_clip_action.h"
+#include "../actions/delete_clip_action.h"
 #include "imgui_internal.h"
 #include "moth_ui/group.h"
 #include "moth_ui/layout/layout_entity_group.h"
@@ -36,6 +38,20 @@ namespace {
 
 EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Animation", visible, true) {
+}
+
+void EditorPanelAnimation::OnLayoutLoaded() {
+    m_targetClip = nullptr;
+    m_selectedKeyframes.clear();
+    m_selectedClip = nullptr;
+
+    m_minFrame = 0;
+    m_maxFrame = 100;
+    m_currentFrame = 0;
+    m_firstFrame = 0;
+
+    m_framePixelWidth = 10.f;
+    m_framePixelWidthTarget = 10.f;
 }
 
 void EditorPanelAnimation::DrawContents() {
@@ -104,6 +120,12 @@ void EditorPanelAnimation::DrawSelectedClipWindow() {
                         ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndCombo();
+            }
+        }
+
+        if (ImGui::IsWindowFocused()) {
+            if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
+                DeleteSelectedClip();
             }
         }
         ImGui::End();
@@ -224,6 +246,13 @@ void EditorPanelAnimation::EndMoveKeyframes() {
     m_editorLayer.Refresh();
 }
 
+void EditorPanelAnimation::DeleteSelectedClip() {
+    auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+    auto action = std::make_unique<DeleteClipAction>(entity, *m_selectedClip);
+    m_editorLayer.PerformEditAction(std::move(action));
+    m_selectedClip = nullptr;
+}
+
 void EditorPanelAnimation::DeleteSelectedKeyframes() {
     if (m_selectedKeyframes.empty()) {
         return;
@@ -279,8 +308,7 @@ bool EditorPanelAnimation::DrawWidget() {
     ImGuiIO& io = ImGui::GetIO();
     int cx = (int)(io.MousePos.x);
     int cy = (int)(io.MousePos.y);
-    static float framePixelWidth = 10.f;
-    static float framePixelWidthTarget = 10.f;
+
     int legendWidth = 200;
 
     static int movingEntry = -1;
@@ -318,7 +346,7 @@ bool EditorPanelAnimation::DrawWidget() {
     ImRect boxSelectBox(BoxSelectStart, BoxSelectEnd);
 
     // zoom in/out
-    const int visibleFrameCount = (int)floorf((canvas_size.x - legendWidth) / framePixelWidth);
+    const int visibleFrameCount = (int)floorf((canvas_size.x - legendWidth) / m_framePixelWidth);
     const float barWidthRatio = ImMin(visibleFrameCount / (float)frameCount, 1.f);
     const float barWidthInPixels = barWidthRatio * (canvas_size.x - legendWidth);
 
@@ -331,15 +359,15 @@ bool EditorPanelAnimation::DrawWidget() {
             panningView = true;
             panningViewFrame = m_firstFrame;
         }
-        m_firstFrame = panningViewFrame - int((io.MousePos.x - panningViewSource.x) / framePixelWidth);
+        m_firstFrame = panningViewFrame - int((io.MousePos.x - panningViewSource.x) / m_framePixelWidth);
         m_firstFrame = ImClamp(m_firstFrame, m_minFrame, m_maxFrame - visibleFrameCount);
     }
     if (panningView && !io.MouseDown[2]) {
         panningView = false;
     }
-    framePixelWidthTarget = ImClamp(framePixelWidthTarget, 0.1f, 50.f);
+    m_framePixelWidthTarget = ImClamp(m_framePixelWidthTarget, 0.1f, 50.f);
 
-    framePixelWidth = ImLerp(framePixelWidth, framePixelWidthTarget, 0.33f);
+    m_framePixelWidth = ImLerp(m_framePixelWidth, m_framePixelWidthTarget, 0.33f);
 
     frameCount = m_maxFrame - m_minFrame;
     if (visibleFrameCount >= frameCount && m_firstFrame)
@@ -375,7 +403,7 @@ bool EditorPanelAnimation::DrawWidget() {
     }
     if (MovingCurrentFrame) {
         if (frameCount) {
-            m_currentFrame = (int)((io.MousePos.x - topRect.Min.x) / framePixelWidth) + firstFrameUsed;
+            m_currentFrame = (int)((io.MousePos.x - topRect.Min.x) / m_framePixelWidth) + firstFrameUsed;
             if (m_currentFrame < m_minFrame)
                 m_currentFrame = m_minFrame;
             if (m_currentFrame >= m_maxFrame)
@@ -391,7 +419,7 @@ bool EditorPanelAnimation::DrawWidget() {
     //header frame number and lines
     int modFrameCount = 10;
     int frameStep = 1;
-    while ((modFrameCount * framePixelWidth) < 150) {
+    while ((modFrameCount * m_framePixelWidth) < 150) {
         modFrameCount *= 2;
         frameStep *= 2;
     };
@@ -400,7 +428,7 @@ bool EditorPanelAnimation::DrawWidget() {
     auto drawLine = [&](int i, int regionHeight) {
         bool baseIndex = ((i % modFrameCount) == 0) || (i == m_maxFrame || i == m_minFrame);
         bool halfIndex = (i % halfModFrameCount) == 0;
-        int px = int(contentMin.x + legendWidth + (i - firstFrameUsed) * framePixelWidth);
+        int px = int(contentMin.x + legendWidth + (i - firstFrameUsed) * m_framePixelWidth);
         int tiretStart = baseIndex ? 4 : (halfIndex ? 10 : 14);
         int tiretEnd = baseIndex ? regionHeight : ItemHeight;
 
@@ -418,7 +446,7 @@ bool EditorPanelAnimation::DrawWidget() {
     };
 
     auto drawLineContent = [&](int i) {
-        int px = int(contentMin.x + legendWidth + (i - firstFrameUsed) * framePixelWidth);
+        int px = int(contentMin.x + legendWidth + (i - firstFrameUsed) * m_framePixelWidth);
         int tiretStart = int(contentMin.y);
         int tiretEnd = int(contentMax.y);
 
@@ -442,40 +470,37 @@ bool EditorPanelAnimation::DrawWidget() {
     if (ImGui::BeginPopup("clip_popup")) {
         if (m_selectedClip == nullptr) {
             if (ImGui::MenuItem("Add")) {
-                auto newClip = std::make_unique<AnimationClip>();
-                newClip->m_startFrame = clipFramePopup;
-                newClip->m_endFrame = newClip->m_startFrame + 10;
-                animationClips.push_back(std::move(newClip));
+                auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+                auto newClip = moth_ui::AnimationClip();
+                newClip.m_name = "New Clip";
+                newClip.m_startFrame = clipFramePopup;
+                newClip.m_endFrame = newClip.m_startFrame + 10;
+                auto action = std::make_unique<AddClipAction>(entity, newClip);
+                m_editorLayer.PerformEditAction(std::move(action));
                 ImGui::CloseCurrentPopup();
             }
         } else {
             if (ImGui::MenuItem("Edit")) {
                 m_clipWindowShown = true;
             } else if (ImGui::MenuItem("Delete")) {
-                auto it = std::find_if(std::begin(animationClips), std::end(animationClips), [this](auto& target) {
-                    return target.get() == m_selectedClip;
-                });
-                if (std::end(animationClips) != it) {
-                    animationClips.erase(it);
-                }
-                m_selectedClip = nullptr;
+                DeleteSelectedClip();
                 ImGui::CloseCurrentPopup();
             }
         }
         ImGui::EndPopup();
     }
 
-    ImVec2 clipTrackMin(contentMin.x + legendWidth - (firstFrameUsed * framePixelWidth), contentMin.y);
+    ImVec2 clipTrackMin(contentMin.x + legendWidth - (firstFrameUsed * m_framePixelWidth), contentMin.y);
     ImVec2 clipTrackMax(contentMax.x, clipTrackMin.y + ItemHeight);
     ImRect clipTrackRect(clipTrackMin, clipTrackMax);
     bool pendingClipSelectionClear = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && clipTrackRect.Contains(io.MousePos);
 
     // draw clips
     for (auto&& clip : animationClips) {
-        int px = (int)contentMin.x + legendWidth - int(firstFrameUsed * framePixelWidth);
+        int px = (int)contentMin.x + legendWidth - int(firstFrameUsed * m_framePixelWidth);
         int py = (int)contentMin.y;
-        ImVec2 slotP1(px + clip->m_startFrame * framePixelWidth, py + 2.0f);
-        ImVec2 slotP2(px + clip->m_endFrame * framePixelWidth + framePixelWidth, py + ItemHeight - 2.0f);
+        ImVec2 slotP1(px + clip->m_startFrame * m_framePixelWidth, py + 2.0f);
+        ImVec2 slotP2(px + clip->m_endFrame * m_framePixelWidth + m_framePixelWidth, py + ItemHeight - 2.0f);
         unsigned int slotColor = (m_selectedClip == nullptr || m_selectedClip != clip.get()) ? 0xFF00CCAA : 0xFF13BDF3;
 
         if (slotP1.x <= (canvas_size.x + contentMin.x) && slotP2.x >= (contentMin.x + legendWidth)) {
@@ -483,8 +508,8 @@ bool EditorPanelAnimation::DrawWidget() {
         }
 
         ImRect rects[3] = {
-            ImRect(slotP1, ImVec2(slotP1.x + framePixelWidth / 2, slotP2.y)),
-            ImRect(ImVec2(slotP2.x - framePixelWidth / 2, slotP1.y), slotP2),
+            ImRect(slotP1, ImVec2(slotP1.x + m_framePixelWidth / 2, slotP2.y)),
+            ImRect(ImVec2(slotP2.x - m_framePixelWidth / 2, slotP1.y), slotP2),
             ImRect(slotP1, slotP2)
         };
 
@@ -527,7 +552,7 @@ bool EditorPanelAnimation::DrawWidget() {
     }
 
     if (clipTrackRect.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        clipFramePopup = static_cast<int>((io.MousePos.x - clipTrackMin.x) / framePixelWidth);
+        clipFramePopup = static_cast<int>((io.MousePos.x - clipTrackMin.x) / m_framePixelWidth);
         ImGui::OpenPopup("clip_popup");
     }
 
@@ -538,7 +563,7 @@ bool EditorPanelAnimation::DrawWidget() {
     // moving clip
     if (MovingClip) {
         ImGui::CaptureMouseFromApp();
-        int diffFrame = int((cx - movingPos) / framePixelWidth);
+        int diffFrame = int((cx - movingPos) / m_framePixelWidth);
         if (std::abs(diffFrame) > 0) {
             int& l = m_selectedClip->m_startFrame;
             int& r = m_selectedClip->m_endFrame;
@@ -555,7 +580,7 @@ bool EditorPanelAnimation::DrawWidget() {
                 l = r;
             if (movingPart & 2 && r < l)
                 r = l;
-            movingPos += int(diffFrame * framePixelWidth);
+            movingPos += int(diffFrame * m_framePixelWidth);
         }
         if (!io.MouseDown[0]) {
             MovingClip = false;
@@ -620,6 +645,40 @@ bool EditorPanelAnimation::DrawWidget() {
             DeleteSelectedKeyframes();
             ImGui::CloseCurrentPopup();
         }
+
+        if (!m_selectedKeyframes.empty() && ImGui::BeginMenu("Interp")) {
+            bool multipleInterps = false;
+            moth_ui::InterpType selectedInterp = moth_ui::InterpType::Unknown;
+            for (auto&& context : m_selectedKeyframes) {
+                if (context.current->m_interpType != selectedInterp) {
+                    if (selectedInterp == moth_ui::InterpType::Unknown) {
+                        selectedInterp = context.current->m_interpType;
+                    } else {
+                        multipleInterps = true;
+                    }
+                }
+            }
+            if (multipleInterps) {
+                ImGui::RadioButton("(multiple values)", multipleInterps);
+            }
+            for (int i = 0; i < magic_enum::enum_count<moth_ui::InterpType>(); ++i) {
+                auto const interpType = magic_enum::enum_value<moth_ui::InterpType>(i);
+                if (interpType == moth_ui::InterpType::Unknown) {
+                    continue;
+                }
+                std::string const interpName(magic_enum::enum_name(interpType));
+                bool checked = selectedInterp == interpType;
+                if (ImGui::RadioButton(interpName.c_str(), checked)) {
+                    auto compositeAction = std::make_unique<CompositeAction>();
+                    for (auto&& context : m_selectedKeyframes) {
+                        auto action = MakeChangeValueAction(context.current->m_interpType, context.current->m_interpType, interpType, nullptr);
+                        compositeAction->GetActions().push_back(std::move(action));
+                    }
+                    m_editorLayer.PerformEditAction(std::move(compositeAction));
+                }
+            }
+            ImGui::EndMenu();
+        }
         ImGui::EndPopup();
     }
 
@@ -629,7 +688,7 @@ bool EditorPanelAnimation::DrawWidget() {
         keyframePopupFrame = -1;
     }
 
-    ImVec2 tracksMin(contentMin.x + legendWidth - firstFrameUsed * framePixelWidth, childFramePos.y);
+    ImVec2 tracksMin(contentMin.x + legendWidth - firstFrameUsed * m_framePixelWidth, childFramePos.y);
     ImVec2 tracksMax(childFramePos.x + childFrameSize.x, childFramePos.y + childFrameSize.y);
     ImRect tracksFrame(tracksMin, tracksMax);
     bool pendingKeyframeSelectionClear = ImGui::IsMouseClicked(ImGuiMouseButton_Left) && tracksFrame.Contains(io.MousePos) && !io.KeyCtrl;
@@ -681,7 +740,7 @@ bool EditorPanelAnimation::DrawWidget() {
         ImVec2 rowMax(canvas_size.x + canvas_pos.x, rowYPos + ItemHeight);
         draw_list->AddRectFilled(rowMin, rowMax, col, 0);
 
-        ImVec2 childTrackPos(contentMin.x + legendWidth - firstFrameUsed * framePixelWidth, rowYPos);
+        ImVec2 childTrackPos(contentMin.x + legendWidth - firstFrameUsed * m_framePixelWidth, rowYPos);
         unsigned int keyframeColor = 0xFFc4c4c4;
         unsigned int keyframeColorSelected = 0xFFFFa2a2;
         bool subColorSelector = false;
@@ -701,21 +760,21 @@ bool EditorPanelAnimation::DrawWidget() {
                 if (subRowRect.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     keyframePopupChildIdx = i;
                     keyframePopupTarget = target;
-                    keyframePopupFrame = static_cast<int>((io.MousePos.x - subRowMin.x) / framePixelWidth);
+                    keyframePopupFrame = static_cast<int>((io.MousePos.x - subRowMin.x) / m_framePixelWidth);
                     ImGui::OpenPopup("keyframe_popup");
                 }
             }
 
             for (auto&& keyframe : track->m_keyframes) {
-                ImVec2 keyP1(childTrackPos.x + keyframe.m_frame * framePixelWidth + 2, rowYPos + 2);
-                ImVec2 keyP2(childTrackPos.x + keyframe.m_frame * framePixelWidth + framePixelWidth - 1, rowYPos + ItemHeight - 2);
+                ImVec2 keyP1(childTrackPos.x + keyframe.m_frame * m_framePixelWidth + 2, rowYPos + 2);
+                ImVec2 keyP2(childTrackPos.x + keyframe.m_frame * m_framePixelWidth + m_framePixelWidth - 1, rowYPos + ItemHeight - 2);
                 ImRect keyRect(keyP1, keyP2);
                 bool selected = IsKeyframeSelected(childEntity, target, keyframe.m_frame);
                 if (keyP1.x <= (canvas_size.x + contentMin.x) && keyP2.x >= (contentMin.x + legendWidth)) {
                     if (KeyframeGrabbed && selected && io.KeyAlt) {
                         auto context = GetSelectedContext(childEntity, target, keyframe.m_frame);
-                        ImVec2 oldKeyP1(childTrackPos.x + context->frameNo * framePixelWidth + 2, rowYPos + 2);
-                        ImVec2 oldKeyP2(childTrackPos.x + context->frameNo * framePixelWidth + framePixelWidth - 1, rowYPos + ItemHeight - 2);
+                        ImVec2 oldKeyP1(childTrackPos.x + context->frameNo * m_framePixelWidth + 2, rowYPos + 2);
+                        ImVec2 oldKeyP2(childTrackPos.x + context->frameNo * m_framePixelWidth + m_framePixelWidth - 1, rowYPos + ItemHeight - 2);
                         draw_list->AddRectFilled(oldKeyP1, oldKeyP2, keyframeColorSelected, 4);
                     }
                     draw_list->AddRectFilled(keyP1, keyP2, selected ? keyframeColorSelected : keyframeColor, 4);
@@ -762,7 +821,7 @@ bool EditorPanelAnimation::DrawWidget() {
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::IsPopupOpen("keyframe_popup")) {
                 keyframePopupChildIdx = i;
                 keyframePopupTarget = AnimationTrack::Target::Unknown;
-                keyframePopupFrame = static_cast<int>((io.MousePos.x - rowMin.x) / framePixelWidth);
+                keyframePopupFrame = static_cast<int>((io.MousePos.x - rowMin.x) / m_framePixelWidth);
                 ImGui::OpenPopup("keyframe_popup");
             }
         }
@@ -775,7 +834,7 @@ bool EditorPanelAnimation::DrawWidget() {
     // moving
     if (KeyframeGrabbed) {
         ImGui::CaptureMouseFromApp();
-        int diffFrame = int((cx - movingPos) / framePixelWidth);
+        int diffFrame = int((cx - movingPos) / m_framePixelWidth);
         if (std::abs(diffFrame) > 0) {
             for (auto&& context : m_selectedKeyframes) {
                 if (context.frameNo != 0) { // dont allow frame zero to be moved
@@ -785,7 +844,7 @@ bool EditorPanelAnimation::DrawWidget() {
                     }
                 }
             }
-            movingPos += int(diffFrame * framePixelWidth);
+            movingPos += int(diffFrame * m_framePixelWidth);
             m_editorLayer.Refresh();
         }
         if (!io.MouseDown[0]) {
@@ -811,7 +870,11 @@ bool EditorPanelAnimation::DrawWidget() {
                 ClearSelectedKeyframes();
             }
         } else if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-            DeleteSelectedKeyframes();
+            if (m_selectedClip != nullptr) {
+                DeleteSelectedClip();
+            } else {
+                DeleteSelectedKeyframes();
+            }
         }
     }
 
@@ -826,8 +889,8 @@ bool EditorPanelAnimation::DrawWidget() {
 
     // cursor
     if (m_currentFrame >= m_firstFrame && m_currentFrame <= m_maxFrame) {
-        float cursorOffset = contentMin.x + legendWidth + (m_currentFrame - firstFrameUsed) * framePixelWidth + framePixelWidth / 2;
-        draw_list->AddLine(ImVec2(cursorOffset, canvas_pos.y), ImVec2(cursorOffset, contentMax.y), 0xA02A2AFF, framePixelWidth - 1);
+        float cursorOffset = contentMin.x + legendWidth + (m_currentFrame - firstFrameUsed) * m_framePixelWidth + m_framePixelWidth / 2;
+        draw_list->AddLine(ImVec2(cursorOffset, canvas_pos.y), ImVec2(cursorOffset, contentMax.y), 0xA02A2AFF, m_framePixelWidth - 1);
         char tmps[512];
         ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", m_currentFrame);
         draw_list->AddText(ImVec2(cursorOffset + 10, canvas_pos.y + 2), 0xFF2A2AFF, tmps);
@@ -877,11 +940,11 @@ bool EditorPanelAnimation::DrawWidget() {
             } else {
                 float barNewWidth = ImMax(barWidthInPixels + io.MouseDelta.x, MinBarWidth);
                 float barRatio = barNewWidth / barWidthInPixels;
-                framePixelWidthTarget = framePixelWidth = framePixelWidth / barRatio;
-                int newVisibleFrameCount = int((canvas_size.x - legendWidth) / framePixelWidthTarget);
+                m_framePixelWidthTarget = m_framePixelWidth = m_framePixelWidth / barRatio;
+                int newVisibleFrameCount = int((canvas_size.x - legendWidth) / m_framePixelWidthTarget);
                 int lastFrame = m_firstFrame + newVisibleFrameCount;
                 if (lastFrame > m_maxFrame) {
-                    framePixelWidthTarget = framePixelWidth = (canvas_size.x - legendWidth) / float(m_maxFrame - m_firstFrame);
+                    m_framePixelWidthTarget = m_framePixelWidth = (canvas_size.x - legendWidth) / float(m_maxFrame - m_firstFrame);
                 }
             }
         } else if (sizingLBar) {
@@ -891,13 +954,13 @@ bool EditorPanelAnimation::DrawWidget() {
                 if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
                     float barNewWidth = ImMax(barWidthInPixels - io.MouseDelta.x, MinBarWidth);
                     float barRatio = barNewWidth / barWidthInPixels;
-                    float previousFramePixelWidthTarget = framePixelWidthTarget;
-                    framePixelWidthTarget = framePixelWidth = framePixelWidth / barRatio;
+                    float previousFramePixelWidthTarget = m_framePixelWidthTarget;
+                    m_framePixelWidthTarget = m_framePixelWidth = m_framePixelWidth / barRatio;
                     int newVisibleFrameCount = int(visibleFrameCount / barRatio);
                     int newFirstFrame = m_firstFrame + newVisibleFrameCount - visibleFrameCount;
                     newFirstFrame = ImClamp(newFirstFrame, m_minFrame, ImMax(m_maxFrame - visibleFrameCount, m_minFrame));
                     if (newFirstFrame == m_firstFrame) {
-                        framePixelWidth = framePixelWidthTarget = previousFramePixelWidthTarget;
+                        m_framePixelWidth = m_framePixelWidthTarget = previousFramePixelWidthTarget;
                     } else {
                         m_firstFrame = newFirstFrame;
                     }
