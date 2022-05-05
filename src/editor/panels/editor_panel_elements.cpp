@@ -33,6 +33,7 @@ namespace {
             [](EditorLayer& editorLayer) {
                 s_fileBrowser.SetTitle("Open..");
                 s_fileBrowser.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
+                s_fileBrowser.SetPwd();
                 s_fileBrowser.Open();
                 s_fileOpenMode = FileOpenMode::Image;
             },
@@ -42,6 +43,7 @@ namespace {
             [](EditorLayer& editorLayer) {
                 s_fileBrowser.SetTitle("Open..");
                 s_fileBrowser.SetTypeFilters({ moth_ui::Layout::Extension });
+                s_fileBrowser.SetPwd();
                 s_fileBrowser.Open();
                 s_fileOpenMode = FileOpenMode::SubLayout;
             },
@@ -69,7 +71,12 @@ void EditorPanelElements::DrawContents() {
             std::shared_ptr<moth_ui::Layout> referencedLayout;
             auto const loadResult = moth_ui::Layout::Load(s_fileBrowser.GetSelected().string().c_str(), &referencedLayout);
             if (loadResult == moth_ui::Layout::LoadResult::Success) {
-                AddEntity<moth_ui::LayoutEntityRef>(m_editorLayer, *referencedLayout);
+                moth_ui::LayoutRect bounds;
+                bounds.anchor.topLeft = { 0, 0 };
+                bounds.anchor.bottomRight = { 0, 0 };
+                bounds.offset.topLeft = { 0, 0 };
+                bounds.offset.bottomRight = { 100, 100 };
+                AddEntityWithBounds<moth_ui::LayoutEntityRef>(m_editorLayer, bounds, *referencedLayout);
             } else {
                 if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
                     m_editorLayer.ShowError("File not found.");
@@ -79,7 +86,12 @@ void EditorPanelElements::DrawContents() {
             }
             s_fileBrowser.ClearSelected();
         } else if (s_fileOpenMode == FileOpenMode::Image) {
-            AddEntity<moth_ui::LayoutEntityImage>(m_editorLayer, s_fileBrowser.GetSelected().string().c_str());
+            moth_ui::LayoutRect bounds;
+            bounds.anchor.topLeft = { 0, 0 };
+            bounds.anchor.bottomRight = { 0, 0 };
+            bounds.offset.topLeft = { 0, 0 };
+            bounds.offset.bottomRight = { 100, 100 };
+            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, s_fileBrowser.GetSelected().string().c_str());
             s_fileBrowser.ClearSelected();
         }
     }

@@ -10,6 +10,7 @@
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout.h"
+#include "../actions/composite_action.h"
 #include "imgui_internal.h"
 
 extern App* g_App;
@@ -333,6 +334,17 @@ void EditorPanelCanvas::UpdateInput() {
     if (ImGui::IsWindowFocused()) {
         if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
             m_editorLayer.DeleteEntity();
+        } else if (ImGui::IsKeyPressed(ImGuiKey_H)) {
+            auto const selection = m_editorLayer.GetSelection();
+            if (!selection.empty()) {
+                bool const visible = !(*selection.begin())->IsVisible();
+                std::unique_ptr<CompositeAction> actions = std::make_unique<CompositeAction>();
+                for (auto&& node : selection) {
+                    auto action = MakeVisibilityAction(node, visible);
+                    actions->GetActions().push_back(std::move(action));
+                }
+                m_editorLayer.PerformEditAction(std::move(actions));
+            }
         }
     }
 
