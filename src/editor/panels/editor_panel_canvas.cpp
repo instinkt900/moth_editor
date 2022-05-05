@@ -45,8 +45,10 @@ void EditorPanelCanvas::DrawContents() {
     {
         auto const& selection = m_editorLayer.GetSelection();
         for (auto&& node : selection) {
-            auto const rect = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::AppSpace, float>(node->GetScreenRect());
-            drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y }, 0xFFFF00FF);
+            if (node->IsVisible() && node->GetParent()) {
+                auto const rect = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::AppSpace, float>(node->GetScreenRect());
+                drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y }, 0xFFFF00FF);
+            }
         }
     }
 

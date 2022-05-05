@@ -122,5 +122,11 @@ void AnchorBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     bounds.anchor.topLeft += topLeftAnchorDelta * moth_ui::FloatVec2{ static_cast<float>(m_anchor.Left), static_cast<float>(m_anchor.Top) };
     bounds.anchor.bottomRight += bottomRightOffsetDelta * moth_ui::FloatVec2{ static_cast<float>(m_anchor.Right), static_cast<float>(m_anchor.Bottom) };
 
+    auto const& screenRect = m_target->GetScreenRect();
+    bounds.offset.topLeft.x = screenRect.topLeft.x - (parentRect.w() * bounds.anchor.topLeft.x) - parentRect.topLeft.x;
+    bounds.offset.topLeft.y = screenRect.topLeft.y - (parentRect.h() * bounds.anchor.topLeft.y) - parentRect.topLeft.y;
+    bounds.offset.bottomRight.x = screenRect.bottomRight.x - (parentRect.w() * bounds.anchor.bottomRight.x) - parentRect.topLeft.x;
+    bounds.offset.bottomRight.y = screenRect.bottomRight.y - (parentRect.h() * bounds.anchor.bottomRight.y) - parentRect.topLeft.y;
+
     m_target->RecalculateBounds();
 }

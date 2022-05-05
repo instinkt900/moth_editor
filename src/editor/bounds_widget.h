@@ -28,4 +28,15 @@ private:
     EditorPanelCanvas& m_canvasPanel;
     std::shared_ptr<moth_ui::Node> m_node;
     std::array<std::unique_ptr<BoundsHandle>, 16> m_handles;
+
+    int m_anchorButtonSize = 12;
+    int m_anchorButtonSpacing = 4;
+
+    moth_ui::FloatRect m_anchorButtonTL;
+    moth_ui::FloatRect m_anchorButtonFill;
+    bool m_anchorTLPressed = false;
+    bool m_anchorFillPressed = false;
+
+    bool OnMouseDown(moth_ui::EventMouseDown const& event);
+    bool OnMouseUp(moth_ui::EventMouseUp const& event);
 };
