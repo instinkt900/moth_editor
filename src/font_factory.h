@@ -14,5 +14,5 @@ public:
 
 private:
     SDL_Renderer& m_renderer;
-    std::map<std::string, std::string> m_fontPaths;
+    std::map<std::string, std::filesystem::path> m_fontPaths;
 };

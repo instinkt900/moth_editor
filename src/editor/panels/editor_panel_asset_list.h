@@ -9,6 +9,7 @@ public:
     EditorPanelAssetList(EditorLayer& editorLayer, bool visible);
     virtual ~EditorPanelAssetList() = default;
 
+    void OnLayoutLoaded() override { Refresh(); }
     void Refresh() override;
 
 private:

@@ -9,6 +9,8 @@ public:
     EditorPanelCanvas(EditorLayer& editorLayer, bool visible);
     virtual ~EditorPanelCanvas() = default;
 
+    void OnShutdown() override;
+
     enum class CoordSpace {
         AppSpace,    // pixels from the top left of the whole application
         WindowSpace, // pixels from top left of the imgui canvas window
@@ -135,6 +137,9 @@ private:
     void SelectInRect(moth_ui::IntRect const& selectionRect);
 
     void UpdateInput();
+
+    void LoadCanvasProperties();
+    void SaveCanvasProperties();
 
     friend class EditorPanelCanvasProperties;
 };

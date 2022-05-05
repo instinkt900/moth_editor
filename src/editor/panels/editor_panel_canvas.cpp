@@ -17,6 +17,10 @@ extern App* g_App;
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
     , m_boundsWidget(std::make_unique<BoundsWidget>(*this)) {
+    LoadCanvasProperties();
+}
+void EditorPanelCanvas::OnShutdown() {
+    SaveCanvasProperties();
 }
 
 bool EditorPanelCanvas::BeginPanel() {
@@ -321,4 +325,21 @@ void EditorPanelCanvas::UpdateInput() {
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });
     }
+}
+
+void EditorPanelCanvas::LoadCanvasProperties() {
+    auto const& persistenceJson = g_App->GetPersistentState();
+    if (persistenceJson.contains("canvas_properties")) {
+        auto const& canvasJson = persistenceJson["canvas_properties"];
+        m_canvasSize = canvasJson.value("size", m_canvasSize);
+        m_canvasGridSpacing = canvasJson.value("grid_spacing", m_canvasGridSpacing);
+    }
+}
+
+void EditorPanelCanvas::SaveCanvasProperties() {
+    auto& persistenceJson = g_App->GetPersistentState();
+    nlohmann::json canvasJson;
+    canvasJson["size"] = m_canvasSize;
+    canvasJson["grid_spacing"] = m_canvasGridSpacing;
+    persistenceJson["canvas_properties"] = canvasJson;
 }

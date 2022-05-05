@@ -19,5 +19,4 @@ void EditorPanelCanvasProperties::DrawContents() {
     ImGui::InputInt("Canvas Zoom", &m_canvasPanel.m_canvasZoom);
     m_canvasPanel.m_canvasZoom = std::clamp(m_canvasPanel.m_canvasZoom, s_minZoom, s_maxZoom);
     ImGui::InputInt("Grid Spacing", &m_canvasPanel.m_canvasGridSpacing);
-    m_canvasPanel.m_canvasGridSpacing = std::clamp(m_canvasPanel.m_canvasGridSpacing, 0, m_canvasPanel.m_canvasSize.x / 2);
 }

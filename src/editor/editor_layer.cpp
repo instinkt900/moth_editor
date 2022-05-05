@@ -102,7 +102,9 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
     s_fileDialog.Display();
     if (s_fileDialog.HasSelected()) {
         if (s_fileOpenMode == FileOpenMode::OpenLayout) {
-            LoadLayout(s_fileDialog.GetSelected().string().c_str());
+            auto const path = s_fileDialog.GetSelected();
+            //std::filesystem::current_path(path.parent_path());
+            LoadLayout(path.string().c_str());
             s_fileDialog.ClearSelected();
         } else if (s_fileOpenMode == FileOpenMode::SaveLayout) {
             auto filePath = s_fileDialog.GetSelected();
@@ -132,7 +134,7 @@ void EditorLayer::DrawMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
-                m_layerStack->BroadcastEvent(EventQuit{});
+                m_layerStack->BroadcastEvent(EventRequestQuit{});
             }
             ImGui::EndMenu();
         }
@@ -379,6 +381,7 @@ void EditorLayer::MenuFuncNewLayout() {
 void EditorLayer::MenuFuncOpenLayout() {
     s_fileDialog.SetTitle("Open Layout..");
     s_fileDialog.SetTypeFilters({ moth_ui::Layout::Extension });
+    s_fileDialog.SetPwd();
     s_fileDialog.Open();
     s_fileOpenMode = FileOpenMode::OpenLayout;
 }
@@ -386,12 +389,15 @@ void EditorLayer::MenuFuncOpenLayout() {
 void EditorLayer::MenuFuncSaveLayout() {
     if (!m_currentLayoutPath.empty()) {
         SaveLayout(m_currentLayoutPath.c_str());
+    } else {
+        MenuFuncSaveLayoutAs();
     }
 }
 
 void EditorLayer::MenuFuncSaveLayoutAs() {
     s_fileDialog.SetTitle("Save Layout As..");
     s_fileDialog.SetTypeFilters({ moth_ui::Layout::Extension });
+    s_fileDialog.SetPwd();
     s_fileDialog.Open();
     s_fileOpenMode = FileOpenMode::SaveLayout;
 }
@@ -515,6 +521,9 @@ bool EditorLayer::OnRequestQuitEvent(EventRequestQuit const& event) {
         });
         m_confirmPrompt.Open();
     } else {
+        for (auto&& [panelId, panel] : m_panels) {
+            panel->OnShutdown();
+        }
         m_layerStack->BroadcastEvent(EventQuit());
     }
     return true;

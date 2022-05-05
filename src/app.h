@@ -17,6 +17,8 @@ public:
 
     void SetWindowTitle(std::string const& title);
 
+    nlohmann::json& GetPersistentState() { return m_persistentState; }
+
 protected:
     bool Initialise();
     
@@ -41,6 +43,10 @@ private:
     moth_ui::IntVec2 m_gameWindowPos;
 
     std::unique_ptr<LayerStack> m_layerStack;
+
+    std::filesystem::path m_persistentFilePath;
+    nlohmann::json m_persistentState;
+    static char const* const PERSISTENCE_FILE;
 
     bool OnWindowSizeEvent(EventWindowSize const& event);
     bool OnQuitEvent(EventQuit const& event);

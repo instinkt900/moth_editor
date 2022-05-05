@@ -5,7 +5,7 @@ public:
     ContentList(std::filesystem::path const& initialPath);
 
     void SetPath(std::filesystem::path const& path);
-    std::filesystem::path const& GetPath() const { return m_currentPath; }
+    std::filesystem::path GetPath() const;
     std::filesystem::path GetCurrentSelection();
 
     void SetDisplayNameAction(std::function<std::string(std::filesystem::path const&)> const& action) { m_displayNameGet = action; }
@@ -30,6 +30,7 @@ private:
         std::string m_displayName;
     };
 
+    bool m_useCwd = true;
     std::filesystem::path m_currentPath;
     std::vector<ListEntry> m_currentList;
     int m_selectedIndex = -1;

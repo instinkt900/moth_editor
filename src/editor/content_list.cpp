@@ -6,12 +6,20 @@ ContentList::ContentList(std::filesystem::path const& initialPath) {
 }
 
 void ContentList::SetPath(std::filesystem::path const& path) {
-    m_currentPath = std::filesystem::absolute(path);
+    if (m_useCwd) {
+        std::filesystem::current_path(std::filesystem::absolute(path));
+    } else {
+        m_currentPath = std::filesystem::absolute(path);
+    }
     m_selectedIndex = -1;
     Refresh();
     if (m_changeDirectoryAction) {
         m_changeDirectoryAction(m_currentPath);
     }
+}
+
+std::filesystem::path ContentList::GetPath() const {
+    return m_useCwd ? std::filesystem::current_path() : m_currentPath;
 }
 
 std::filesystem::path ContentList::GetCurrentSelection() {
@@ -25,17 +33,18 @@ std::filesystem::path ContentList::GetCurrentSelection() {
 
 void ContentList::Refresh() {
     m_currentList.clear();
-    if (std::filesystem::exists(m_currentPath)) {
-        if (m_currentPath.has_parent_path() && m_currentPath.has_relative_path()) {
+    auto const currentPath = GetPath();
+    if (std::filesystem::exists(currentPath)) {
+        if (currentPath.has_parent_path() && currentPath.has_relative_path()) {
             ListEntry parentEntry;
             parentEntry.m_type = ListEntryType::Directory;
-            parentEntry.m_path = m_currentPath.parent_path();
+            parentEntry.m_path = currentPath.parent_path();
             parentEntry.m_displayName = "..";
             m_currentList.push_back(parentEntry);
         }
 
         try {
-            for (auto& entry : std::filesystem::directory_iterator(m_currentPath)) {
+            for (auto& entry : std::filesystem::directory_iterator(currentPath)) {
                 if (m_displayFilterAction && !m_displayFilterAction(entry.path())) {
                     continue;
                 }

@@ -14,17 +14,23 @@
 
 App* g_App = nullptr;
 
+char const* const App::PERSISTENCE_FILE = "editor.json";
+
 App::App()
     : m_windowWidth(INIT_WINDOW_WIDTH)
     , m_windowHeight(INIT_WINDOW_HEIGHT) {
     m_updateTicks = 1000 / 60;
 
-    std::ifstream ifile("window_config.json");
-    if (ifile.is_open()) {
-        nlohmann::json json;
-        ifile >> json;
-        json.at("window_width").get_to(m_windowWidth);
-        json.at("window_height").get_to(m_windowHeight);
+    m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
+    std::ifstream persistenceFile(m_persistentFilePath.string(), std::ios::in | std::ios::out);
+    if (persistenceFile.is_open()) {
+        try {
+            persistenceFile >> m_persistentState;
+        } catch (std::exception) {
+        }
+
+        m_windowWidth = m_persistentState.value("window_width", m_windowWidth);
+        m_windowHeight = m_persistentState.value("window_height", m_windowHeight);
     }
 
     g_App = this;
@@ -32,12 +38,13 @@ App::App()
 
 App::~App() {
     g_App = nullptr;
-    std::ofstream ofile("window_config.json");
+
+    std::ofstream ofile(m_persistentFilePath.string());
     if (ofile.is_open()) {
-        nlohmann::json json;
-        json["window_width"] = m_windowWidth;
-        json["window_height"] = m_windowHeight;
-        ofile << json;
+        m_persistentState["current_path"] = std::filesystem::current_path().string();
+        m_persistentState["window_width"] = m_windowWidth;
+        m_persistentState["window_height"] = m_windowHeight;
+        ofile << m_persistentState;
     }
 }
 
@@ -106,6 +113,11 @@ bool App::Initialise() {
     auto nodeFactory = std::make_unique<moth_ui::NodeFactory>();
     auto uiContext = std::make_shared<moth_ui::Context>(std::move(imageFactory), std::move(fontFactory), std::move(uiRenderer), std::move(nodeFactory));
     moth_ui::Context::SetCurrentContext(uiContext);
+
+    if (m_persistentState.contains("current_path")) {
+        std::string const currentPath = m_persistentState["current_path"];
+        std::filesystem::current_path(currentPath);
+    }
 
     m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
     m_layerStack->SetEventListener(this);

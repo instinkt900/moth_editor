@@ -4,11 +4,11 @@
 
 FontFactory::FontFactory(SDL_Renderer& renderer)
     : m_renderer(renderer) {
-    m_fontPaths["Pilot Command"] = "pilotcommand.ttf";
-    m_fontPaths["Daniel Davis"] = "Daniel Davis.ttf";
-    m_fontPaths["Game of Squids"] = "Game Of Squids.ttf";
-    m_fontPaths["Southern Aire"] = "SouthernAire_Personal_Use_Only.ttf";
-    m_fontPaths["28 Days Later"] = "28 Days Later.ttf";
+    m_fontPaths["Pilot Command"] = std::filesystem::current_path() / "pilotcommand.ttf";
+    m_fontPaths["Daniel Davis"] = std::filesystem::current_path() / "Daniel Davis.ttf";
+    m_fontPaths["Game of Squids"] = std::filesystem::current_path() / "Game Of Squids.ttf";
+    m_fontPaths["Southern Aire"] = std::filesystem::current_path() / "SouthernAire_Personal_Use_Only.ttf";
+    m_fontPaths["28 Days Later"] = std::filesystem::current_path() / "28 Days Later.ttf";
 }
 
 std::unique_ptr<moth_ui::IFont> FontFactory::GetDefaultFont(int size) {
@@ -30,5 +30,5 @@ std::unique_ptr<moth_ui::IFont> FontFactory::GetFont(char const* name, int size)
         return GetDefaultFont(size);
     }
     SDL_Color defaultColor{ 0x00, 0x00, 0x00, 0xFF };
-    return std::make_unique<Font>(CreateCachedFontRef(&m_renderer, it->second.c_str(), size, defaultColor, TTF_STYLE_NORMAL));
+    return std::make_unique<Font>(CreateCachedFontRef(&m_renderer, it->second.string().c_str(), size, defaultColor, TTF_STYLE_NORMAL));
 }
