@@ -43,3 +43,4 @@ inline bool PropertiesInput(char const* label, T const& itemList, std::string co
     return changed;
 }
 void PropertiesInputClear();
+void PropertiesInputReset();

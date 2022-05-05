@@ -8,6 +8,8 @@ public:
     EditorPanelProperties(EditorLayer& editorLayer, bool visible);
     virtual ~EditorPanelProperties() = default;
 
+    void OnLayoutLoaded() override;
+
 private:
     void DrawContents() override;
 

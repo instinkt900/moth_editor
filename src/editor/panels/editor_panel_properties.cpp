@@ -30,6 +30,12 @@ EditorPanelProperties::EditorPanelProperties(EditorLayer& editorLayer, bool visi
     : EditorPanel(editorLayer, "Properties", visible, true) {
 }
 
+void EditorPanelProperties::OnLayoutLoaded() {
+    m_lastSelection = nullptr;
+    m_focusContext = {};
+    PropertiesInputReset();
+}
+
 void EditorPanelProperties::DrawContents() {
     std::shared_ptr<moth_ui::Node> node;
 
@@ -48,7 +54,7 @@ void EditorPanelProperties::DrawContents() {
         imgui_ext::FocusGroupEnd();
     }
 
-    if (node.get() != m_lastSelection) {
+    if (m_lastSelection && node.get() != m_lastSelection) {
         PropertiesInputClear();
     }
     m_lastSelection = node.get();

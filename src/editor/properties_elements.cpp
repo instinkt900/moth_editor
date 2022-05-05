@@ -50,27 +50,27 @@ namespace {
         editCompleteCallback = onEditComplete;
     }
 
-    void EndEdit() {
+    void EndEdit(bool callCallbacks = true) {
         editingElementID = {};
-        if (editCompleteCallback) {
+        if (callCallbacks && editCompleteCallback) {
             editCompleteCallback(preEditText.c_str(), editBuffer.data());
         }
-        if (commitVec2Action) {
+        if (callCallbacks && commitVec2Action) {
             commitVec2Action(preEditVec2, editVec2);
         }
-        if (commitColorAction) {
+        if (callCallbacks && commitColorAction) {
             commitColorAction(preEditColor, editColor);
         }
-        if (commitLayoutRectAction) {
+        if (callCallbacks && commitLayoutRectAction) {
             commitLayoutRectAction(preEditLayoutRect, editLayoutRect);
         }
-        if (commitRectAction) {
+        if (callCallbacks && commitRectAction) {
             commitRectAction(preEditRect, editRect);
         }
-        if (commitFloatAction) {
+        if (callCallbacks && commitFloatAction) {
             commitFloatAction(preEditFloat, editFloat);
         }
-        if (commitIntAction) {
+        if (callCallbacks && commitIntAction) {
             commitIntAction(preEditInt, editInt);
         }
         editCompleteCallback = nullptr;
@@ -79,6 +79,7 @@ namespace {
         commitRectAction = nullptr;
         commitFloatAction = nullptr;
         commitIntAction = nullptr;
+        commitLayoutRectAction = nullptr;
     }
 
     std::vector<char>& GetBuffer(ImGuiID id, char const* currentText) {
@@ -344,4 +345,8 @@ bool PropertiesInput(char const* label, moth_ui::IntRect value, std::function<vo
 
 void PropertiesInputClear() {
     EndEdit();
+}
+
+void PropertiesInputReset() {
+    EndEdit(false);
 }
