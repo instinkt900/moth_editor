@@ -1,7 +1,7 @@
 #pragma once
 
 #include "moth_ui/animation_track.h"
-#include "moth_ui/utils/imgui_ext_focus.h"
+#include "imgui_ext_focus.h"
 
 struct KeyframeContext {
     std::shared_ptr<moth_ui::LayoutEntity> entity;

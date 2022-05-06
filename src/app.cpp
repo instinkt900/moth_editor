@@ -19,7 +19,6 @@ char const* const App::PERSISTENCE_FILE = "editor.json";
 App::App()
     : m_windowWidth(INIT_WINDOW_WIDTH)
     , m_windowHeight(INIT_WINDOW_HEIGHT) {
-    m_updateTicks = 1000 / 60;
 
     m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
     std::ifstream persistenceFile(m_persistentFilePath.string());
@@ -63,9 +62,6 @@ int App::Run() {
             if (ImGui::GetIO().WantCaptureKeyboard && (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)) {
                 continue;
             }
-            if (ImGui::GetIO().WantCaptureMouse && (event.type == SDL_MOUSEMOTION || event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP || event.type == SDL_MOUSEWHEEL)) {
-                //continue;
-            }
             if (auto const translatedEvent = EventFactory::FromSDL(event)) {
                 OnEvent(*translatedEvent);
             }
@@ -89,7 +85,7 @@ bool App::Initialise() {
         return false;
     }
 
-    if (nullptr == (m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED))) {
+    if (nullptr == (m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC))) {
         return false;
     }
 
@@ -139,24 +135,16 @@ void App::SetWindowTitle(std::string const& title) {
 }
 
 void App::Update() {
-    uint32_t const nowTicks = SDL_GetTicks();
-    uint32_t deltaTicks = nowTicks - m_lastUpdateTicks;
-    while (deltaTicks > m_updateTicks) {
-        if (!m_paused) {
-            m_layerStack->Update(m_updateTicks);
-        }
-        m_lastUpdateTicks += m_updateTicks;
-        deltaTicks -= m_updateTicks;
-    }
+    auto const nowTicks = SDL_GetTicks();
+    auto const deltaTicks = nowTicks - m_lastUpdateTicks;
+    m_lastUpdateTicks = nowTicks;
+    m_layerStack->Update(deltaTicks);
 }
 
 void App::Draw() {
     ImGui_ImplSDLRenderer_NewFrame();
     ImGui_ImplSDL2_NewFrame(m_window);
     ImGui::NewFrame();
-
-    SDL_SetRenderDrawColor(m_renderer, 0xFF, 0xFF, 0xFF, 0xFF);
-    SDL_RenderClear(m_renderer);
 
     m_layerStack->Draw(*m_renderer);
 

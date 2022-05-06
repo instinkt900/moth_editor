@@ -3,6 +3,7 @@
 #include "../editor_layer.h"
 #include "../utils.h"
 #include "editor_panel_canvas.h"
+#include "../imgui_ext.h"
 
 namespace {
     static int constexpr s_maxZoom = 800;
