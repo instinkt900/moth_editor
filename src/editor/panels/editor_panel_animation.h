@@ -3,7 +3,7 @@
 #include "editor_panel.h"
 #include "moth_ui/animation_track.h"
 #include "moth_ui/animation_clip.h"
-#include "moth_ui/utils/imgui_ext_focus.h"
+#include "../imgui_ext_focus.h"
 #include "../keyframe_context.h"
 
 class EditorPanelAnimation : public EditorPanel {

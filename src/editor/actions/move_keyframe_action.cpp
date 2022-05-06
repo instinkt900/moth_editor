@@ -1,7 +1,7 @@
 #include "common.h"
 #include "move_keyframe_action.h"
 #include "moth_ui/layout/layout_entity.h"
-#include "moth_ui/utils/imgui_ext_inspect.h"
+#include "../imgui_ext_inspect.h"
 
 MoveKeyframeAction::MoveKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int initialFrame, int finalFrame, std::optional<moth_ui::Keyframe> replacedKeyframe)
     : m_entity(entity)

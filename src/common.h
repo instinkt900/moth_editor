@@ -8,6 +8,8 @@
 #include <fstream>
 #include <stack>
 #include <set>
+#include <filesystem>
+#include <thread>
 
 #include <SDL.h>
 #include <SDL_image.h>

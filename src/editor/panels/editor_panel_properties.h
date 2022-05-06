@@ -1,7 +1,6 @@
 #pragma once
 
 #include "editor_panel.h"
-#include "moth_ui/utils/imgui_ext_focus.h"
 
 class EditorPanelProperties : public EditorPanel {
 public:
@@ -14,8 +13,6 @@ private:
     void DrawContents() override;
 
     moth_ui::Node* m_lastSelection = nullptr;
-
-    imgui_ext::FocusGroupContext m_focusContext;
 
     void DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren = true);
     void DrawCommonProperties(std::shared_ptr<moth_ui::Node> node);

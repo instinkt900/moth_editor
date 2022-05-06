@@ -1,20 +1,22 @@
 #include "common.h"
 #include "editor_panel_properties.h"
+
+#include "../properties_elements.h"
+#include "../actions/editor_action.h"
+#include "../imgui_ext_inspect.h"
+#include "../utils.h"
 #include "../editor_layer.h"
+
 #include "moth_ui/layout/layout_entity_rect.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout.h"
-#include "moth_ui/utils/imgui_ext_inspect.h"
 #include "moth_ui/node_rect.h"
 #include "moth_ui/node_image.h"
 #include "moth_ui/node_text.h"
 #include "moth_ui/group.h"
-#include "../utils.h"
 #include "moth_ui/context.h"
-#include "../properties_elements.h"
-#include "../actions/editor_action.h"
 
 #include "imgui-filebrowser/imfilebrowser.h"
 
@@ -32,7 +34,6 @@ EditorPanelProperties::EditorPanelProperties(EditorLayer& editorLayer, bool visi
 
 void EditorPanelProperties::OnLayoutLoaded() {
     m_lastSelection = nullptr;
-    m_focusContext = {};
     PropertiesInputReset();
 }
 
@@ -43,15 +44,11 @@ void EditorPanelProperties::DrawContents() {
     if (selection.empty()) {
         node = m_editorLayer.GetRoot();
         auto entity = node->GetLayoutEntity();
-        imgui_ext::FocusGroupBegin(&m_focusContext);
         DrawNodeProperties(node);
-        imgui_ext::FocusGroupEnd();
     } else {
         auto const node = *std::begin(selection);
         auto entity = node->GetLayoutEntity();
-        imgui_ext::FocusGroupBegin(&m_focusContext);
         DrawNodeProperties(node);
-        imgui_ext::FocusGroupEnd();
     }
 
     if (m_lastSelection && node.get() != m_lastSelection) {

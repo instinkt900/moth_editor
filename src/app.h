@@ -34,10 +34,8 @@ private:
     int m_windowHeight = 0;
 
     bool m_running = false;
-    bool m_paused = false;
-    bool m_editorMode = false;
-    uint32_t m_updateTicks = 0;
-    uint32_t m_lastUpdateTicks = 0;
+    uint32_t m_lastUpdateTicks;
+
     SDL_Window* m_window = nullptr;
     SDL_Renderer* m_renderer = nullptr;
     moth_ui::IntVec2 m_gameWindowPos;
