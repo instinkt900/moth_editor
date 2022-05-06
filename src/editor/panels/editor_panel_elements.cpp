@@ -69,7 +69,7 @@ void EditorPanelElements::DrawContents() {
     if (s_fileBrowser.HasSelected()) {
         if (s_fileOpenMode == FileOpenMode::SubLayout) {
             std::shared_ptr<moth_ui::Layout> referencedLayout;
-            auto const loadResult = moth_ui::Layout::Load(s_fileBrowser.GetSelected().string().c_str(), &referencedLayout);
+            auto const loadResult = moth_ui::Layout::Load(s_fileBrowser.GetSelected(), &referencedLayout);
             if (loadResult == moth_ui::Layout::LoadResult::Success) {
                 moth_ui::LayoutRect bounds;
                 bounds.anchor.topLeft = { 0, 0 };
@@ -91,7 +91,7 @@ void EditorPanelElements::DrawContents() {
             bounds.anchor.bottomRight = { 0, 0 };
             bounds.offset.topLeft = { 0, 0 };
             bounds.offset.bottomRight = { 100, 100 };
-            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, s_fileBrowser.GetSelected().string().c_str());
+            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, s_fileBrowser.GetSelected());
             s_fileBrowser.ClearSelected();
         }
     }

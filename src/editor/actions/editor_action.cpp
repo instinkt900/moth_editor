@@ -3,10 +3,10 @@
 #include "moth_ui/node.h"
 #include "../editor_layer.h"
 
-std::unique_ptr<IEditorAction> MakeVisibilityAction(std::shared_ptr<moth_ui::Node> node, bool visible) {
-    bool const oldVisible = node->IsVisible();
-    return std::make_unique<BasicAction>([node, visible]() { node->SetVisible(visible); }, [node, oldVisible]() { node->SetVisible(oldVisible); });
-}
+//std::unique_ptr<IEditorAction> MakeVisibilityAction(std::shared_ptr<moth_ui::Node> node, bool visible) {
+//    bool const oldVisible = node->IsVisible();
+//    return std::make_unique<BasicAction>([node, visible]() { node->SetVisible(visible); }, [node, oldVisible]() { node->SetVisible(oldVisible); });
+//}
 
 std::unique_ptr<IEditorAction> MakeLockAction(std::shared_ptr<moth_ui::Node> node, bool locked, EditorLayer& editorLayer) {
     EditorLayer* layer = &editorLayer;

@@ -71,7 +71,7 @@ void EditorLayer::Update(uint32_t ticks) {
         panel->Update(ticks);
     }
 
-    auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath, IsWorkPending() ? " *" : "");
+    auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath.string(), IsWorkPending() ? " *" : "");
     g_App->SetWindowTitle(windowTitle);
 }
 
@@ -104,14 +104,14 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
         if (s_fileOpenMode == FileOpenMode::OpenLayout) {
             auto const path = s_fileDialog.GetSelected();
             //std::filesystem::current_path(path.parent_path());
-            LoadLayout(path.string().c_str());
+            LoadLayout(path);
             s_fileDialog.ClearSelected();
         } else if (s_fileOpenMode == FileOpenMode::SaveLayout) {
             auto filePath = s_fileDialog.GetSelected();
             if (!filePath.has_extension()) {
                 filePath.replace_extension(moth_ui::Layout::Extension);
             }
-            SaveLayout(filePath.string().c_str());
+            SaveLayout(filePath);
             s_fileDialog.ClearSelected();
         }
     }
@@ -266,19 +266,18 @@ void EditorLayer::NewLayout(bool discard) {
     }
 }
 
-void EditorLayer::LoadLayout(char const* path, bool discard) {
+void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
     if (!discard && IsWorkPending()) {
-        std::string const pathStr = path;
         m_confirmPrompt.SetTitle("Save?");
         m_confirmPrompt.SetMessage("You have unsaved work? Save?");
         m_confirmPrompt.SetPositiveText("Save");
         m_confirmPrompt.SetNegativeText("Discard");
-        m_confirmPrompt.SetPositiveAction([this, pathStr]() {
-            SaveLayout(m_currentLayoutPath.c_str());
-            LoadLayout(pathStr.c_str());
+        m_confirmPrompt.SetPositiveAction([this, path]() {
+            SaveLayout(m_currentLayoutPath);
+            LoadLayout(path);
         });
-        m_confirmPrompt.SetNegativeAction([this, pathStr]() {
-            LoadLayout(pathStr.c_str(), true);
+        m_confirmPrompt.SetNegativeAction([this, path]() {
+            LoadLayout(path);
         });
         m_confirmPrompt.Open();
     } else {
@@ -305,7 +304,7 @@ void EditorLayer::LoadLayout(char const* path, bool discard) {
     }
 }
 
-void EditorLayer::SaveLayout(char const* path) {
+void EditorLayer::SaveLayout(std::filesystem::path const& path) {
     if (m_rootLayout->Save(path)) {
         m_lastSaveActionIndex = m_actionIndex;
         m_currentLayoutPath = path;

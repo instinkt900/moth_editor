@@ -27,7 +27,7 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
 
     m_contentList.SetDoubleClickAction([this](std::filesystem::path const& path) {
         if (path.extension().string() == moth_ui::Layout::Extension) {
-            m_editorLayer.LoadLayout(path.string().c_str());
+            m_editorLayer.LoadLayout(path);
         }
     });
 
@@ -62,5 +62,8 @@ void EditorPanelAssetList::Refresh() {
 }
 
 void EditorPanelAssetList::DrawContents() {
+    if (ImGui::Button("Refresh")) {
+        Refresh();
+    }
     m_contentList.Draw();
 }

@@ -56,7 +56,7 @@ public:
     std::vector<std::unique_ptr<IEditorAction>> const& GetEditActions() const { return m_editActions; }
 
     void NewLayout(bool discard = false);
-    void LoadLayout(char const* path, bool discard = false);
+    void LoadLayout(std::filesystem::path const& path, bool discard = false);
 
     std::shared_ptr<moth_ui::Group> GetRoot() const { return m_root; }
     std::shared_ptr<moth_ui::Layout> GetCurrentLayout() { return m_rootLayout; }
@@ -98,7 +98,7 @@ private:
 
     std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
 
-    std::string m_currentLayoutPath;
+    std::filesystem::path m_currentLayoutPath;
     std::shared_ptr<moth_ui::Layout> m_rootLayout;
     std::shared_ptr<moth_ui::Group> m_root;
     std::set<std::shared_ptr<moth_ui::Node>> m_selection;
@@ -136,7 +136,7 @@ private:
     void RedoEditAction();
     void ClearEditActions();
 
-    void SaveLayout(char const* path);
+    void SaveLayout(std::filesystem::path const& path);
     void Rebuild();
 
     void MoveSelectionUp();

@@ -8,7 +8,7 @@ public:
     ImageFactory(SDL_Renderer& renderer);
     virtual ~ImageFactory() = default;
 
-    std::unique_ptr<moth_ui::IImage> GetImage(char const* path);
+    std::unique_ptr<moth_ui::IImage> GetImage(std::filesystem::path const& path);
 
 private:
     SDL_Renderer& m_renderer;

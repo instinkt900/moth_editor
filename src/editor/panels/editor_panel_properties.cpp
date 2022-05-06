@@ -103,8 +103,8 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput("Visible", node->IsVisible(), [&](bool value) {
-        auto action = MakeVisibilityAction(node, value);
+    PropertiesInput("Visible", node->IsVisible(), [&](bool newValue) {
+        auto action = MakeChangeValueAction(entity->m_visible, entity->m_visible, newValue, [node]() { node->ReloadEntity(); });
         m_editorLayer.PerformEditAction(std::move(action));
     });
 
@@ -261,7 +261,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
         if (s_fileBrowser.HasSelected()) {
             auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(s_loadingNodeImage->GetLayoutEntity());
             auto const oldPath = targetImageEntity->m_imagePath;
-            auto const newPath = s_fileBrowser.GetSelected().string();
+            auto const newPath = s_fileBrowser.GetSelected();
             auto action = MakeChangeValueAction(entity->m_imagePath, oldPath, newPath, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
             s_fileBrowser.ClearSelected();

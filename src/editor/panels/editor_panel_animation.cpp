@@ -881,7 +881,8 @@ bool EditorPanelAnimation::DrawWidget() {
                 bool const visible = !(*selection.begin())->IsVisible();
                 std::unique_ptr<CompositeAction> actions = std::make_unique<CompositeAction>();
                 for (auto&& node : selection) {
-                    auto action = MakeVisibilityAction(node, visible);
+                    auto entity = node->GetLayoutEntity();
+                    auto action = MakeChangeValueAction(entity->m_visible, entity->m_visible, visible, [node]() { node->ReloadEntity(); });
                     actions->GetActions().push_back(std::move(action));
                 }
                 m_editorLayer.PerformEditAction(std::move(actions));
