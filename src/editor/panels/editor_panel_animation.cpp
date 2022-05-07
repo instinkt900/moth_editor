@@ -837,7 +837,7 @@ bool EditorPanelAnimation::DrawWidget() {
         int diffFrame = int((cx - movingPos) / m_framePixelWidth);
         if (std::abs(diffFrame) > 0) {
             for (auto&& context : m_selectedKeyframes) {
-                if (context.frameNo != 0) { // dont allow frame zero to be moved
+                if (context.frameNo != 0 || io.KeyAlt) { // dont allow frame zero to be moved
                     context.current->m_frame += diffFrame;
                     if (context.current->m_frame < 0) {
                         context.current->m_frame = 0;
