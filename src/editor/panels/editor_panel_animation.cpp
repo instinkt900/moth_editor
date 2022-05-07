@@ -1019,7 +1019,7 @@ bool EditorPanelAnimation::DrawWidget() {
             BoxSelectEnd = boxMax;
             DoBoxSelect = true;
         }
-    } else if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !KeyframeGrabbed && !MovingCurrentFrame && !MovingClip && !MovingScrollBar) {
+    } else if (tracksFrame.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !KeyframeGrabbed && !MovingCurrentFrame && !MovingClip && !MovingScrollBar) {
         BoxSelecting = true;
         BoxSelectStart = io.MousePos;
     }
