@@ -611,6 +611,19 @@ bool EditorPanelAnimation::DrawWidget() {
             existing = trackPtr->GetKeyframe(keyframePopupFrame);
         }
 
+        if (keyframePopupTarget == AnimationTrack::Target::Events && ImGui::BeginMenu("Name")) {
+            auto keyframe = childTracks.at(keyframePopupTarget)->GetKeyframe(keyframePopupFrame);
+            static char buf[1024];
+            snprintf(buf, 1024, "%s", keyframe->GetStringValue().c_str());
+            if (ImGui::InputText("##keyframeEventName", buf, 1024, ImGuiInputTextFlags_EnterReturnsTrue)) {
+                auto newValue = keyframe->m_value;
+                newValue = std::string(buf);
+                auto action = std::make_unique<ModifyKeyframeAction>(childEntity, keyframePopupTarget, keyframePopupFrame, keyframe->m_value, newValue, keyframe->m_interpType, keyframe->m_interpType);
+                m_editorLayer.PerformEditAction(std::move(action));
+            }
+            ImGui::EndMenu();
+        }
+
         if (!existing && ImGui::MenuItem("Add")) {
             if (keyframePopupTarget != AnimationTrack::Target::Unknown) {
                 // we clicked on a specific track
