@@ -106,8 +106,7 @@ bool App::Initialise() {
     m_imageFactory = std::make_unique<ImageFactory>(*m_renderer);
     m_fontFactory = std::make_unique<FontFactory>(*m_renderer);
     m_uiRenderer = std::make_unique<UIRenderer>(*m_renderer);
-    m_nodeFactory = std::make_unique<moth_ui::NodeFactory>();
-    auto uiContext = std::make_shared<moth_ui::Context>(m_imageFactory.get(), m_fontFactory.get(), m_uiRenderer.get(), m_nodeFactory.get());
+    auto uiContext = std::make_shared<moth_ui::Context>(m_imageFactory.get(), m_fontFactory.get(), m_uiRenderer.get());
     moth_ui::Context::SetCurrentContext(uiContext);
 
     if (m_persistentState.contains("current_path")) {

@@ -5,7 +5,6 @@
 #include "moth_ui/iimage_factory.h"
 #include "moth_ui/ifont_factory.h"
 #include "moth_ui/irenderer.h"
-#include "moth_ui/inode_factory.h"
 
 class App : public moth_ui::EventListener {
 public:
@@ -53,7 +52,6 @@ private:
     std::unique_ptr<moth_ui::IImageFactory> m_imageFactory;
     std::unique_ptr<moth_ui::IFontFactory> m_fontFactory;
     std::unique_ptr<moth_ui::IRenderer> m_uiRenderer;
-    std::unique_ptr<moth_ui::INodeFactory> m_nodeFactory;
 
     bool OnWindowSizeEvent(EventWindowSize const& event);
     bool OnQuitEvent(EventQuit const& event);
