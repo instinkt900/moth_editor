@@ -15,4 +15,5 @@ public:
 protected:
     std::shared_ptr<moth_ui::Node> m_deletedNode;
     std::shared_ptr<moth_ui::Group> m_parentNode;
+    size_t m_originalIndex;
 };

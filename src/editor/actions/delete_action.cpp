@@ -13,6 +13,7 @@ DeleteAction::~DeleteAction() {
 
 void DeleteAction::Do() {
     // remove the node instances
+    m_originalIndex = m_parentNode->IndexOf(m_deletedNode);
     m_parentNode->RemoveChild(m_deletedNode);
 
     // separate the layout entity trees
@@ -29,11 +30,12 @@ void DeleteAction::Undo() {
     // need to merge the layout entity trees too
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_deletedNode->GetLayoutEntity();
-    parentLayoutEntity->m_children.push_back(layoutEntity);
+    auto insertIt = std::begin(parentLayoutEntity->m_children) + m_originalIndex;
+    parentLayoutEntity->m_children.insert(insertIt, layoutEntity);
     layoutEntity->m_parent = parentLayoutEntity.get();
 
     // merge the actual node instances
-    m_parentNode->AddChild(m_deletedNode);
+    m_parentNode->AddChild(m_deletedNode, m_originalIndex);
 }
 
 void DeleteAction::OnImGui() {
