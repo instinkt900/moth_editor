@@ -45,6 +45,7 @@ private:
 
     std::unique_ptr<LayerStack> m_layerStack;
 
+    std::filesystem::path m_originalCwd;
     std::filesystem::path m_persistentFilePath;
     nlohmann::json m_persistentState;
     static char const* const PERSISTENCE_FILE;

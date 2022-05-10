@@ -37,14 +37,6 @@ App::App()
 
 App::~App() {
     g_App = nullptr;
-
-    std::ofstream ofile(m_persistentFilePath.string());
-    if (ofile.is_open()) {
-        m_persistentState["current_path"] = std::filesystem::current_path().string();
-        m_persistentState["window_width"] = m_windowWidth;
-        m_persistentState["window_height"] = m_windowHeight;
-        ofile << m_persistentState;
-    }
 }
 
 int App::Run() {
@@ -89,11 +81,15 @@ bool App::Initialise() {
         return false;
     }
 
+    m_originalCwd = std::filesystem::current_path();
+
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
+    auto& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.IniFilename = nullptr;
     ImGui::StyleColorsDark();
+    ImGui::LoadIniSettingsFromDisk((m_originalCwd / "imgui.ini").string().c_str());
 
     ImGui_ImplSDL2_InitForSDLRenderer(m_window, m_renderer);
     ImGui_ImplSDLRenderer_Init(m_renderer);
@@ -109,6 +105,7 @@ bool App::Initialise() {
     auto uiContext = std::make_shared<moth_ui::Context>(m_imageFactory.get(), m_fontFactory.get(), m_uiRenderer.get());
     moth_ui::Context::SetCurrentContext(uiContext);
 
+    
     if (m_persistentState.contains("current_path")) {
         std::string const currentPath = m_persistentState["current_path"];
         std::filesystem::current_path(currentPath);
@@ -153,6 +150,16 @@ void App::Draw() {
 }
 
 void App::Shutdown() {
+    std::ofstream ofile(m_persistentFilePath.string());
+    if (ofile.is_open()) {
+        m_persistentState["current_path"] = std::filesystem::current_path().string();
+        m_persistentState["window_width"] = m_windowWidth;
+        m_persistentState["window_height"] = m_windowHeight;
+        ofile << m_persistentState;
+    }
+    ImGui::SaveIniSettingsToDisk((m_originalCwd / "imgui.ini").string().c_str());
+    std::filesystem::current_path(m_originalCwd);
+
     ImGui_ImplSDLRenderer_Shutdown();
     ImGui_ImplSDL2_Shutdown();
     ImGui::DestroyContext();
