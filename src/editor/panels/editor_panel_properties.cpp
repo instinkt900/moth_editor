@@ -212,6 +212,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
 
     imgui_ext::Inspect("Image", node->GetImage());
 
+    if (node->GetImage())
     {
         using namespace moth_ui;
 
@@ -249,6 +250,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
     if (ImGui::Button("Load Image..")) {
         s_fileBrowser.SetTitle("Load Image..");
         s_fileBrowser.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
+        s_fileBrowser.SetPwd();
         s_fileBrowser.Open();
         s_loadingNodeImage = node;
     }

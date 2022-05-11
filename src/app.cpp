@@ -108,7 +108,9 @@ bool App::Initialise() {
     
     if (m_persistentState.contains("current_path")) {
         std::string const currentPath = m_persistentState["current_path"];
-        std::filesystem::current_path(currentPath);
+        if (std::filesystem::exists(currentPath)) {
+            std::filesystem::current_path(currentPath);
+        }
     }
 
     m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
