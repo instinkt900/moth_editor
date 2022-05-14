@@ -34,7 +34,8 @@ void OffsetBoundsHandle::Draw(SDL_Renderer& renderer) {
     auto& canvasPanel = m_widget.GetCanvasPanel();
     auto const drawList = ImGui::GetWindowDrawList();
     auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
-    drawList->AddRectFilled(ImVec2{ drawPosition.x - halfHandleSize.x, drawPosition.y - halfHandleSize.y }, ImVec2{ drawPosition.x + halfHandleSize.x, drawPosition.y + halfHandleSize.y }, 0xFFFF0000);
+    auto const color = moth_ui::ToABGR(canvasPanel.GetEditorLayer().GetConfig().SelectionColor);
+    drawList->AddRectFilled(ImVec2{ drawPosition.x - halfHandleSize.x, drawPosition.y - halfHandleSize.y }, ImVec2{ drawPosition.x + halfHandleSize.x, drawPosition.y + halfHandleSize.y }, color);
 }
 
 bool OffsetBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {

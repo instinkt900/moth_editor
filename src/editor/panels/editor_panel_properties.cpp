@@ -233,17 +233,19 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
         auto drawList = ImGui::GetWindowDrawList();
 
         // source rect preview
-        drawList->AddRect(ImVec2{ srcMin.x, srcMin.y }, ImVec2{ srcMax.x, srcMax.y }, 0xFF00FFFF);
+        auto const rectColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewSourceRectColor);
+        drawList->AddRect(ImVec2{ srcMin.x, srcMin.y }, ImVec2{ srcMax.x, srcMax.y }, rectColor);
 
         // 9 slice preview
+        auto const sliceColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewImageSliceColor);
         if (node->GetImageScaleType() == moth_ui::ImageScaleType::NineSlice) {
             FloatVec2 const slice1 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[1]));
             FloatVec2 const slice2 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[2]));
 
-            drawList->AddLine(ImVec2{ slice1.x, srcMin.y }, ImVec2{ slice1.x, srcMax.y }, 0xFF004477);
-            drawList->AddLine(ImVec2{ slice2.x, srcMin.y }, ImVec2{ slice2.x, srcMax.y }, 0xFF004477);
-            drawList->AddLine(ImVec2{ srcMin.x, slice1.y }, ImVec2{ srcMax.x, slice1.y }, 0xFF004477);
-            drawList->AddLine(ImVec2{ srcMin.x, slice2.y }, ImVec2{ srcMax.x, slice2.y }, 0xFF004477);
+            drawList->AddLine(ImVec2{ slice1.x, srcMin.y }, ImVec2{ slice1.x, srcMax.y }, sliceColor);
+            drawList->AddLine(ImVec2{ slice2.x, srcMin.y }, ImVec2{ slice2.x, srcMax.y }, sliceColor);
+            drawList->AddLine(ImVec2{ srcMin.x, slice1.y }, ImVec2{ srcMax.x, slice1.y }, sliceColor);
+            drawList->AddLine(ImVec2{ srcMin.x, slice2.y }, ImVec2{ srcMax.x, slice2.y }, sliceColor);
         }
     }
 

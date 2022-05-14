@@ -68,6 +68,7 @@ void BoundsWidget::Draw(SDL_Renderer& renderer) {
         m_anchorButtonFill += moth_ui::FloatVec2{ m_anchorButtonSize + m_anchorButtonSpacing, 0 };
 
         // 9 slice indicators
+        auto const sliceColor = moth_ui::ToABGR(m_canvasPanel.GetEditorLayer().GetConfig().SelectionSliceColor);
         auto layoutEntity = m_node->GetLayoutEntity();
         if (layoutEntity && layoutEntity->GetType() == moth_ui::LayoutEntityType::Image) {
             auto imageNode = std::static_pointer_cast<moth_ui::NodeImage>(m_node);
@@ -76,19 +77,22 @@ void BoundsWidget::Draw(SDL_Renderer& renderer) {
                 auto const slice1 = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(imageNode->GetTargetSlices()[1]);
                 auto const slice2 = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(imageNode->GetTargetSlices()[2]);
 
-                drawList->AddLine(ImVec2{ slice1.x, rect.topLeft.y }, ImVec2{ slice1.x, rect.bottomRight.y }, 0xFF004477);
-                drawList->AddLine(ImVec2{ slice2.x, rect.topLeft.y }, ImVec2{ slice2.x, rect.bottomRight.y }, 0xFF004477);
-                drawList->AddLine(ImVec2{ rect.topLeft.x, slice1.y }, ImVec2{ rect.bottomRight.x, slice1.y }, 0xFF004477);
-                drawList->AddLine(ImVec2{ rect.topLeft.x, slice2.y }, ImVec2{ rect.bottomRight.x, slice2.y }, 0xFF004477);
+                drawList->AddLine(ImVec2{ slice1.x, rect.topLeft.y }, ImVec2{ slice1.x, rect.bottomRight.y }, sliceColor);
+                drawList->AddLine(ImVec2{ slice2.x, rect.topLeft.y }, ImVec2{ slice2.x, rect.bottomRight.y }, sliceColor);
+                drawList->AddLine(ImVec2{ rect.topLeft.x, slice1.y }, ImVec2{ rect.bottomRight.x, slice1.y }, sliceColor);
+                drawList->AddLine(ImVec2{ rect.topLeft.x, slice2.y }, ImVec2{ rect.bottomRight.x, slice2.y }, sliceColor);
             }
         }
 
         // overall bounds
-        drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y }, 0xFFFF0000);
+        auto const boundsColor = m_canvasPanel.GetEditorLayer().GetConfig().SelectionColor;
+        drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y },  moth_ui::ToABGR(boundsColor));
 
-        drawList->AddRectFilled(ImVec2{ m_anchorButtonTL.topLeft.x, m_anchorButtonTL.topLeft.y }, ImVec2{ m_anchorButtonTL.bottomRight.x, m_anchorButtonTL.bottomRight.y }, 0x77FF0000);
+        // anchor preset buttons
+        auto const buttonColor = moth_ui::Color{ boundsColor.r, boundsColor.g, boundsColor.b, 0.5f };
+        drawList->AddRectFilled(ImVec2{ m_anchorButtonTL.topLeft.x, m_anchorButtonTL.topLeft.y }, ImVec2{ m_anchorButtonTL.bottomRight.x, m_anchorButtonTL.bottomRight.y }, moth_ui::ToABGR(buttonColor));
         drawList->AddRectFilled(ImVec2{ m_anchorButtonTL.topLeft.x, m_anchorButtonTL.topLeft.y }, ImVec2{ m_anchorButtonTL.topLeft.x+4, m_anchorButtonTL.topLeft.y+4 }, 0xFF000000);
-        drawList->AddRectFilled(ImVec2{ m_anchorButtonFill.topLeft.x, m_anchorButtonFill.topLeft.y }, ImVec2{ m_anchorButtonFill.bottomRight.x, m_anchorButtonFill.bottomRight.y }, 0x77FF0000);
+        drawList->AddRectFilled(ImVec2{ m_anchorButtonFill.topLeft.x, m_anchorButtonFill.topLeft.y }, ImVec2{ m_anchorButtonFill.bottomRight.x, m_anchorButtonFill.bottomRight.y }, moth_ui::ToABGR(buttonColor));
         drawList->AddRect(ImVec2{ m_anchorButtonFill.topLeft.x+2, m_anchorButtonFill.topLeft.y+2 }, ImVec2{ m_anchorButtonFill.bottomRight.x-2, m_anchorButtonFill.bottomRight.y-2 }, 0xFF000000, 0, 0, 4);
 
         for (auto& handle : m_handles) {

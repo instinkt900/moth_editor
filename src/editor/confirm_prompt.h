@@ -15,8 +15,8 @@ public:
 private:
     std::string m_title;
     std::string m_message;
-    std::string m_positiveText;
-    std::string m_negativeText;
+    std::string m_positiveText = "OK";
+    std::string m_negativeText = "Cancel";
     std::function<void()> m_positiveAction;
     std::function<void()> m_negativeAction;
     bool m_pendingOpen = false;

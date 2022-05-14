@@ -3,33 +3,6 @@
 #include "image.h"
 #include "font.h"
 
-struct ColorComponents {
-    explicit ColorComponents(moth_ui::Color const& color)
-        : r(static_cast<uint8_t>(255 * std::clamp(color.r, 0.0f, 1.0f)))
-        , g(static_cast<uint8_t>(255 * std::clamp(color.g, 0.0f, 1.0f)))
-        , b(static_cast<uint8_t>(255 * std::clamp(color.b, 0.0f, 1.0f)))
-        , a(static_cast<uint8_t>(255 * std::clamp(color.a, 0.0f, 1.0f))) {
-    }
-
-    uint8_t r, g, b, a;
-};
-
-SDL_BlendMode ToSDL(moth_ui::BlendMode mode) {
-    switch (mode) {
-    default:
-    case moth_ui::BlendMode::Replace:
-        return SDL_BlendMode::SDL_BLENDMODE_NONE;
-    case moth_ui::BlendMode::Alpha:
-        return SDL_BlendMode::SDL_BLENDMODE_BLEND;
-    case moth_ui::BlendMode::Add:
-        return SDL_BlendMode::SDL_BLENDMODE_ADD;
-    case moth_ui::BlendMode::Multiply:
-        return SDL_BlendMode::SDL_BLENDMODE_MUL;
-    case moth_ui::BlendMode::Modulate:
-        return SDL_BlendMode::SDL_BLENDMODE_MOD;
-    }
-}
-
 UIRenderer::UIRenderer(SDL_Renderer& renderer)
     : m_renderer(renderer) {
     m_drawColor.push({ 1.0f, 1.0f, 1.0f, 1.0f });

@@ -3,6 +3,7 @@
 #include "layers/layer.h"
 #include "events/event.h"
 #include "confirm_prompt.h"
+#include "editor_config.h"
 
 #include "moth_ui/layout/layout_rect.h"
 #include "moth_ui/events/event_mouse.h"
@@ -93,7 +94,11 @@ public:
 
     void DeleteEntity();
 
+    EditorConfig& GetConfig() { return m_config; }
+
 private:
+    EditorConfig m_config;
+
     ImGuiID m_rootDockId;
 
     std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
@@ -155,4 +160,8 @@ private:
 
     bool OnKey(moth_ui::EventKey const& event);
     bool OnRequestQuitEvent(EventRequestQuit const& event);
+
+    void Shutdown();
+    void SaveConfig();
+    void LoadConfig();
 };

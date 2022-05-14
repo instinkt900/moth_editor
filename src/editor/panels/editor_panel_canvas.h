@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor_panel.h"
+#include "../editor_layer.h"
 
 class BoundsWidget;
 
@@ -56,7 +57,7 @@ public:
                 return point / scaleFactor;
             } else if constexpr (InSpace == CoordSpace::CanvasSpace) {
                 float const scaleFactor = m_canvasZoom / 100.0f;
-                auto const scaledCanvasSize = static_cast<moth_ui::FloatVec2>(m_canvasSize) * scaleFactor;
+                auto const scaledCanvasSize = static_cast<moth_ui::FloatVec2>(m_editorLayer.GetConfig().CanvasSize) * scaleFactor;
                 auto const displaySize = static_cast<moth_ui::FloatVec2>(m_canvasWindowSize);
                 auto const scaledCanvasOffset = m_canvasOffset + (displaySize - scaledCanvasSize) / 2.0f;
                 return (point * scaleFactor) + scaledCanvasOffset;
@@ -71,7 +72,7 @@ public:
                 return ConvertSpace<CoordSpace::WorldSpace, CoordSpace::CanvasSpace>(worldSpace);
             } else if constexpr (InSpace == CoordSpace::WorldSpace) {
                 float const scaleFactor = m_canvasZoom / 100.0f;
-                auto const scaledCanvasSize = static_cast<moth_ui::FloatVec2>(m_canvasSize) * scaleFactor;
+                auto const scaledCanvasSize = static_cast<moth_ui::FloatVec2>(m_editorLayer.GetConfig().CanvasSize) * scaleFactor;
                 auto const displaySize = static_cast<moth_ui::FloatVec2>(m_canvasWindowSize);
                 auto const scaledCanvasOffset = m_canvasOffset + (displaySize - scaledCanvasSize) / 2.0f;
                 return (point - scaledCanvasOffset) / scaleFactor;
@@ -101,6 +102,8 @@ public:
 
     moth_ui::IntVec2 SnapToGrid(moth_ui::IntVec2 const& original);
 
+    void ResetView();
+
 private:
     bool BeginPanel() override;
     void DrawContents() override;
@@ -109,10 +112,8 @@ private:
     moth_ui::IntVec2 m_canvasWindowPos;
     moth_ui::IntVec2 m_canvasWindowSize;
 
-    moth_ui::IntVec2 m_canvasSize{ 640, 480 };
     moth_ui::FloatVec2 m_canvasOffset{ 0, 0 };
     int m_canvasZoom = 100;
-    int m_canvasGridSpacing = 5;
 
     TextureRef m_displayTexture;
     moth_ui::FloatVec2 m_initialCanvasOffset;
@@ -137,9 +138,6 @@ private:
     void SelectInRect(moth_ui::IntRect const& selectionRect);
 
     void UpdateInput();
-
-    void LoadCanvasProperties();
-    void SaveCanvasProperties();
 
     friend class EditorPanelCanvasProperties;
 };

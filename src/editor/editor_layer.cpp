@@ -5,6 +5,7 @@
 
 #include "actions/add_action.h"
 
+#include "panels/editor_panel_config.h"
 #include "panels/editor_panel_asset_list.h"
 #include "panels/editor_panel_canvas_properties.h"
 #include "panels/editor_panel_properties.h"
@@ -41,6 +42,9 @@ namespace {
 }
 
 EditorLayer::EditorLayer() {
+    LoadConfig();
+
+    AddEditorPanel<EditorPanelConfig>(*this, false);
     auto const canvasPanel = AddEditorPanel<EditorPanelCanvas>(*this, true);
     AddEditorPanel<EditorPanelCanvasProperties>(*this, true, *canvasPanel);
     AddEditorPanel<EditorPanelAssetList>(*this, true);
@@ -443,7 +447,7 @@ void EditorLayer::DeleteEntity() {
 }
 
 void EditorLayer::ResetCanvas() {
-    //m_canvasProperties = {};
+    GetEditorPanel<EditorPanelCanvas>()->ResetView();
 }
 
 bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
@@ -514,16 +518,13 @@ bool EditorLayer::OnRequestQuitEvent(EventRequestQuit const& event) {
         m_confirmPrompt.SetPositiveText("Exit");
         m_confirmPrompt.SetNegativeText("Cancel");
         m_confirmPrompt.SetPositiveAction([this]() {
-            m_layerStack->BroadcastEvent(EventQuit());
+            Shutdown();
         });
         m_confirmPrompt.SetNegativeAction([]() {
         });
         m_confirmPrompt.Open();
     } else {
-        for (auto&& [panelId, panel] : m_panels) {
-            panel->OnShutdown();
-        }
-        m_layerStack->BroadcastEvent(EventQuit());
+        Shutdown();
     }
     return true;
 }
@@ -716,4 +717,22 @@ void EditorLayer::EndEditColor() {
 void EditorLayer::ShowError(std::string const& message) {
     m_lastErrorMsg = message;
     m_errorPending = true;
+}
+
+void EditorLayer::Shutdown() {
+    for (auto&& [panelId, panel] : m_panels) {
+        panel->OnShutdown();
+    }
+    SaveConfig();
+    m_layerStack->BroadcastEvent(EventQuit());
+}
+
+void EditorLayer::SaveConfig() {
+    auto& j = g_App->GetPersistentState();
+    j["editor_config"] = m_config;
+}
+
+void EditorLayer::LoadConfig() {
+    auto& j = g_App->GetPersistentState();
+    m_config = j.value("editor_config", m_config);
 }

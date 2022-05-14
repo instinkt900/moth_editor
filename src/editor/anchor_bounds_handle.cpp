@@ -44,18 +44,19 @@ void AnchorBoundsHandle::Draw(SDL_Renderer& renderer) {
     auto& canvasPanel = m_widget.GetCanvasPanel();
     auto const drawList = ImGui::GetWindowDrawList();
     auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
+    auto const color = moth_ui::ToABGR(canvasPanel.GetEditorLayer().GetConfig().SelectionColor);
     if (!m_anchor.Top || !m_anchor.Bottom) {
         x1 = drawPosition.x - offset;
         x2 = drawPosition.x + offset;
         y1 = drawPosition.y - offset + static_cast<int>(offset * 2 * anchor.y);
-        drawList->AddLine(ImVec2{ x1, y1 }, ImVec2{ x2, y1 }, 0xFFFF0000);
+        drawList->AddLine(ImVec2{ x1, y1 }, ImVec2{ x2, y1 }, color);
     }
 
     if (!m_anchor.Left || !m_anchor.Right) {
         y1 = drawPosition.y - offset;
         y2 = drawPosition.y + offset;
         x1 = drawPosition.x - offset + static_cast<int>(offset * 2 * anchor.x);
-        drawList->AddLine(ImVec2{ x1, y1 }, ImVec2{ x1, y2 }, 0xFFFF0000);
+        drawList->AddLine(ImVec2{ x1, y1 }, ImVec2{ x1, y2 }, color);
     }
 }
 

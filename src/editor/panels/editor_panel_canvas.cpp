@@ -18,10 +18,9 @@ extern App* g_App;
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
     , m_boundsWidget(std::make_unique<BoundsWidget>(*this)) {
-    LoadCanvasProperties();
 }
+
 void EditorPanelCanvas::OnShutdown() {
-    SaveCanvasProperties();
 }
 
 bool EditorPanelCanvas::BeginPanel() {
@@ -88,38 +87,74 @@ void EditorPanelCanvas::UpdateDisplayTexture(SDL_Renderer& renderer, moth_ui::In
 
     auto const oldRenderTarget = SDL_GetRenderTarget(&renderer);
     SDL_SetRenderTarget(&renderer, m_displayTexture.get());
-    SDL_SetRenderDrawColor(&renderer, 0xAA, 0xAA, 0xAA, 0xFF);
-    SDL_RenderClear(&renderer);
+
+    auto const& canvasSize = m_editorLayer.GetConfig().CanvasSize;
+
+    // clear the window
+    {
+        ColorComponents const clearColor(m_editorLayer.GetConfig().CanvasBackgroundColor);
+        SDL_SetRenderDrawColor(&renderer, clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+        SDL_RenderClear(&renderer);
+    }
 
     // clear the canvas area
     {
-        SDL_SetRenderDrawColor(&renderer, 0xFF, 0xFF, 0xFF, 0xFF);
+        ColorComponents const canvasColor(m_editorLayer.GetConfig().CanvasColor);
+        SDL_SetRenderDrawColor(&renderer, canvasColor.r, canvasColor.g, canvasColor.b, canvasColor.a);
         moth_ui::IntRect canvasRect;
         canvasRect.topLeft = { 0, 0 };
-        canvasRect.bottomRight = m_canvasSize;
+        canvasRect.bottomRight = canvasSize;
         auto const sdlRectF = ToSDL(ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect));
         SDL_RenderFillRectF(&renderer, &sdlRectF);
     }
 
     // grid lines
     {
-        SDL_SetRenderDrawColor(&renderer, 0xDD, 0xDD, 0xDD, 0xFF);
-        if (m_canvasGridSpacing > 0) {
-            for (int x = m_canvasGridSpacing; x < m_canvasSize.x; x += m_canvasGridSpacing) {
+        SDL_SetRenderDrawBlendMode(&renderer, SDL_BLENDMODE_BLEND);
+        ColorComponents const canvasGridColorMinor(m_editorLayer.GetConfig().CanvasGridColorMinor);
+        ColorComponents const canvasGridColorMajor(m_editorLayer.GetConfig().CanvasGridColorMajor);
+        auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
+        auto const& gridMajorFactor = m_editorLayer.GetConfig().CanvasGridMajorFactor;
+        if (gridSpacing > 0) {
+            int i = 1;
+            for (int x = gridSpacing; x < canvasSize.x; x += gridSpacing, ++i) {
                 moth_ui::IntVec2 const p0{ x, 0 };
-                moth_ui::IntVec2 const p1{ x, m_canvasSize.y };
+                moth_ui::IntVec2 const p1{ x, canvasSize.y };
                 auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
                 auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
+                if ((i % gridMajorFactor) == 0) {
+                    SDL_SetRenderDrawColor(&renderer, canvasGridColorMajor.r, canvasGridColorMajor.g, canvasGridColorMajor.b, canvasGridColorMajor.a);
+                } else {
+                    SDL_SetRenderDrawColor(&renderer, canvasGridColorMinor.r, canvasGridColorMinor.g, canvasGridColorMinor.b, canvasGridColorMinor.a);
+                }
                 SDL_RenderDrawLineF(&renderer, p0Scaled.x, p0Scaled.y, p1Scaled.x, p1Scaled.y);
             }
-            for (int y = m_canvasGridSpacing; y < m_canvasSize.y; y += m_canvasGridSpacing) {
+            i = 1;
+            for (int y = gridSpacing; y < canvasSize.y; y += gridSpacing, ++i) {
                 moth_ui::IntVec2 const p0{ 0, y };
-                moth_ui::IntVec2 const p1{ m_canvasSize.x, y };
+                moth_ui::IntVec2 const p1{ canvasSize.x, y };
                 auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
                 auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
+                if ((i % gridMajorFactor) == 0) {
+                    SDL_SetRenderDrawColor(&renderer, canvasGridColorMajor.r, canvasGridColorMajor.g, canvasGridColorMajor.b, canvasGridColorMajor.a);
+                } else {
+                    SDL_SetRenderDrawColor(&renderer, canvasGridColorMinor.r, canvasGridColorMinor.g, canvasGridColorMinor.b, canvasGridColorMinor.a);
+                }
                 SDL_RenderDrawLineF(&renderer, p0Scaled.x, p0Scaled.y, p1Scaled.x, p1Scaled.y);
             }
         }
+    }
+
+    // outline the canvas
+    {
+        SDL_SetRenderDrawBlendMode(&renderer, SDL_BLENDMODE_BLEND);
+        ColorComponents const canvasOutlineColor(m_editorLayer.GetConfig().CanvasOutlineColor);
+        SDL_SetRenderDrawColor(&renderer, canvasOutlineColor.r, canvasOutlineColor.g, canvasOutlineColor.b, canvasOutlineColor.a);
+        moth_ui::IntRect canvasRect;
+        canvasRect.topLeft = { 0, 0 };
+        canvasRect.bottomRight = canvasSize;
+        auto const sdlRectF = ToSDL(ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect));
+        SDL_RenderDrawRectF(&renderer, &sdlRectF);
     }
 
     // setup scaling and draw the layout
@@ -130,13 +165,14 @@ void EditorPanelCanvas::UpdateDisplayTexture(SDL_Renderer& renderer, moth_ui::In
         auto const newRenderOffsetX = static_cast<int>(m_canvasOffset.x / scaleFactor);
         auto const newRenderOffsetY = static_cast<int>(m_canvasOffset.y / scaleFactor);
 
+        SDL_SetRenderDrawBlendMode(&renderer, SDL_BLENDMODE_NONE);
         SDL_RenderSetLogicalSize(&renderer, newRenderWidth, newRenderHeight);
         {
             SDL_Rect const guideRect{
-                newRenderOffsetX + (newRenderWidth - m_canvasSize.x) / 2,
-                newRenderOffsetY + (newRenderHeight - m_canvasSize.y) / 2,
-                m_canvasSize.x,
-                m_canvasSize.y
+                newRenderOffsetX + (newRenderWidth - canvasSize.x) / 2,
+                newRenderOffsetY + (newRenderHeight - canvasSize.y) / 2,
+                canvasSize.x,
+                canvasSize.y
             };
             if (auto const root = m_editorLayer.GetRoot()) {
                 moth_ui::IntRect displayRect;
@@ -190,14 +226,20 @@ void EditorPanelCanvas::EndPanel() {
 }
 
 moth_ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth_ui::IntVec2 const& original) {
-    if (m_canvasGridSpacing > 0) {
-        float const s = static_cast<float>(m_canvasGridSpacing);
+    auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
+    if (gridSpacing > 0) {
+        float const s = static_cast<float>(gridSpacing);
         int const x = static_cast<int>(std::round(original.x / s) * s);
         int const y = static_cast<int>(std::round(original.y / s) * s);
         return { x, y };
     } else {
         return original;
     }
+}
+
+void EditorPanelCanvas::ResetView() {
+    m_canvasOffset = { 0, 0 };
+    m_canvasZoom = 100;
 }
 
 void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
@@ -353,21 +395,4 @@ void EditorPanelCanvas::UpdateInput() {
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });
     }
-}
-
-void EditorPanelCanvas::LoadCanvasProperties() {
-    auto const& persistenceJson = g_App->GetPersistentState();
-    if (persistenceJson.contains("canvas_properties")) {
-        auto const& canvasJson = persistenceJson["canvas_properties"];
-        m_canvasSize = canvasJson.value("size", m_canvasSize);
-        m_canvasGridSpacing = canvasJson.value("grid_spacing", m_canvasGridSpacing);
-    }
-}
-
-void EditorPanelCanvas::SaveCanvasProperties() {
-    auto& persistenceJson = g_App->GetPersistentState();
-    nlohmann::json canvasJson;
-    canvasJson["size"] = m_canvasSize;
-    canvasJson["grid_spacing"] = m_canvasGridSpacing;
-    persistenceJson["canvas_properties"] = canvasJson;
 }
