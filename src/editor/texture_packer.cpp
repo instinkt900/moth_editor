@@ -77,16 +77,16 @@ void TexturePacker::Draw() {
                 Pack(s_layoutPathBuffer, s_outputPathBuffer, s_minWidth, s_minHeight, s_maxWidth, s_maxHeight);
             }
 
-            //if (m_outputTexture) {
-            //    ImGui::Image(m_outputTexture.get(), ImVec2(static_cast<float>(m_textureWidth), static_cast<float>(m_textureHeight)));
-            //}
+            if (m_outputTexture) {
+                ImGui::Image(m_outputTexture.get(), ImVec2(static_cast<float>(m_textureWidth), static_cast<float>(m_textureHeight)));
+            }
         }
         ImGui::End();
     }
 }
 
 // recursively loads all layouts in a given path
-void CollectLayouts(std::filesystem::path const& path, std::vector<std::shared_ptr<moth_ui::Layout>>& layouts) {
+void TexturePacker::CollectLayouts(std::filesystem::path const& path, std::vector<std::shared_ptr<moth_ui::Layout>>& layouts) {
     for (auto&& entry : std::filesystem::directory_iterator(path)) {
         if (std::filesystem::is_directory(entry.path())) {
             CollectLayouts(entry.path(), layouts);
@@ -100,12 +100,7 @@ void CollectLayouts(std::filesystem::path const& path, std::vector<std::shared_p
     }
 }
 
-struct ImageDetails {
-    std::filesystem::path path;
-    moth_ui::IntVec2 dimensions;
-};
-
-void CollectImages(moth_ui::Layout const& layout, std::vector<ImageDetails>& images) {
+void TexturePacker::CollectImages(moth_ui::Layout const& layout, std::vector<ImageDetails>& images) {
     for (auto&& childEntity : layout.m_children) {
         if (childEntity->GetType() == moth_ui::LayoutEntityType::Image) {
             auto& imageEntity = static_cast<moth_ui::LayoutEntityImage&>(*childEntity);
@@ -122,11 +117,12 @@ void CollectImages(moth_ui::Layout const& layout, std::vector<ImageDetails>& ima
     }
 }
 
-void CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
+void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
     auto renderer = g_App->GetRenderer();
     auto outputTexture = CreateTextureRef(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height));
     auto const oldRenderTarget = SDL_GetRenderTarget(renderer);
     SDL_SetRenderTarget(renderer, outputTexture.get());
+    SDL_SetTextureBlendMode(outputTexture.get(), SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
 
@@ -156,7 +152,19 @@ void CommitPack(int num, std::filesystem::path const& outputPath, int width, int
 
     // save packed image
     auto const imagePackName = fmt::format("packed_{}.png", num);
-    SurfaceRef surface = CreateSurfaceRef(SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0));
+    Uint32 rmask, gmask, bmask, amask;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    rmask = 0xff000000;
+    gmask = 0x00ff0000;
+    bmask = 0x0000ff00;
+    amask = 0x000000ff;
+#else
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = 0xff000000;
+#endif
+    SurfaceRef surface = CreateSurfaceRef(SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask));
     SDL_RenderReadPixels(renderer, nullptr, surface->format->format, surface->pixels, surface->pitch);
     IMG_SavePNG(surface.get(), (outputPath / imagePackName).string().c_str());
 
@@ -173,6 +181,10 @@ void CommitPack(int num, std::filesystem::path const& outputPath, int width, int
 
     // remove packed rects
     rects.erase(ranges::remove_if(rects, [](auto const& r) { return r.was_packed; }), std::end(rects));
+
+    m_outputTexture = outputTexture;
+    m_textureWidth = width;
+    m_textureHeight = height;
 }
 
 void TexturePacker::Pack(std::filesystem::path const& inputPath, std::filesystem::path const& outputPath, int minWidth, int minHeight, int maxWidth, int maxHeight) {
