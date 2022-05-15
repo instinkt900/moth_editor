@@ -117,6 +117,78 @@ void TexturePacker::CollectImages(moth_ui::Layout const& layout, std::vector<Ima
     }
 }
 
+int NextPowerOf2(int value) {
+    value--;
+    value |= value >> 1;
+    value |= value >> 2;
+    value |= value >> 4;
+    value |= value >> 8;
+    value |= value >> 16;
+    value++;
+    return value;
+}
+
+moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& nodes, std::vector<stbrp_rect>& rects, moth_ui::IntVec2 const& minPack, moth_ui::IntVec2 const& maxPack) {
+    // collect some info about all the rects
+    int minWidth = std::numeric_limits<int>::max();
+    int minHeight = std::numeric_limits<int>::max();
+    int maxWidth = std::numeric_limits<int>::min();
+    int maxHeight = std::numeric_limits<int>::min();
+    int totalArea = 0;
+    int totalWidth = 0;
+    int totalHeight = 0;
+
+    for (auto&& rect : rects) {
+        minWidth = std::min(minWidth, rect.w);
+        minHeight = std::min(minHeight, rect.h);
+        maxWidth = std::max(maxWidth, rect.w);
+        maxHeight = std::max(maxHeight, rect.h);
+        totalWidth += rect.w;
+        totalHeight += rect.h;
+        totalArea += rect.w * rect.h;
+    }
+
+    struct PackTest {
+        moth_ui::IntVec2 m_dimensions;
+        float m_ratio;
+    };
+
+    int const minDimX = NextPowerOf2(minPack.x);
+    int const minDimY = NextPowerOf2(minPack.y);
+    int const maxDimX = NextPowerOf2(maxPack.x);
+    int const maxDimY = NextPowerOf2(maxPack.y);
+
+    std::vector<PackTest> testDimensions;
+    int curWidth = minDimX;
+    while (curWidth <= maxDimX) {
+        int curHeight = minDimY;
+        while (curHeight <= maxDimY) {
+            int const curArea = curWidth * curHeight;
+            if (curArea > totalArea) {
+                PackTest info;
+                info.m_dimensions = moth_ui::IntVec2{ curWidth, curHeight };
+                info.m_ratio = 0;
+                testDimensions.push_back(info);
+            }
+            curHeight *= 2;
+        }
+        curWidth *= 2;
+    }
+
+    for (auto&& testDim : testDimensions) {
+        stbrp_context stbContext;
+        stbrp_init_target(&stbContext, testDim.m_dimensions.x, testDim.m_dimensions.y, nodes.data(), static_cast<int>(nodes.size()));
+        auto const allPacked = stbrp_pack_rects(&stbContext, rects.data(), static_cast<int>(rects.size()));
+        if (allPacked) {
+            float testArea = static_cast<float>(testDim.m_dimensions.x * testDim.m_dimensions.y);
+            testDim.m_ratio = totalArea / testArea;
+        }
+    }
+
+    std::sort(std::begin(testDimensions), std::end(testDimensions), [](auto const& a, auto const& b) { return b.m_ratio < a.m_ratio; });
+    return std::begin(testDimensions)->m_dimensions;
+}
+
 void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
     auto renderer = g_App->GetRenderer();
     auto outputTexture = CreateTextureRef(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height));
@@ -140,6 +212,9 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
             destRect.w = rect.w;
             destRect.h = rect.h;
 
+            SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_NONE);
+            SDL_SetTextureColorMod(texture.get(), 0xFF, 0xFF, 0xFF);
+            SDL_SetTextureAlphaMod(texture.get(), 0xFF);
             SDL_RenderCopy(renderer, texture.get(), nullptr, &destRect);
 
             nlohmann::json details;
@@ -200,8 +275,7 @@ void TexturePacker::Pack(std::filesystem::path const& inputPath, std::filesystem
         }
 
         // pack images into a number of packs
-        if (!images.empty())
-        {
+        if (!images.empty()) {
             // add all image rects to a single bucket
             std::vector<stbrp_rect> stbRects;
             stbRects.reserve(images.size());
@@ -222,35 +296,12 @@ void TexturePacker::Pack(std::filesystem::path const& inputPath, std::filesystem
 
             // keep creating packs until we run out of images.
             int numPacks = 0;
-            while (!stbRects.empty()) {
+            auto const& packDim = FindOptimalDimensions(stbNodes, stbRects, { minWidth, minHeight }, { maxWidth, maxHeight });
 
-                int currentWidth = minWidth;
-                int currentHeight = minHeight;
-
-                bool packed = false;
-                while (!packed) {
-                    while (!packed) {
-                        stbrp_context stbContext;
-                        stbrp_init_target(&stbContext, currentWidth, currentHeight, stbNodes.data(), static_cast<int>(stbNodes.size()));
-                        auto const allPacked = stbrp_pack_rects(&stbContext, stbRects.data(), static_cast<int>(stbRects.size()));
-
-                        if (allPacked || currentWidth >= maxWidth && currentHeight >= maxHeight) {
-                            packed = true;
-                            CommitPack(numPacks, outputPath, currentWidth, currentHeight, stbRects, images);
-                        } else {
-                            if (currentWidth >= maxWidth) {
-                                break;
-                            } else {
-                                currentWidth = std::min(maxWidth, currentWidth * 2);
-                            }
-                        }
-                    }
-
-                    if (!packed) {
-                        currentHeight = std::min(maxHeight, currentHeight * 2);
-                    }
-                }
-            }
+            stbrp_context stbContext;
+            stbrp_init_target(&stbContext, packDim.x, packDim.y, stbNodes.data(), static_cast<int>(stbNodes.size()));
+            stbrp_pack_rects(&stbContext, stbRects.data(), static_cast<int>(stbRects.size()));
+            CommitPack(numPacks, outputPath, packDim.x, packDim.y, stbRects, images);
         }
     }
 }
