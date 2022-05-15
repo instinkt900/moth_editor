@@ -10,6 +10,7 @@
 #include <set>
 #include <filesystem>
 #include <thread>
+#include <unordered_map>
 
 #include <SDL.h>
 #include <SDL_image.h>
@@ -21,6 +22,7 @@
 
 #include <range/v3/algorithm/find.hpp>
 #include <range/v3/algorithm/find_if.hpp>
+#include <range/v3/algorithm/remove_if.hpp>
 
 #include <moth_ui/utils/rect.h>
 #include <moth_ui/ui_fwd.h>

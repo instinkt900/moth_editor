@@ -79,7 +79,7 @@ void EditorPanelCanvas::DrawContents() {
 
 void EditorPanelCanvas::UpdateDisplayTexture(SDL_Renderer& renderer, moth_ui::IntVec2 const& windowSize) {
     if (!m_displayTexture || m_canvasWindowSize != windowSize) {
-        m_displayTexture = CreateTextureRef(SDL_CreateTexture(g_App->GetRenderer(), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowSize.x, windowSize.y));
+        m_displayTexture = CreateTextureRef(SDL_CreateTexture(&renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, windowSize.x, windowSize.y));
     }
 
     m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(ImGui::GetWindowPos().x), static_cast<int>(ImGui::GetWindowPos().y) };

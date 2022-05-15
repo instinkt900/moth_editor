@@ -164,4 +164,6 @@ private:
     void Shutdown();
     void SaveConfig();
     void LoadConfig();
+
+    std::unique_ptr<class TexturePacker> m_texturePacker;
 };

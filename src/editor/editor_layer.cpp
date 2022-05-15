@@ -27,6 +27,8 @@
 #include "moth_ui/group.h"
 #include "moth_ui/event_dispatch.h"
 
+#include "texture_packer.h"
+
 #include "imgui-filebrowser/imfilebrowser.h"
 
 extern App* g_App;
@@ -58,6 +60,8 @@ EditorLayer::EditorLayer() {
     for (auto& [type, panel] : m_panels) {
         panel->Refresh();
     }
+
+    m_texturePacker = std::make_unique<TexturePacker>();
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
@@ -119,6 +123,8 @@ void EditorLayer::Draw(SDL_Renderer& renderer) {
             s_fileDialog.ClearSelected();
         }
     }
+
+    m_texturePacker->Draw();
 }
 
 void EditorLayer::DrawMainMenu() {
@@ -173,6 +179,12 @@ void EditorLayer::DrawMainMenu() {
                     ImGui::Checkbox(title.c_str(), visible);
                 }
                 ImGui::EndMenu();
+            }
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Tools")) {
+            if (ImGui::MenuItem("Texture Packer")) {
+                m_texturePacker->Open();
             }
             ImGui::EndMenu();
         }
