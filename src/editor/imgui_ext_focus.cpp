@@ -157,14 +157,7 @@ namespace imgui_ext {
     void FocusGroupInputKeyframeValue(char const* label, moth_ui::KeyframeValue value, std::function<void(moth_ui::KeyframeValue const&)> const& onChanged, std::function<void()> const& onLostFocus) {
         g_focusContext.LostFocusCallbacks[label] = onLostFocus;
 
-        bool changed = false;
-        if (value.index() == 0) {
-            changed = ImGui::InputFloat(label, &std::get<float>(value));
-        } else {
-            changed = InputString(label, &std::get<std::string>(value));
-        }
-
-        if (changed) {
+        if (ImGui::InputFloat(label, &value)) {
             onChanged(value);
         }
 

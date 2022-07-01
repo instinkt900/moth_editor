@@ -11,7 +11,6 @@
 #include "panels/editor_panel_properties.h"
 #include "panels/editor_panel_elements.h"
 #include "panels/editor_panel_animation.h"
-#include "panels/editor_panel_keyframes.h"
 #include "panels/editor_panel_undo_stack.h"
 #include "panels/editor_panel_preview.h"
 #include "panels/editor_panel_canvas.h"
@@ -53,7 +52,6 @@ EditorLayer::EditorLayer() {
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
     auto const animationPanel = AddEditorPanel<EditorPanelAnimation>(*this, true);
-    //AddEditorPanel<EditorPanelKeyframes>(*this, *animationPanel);
     AddEditorPanel<EditorPanelUndoStack>(*this, false);
     AddEditorPanel<EditorPanelPreview>(*this, false);
 

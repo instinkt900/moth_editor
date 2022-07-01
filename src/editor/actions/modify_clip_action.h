@@ -5,7 +5,7 @@
 
 class ModifyClipAction : public IEditorAction {
 public:
-    ModifyClipAction(moth_ui::AnimationClip* target, moth_ui::AnimationClip const& initialValues);
+    ModifyClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationClip const& oldValues, moth_ui::AnimationClip const& newValues);
     virtual ~ModifyClipAction() = default;
 
     void Do() override;
@@ -14,7 +14,7 @@ public:
     void OnImGui() override;
 
 private:
-    moth_ui::AnimationClip* m_target;
+    std::shared_ptr<moth_ui::LayoutEntityGroup> m_group;
     moth_ui::AnimationClip m_initialValues;
     moth_ui::AnimationClip m_finalValues;
 };

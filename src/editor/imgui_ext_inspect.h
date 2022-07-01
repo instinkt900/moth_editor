@@ -120,14 +120,6 @@ namespace imgui_ext {
         ImGui::ColorEdit4(label, reinterpret_cast<float*>(&color));
     }
 
-    inline bool Inspect(char const* label, moth_ui::KeyframeValue& value) {
-        if (value.index() == 0) {
-            return ImGui::InputFloat(label, &std::get<float>(value));
-        } else {
-            return imgui_ext::InputString(label, &std::get<std::string>(value));
-        }
-    }
-
     inline void Inspect(char const* label, moth_ui::Keyframe& keyframe) {
         ImGui::PushID(label);
         if (ImGui::CollapsingHeader(label)) {

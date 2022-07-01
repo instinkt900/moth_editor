@@ -17,11 +17,7 @@ namespace imgui_ext {
     }
 
     bool InputKeyframeValue(char const* label, KeyframeValue* value) {
-        if (value->index() == 0) {
-            return ImGui::InputFloat(label, &std::get<float>(*value));
-        } else {
-            return InputString(label, &std::get<std::string>(*value));
-        }
+        return ImGui::InputFloat(label, value);
     }
 
     void InputIntVec2(char const* label, IntVec2* vec) {

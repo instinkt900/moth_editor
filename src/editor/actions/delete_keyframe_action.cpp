@@ -26,10 +26,6 @@ void DeleteKeyframeAction::Undo() {
 void DeleteKeyframeAction::OnImGui() {
     if (ImGui::CollapsingHeader("DeleteKeyframeAction")) {
         ImGui::LabelText("Frame", "%d", m_frameNo);
-        if (m_oldValue.index() == 0) {
-            ImGui::LabelText("Old Value", "%f", std::get<float>(m_oldValue));
-        } else {
-            ImGui::LabelText("Old Value", "%s", std::get<std::string>(m_oldValue).c_str());
-        }
+        ImGui::LabelText("Old Value", "%f", m_oldValue);
     }
 }

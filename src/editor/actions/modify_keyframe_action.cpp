@@ -38,16 +38,8 @@ void ModifyKeyframeAction::Undo() {
 void ModifyKeyframeAction::OnImGui() {
     if (ImGui::CollapsingHeader("ModifyKeyframeAction")) {
         ImGui::LabelText("Frame", "%d", m_frameNo);
-        if (m_oldValue.index() == 0) {
-            ImGui::LabelText("Old Value", "%f", std::get<float>(m_oldValue));
-        } else {
-            ImGui::LabelText("Old Value", "%s", std::get<std::string>(m_oldValue).c_str());
-        }
-        if (m_newValue.index() == 0) {
-            ImGui::LabelText("New Value", "%f", std::get<float>(m_newValue));
-        } else {
-            ImGui::LabelText("New Value", "%s", std::get<std::string>(m_newValue).c_str());
-        }
+        ImGui::LabelText("Old Value", "%f", m_oldValue);
+        ImGui::LabelText("New Value", "%f", m_newValue);
         // TODO interp (maybe? this is mostly debug)
     }
 }

@@ -28,10 +28,6 @@ void AddKeyframeAction::Undo() {
 void AddKeyframeAction::OnImGui() {
     if (ImGui::CollapsingHeader("AddKeyframeAction")) {
         ImGui::LabelText("Frame", "%d", m_frameNo);
-        if (m_value.index() == 0) {
-            ImGui::LabelText("Value", "%f", std::get<float>(m_value));
-        } else {
-            ImGui::LabelText("Value", "%s", std::get<std::string>(m_value).c_str());
-        }
+        ImGui::LabelText("Value", "%f", m_value);
     }
 }
