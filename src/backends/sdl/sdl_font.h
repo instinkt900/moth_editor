@@ -1,11 +1,12 @@
 #pragma once
 
 #include "moth_ui/ifont.h"
+#include "smart_sdl.h"
 
-class Font : public moth_ui::IFont {
+class SDLFont : public moth_ui::IFont {
 public:
-    explicit Font(CachedFontRef fontObj);
-    virtual ~Font() = default;
+    explicit SDLFont(CachedFontRef fontObj);
+    virtual ~SDLFont() = default;
 
     CachedFontRef GetFontObj() const {
         return m_fontObj;

@@ -1,26 +1,27 @@
 #pragma once
 
+#include "../../iapp.h"
 #include "layers/layer_stack.h"
 #include "events/event.h"
 #include "moth_ui/iimage_factory.h"
 #include "moth_ui/ifont_factory.h"
 #include "moth_ui/irenderer.h"
 
-class App : public moth_ui::EventListener {
+class SDLApp : public IApp, public moth_ui::EventListener {
 public:
-    App();
-    virtual ~App();
+    SDLApp();
+    virtual ~SDLApp();
 
-    int Run();
-    void Stop() { m_running = false; }
+    int Run() override;
+    void Stop() override { m_running = false; }
 
     bool OnEvent(moth_ui::Event const& event) override;
 
-    auto GetRenderer() const { return m_renderer; }
+    void SetWindowTitle(std::string const& title) override;
 
-    void SetWindowTitle(std::string const& title);
+    nlohmann::json& GetPersistentState() override { return m_persistentState; }
 
-    nlohmann::json& GetPersistentState() { return m_persistentState; }
+    SDL_Renderer* GetRenderer() const { return m_renderer; }
 
 protected:
     bool Initialise();
@@ -57,3 +58,5 @@ private:
     bool OnWindowSizeEvent(EventWindowSize const& event);
     bool OnQuitEvent(EventQuit const& event);
 };
+
+extern SDLApp* g_sdlApp;

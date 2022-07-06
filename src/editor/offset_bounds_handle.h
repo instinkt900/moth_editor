@@ -7,7 +7,7 @@ public:
     OffsetBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor);
     virtual ~OffsetBoundsHandle();
 
-    void Draw(SDL_Renderer& renderer) override;
+    void Draw() override;
 
 private:
     float m_size = 12.0f;

@@ -20,7 +20,7 @@ public:
     virtual void SetTarget(moth_ui::Node* node);
 
     virtual bool OnEvent(moth_ui::Event const& event) override;
-    virtual void Draw(SDL_Renderer& renderer) = 0;
+    virtual void Draw() = 0;
 
     static BoundsHandleAnchor constexpr TopLeft{ 1, 1, 0, 0 };
     static BoundsHandleAnchor constexpr TopRight{ 1, 0, 0, 1 };

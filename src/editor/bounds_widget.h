@@ -15,7 +15,7 @@ public:
     void EndEdit();
 
     bool OnEvent(moth_ui::Event const& event) override;
-    void Draw(SDL_Renderer& renderer);
+    void Draw();
 
     void SetSelection(std::shared_ptr<moth_ui::Node> node);
     std::shared_ptr<moth_ui::Node> GetSelection() const { return m_node; }

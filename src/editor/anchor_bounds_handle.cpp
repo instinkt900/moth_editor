@@ -15,7 +15,7 @@ AnchorBoundsHandle::AnchorBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor 
 AnchorBoundsHandle::~AnchorBoundsHandle() {
 }
 
-void AnchorBoundsHandle::Draw(SDL_Renderer& renderer) {
+void AnchorBoundsHandle::Draw() {
     if (!m_target || !m_target->GetParent()) {
         return;
     }

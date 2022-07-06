@@ -2,10 +2,10 @@
 
 #include "moth_ui/irenderer.h"
 
-class UIRenderer : public moth_ui::IRenderer {
+class SDLUIRenderer : public moth_ui::IRenderer {
 public:
-    UIRenderer(SDL_Renderer& renderer);
-    virtual ~UIRenderer() = default;
+    SDLUIRenderer(SDL_Renderer& renderer);
+    virtual ~SDLUIRenderer() = default;
 
     void PushBlendMode(moth_ui::BlendMode mode) override;
     void PopBlendMode() override;

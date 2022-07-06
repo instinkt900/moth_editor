@@ -3,10 +3,10 @@
 #include "moth_ui/ifont_factory.h"
 #include "moth_ui/ifont.h"
 
-class FontFactory : public moth_ui::IFontFactory {
+class SDLFontFactory : public moth_ui::IFontFactory {
 public:
-    FontFactory(SDL_Renderer& renderer);
-    virtual ~FontFactory() = default;
+    SDLFontFactory(SDL_Renderer& renderer);
+    virtual ~SDLFontFactory() = default;
 
     std::unique_ptr<moth_ui::IFont> GetDefaultFont(int size) override;
     std::vector<std::string> GetFontNameList() override;

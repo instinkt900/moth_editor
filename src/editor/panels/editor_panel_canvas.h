@@ -115,7 +115,7 @@ private:
     moth_ui::FloatVec2 m_canvasOffset{ 0, 0 };
     int m_canvasZoom = 100;
 
-    TextureRef m_displayTexture;
+    std::shared_ptr<moth_ui::IImage> m_displayTexture;
     moth_ui::FloatVec2 m_initialCanvasOffset;
     bool m_draggingCanvas = false;
     moth_ui::IntVec2 m_lastMousePos;
@@ -129,7 +129,7 @@ private:
     moth_ui::IntVec2 m_dragSelectStart;
     moth_ui::IntVec2 m_dragSelectEnd;
 
-    void UpdateDisplayTexture(SDL_Renderer& renderer, moth_ui::IntVec2 const& displaySize);
+    void UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize);
 
     void OnMouseClicked(moth_ui::IntVec2 const& appPosition);
     void OnMouseReleased(moth_ui::IntVec2 const& appPosition);

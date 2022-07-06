@@ -2,11 +2,12 @@
 
 #include "moth_ui/iimage_factory.h"
 #include "moth_ui/iimage.h"
+#include "smart_sdl.h"
 
-class ImageFactory : public moth_ui::IImageFactory {
+class SDLImageFactory : public moth_ui::IImageFactory {
 public:
-    ImageFactory(SDL_Renderer& renderer);
-    virtual ~ImageFactory() = default;
+    SDLImageFactory(SDL_Renderer& renderer);
+    virtual ~SDLImageFactory() = default;
 
     void FlushCache() override;
     bool LoadTexturePack(std::filesystem::path const& path) override;

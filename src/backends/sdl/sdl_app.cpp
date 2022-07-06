@@ -1,22 +1,25 @@
 #include "common.h"
-#include "app.h"
+#include "sdl_app.h"
 #include "editor/editor_layer.h"
-#include "event_factory.h"
+
+#include "sdl_event_factory.h"
+#include "sdl_image_factory.h"
+#include "sdl_font_factory.h"
+#include "sdl_ui_renderer.h"
+
 #include "moth_ui/context.h"
-#include "image_factory.h"
-#include "font_factory.h"
-#include "ui_renderer.h"
 #include "moth_ui/event_dispatch.h"
 #include "moth_ui/node_factory.h"
 
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_sdlrenderer.h>
 
-App* g_App = nullptr;
+SDLApp* g_sdlApp = nullptr;
+extern IApp* g_App;
 
-char const* const App::PERSISTENCE_FILE = "editor.json";
+char const* const SDLApp::PERSISTENCE_FILE = "editor.json";
 
-App::App()
+SDLApp::SDLApp()
     : m_windowWidth(INIT_WINDOW_WIDTH)
     , m_windowHeight(INIT_WINDOW_HEIGHT) {
 
@@ -32,14 +35,16 @@ App::App()
         m_windowHeight = m_persistentState.value("window_height", m_windowHeight);
     }
 
+    g_sdlApp = this;
     g_App = this;
 }
 
-App::~App() {
+SDLApp::~SDLApp() {
+    g_sdlApp = nullptr;
     g_App = nullptr;
 }
 
-int App::Run() {
+int SDLApp::Run() {
     if (!Initialise()) {
         return 1;
     }
@@ -54,7 +59,7 @@ int App::Run() {
             if (ImGui::GetIO().WantCaptureKeyboard && (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP)) {
                 continue;
             }
-            if (auto const translatedEvent = EventFactory::FromSDL(event)) {
+            if (auto const translatedEvent = SDLEventFactory::FromSDL(event)) {
                 OnEvent(*translatedEvent);
             }
         }
@@ -68,7 +73,7 @@ int App::Run() {
     return 0;
 }
 
-bool App::Initialise() {
+bool SDLApp::Initialise() {
     if (0 > SDL_Init(SDL_INIT_EVERYTHING)) {
         return false;
     }
@@ -99,9 +104,9 @@ bool App::Initialise() {
         return false;
     }
 
-    m_imageFactory = std::make_unique<ImageFactory>(*m_renderer);
-    m_fontFactory = std::make_unique<FontFactory>(*m_renderer);
-    m_uiRenderer = std::make_unique<UIRenderer>(*m_renderer);
+    m_imageFactory = std::make_unique<SDLImageFactory>(*m_renderer);
+    m_fontFactory = std::make_unique<SDLFontFactory>(*m_renderer);
+    m_uiRenderer = std::make_unique<SDLUIRenderer>(*m_renderer);
     auto uiContext = std::make_shared<moth_ui::Context>(m_imageFactory.get(), m_fontFactory.get(), m_uiRenderer.get());
     moth_ui::Context::SetCurrentContext(uiContext);
 
@@ -120,26 +125,26 @@ bool App::Initialise() {
     return true;
 }
 
-bool App::OnEvent(moth_ui::Event const& event) {
+bool SDLApp::OnEvent(moth_ui::Event const& event) {
     moth_ui::EventDispatch dispatch(event);
-    dispatch.Dispatch(this, &App::OnWindowSizeEvent);
-    dispatch.Dispatch(this, &App::OnQuitEvent);
+    dispatch.Dispatch(this, &SDLApp::OnWindowSizeEvent);
+    dispatch.Dispatch(this, &SDLApp::OnQuitEvent);
     dispatch.Dispatch(m_layerStack.get());
     return dispatch.GetHandled();
 }
 
-void App::SetWindowTitle(std::string const& title) {
+void SDLApp::SetWindowTitle(std::string const& title) {
     SDL_SetWindowTitle(m_window, title.c_str());
 }
 
-void App::Update() {
+void SDLApp::Update() {
     auto const nowTicks = SDL_GetTicks();
     auto const deltaTicks = nowTicks - m_lastUpdateTicks;
     m_lastUpdateTicks = nowTicks;
     m_layerStack->Update(deltaTicks);
 }
 
-void App::Draw() {
+void SDLApp::Draw() {
     ImGui_ImplSDLRenderer_NewFrame();
     ImGui_ImplSDL2_NewFrame(m_window);
     ImGui::NewFrame();
@@ -151,7 +156,7 @@ void App::Draw() {
     SDL_RenderPresent(m_renderer);
 }
 
-void App::Shutdown() {
+void SDLApp::Shutdown() {
     std::ofstream ofile(m_persistentFilePath.string());
     if (ofile.is_open()) {
         m_persistentState["current_path"] = std::filesystem::current_path().string();
@@ -171,14 +176,14 @@ void App::Shutdown() {
     SDL_Quit();
 }
 
-bool App::OnWindowSizeEvent(EventWindowSize const& event) {
+bool SDLApp::OnWindowSizeEvent(EventWindowSize const& event) {
     m_windowWidth = event.GetWidth();
     m_windowHeight = event.GetHeight();
     m_layerStack->SetWindowSize({ m_windowWidth, m_windowHeight });
     return true;
 }
 
-bool App::OnQuitEvent(EventQuit const& event) {
+bool SDLApp::OnQuitEvent(EventQuit const& event) {
     m_running = false;
     return true;
 }

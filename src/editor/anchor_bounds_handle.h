@@ -7,7 +7,7 @@ public:
     AnchorBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor);
     virtual ~AnchorBoundsHandle();
 
-    void Draw(SDL_Renderer& renderer) override;
+    void Draw() override;
 
 private:
     int m_size = 12;

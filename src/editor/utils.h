@@ -1,7 +1,6 @@
 #pragma once
 
 #include "moth_ui/layout/layout_entity.h"
-#include "image.h"
 
 inline char const* GetEntityLabel(std::shared_ptr<moth_ui::LayoutEntity> entity) {
     static std::string stringBuffer;

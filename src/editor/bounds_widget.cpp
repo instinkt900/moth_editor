@@ -54,7 +54,7 @@ void BoundsWidget::EndEdit() {
     m_canvasPanel.GetEditorLayer().EndEditBounds();
 }
 
-void BoundsWidget::Draw(SDL_Renderer& renderer) {
+void BoundsWidget::Draw() {
     if (m_node && m_node->IsVisible() && m_node->GetParent()) {
         auto const drawList = ImGui::GetWindowDrawList();
         auto const rect = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(m_node->GetScreenRect());
@@ -96,7 +96,7 @@ void BoundsWidget::Draw(SDL_Renderer& renderer) {
         drawList->AddRect(ImVec2{ m_anchorButtonFill.topLeft.x+2, m_anchorButtonFill.topLeft.y+2 }, ImVec2{ m_anchorButtonFill.bottomRight.x-2, m_anchorButtonFill.bottomRight.y-2 }, 0xFF000000, 0, 0, 4);
 
         for (auto& handle : m_handles) {
-            handle->Draw(renderer);
+            handle->Draw();
         }
     }
 }

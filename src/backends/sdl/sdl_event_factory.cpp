@@ -1,5 +1,5 @@
 #include "common.h"
-#include "event_factory.h"
+#include "sdl_event_factory.h"
 
 #include "moth_ui/events/event_key.h"
 #include "moth_ui/events/event_mouse.h"
@@ -8,7 +8,7 @@
 moth_ui::MouseButton FromSDLMouse(uint8_t button);
 moth_ui::Key FromSDLKey(SDL_Keycode const& code);
 
-std::unique_ptr<moth_ui::Event> EventFactory::FromSDL(SDL_Event const& event) {
+std::unique_ptr<moth_ui::Event> SDLEventFactory::FromSDL(SDL_Event const& event) {
     switch (event.type) {
     case SDL_WINDOWEVENT: {
         switch (event.window.event) {

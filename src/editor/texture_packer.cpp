@@ -1,7 +1,6 @@
 #include "common.h"
 #include "texture_packer.h"
-#include "app.h"
-#include "image.h"
+#include "iapp.h"
 
 #include "moth_ui/context.h"
 #include "moth_ui/layout/layout.h"
@@ -26,7 +25,7 @@ namespace {
     int s_maxHeight = 1024;
 }
 
-extern App* g_App;
+extern IApp* g_App;
 
 TexturePacker::TexturePacker() {
 }
@@ -78,7 +77,7 @@ void TexturePacker::Draw() {
             }
 
             if (m_outputTexture) {
-                ImGui::Image(m_outputTexture.get(), ImVec2(static_cast<float>(m_textureWidth), static_cast<float>(m_textureHeight)));
+                imgui_ext::Image(m_outputTexture, m_textureWidth, m_textureHeight);
             }
         }
         ImGui::End();
@@ -190,60 +189,38 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
 }
 
 void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
-    auto renderer = g_App->GetRenderer();
-    auto outputTexture = CreateTextureRef(SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height));
-    auto const oldRenderTarget = SDL_GetRenderTarget(renderer);
-    SDL_SetRenderTarget(renderer, outputTexture.get());
-    SDL_SetTextureBlendMode(outputTexture.get(), SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-    SDL_RenderClear(renderer);
+    std::shared_ptr<moth_ui::IImage> outputTexture = CreateRenderTarget(width, height);
+    auto oldRenderTarget = GetRenderTarget();
+    SetRenderTarget(outputTexture);
+    SetImageBlendMode(outputTexture, EBlendMode::Blend);
+    SetDrawColor(moth_ui::BasicColors::Black);
+    RenderClear();
 
     nlohmann::json packDetails;
     for (auto&& rect : rects) {
         if (rect.was_packed) {
             auto const imagePath = images[rect.id].path;
-            auto const image = moth_ui::Context::GetCurrentContext()->GetImageFactory().GetImage(images[rect.id].path);
-            auto const internalImage = static_cast<Image*>(image.get());
-            auto const texture = internalImage->GetTexture();
+            std::shared_ptr<moth_ui::IImage> image = moth_ui::Context::GetCurrentContext()->GetImageFactory().GetImage(images[rect.id].path);
 
-            SDL_Rect destRect;
-            destRect.x = rect.x;
-            destRect.y = rect.y;
-            destRect.w = rect.w;
-            destRect.h = rect.h;
+            moth_ui::IntRect destRect = moth_ui::MakeRect(rect.x, rect.y, rect.w, rect.h);
 
-            SDL_SetTextureBlendMode(texture.get(), SDL_BLENDMODE_NONE);
-            SDL_SetTextureColorMod(texture.get(), 0xFF, 0xFF, 0xFF);
-            SDL_SetTextureAlphaMod(texture.get(), 0xFF);
-            SDL_RenderCopy(renderer, texture.get(), nullptr, &destRect);
+            SetImageBlendMode(image, EBlendMode::None);
+            SetImageColorMod(image, moth_ui::BasicColors::White);
+            RenderImage(image, nullptr, &destRect);
 
             nlohmann::json details;
             auto const relativePath = std::filesystem::relative(imagePath, outputPath);
             details["path"] = relativePath;
-            details["rect"] = moth_ui::MakeRect(destRect.x, destRect.y, destRect.w, destRect.h);
+            details["rect"] = destRect;
             packDetails.push_back(details);
         }
     }
 
     // save packed image
     auto const imagePackName = fmt::format("packed_{}.png", num);
-    Uint32 rmask, gmask, bmask, amask;
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    rmask = 0xff000000;
-    gmask = 0x00ff0000;
-    bmask = 0x0000ff00;
-    amask = 0x000000ff;
-#else
-    rmask = 0x000000ff;
-    gmask = 0x0000ff00;
-    bmask = 0x00ff0000;
-    amask = 0xff000000;
-#endif
-    SurfaceRef surface = CreateSurfaceRef(SDL_CreateRGBSurface(0, width, height, 32, rmask, gmask, bmask, amask));
-    SDL_RenderReadPixels(renderer, nullptr, surface->format->format, surface->pixels, surface->pitch);
-    IMG_SavePNG(surface.get(), (outputPath / imagePackName).string().c_str());
+    RenderToPNG(outputPath / imagePackName);
 
-    SDL_SetRenderTarget(renderer, oldRenderTarget);
+    SetRenderTarget(oldRenderTarget);    
 
     // save description
     auto const packDetailsName = fmt::format("packed_{}.json", num);

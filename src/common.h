@@ -27,5 +27,6 @@
 #include <moth_ui/utils/rect.h>
 #include <moth_ui/ui_fwd.h>
 
-#include "smart_sdl.h"
 #include "utils.h"
+#include "backends/backend_imgui.h"
+#include "backends/backend_utils.h"

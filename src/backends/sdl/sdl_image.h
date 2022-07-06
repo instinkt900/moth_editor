@@ -1,11 +1,13 @@
 #pragma once
 
 #include "moth_ui/iimage.h"
+#include "smart_sdl.h"
 
-class Image : public moth_ui::IImage {
+class SDLImage : public moth_ui::IImage {
 public:
-    Image(TextureRef texture, moth_ui::IntVec2 const& textureDimensions, moth_ui::IntRect const& sourceRect);
-    virtual ~Image() = default;
+    explicit SDLImage(TextureRef texture);
+    SDLImage(TextureRef texture, moth_ui::IntVec2 const& textureDimensions, moth_ui::IntRect const& sourceRect);
+    virtual ~SDLImage() = default;
 
     int GetWidth() const override;
     int GetHeight() const override;

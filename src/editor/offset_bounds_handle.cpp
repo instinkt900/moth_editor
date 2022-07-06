@@ -13,7 +13,7 @@ OffsetBoundsHandle::OffsetBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor 
 OffsetBoundsHandle::~OffsetBoundsHandle() {
 }
 
-void OffsetBoundsHandle::Draw(SDL_Renderer& renderer) {
+void OffsetBoundsHandle::Draw() {
     if (!m_target) {
         return;
     }
