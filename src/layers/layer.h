@@ -11,7 +11,7 @@ public:
     bool OnEvent(moth_ui::Event const& event) override;
 
     virtual void Update(uint32_t ticks);
-    virtual void Draw(SDL_Renderer& renderer);
+    virtual void Draw();
     virtual void DebugDraw();
 
     virtual void OnAddedToStack(LayerStack* layerStack);

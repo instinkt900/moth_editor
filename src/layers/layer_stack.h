@@ -15,7 +15,7 @@ public:
 
     bool OnEvent(moth_ui::Event const& event) override;
     void Update(uint32_t ticks);
-    void Draw(SDL_Renderer& renderer);
+    void Draw();
     void DebugDraw();
 
     void SetWindowSize(moth_ui::IntVec2 const& dimensions);

@@ -6,6 +6,7 @@
 #include "moth_ui/iimage_factory.h"
 #include "moth_ui/ifont_factory.h"
 #include "moth_ui/irenderer.h"
+#include "sdl_graphics.h"
 
 class SDLApp : public IApp, public moth_ui::EventListener {
 public:
@@ -21,11 +22,11 @@ public:
 
     nlohmann::json& GetPersistentState() override { return m_persistentState; }
 
-    SDL_Renderer* GetRenderer() const { return m_renderer; }
+    backend::IGraphics& GetGraphics() override { return *m_graphics; }
 
 protected:
     bool Initialise();
-    
+
     void Update();
     void Draw();
     void Shutdown();
@@ -42,6 +43,7 @@ private:
 
     SDL_Window* m_window = nullptr;
     SDL_Renderer* m_renderer = nullptr;
+    std::unique_ptr<backend::sdl::SDLGraphics> m_graphics;
     moth_ui::IntVec2 m_gameWindowPos;
 
     std::unique_ptr<LayerStack> m_layerStack;

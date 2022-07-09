@@ -189,12 +189,13 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
 }
 
 void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
-    std::shared_ptr<moth_ui::IImage> outputTexture = CreateRenderTarget(width, height);
-    auto oldRenderTarget = GetRenderTarget();
-    SetRenderTarget(outputTexture);
-    SetImageBlendMode(outputTexture, EBlendMode::Blend);
-    SetDrawColor(moth_ui::BasicColors::Black);
-    RenderClear();
+    auto& graphics = g_App->GetGraphics();
+    std::shared_ptr<moth_ui::IImage> outputTexture = graphics.CreateTarget(width, height);
+    auto oldRenderTarget = graphics.GetTarget();
+    graphics.SetTarget(outputTexture);
+    graphics.SetBlendMode(outputTexture, backend::EBlendMode::Blend);
+    graphics.SetColor(moth_ui::BasicColors::Black);
+    graphics.Clear();
 
     nlohmann::json packDetails;
     for (auto&& rect : rects) {
@@ -204,9 +205,9 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
 
             moth_ui::IntRect destRect = moth_ui::MakeRect(rect.x, rect.y, rect.w, rect.h);
 
-            SetImageBlendMode(image, EBlendMode::None);
-            SetImageColorMod(image, moth_ui::BasicColors::White);
-            RenderImage(image, nullptr, &destRect);
+            graphics.SetBlendMode(image, backend::EBlendMode::None);
+            graphics.SetColorMod(image, moth_ui::BasicColors::White);
+            graphics.DrawImage(image, nullptr, &destRect);
 
             nlohmann::json details;
             auto const relativePath = std::filesystem::relative(imagePath, outputPath);
@@ -218,9 +219,9 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
 
     // save packed image
     auto const imagePackName = fmt::format("packed_{}.png", num);
-    RenderToPNG(outputPath / imagePackName);
+    graphics.DrawToPNG(outputPath / imagePackName);
 
-    SetRenderTarget(oldRenderTarget);    
+    graphics.SetTarget(oldRenderTarget);    
 
     // save description
     auto const packDetailsName = fmt::format("packed_{}.json", num);

@@ -81,7 +81,7 @@ void EditorLayer::Update(uint32_t ticks) {
     g_App->SetWindowTitle(windowTitle);
 }
 
-void EditorLayer::Draw(SDL_Renderer& renderer) {
+void EditorLayer::Draw() {
     m_rootDockId = ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
     if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {

@@ -14,9 +14,6 @@
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_sdlrenderer.h>
 
-SDLApp* g_sdlApp = nullptr;
-extern IApp* g_App;
-
 char const* const SDLApp::PERSISTENCE_FILE = "editor.json";
 
 SDLApp::SDLApp()
@@ -35,12 +32,10 @@ SDLApp::SDLApp()
         m_windowHeight = m_persistentState.value("window_height", m_windowHeight);
     }
 
-    g_sdlApp = this;
     g_App = this;
 }
 
 SDLApp::~SDLApp() {
-    g_sdlApp = nullptr;
     g_App = nullptr;
 }
 
@@ -85,6 +80,8 @@ bool SDLApp::Initialise() {
     if (nullptr == (m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC))) {
         return false;
     }
+
+    m_graphics = std::make_unique<backend::sdl::SDLGraphics>(m_renderer);
 
     m_originalCwd = std::filesystem::current_path();
 
@@ -149,7 +146,7 @@ void SDLApp::Draw() {
     ImGui_ImplSDL2_NewFrame(m_window);
     ImGui::NewFrame();
 
-    m_layerStack->Draw(*m_renderer);
+    m_layerStack->Draw();
 
     ImGui::Render();
     ImGui_ImplSDLRenderer_RenderDrawData(ImGui::GetDrawData());

@@ -1,6 +1,7 @@
 #include "common.h"
 #include "layer_stack.h"
 #include "layer.h"
+#include "iapp.h"
 
 LayerStack::LayerStack(int renderWidth, int renderHeight, int windowWidth, int windowHeight)
     : m_renderWidth(renderWidth)
@@ -49,14 +50,14 @@ void LayerStack::Update(uint32_t ticks) {
     }
 }
 
-void LayerStack::Draw(SDL_Renderer& renderer) {
+void LayerStack::Draw() {
     for (auto&& layer : m_layers) {
         if (layer->UseRenderSize()) {
-            SDL_RenderSetLogicalSize(&renderer, m_renderWidth, m_renderHeight);
+            g_App->GetGraphics().SetLogicalSize(moth_ui::IntVec2{ m_renderWidth, m_renderHeight });
         } else {
-            SDL_RenderSetLogicalSize(&renderer, m_windowWidth, m_windowHeight);
+            g_App->GetGraphics().SetLogicalSize(moth_ui::IntVec2{ m_windowWidth, m_windowHeight });
         }
-        layer->Draw(renderer);
+        layer->Draw();
     }
 }
 
