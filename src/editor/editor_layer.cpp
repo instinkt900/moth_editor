@@ -744,5 +744,7 @@ void EditorLayer::SaveConfig() {
 
 void EditorLayer::LoadConfig() {
     auto& j = g_App->GetPersistentState();
-    m_config = j.value("editor_config", m_config);
+    if (!j.is_null()) {
+        m_config = j.value("editor_config", m_config);
+    }
 }
