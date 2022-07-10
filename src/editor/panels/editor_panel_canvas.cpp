@@ -35,7 +35,7 @@ void EditorPanelCanvas::DrawContents() {
     moth_ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
 
     UpdateDisplayTexture(windowRegionSize);
-    imgui_ext::Image(m_displayTexture, windowRegionSize.x, windowRegionSize.y);
+    imgui_ext::Image(m_displayTexture.get(), windowRegionSize.x, windowRegionSize.y);
 
     auto const drawList = ImGui::GetWindowDrawList();
 

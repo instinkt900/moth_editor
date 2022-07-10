@@ -6,6 +6,7 @@
 #include "sdl_image_factory.h"
 #include "sdl_font_factory.h"
 #include "sdl_ui_renderer.h"
+#include "sdl_graphics.h"
 
 #include "moth_ui/context.h"
 #include "moth_ui/event_dispatch.h"
@@ -81,7 +82,7 @@ bool SDLApp::Initialise() {
         return false;
     }
 
-    m_graphics = std::make_unique<backend::sdl::SDLGraphics>(m_renderer);
+    
 
     m_originalCwd = std::filesystem::current_path();
 
@@ -101,6 +102,7 @@ bool SDLApp::Initialise() {
         return false;
     }
 
+    m_graphics = std::make_unique<backend::sdl::SDLGraphics>(m_renderer);
     m_imageFactory = std::make_unique<SDLImageFactory>(*m_renderer);
     m_fontFactory = std::make_unique<SDLFontFactory>(*m_renderer);
     m_uiRenderer = std::make_unique<SDLUIRenderer>(*m_renderer);

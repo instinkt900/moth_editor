@@ -77,7 +77,7 @@ void TexturePacker::Draw() {
             }
 
             if (m_outputTexture) {
-                imgui_ext::Image(m_outputTexture, m_textureWidth, m_textureHeight);
+                imgui_ext::Image(m_outputTexture.get(), m_textureWidth, m_textureHeight);
             }
         }
         ImGui::End();

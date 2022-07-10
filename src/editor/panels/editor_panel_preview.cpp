@@ -75,7 +75,7 @@ void EditorPanelPreview::DrawContents() {
 
         g_App->GetGraphics().SetTarget(nullptr);
 
-        imgui_ext::Image(m_renderSurface, previewSize.x, previewSize.y);
+        imgui_ext::Image(m_renderSurface.get(), previewSize.x, previewSize.y);
     }
 }
 

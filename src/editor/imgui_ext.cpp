@@ -2,6 +2,7 @@
 #include "imgui_ext.h"
 #include "imgui_internal.h"
 #include "moth_ui/utils/vector.h"
+#include "moth_ui/iimage.h"
 
 namespace imgui_ext {
     using namespace moth_ui;
@@ -54,5 +55,13 @@ namespace imgui_ext {
         ImGui::PopID();
         ImGui::SameLine(0, 4);
         ImGui::Text(label);
+    }
+
+    void Image(moth_ui::IImage const* image, int width, int height) {
+        if (image) {
+            image->ImGui({ width, height });
+        } else {
+            //ImGui::Image(nullptr, ImVec2(static_cast<float>(width), static_cast<float>(height)));
+        }
     }
 }

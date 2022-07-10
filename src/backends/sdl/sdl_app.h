@@ -43,7 +43,7 @@ private:
 
     SDL_Window* m_window = nullptr;
     SDL_Renderer* m_renderer = nullptr;
-    std::unique_ptr<backend::sdl::SDLGraphics> m_graphics;
+    std::unique_ptr<backend::IGraphics> m_graphics;
     moth_ui::IntVec2 m_gameWindowPos;
 
     std::unique_ptr<LayerStack> m_layerStack;

@@ -210,7 +210,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    imgui_ext::Inspect("Image", node->GetImage());
+    imgui_ext::Image(node->GetImage(), 200, 200);
 
     if (node->GetImage())
     {
