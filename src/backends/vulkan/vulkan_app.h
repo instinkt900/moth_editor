@@ -41,8 +41,10 @@ private:
     static int constexpr INIT_WINDOW_WIDTH = 1280;
     static int constexpr INIT_WINDOW_HEIGHT = 960;
 
+    moth_ui::IntVec2 m_windowPos = { -1, -1 };
     int m_windowWidth = 0;
     int m_windowHeight = 0;
+    bool m_windowMaximized = false;
 
     bool m_running = false;
     bool m_paused = false;

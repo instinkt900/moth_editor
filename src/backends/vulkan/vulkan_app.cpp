@@ -41,8 +41,12 @@ VulkanApp::VulkanApp()
         } catch (std::exception) {
         }
 
-        m_windowWidth = m_persistentState.value("window_width", m_windowWidth);
-        m_windowHeight = m_persistentState.value("window_height", m_windowHeight);
+        if (!m_persistentState.is_null()) {
+            m_windowPos = m_persistentState.value("window_pos", m_windowPos);
+            m_windowWidth = m_persistentState.value("window_width", m_windowWidth);
+            m_windowHeight = m_persistentState.value("window_height", m_windowHeight);
+            m_windowMaximized = m_persistentState.value("window_maximized", m_windowMaximized);
+        }
     }
 }
 
@@ -50,8 +54,10 @@ VulkanApp::~VulkanApp() {
     std::ofstream ofile(m_persistentFilePath.string());
     if (ofile.is_open()) {
         m_persistentState["current_path"] = std::filesystem::current_path().string();
+        m_persistentState["window_pos"] = m_windowPos;
         m_persistentState["window_width"] = m_windowWidth;
         m_persistentState["window_height"] = m_windowHeight;
+        m_persistentState["window_maximized"] = m_windowMaximized;
         ofile << m_persistentState;
     }
 }
@@ -66,6 +72,11 @@ int VulkanApp::Run() {
 
     while (m_running) {
         glfwPollEvents();
+
+        if (glfwWindowShouldClose(m_glfwWindow)) {
+            m_running = false;
+            continue;
+        }
 
         if (m_vkSwapChainrebuild) {
             int width, height;
@@ -97,7 +108,34 @@ bool VulkanApp::Initialise() {
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    m_glfwWindow = glfwCreateWindow(640, 480, "UI Tool", nullptr, nullptr);
+    m_glfwWindow = glfwCreateWindow(m_windowWidth, m_windowHeight, "UI Tool", nullptr, nullptr);
+
+    glfwSetWindowUserPointer(m_glfwWindow, this);
+
+    if (m_windowPos.x != -1 && m_windowPos.y != -1) {
+        glfwSetWindowPos(m_glfwWindow, m_windowPos.x, m_windowPos.y);
+    }
+    glfwSetWindowPosCallback(m_glfwWindow, [](GLFWwindow* window, int xpos, int ypos) {
+        VulkanApp* app = static_cast<VulkanApp*>(glfwGetWindowUserPointer(window));
+        app->m_windowMaximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED) == GLFW_TRUE;
+        if (!app->m_windowMaximized) {
+            app->m_windowPos.x = xpos;
+            app->m_windowPos.y = ypos;
+        }
+    });
+
+    glfwSetWindowSizeCallback(m_glfwWindow, [](GLFWwindow* window, int width, int height) {
+        VulkanApp* app = static_cast<VulkanApp*>(glfwGetWindowUserPointer(window));
+        app->m_windowMaximized = glfwGetWindowAttrib(window, GLFW_MAXIMIZED) == GLFW_TRUE;
+        if (!app->m_windowMaximized) {
+            app->m_windowWidth = width;
+            app->m_windowHeight = height;
+        }
+    });
+
+    if (m_windowMaximized) {
+        glfwMaximizeWindow(m_glfwWindow);
+    }
 
     InitVulkan();
 
@@ -408,6 +446,7 @@ void VulkanApp::Draw() {
 }
 
 void VulkanApp::Shutdown() {
+    m_windowMaximized = glfwGetWindowAttrib(m_glfwWindow, GLFW_MAXIMIZED) == GLFW_TRUE;
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
