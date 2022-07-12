@@ -5,7 +5,7 @@
 #include "moth_ui/group.h"
 #include "moth_ui/layout/layout.h"
 #include "../editor_layer.h"
-#include "iapp.h"
+#include "backend/iapplication.h"
 
 EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Preview", visible, true) {

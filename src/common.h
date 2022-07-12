@@ -12,9 +12,6 @@
 #include <thread>
 #include <unordered_map>
 
-#include <SDL.h>
-#include <SDL_image.h>
-
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 #include <imgui.h>

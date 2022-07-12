@@ -1,6 +1,6 @@
 #include "common.h"
 #include "texture_packer.h"
-#include "iapp.h"
+#include "backend/iapplication.h"
 
 #include "moth_ui/context.h"
 #include "moth_ui/layout/layout.h"
@@ -25,7 +25,7 @@ namespace {
     int s_maxHeight = 1024;
 }
 
-extern IApp* g_App;
+extern backend::IApplication* g_App;
 
 TexturePacker::TexturePacker() {
 }
