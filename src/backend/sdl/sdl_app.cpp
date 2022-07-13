@@ -83,8 +83,6 @@ namespace backend::sdl {
             return false;
         }
 
-
-
         m_originalCwd = std::filesystem::current_path();
 
         IMGUI_CHECKVERSION();

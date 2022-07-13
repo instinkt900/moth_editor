@@ -291,7 +291,7 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
             LoadLayout(path);
         });
         m_confirmPrompt.SetNegativeAction([this, path]() {
-            LoadLayout(path);
+            LoadLayout(path, true);
         });
         m_confirmPrompt.Open();
     } else {
