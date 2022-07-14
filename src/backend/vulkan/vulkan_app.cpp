@@ -206,7 +206,11 @@ namespace backend::vulkan {
 
         if (m_persistentState.contains("current_path")) {
             std::string const currentPath = m_persistentState["current_path"];
-            std::filesystem::current_path(currentPath);
+            try {
+                std::filesystem::current_path(currentPath);
+            } catch (std::exception) {
+                // ...
+            }
         }
 
         m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
