@@ -75,8 +75,7 @@ namespace backend::vulkan {
             glfwPollEvents();
 
             if (glfwWindowShouldClose(m_glfwWindow)) {
-                m_running = false;
-                continue;
+                OnEvent(EventRequestQuit());
             }
 
             if (m_vkSwapChainrebuild) {
@@ -416,7 +415,7 @@ namespace backend::vulkan {
     }
 
     void Application::SetWindowTitle(std::string const& title) {
-        //SDL_SetWindowTitle(m_glfwWindow, title.c_str());
+        glfwSetWindowTitle(m_glfwWindow, title.c_str());
     }
 
     void Application::Update() {
