@@ -83,6 +83,7 @@ namespace backend::vulkan {
         int m_imMinImageCount = 2;
         VkPipelineCache m_vkPipelineCache = VK_NULL_HANDLE;
         bool m_vkSwapChainrebuild = false;
+        VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 
         void InitVulkan();
         void InitVulkanWindow(VkSurfaceKHR vkSurface, int width, int height);
