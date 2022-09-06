@@ -1,10 +1,11 @@
 #pragma once
 
 #include "moth_ui/iimage.h"
+#include "moth_ui/itarget.h"
 #include "smart_sdl.h"
 
 namespace backend::sdl {
-    class Image : public moth_ui::IImage {
+    class Image : public moth_ui::IImage, public moth_ui::ITarget {
     public:
         explicit Image(TextureRef texture);
         Image(TextureRef texture, moth_ui::IntVec2 const& textureDimensions, moth_ui::IntRect const& sourceRect);
@@ -14,6 +15,9 @@ namespace backend::sdl {
         int GetHeight() const override;
         moth_ui::IntVec2 GetDimensions() const override;
         void ImGui(moth_ui::IntVec2 const& size, moth_ui::FloatVec2 const& uv0, moth_ui::FloatVec2 const& uv1) const override;
+
+        //virtual moth_ui::IntVec2 GetDimensions() const = 0;
+        IImage* GetImage() override { return this; }
 
         TextureRef GetTexture() const {
             return m_texture;

@@ -14,7 +14,7 @@ public:
 
 private:
     bool m_open = false;
-    std::shared_ptr<moth_ui::IImage> m_outputTexture;
+    std::shared_ptr<moth_ui::ITarget> m_outputTexture;
     int m_textureWidth = 0;
     int m_textureHeight = 0;
 

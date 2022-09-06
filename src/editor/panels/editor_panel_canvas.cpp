@@ -12,6 +12,7 @@
 #include "../actions/composite_action.h"
 #include "imgui_internal.h"
 #include "backend/iapplication.h"
+#include "moth_ui/itarget.h"
 
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
@@ -35,7 +36,7 @@ void EditorPanelCanvas::DrawContents() {
     moth_ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
 
     UpdateDisplayTexture(windowRegionSize);
-    imgui_ext::Image(m_displayTexture.get(), windowRegionSize.x, windowRegionSize.y);
+    imgui_ext::Image(m_displayTexture->GetImage(), windowRegionSize.x, windowRegionSize.y);
 
     auto const drawList = ImGui::GetWindowDrawList();
 
@@ -86,7 +87,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
     m_canvasWindowSize = windowSize;
 
     auto const oldRenderTarget = graphics.GetTarget();
-    graphics.SetTarget(m_displayTexture);
+    graphics.SetTarget(m_displayTexture.get());
 
     auto const& canvasSize = m_editorLayer.GetConfig().CanvasSize;
 

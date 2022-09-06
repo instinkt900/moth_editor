@@ -8,11 +8,15 @@
 #include "moth_ui/ifont_factory.h"
 #include "moth_ui/irenderer.h"
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#include <vulkan/vulkan.hpp>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
+#include "vulkan_context.h"
+//#define GLFW_INCLUDE_VULKAN
+//#include <GLFW/glfw3.h>
+//#include <vulkan/vulkan.hpp>
+//#include <backends/imgui_impl_glfw.h>
+//#include <backends/imgui_impl_vulkan.h>
+
+#include "vulkan_graphics.h"
+#include "vulkan_swapchain.h"
 
 namespace backend::vulkan {
     class Application : public IApplication, public moth_ui::EventListener {
@@ -65,27 +69,18 @@ namespace backend::vulkan {
         std::unique_ptr<moth_ui::IFontFactory> m_fontFactory;
         std::unique_ptr<moth_ui::IRenderer> m_uiRenderer;
 
-        std::unique_ptr<backend::IGraphicsContext> m_graphics;
+        std::unique_ptr<backend::vulkan::Graphics> m_graphics;
 
         // glfw stuff
         GLFWwindow* m_glfwWindow = nullptr;
         //
 
         // vulkan stuff
-        VkAllocationCallbacks* m_vkAllocator = nullptr;
-        VkInstance m_vkInstance = VK_NULL_HANDLE;
-        VkPhysicalDevice m_vkPhysicalDevice = VK_NULL_HANDLE;
-        uint32_t m_vkQueueFamily = static_cast<uint32_t>(-1);
-        VkDevice m_vkDevice = VK_NULL_HANDLE;
-        VkQueue m_vkQueue = VK_NULL_HANDLE;
-        VkDescriptorPool m_vkDescriptorPool = VK_NULL_HANDLE;
+        std::unique_ptr<Context> m_context;
         ImGui_ImplVulkanH_Window m_imWindowData;
         int m_imMinImageCount = 2;
-        VkPipelineCache m_vkPipelineCache = VK_NULL_HANDLE;
         bool m_vkSwapChainrebuild = false;
-        VkDebugUtilsMessengerEXT m_vkDebugMessenger;
 
-        void InitVulkan();
         void InitVulkanWindow(VkSurfaceKHR vkSurface, int width, int height);
         void VulkanFrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData);
         void VulkanFramePresent(ImGui_ImplVulkanH_Window* wd);
@@ -93,5 +88,23 @@ namespace backend::vulkan {
 
         bool OnWindowSizeEvent(EventWindowSize const& event);
         bool OnQuitEvent(EventQuit const& event);
+
+        VkSurfaceKHR m_customVkSurface;
+        //VkSwapchainKHR m_customVkSwapchain;
+        //std::vector<VkImage> m_customSwapchainImages;
+        //VkFormat m_customSwapchainImageFormat;
+        //VkExtent2D m_customSwapchainExtent;
+        //std::vector<VkImageView> m_customSwapchainImageViews;
+        //std::vector<VkFramebuffer> m_customSwapchainFramebuffers;
+        //VkSemaphore m_customImageAvailableSemaphore;
+        //VkSemaphore m_customRenderFinishedSemaphore;
+        //VkFence m_customInFlightFence;
+
+        std::shared_ptr<moth_ui::ITarget> m_testTarget;
+
+        void ImGuiInit();
+
+        void CustomInit();
+        void CustomFrameRender();
     };
 }

@@ -54,9 +54,9 @@ namespace backend::sdl {
         SDL_RenderClear(m_renderer);
     }
 
-    void SDLGraphics::DrawImage(std::shared_ptr<moth_ui::IImage> image, moth_ui::IntRect const* sourceRect, moth_ui::IntRect const* destRect) {
-        auto sdlImage = std::dynamic_pointer_cast<Image>(image);
-        auto sdlTexture = sdlImage->GetTexture();
+    void SDLGraphics::DrawImage(moth_ui::IImage& image, moth_ui::IntRect const* sourceRect, moth_ui::IntRect const* destRect) {
+        auto& sdlImage = dynamic_cast<Image&>(image);
+        auto sdlTexture = sdlImage.GetTexture();
 
         if (sourceRect && destRect) {
             auto srcRect = ToSDL(*sourceRect);
@@ -110,7 +110,7 @@ namespace backend::sdl {
         SDL_RenderDrawLineF(m_renderer, p0.x, p0.y, p1.x, p1.y);
     }
 
-    std::unique_ptr<moth_ui::IImage> SDLGraphics::CreateTarget(int width, int height) {
+    std::unique_ptr<moth_ui::ITarget> SDLGraphics::CreateTarget(int width, int height) {
         auto sdlTexture = CreateTextureRef(SDL_CreateTexture(m_renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height));
 
         moth_ui::IntVec2 const dimensions{ width, height };
@@ -118,16 +118,17 @@ namespace backend::sdl {
         return std::make_unique<Image>(sdlTexture, dimensions, sourceRect);
     }
 
-    std::shared_ptr<moth_ui::IImage> SDLGraphics::GetTarget() {
-        std::shared_ptr<SDLTextureWrap> sdlTexture = SDLTextureWrap::CreateNonOwning(SDL_GetRenderTarget(m_renderer));
-        return std::make_shared<Image>(sdlTexture);
+    moth_ui::ITarget* SDLGraphics::GetTarget() {
+        //std::shared_ptr<SDLTextureWrap> sdlTexture = SDLTextureWrap::CreateNonOwning(SDL_GetRenderTarget(m_renderer));
+        //return std::make_shared<Image>(sdlTexture);
+        return nullptr;
     }
 
-    void SDLGraphics::SetTarget(std::shared_ptr<moth_ui::IImage> target) {
+    void SDLGraphics::SetTarget(moth_ui::ITarget* target) {
         if (!target) {
             SDL_SetRenderTarget(m_renderer, nullptr);
         } else {
-            auto sdlImage = std::dynamic_pointer_cast<Image>(target);
+            auto sdlImage = dynamic_cast<Image*>(target);
             auto sdlTexture = sdlImage->GetTexture();
             SDL_SetRenderTarget(m_renderer, sdlTexture->GetImpl());
         }
