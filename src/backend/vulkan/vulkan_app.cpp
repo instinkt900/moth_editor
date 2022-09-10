@@ -147,7 +147,7 @@ namespace backend::vulkan {
 
         int width, height;
         glfwGetFramebufferSize(m_glfwWindow, &width, &height);
-        InitVulkanWindow(vkSurface, width, height);
+        //InitVulkanWindow(vkSurface, width, height);
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -405,153 +405,11 @@ namespace backend::vulkan {
     }
 
     void Application::CustomInit() {
-        // create swap chain
-        //{
-        //    const VkFormat requestSurfaceImageFormat[] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
-        //    const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        //    VkSurfaceFormatKHR surfaceFormat = Context::selectSurfaceFormat(m_context->m_vkPhysicalDevice, m_customVkSurface, requestSurfaceImageFormat, 4, requestSurfaceColorSpace);
-        //    VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
-        //    VkPresentModeKHR presentMode = Context::selectPresentMode(m_context->m_vkPhysicalDevice, m_customVkSurface, present_modes, 3);
-        //    VkSwapchainCreateInfoKHR createInfo{};
-        //    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        //    createInfo.surface = m_customVkSurface;
-        //    createInfo.minImageCount = Context::getMinImageCountFromPresentMode(presentMode);
-        //    createInfo.imageFormat = surfaceFormat.format;
-        //    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-        //    createInfo.imageExtent = { static_cast<uint32_t>(m_windowWidth), static_cast<uint32_t>(m_windowHeight) };
-        //    createInfo.imageArrayLayers = 1;
-        //    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        //    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        //    createInfo.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-        //    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-        //    createInfo.presentMode = presentMode;
-        //    createInfo.clipped = VK_TRUE;
-        //    createInfo.oldSwapchain = VK_NULL_HANDLE;
-        //    CHECK_VK_RESULT(vkCreateSwapchainKHR(m_context->m_vkDevice, &createInfo, nullptr, &m_customVkSwapchain));
-
-        //    uint32_t imageCount;
-        //    vkGetSwapchainImagesKHR(m_context->m_vkDevice, m_customVkSwapchain, &imageCount, nullptr);
-        //    m_customSwapchainImages.resize(imageCount);
-        //    vkGetSwapchainImagesKHR(m_context->m_vkDevice, m_customVkSwapchain, &imageCount, m_customSwapchainImages.data());
-
-        //    m_customSwapchainImageFormat = surfaceFormat.format;
-        //    m_customSwapchainExtent = createInfo.imageExtent;
-
-        //    //m_graphics->m_targetExtent = { static_cast<float>(createInfo.imageExtent.width),
-        //    //                               static_cast<float>(createInfo.imageExtent.height) };
-        //}
-
-        //// create views
-        //{
-        //    m_customSwapchainImageViews.resize(m_customSwapchainImages.size());
-
-        //    for (size_t i = 0; i < m_customSwapchainImages.size(); ++i) {
-        //        VkImageViewCreateInfo createInfo{};
-        //        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        //        createInfo.image = m_customSwapchainImages[i];
-        //        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        //        createInfo.format = m_customSwapchainImageFormat;
-        //        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        //        createInfo.subresourceRange.baseMipLevel = 0;
-        //        createInfo.subresourceRange.levelCount = 1;
-        //        createInfo.subresourceRange.baseArrayLayer = 0;
-        //        createInfo.subresourceRange.layerCount = 1;
-        //        CHECK_VK_RESULT(vkCreateImageView(m_context->m_vkDevice, &createInfo, nullptr, &m_customSwapchainImageViews[i]));
-        //    }
-        //}
-
-        //// create frame buffers
-        //{
-        //    m_customSwapchainFramebuffers.resize(m_customSwapchainImageViews.size());
-
-        //    for (size_t i = 0; i < m_customSwapchainImageViews.size(); ++i) {
-        //        VkImageView attachments[] = {
-        //            m_customSwapchainImageViews[i]
-        //        };
-
-        //        VkFramebufferCreateInfo createInfo{};
-        //        createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        //        createInfo.renderPass = m_graphics->m_renderPass->GetRenderPass();
-        //        createInfo.attachmentCount = 1;
-        //        createInfo.pAttachments = attachments;
-        //        createInfo.width = m_customSwapchainExtent.width;
-        //        createInfo.height = m_customSwapchainExtent.height;
-        //        createInfo.layers = 1;
-        //        CHECK_VK_RESULT(vkCreateFramebuffer(m_context->m_vkDevice, &createInfo, nullptr, &m_customSwapchainFramebuffers[i]));
-        //    }
-        //}
-
-        //// sync objects
-        //{
-        //    VkSemaphoreCreateInfo semaphoreInfo{};
-        //    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        //    VkFenceCreateInfo fenceInfo{};
-        //    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        //    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        //    CHECK_VK_RESULT(vkCreateSemaphore(m_context->m_vkDevice, &semaphoreInfo, nullptr, &m_customImageAvailableSemaphore));
-        //    CHECK_VK_RESULT(vkCreateSemaphore(m_context->m_vkDevice, &semaphoreInfo, nullptr, &m_customRenderFinishedSemaphore));
-        //    CHECK_VK_RESULT(vkCreateFence(m_context->m_vkDevice, &fenceInfo, nullptr, &m_customInFlightFence));
-        //}
-
         m_imageFactory->LoadTexturePack("D:/Development/ChristmasProject2021/resources/packs/packed_0.png");
         m_testTarget = m_graphics->CreateTarget(500, 500);
     }
 
     void Application::CustomFrameRender() {
-        //vkWaitForFences(m_context->m_vkDevice, 1, &m_customInFlightFence, VK_TRUE, UINT64_MAX);
-        //vkResetFences(m_context->m_vkDevice, 1, &m_customInFlightFence);
-
-        //m_graphics->m_targetExtent.x = static_cast<float>(m_customSwapchainExtent.width);
-        //m_graphics->m_targetExtent.y = static_cast<float>(m_customSwapchainExtent.height);
-
-        //uint32_t imageIndex;
-        //VkResult result = vkAcquireNextImageKHR(m_context->m_vkDevice, m_customVkSwapchain, UINT64_MAX, m_customImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-        //if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        //    m_vkSwapChainrebuild = true;
-        //    return;
-        //}
-        //CHECK_VK_RESULT(result);
-
-        //Framebuffer* framebuffer = m_swapchain->GetNextFramebuffer();
-        //m_graphics->SetTarget(framebuffer);
-
-        //std::shared_ptr<SwapchainFramebuffer> framebuffer = std::make_shared<SwapchainFramebuffer>(m_customSwapchainFramebuffers[imageIndex], m_customSwapchainExtent);
-        //m_graphics->SetTarget(framebuffer);
-
-        //VkCommandBufferBeginInfo bufferBeginInfo{};
-        //bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        //bufferBeginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        //CHECK_VK_RESULT(vkBeginCommandBuffer(m_graphics->m_vkCommandBuffer, &bufferBeginInfo));
-
-        //VkClearValue clearColor{ { { 0.0f, 0.0f, 0.0f, 1.0f } } };
-        //VkRenderPassBeginInfo passBeginInfo{};
-        //passBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        //passBeginInfo.renderPass = m_graphics->m_renderPass->GetRenderPass();
-        //passBeginInfo.framebuffer = m_customSwapchainFramebuffers[imageIndex];
-        //passBeginInfo.renderArea.extent.width = m_customSwapchainExtent.width;
-        //passBeginInfo.renderArea.extent.height = m_customSwapchainExtent.height;
-        //passBeginInfo.clearValueCount = 1;
-        //passBeginInfo.pClearValues = &clearColor;
-        //vkCmdBeginRenderPass(m_graphics->m_vkCommandBuffer, &passBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        //VkViewport viewport;
-        //viewport.x = 0;
-        //viewport.y = 0;
-        //viewport.width = static_cast<float>(m_customSwapchainExtent.width);
-        //viewport.height = static_cast<float>(m_customSwapchainExtent.height);
-        //viewport.minDepth = 0.0f;
-        //viewport.maxDepth = 1.0f;
-        //vkCmdSetViewport(m_graphics->m_vkCommandBuffer, 0, 1, &viewport);
-
-        //VkRect2D scissor;
-        //scissor.offset.x = 0;
-        //scissor.offset.y = 0;
-        //scissor.extent.width = m_customSwapchainExtent.width;
-        //scissor.extent.height = m_customSwapchainExtent.height;
-        //vkCmdSetScissor(m_graphics->m_vkCommandBuffer, 0, 1, &scissor);
-
         // test draw
         m_graphics->Begin();
 
@@ -608,35 +466,5 @@ namespace backend::vulkan {
         m_graphics->DrawImage(*m_testTarget->GetImage(), nullptr, &irect);
 
         m_graphics->End();
-
-        //vkCmdEndRenderPass(m_graphics->m_vkCommandBuffer);
-        //CHECK_VK_RESULT(vkEndCommandBuffer(m_graphics->m_vkCommandBuffer));
-
-        //VkPipelineStageFlags waitStageFlags[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        //VkCommandBuffer cmdBuffers[] = { m_graphics->m_vkCommandBuffer };
-        //VkSubmitInfo submitInfo{};
-        //submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        //submitInfo.waitSemaphoreCount = 1;
-        //submitInfo.pWaitSemaphores = &m_customImageAvailableSemaphore;
-        //submitInfo.pWaitDstStageMask = waitStageFlags;
-        //submitInfo.commandBufferCount = 1;
-        //submitInfo.pCommandBuffers = cmdBuffers;
-        //submitInfo.signalSemaphoreCount = 1;
-        //submitInfo.pSignalSemaphores = &m_customRenderFinishedSemaphore;
-        //CHECK_VK_RESULT(vkQueueSubmit(m_context->m_vkQueue, 1, &submitInfo, m_customInFlightFence));
-
-        //VkPresentInfoKHR presentInfo{};
-        //presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        //presentInfo.waitSemaphoreCount = 1;
-        //presentInfo.pWaitSemaphores = &m_customRenderFinishedSemaphore;
-
-        //VkSwapchainKHR swapChains[] = { m_customVkSwapchain };
-        //presentInfo.swapchainCount = 1;
-        //presentInfo.pSwapchains = swapChains;
-
-        //presentInfo.pImageIndices = &imageIndex;
-
-        //vkQueuePresentKHR(m_context->m_vkQueue, &presentInfo);
     }
 }

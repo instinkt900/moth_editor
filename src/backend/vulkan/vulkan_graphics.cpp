@@ -173,20 +173,17 @@ namespace backend::vulkan {
     void Graphics::End() {
         Framebuffer* target = EndContext();
 
+        VkSemaphore waitSemaphores[] = { target->GetRenderFinishedSemaphore() };
+        VkSwapchainKHR swapChains[] = { m_swapchain->GetVkSwapchain() };
+        uint32_t swapchainIndices[] = { target->GetSwapchainIndex() };
+
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        VkSemaphore waitSemaphores[] = { target->GetRenderFinishedSemaphore() };
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = waitSemaphores;
-
-        VkSwapchainKHR swapChains[] = { m_swapchain->GetVkSwapchain() };
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
-
-        uint32_t swapchainIndices[] = { target->GetSwapchainIndex() };
         presentInfo.pImageIndices = swapchainIndices;
-
         vkQueuePresentKHR(m_context.m_vkQueue, &presentInfo);
     }
 
