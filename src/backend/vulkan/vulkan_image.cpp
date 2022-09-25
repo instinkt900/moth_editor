@@ -48,20 +48,22 @@ namespace backend::vulkan {
         , m_context(context) {
     }
 
-    Image::Image(Context& context, VkImage image, VkImageView view, VkExtent2D extent, VkFormat format)
+    Image::Image(Context& context, VkImage image, VkImageView view, VkExtent2D extent, VkFormat format, bool owning)
         : m_id(NextTextureId++) 
         , m_context(context)
         , m_vkExtent(extent)
         , m_vkFormat(format)
         , m_vkImage(image)
-        , m_vkView(view) {
+        , m_vkView(view)
+        , m_owningImage(owning) {
     }
 
-    Image::Image(Context& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage)
+    Image::Image(Context& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, bool owning)
         : m_id(NextTextureId++)
         , m_context(context)
         , m_vkExtent{ width, height }
-        , m_vkFormat(format) {
+        , m_vkFormat(format)
+        , m_owningImage(owning) {
         CreateResource(tiling, usage);
         CreateView();
         CreateDefaultSampler();
@@ -74,7 +76,7 @@ namespace backend::vulkan {
         if (m_vkView != VK_NULL_HANDLE) {
             vkDestroyImageView(m_context.m_vkDevice, m_vkView, nullptr);
         }
-        if (m_vkImage != VK_NULL_HANDLE) {
+        if (m_owningImage && m_vkImage != VK_NULL_HANDLE) {
             vmaFreeMemory(m_context.m_vmaAllocator, m_vmaAllocation);
             vkDestroyImage(m_context.m_vkDevice, m_vkImage, nullptr);
         }

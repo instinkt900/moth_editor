@@ -8,11 +8,13 @@ namespace backend::vulkan {
     }
 
     Shader::~Shader() {
-        std::vector<VkDescriptorSet> freedSets;
-        for (auto& [imageId, descriptorSet] : m_descriptorSets) {
-            freedSets.push_back(descriptorSet);
+        if (!m_descriptorSets.empty()) {
+            std::vector<VkDescriptorSet> freedSets;
+            for (auto& [imageId, descriptorSet] : m_descriptorSets) {
+                freedSets.push_back(descriptorSet);
+            }
+            vkFreeDescriptorSets(m_device, m_descriptorPool, static_cast<uint32_t>(freedSets.size()), freedSets.data());
         }
-        vkFreeDescriptorSets(m_device, m_descriptorPool, static_cast<uint32_t>(freedSets.size()), freedSets.data());
 
         for (auto& stage : m_stages) {
             vkDestroyShaderModule(m_device, stage.m_module, nullptr);

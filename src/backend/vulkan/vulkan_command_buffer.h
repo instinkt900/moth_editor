@@ -33,6 +33,8 @@ namespace backend::vulkan {
         void BindVertexBuffer(Buffer& buffer);
         void Draw(uint32_t vertexCount, uint32_t offset);
 
+        VkCommandBuffer GetVkCommandBuffer() { return m_vkCommandBuffer; }
+
     private:
         Context& m_context;
         VkCommandBuffer m_vkCommandBuffer;

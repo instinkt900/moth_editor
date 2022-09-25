@@ -84,10 +84,10 @@ namespace backend::vulkan {
                 int width, height;
                 glfwGetFramebufferSize(m_glfwWindow, &width, &height);
                 if (width > 0 && height > 0) {
-                    ImGui_ImplVulkan_SetMinImageCount(m_imMinImageCount);
-                    ImGui_ImplVulkanH_CreateOrResizeWindow(m_context->m_vkInstance, m_context->m_vkPhysicalDevice, m_context->m_vkDevice, &m_imWindowData, m_context->m_vkQueueFamily, nullptr, width, height, m_imMinImageCount);
-                    m_imWindowData.FrameIndex = 0;
-                    m_vkSwapChainrebuild = false;
+                    //ImGui_ImplVulkan_SetMinImageCount(m_imMinImageCount);
+                    //ImGui_ImplVulkanH_CreateOrResizeWindow(m_context->m_vkInstance, m_context->m_vkPhysicalDevice, m_context->m_vkDevice, &m_imWindowData, m_context->m_vkQueueFamily, nullptr, width, height, m_imMinImageCount);
+                    //m_imWindowData.FrameIndex = 0;
+                    //m_vkSwapChainrebuild = false;
                 }
             }
 
@@ -176,7 +176,7 @@ namespace backend::vulkan {
             }
         }
 
-        //ImGuiInit();
+        ImGuiInit();
         CustomInit();
 
         m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
@@ -211,43 +211,50 @@ namespace backend::vulkan {
     }
 
     void Application::Draw() {
-        //ImGui_ImplVulkan_NewFrame();
-        //ImGui_ImplGlfw_NewFrame();
-        //ImGui::NewFrame();
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
-        //m_layerStack->Draw();
+        m_graphics->Begin();
+        m_layerStack->Draw();
 
-        //ImGui::Render();
+        ImGui::Render();
         //ImDrawData* drawData = ImGui::GetDrawData();
         //VulkanFrameRender(&m_imWindowData, drawData);
 
-        //if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-        //    ImGui::UpdatePlatformWindows();
-        //    ImGui::RenderPlatformWindowsDefault();
-        //}
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+        }
 
         //VulkanFramePresent(&m_imWindowData);
 
         CustomFrameRender();
+        m_graphics->End();
     }
 
     void Application::Shutdown() {
         m_layerStack.reset(); // force layers to cleanup before we destroy all the devices.
         vkDeviceWaitIdle(m_context->m_vkDevice);
+        m_uiRenderer.reset();
+        m_fontFactory.reset();
+        m_imageFactory.reset();
         m_graphics.reset();
+        m_testTarget.reset();
         m_windowMaximized = glfwGetWindowAttrib(m_glfwWindow, GLFW_MAXIMIZED) == GLFW_TRUE;
-        ImGui_ImplVulkanH_DestroyWindow(m_context->m_vkInstance, m_context->m_vkDevice, &m_imWindowData, nullptr);
-        //ImGui_ImplVulkan_Shutdown();
-        //ImGui_ImplGlfw_Shutdown();
-        //ImGui::DestroyContext();
+        //ImGui_ImplVulkanH_DestroyWindow(m_context->m_vkInstance, m_context->m_vkDevice, &m_imWindowData, nullptr);
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
         //vkDestroyShaderModule(m_context->m_vkDevice, m_vkVertShaderModule, nullptr);
         //vkDestroyShaderModule(m_context->m_vkDevice, m_vkFragShaderModule, nullptr);
         //vkDestroyPipelineLayout(m_context->m_vkDevice, m_vkPipelineLayout, nullptr);
         //vkDestroyPipeline(m_context->m_vkDevice, m_imagePipeline, nullptr);
         //vkDestroyRenderPass(m_context->m_vkDevice, m_vkRenderPass, nullptr);
-        m_context.reset();
+        vkDestroySurfaceKHR(m_context->m_vkInstance, m_customVkSurface, nullptr);
         glfwDestroyWindow(m_glfwWindow);
         glfwTerminate();
+        m_context.reset();
     }
 
     bool Application::OnWindowSizeEvent(EventWindowSize const& event) {
@@ -292,22 +299,22 @@ namespace backend::vulkan {
         initInfo.Queue = m_context->m_vkQueue;
         initInfo.DescriptorPool = m_context->m_vkDescriptorPool;
         initInfo.Subpass = 0;
-        initInfo.MinImageCount = m_imMinImageCount;
-        initInfo.ImageCount = m_imWindowData.ImageCount;
+        initInfo.MinImageCount = m_graphics->m_swapchain->GetImageCount();
+        initInfo.ImageCount = m_graphics->m_swapchain->GetImageCount();
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = nullptr;
         initInfo.CheckVkResultFn = checkVkResult;
-        ImGui_ImplVulkan_Init(&initInfo, m_imWindowData.RenderPass);
+        ImGui_ImplVulkan_Init(&initInfo, m_graphics->m_renderPass->GetRenderPass());
 
         // create the font texture
         {
-            VkCommandPool commandPool = m_imWindowData.Frames[m_imWindowData.FrameIndex].CommandPool;
-            VkCommandBuffer commandBuffer = m_imWindowData.Frames[m_imWindowData.FrameIndex].CommandBuffer;
+            VkCommandPool commandPool = m_context->m_vkCommandPool;
             CHECK_VK_RESULT(vkResetCommandPool(m_context->m_vkDevice, commandPool, 0));
-            VkCommandBufferBeginInfo beginInfo{};
-            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            CHECK_VK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+            VkCommandBuffer commandBuffer = m_context->beginSingleTimeCommands();
+            //VkCommandBufferBeginInfo beginInfo{};
+            //beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            //beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            //CHECK_VK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
             ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 
@@ -411,60 +418,65 @@ namespace backend::vulkan {
 
     void Application::CustomFrameRender() {
         // test draw
-        m_graphics->Begin();
+        //m_graphics->Begin();
 
-        m_graphics->SetTarget(m_testTarget.get());
-        m_graphics->SetBlendMode(EBlendMode::None);
-        m_graphics->SetColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-        m_graphics->Clear();
-        m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
-        m_graphics->DrawLineF({ 500.0f, 0.0f }, { 0.0f, 500.0f });
-        m_graphics->SetTarget(nullptr);
+        //m_graphics->SetTarget(m_testTarget.get());
+        //m_graphics->SetLogicalSize({ 500.0f, 500.0f });
+        //m_graphics->SetBlendMode(EBlendMode::None);
+        //m_graphics->SetColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+        //m_graphics->Clear();
+        //m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
+        //m_graphics->DrawLineF({ 500.0f, 0.0f }, { 0.0f, 500.0f });
+        //m_graphics->SetTarget(nullptr);
 
-        moth_ui::FloatRect rect;
+        if (ImDrawData* drawData = ImGui::GetDrawData()) {
+            ImGui_ImplVulkan_RenderDrawData(drawData, m_graphics->GetCurrentCommandBuffer());
+        }
 
-        //rect = moth_ui::MakeRect(10.0f, 10.0f, 320.0f, 320.0f);
-        //m_graphics->SetBlendMode(EBlendMode::Blend);
-        //m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
+        //moth_ui::FloatRect rect;
+
+        ////rect = moth_ui::MakeRect(10.0f, 10.0f, 320.0f, 320.0f);
+        ////m_graphics->SetBlendMode(EBlendMode::Blend);
+        ////m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
+        ////m_graphics->DrawRectF(rect);
+
+        //m_graphics->SetBlendMode(EBlendMode::None);
+        //m_graphics->SetColor({ 0.3f, 0.3f, 0.3f, 1.0f });
+        //m_graphics->Clear();
+
+        //rect = moth_ui::MakeRect(25.0f, 25.0f, 550.0f, 550.0f);
+        //m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
         //m_graphics->DrawRectF(rect);
 
-        m_graphics->SetBlendMode(EBlendMode::None);
-        m_graphics->SetColor({ 0.3f, 0.3f, 0.3f, 1.0f });
-        m_graphics->Clear();
+        //m_graphics->SetBlendMode(EBlendMode::Add);
 
-        rect = moth_ui::MakeRect(25.0f, 25.0f, 550.0f, 550.0f);
-        m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
-        m_graphics->DrawRectF(rect);
+        //rect = moth_ui::MakeRect(50.0f, 50.0f, 300.0f, 300.0f);
+        //m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
+        //m_graphics->DrawFillRectF(rect);
 
-        m_graphics->SetBlendMode(EBlendMode::Add);
+        //rect = moth_ui::MakeRect(250.0f, 50.0f, 300.0f, 300.0f);
+        //m_graphics->SetColor({ 0.0f, 1.0f, 0.0f, 1.0f });
+        //m_graphics->DrawFillRectF(rect);
 
-        rect = moth_ui::MakeRect(50.0f, 50.0f, 300.0f, 300.0f);
-        m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
-        m_graphics->DrawFillRectF(rect);
+        //rect = moth_ui::MakeRect(150.0f, 250.0f, 300.0f, 300.0f);
+        //m_graphics->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
+        //m_graphics->DrawFillRectF(rect);
 
-        rect = moth_ui::MakeRect(250.0f, 50.0f, 300.0f, 300.0f);
-        m_graphics->SetColor({ 0.0f, 1.0f, 0.0f, 1.0f });
-        m_graphics->DrawFillRectF(rect);
+        //m_graphics->SetBlendMode(EBlendMode::Blend);
 
-        rect = moth_ui::MakeRect(150.0f, 250.0f, 300.0f, 300.0f);
-        m_graphics->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
-        m_graphics->DrawFillRectF(rect);
+        //m_graphics->SetColor({ 0.0f, 1.0f, 1.0f, 0.5f });
+        //m_graphics->DrawLineF({ 20.0f, 10.0f }, { 560.0f, 600.0f });
 
-        m_graphics->SetBlendMode(EBlendMode::Blend);
+        //auto image = m_imageFactory->GetImage("D:\\Development\\ChristmasProject2021\\resources\\images\\laser.png");
+        //auto irect = moth_ui::MakeRect(300, 300, 300, 300);
+        //m_graphics->SetBlendMode(EBlendMode::Blend);
+        //m_graphics->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+        //auto const srcRect = moth_ui::MakeRect(63, 60, 50, 50);
+        //m_graphics->DrawImage(*image, &srcRect, &irect);
 
-        m_graphics->SetColor({ 0.0f, 1.0f, 1.0f, 0.5f });
-        m_graphics->DrawLineF({ 20.0f, 10.0f }, { 560.0f, 600.0f });
+        //irect = moth_ui::MakeRect(10, 10, 300, 300);
+        //m_graphics->DrawImage(*m_testTarget->GetImage(), nullptr, &irect);
 
-        auto image = m_imageFactory->GetImage("D:\\Development\\ChristmasProject2021\\resources\\images\\laser.png");
-        auto irect = moth_ui::MakeRect(300, 300, 300, 300);
-        m_graphics->SetBlendMode(EBlendMode::Blend);
-        m_graphics->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-        auto const srcRect = moth_ui::MakeRect(63, 60, 50, 50);
-        m_graphics->DrawImage(*image, &srcRect, &irect);
-
-        irect = moth_ui::MakeRect(10, 10, 300, 300);
-        m_graphics->DrawImage(*m_testTarget->GetImage(), nullptr, &irect);
-
-        m_graphics->End();
+        //m_graphics->End();
     }
 }

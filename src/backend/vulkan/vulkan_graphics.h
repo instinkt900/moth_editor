@@ -88,6 +88,8 @@ namespace backend::vulkan {
             moth_ui::Color m_currentColor;
             std::vector<Vertex> m_vertexList;
             std::vector<DrawCmd> m_draws;
+
+            bool m_swapchain = false;
         };
 
         std::stack<DrawContext> m_drawStack;
@@ -104,5 +106,10 @@ namespace backend::vulkan {
 
         void BeginContext(Framebuffer* target = nullptr);
         Framebuffer* EndContext();
+
+        VkCommandBuffer GetCurrentCommandBuffer() {
+            auto context = m_drawStack.top();
+            return context.m_target->GetCommandBuffer().GetVkCommandBuffer();
+        }
     };
 }

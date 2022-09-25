@@ -49,9 +49,9 @@ namespace backend::vulkan {
     }
 
     Graphics::~Graphics() {
-        for (auto& [hash, pipeline] : m_pipelines) {
-            vkDestroyPipeline(m_context.m_vkDevice, pipeline->m_pipeline, nullptr);
-        }
+        //for (auto& [hash, pipeline] : m_pipelines) {
+        //    vkDestroyPipeline(m_context.m_vkDevice, pipeline->m_pipeline, nullptr);
+        //}
         vkDestroyPipelineCache(m_context.m_vkDevice, m_vkPipelineCache, nullptr);
     }
 
@@ -62,34 +62,9 @@ namespace backend::vulkan {
             context.m_target = target;
             context.m_targetExtent = target->GetVkExtent();
         } else {
-            context.m_targetExtent = m_swapchain->GetExtent();
-        }
-
-        context.m_currentColor = moth_ui::BasicColors::Black;
-        context.m_currentBlendMode = EBlendMode::None;
-    }
-
-    Framebuffer* Graphics::EndContext() {
-        auto context = m_drawStack.top();
-        m_drawStack.pop();
-
-        VkDeviceSize const vertexBufferSize = context.m_vertexList.size() * sizeof(Vertex);
-
-        if (m_stagingBuffer == nullptr || vertexBufferSize > m_vertexBuffer->GetSize()) {
-            m_stagingBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            m_vertexBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        }
-
-        void* data = m_stagingBuffer->Map();
-        memcpy(data, context.m_vertexList.data(), static_cast<size_t>(vertexBufferSize));
-        m_stagingBuffer->Unmap();
-        m_vertexBuffer->Copy(*m_stagingBuffer);
-
-        bool swapchain = false;
-        if (context.m_target == nullptr) {
             context.m_target = m_swapchain->GetNextFramebuffer();
-            swapchain = true;
-
+            context.m_targetExtent = m_swapchain->GetExtent();
+            context.m_swapchain = true;
             VkFence cmdFence = context.m_target->GetFence().GetVkFence();
             vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
             vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
@@ -99,7 +74,7 @@ namespace backend::vulkan {
         commandBuffer.Reset();
         commandBuffer.BeginRecord();
 
-        if (!swapchain) {
+        if (!context.m_swapchain) {
             //commandBuffer.TransitionImageLayout(context.m_target->GetVkImage(), context.m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
             commandBuffer.BeginRenderPass(*m_renderPass2, *context.m_target);
         } else {
@@ -122,7 +97,33 @@ namespace backend::vulkan {
         scissor.extent.height = context.m_target->GetDimensions().y;
         commandBuffer.SetScissor(scissor);
 
-        commandBuffer.BindVertexBuffer(*m_vertexBuffer);
+        context.m_currentColor = moth_ui::BasicColors::Black;
+        context.m_currentBlendMode = EBlendMode::None;
+    }
+
+    Framebuffer* Graphics::EndContext() {
+        auto context = m_drawStack.top();
+        m_drawStack.pop();
+
+        VkDeviceSize const vertexBufferSize = context.m_vertexList.size() * sizeof(Vertex);
+
+        if ((m_stagingBuffer == nullptr || vertexBufferSize > m_vertexBuffer->GetSize()) && vertexBufferSize > 0) {
+            m_stagingBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            m_vertexBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        }
+
+        if (m_vertexBuffer) {
+            void* data = m_stagingBuffer->Map();
+            memcpy(data, context.m_vertexList.data(), static_cast<size_t>(vertexBufferSize));
+            m_stagingBuffer->Unmap();
+            m_vertexBuffer->Copy(*m_stagingBuffer);
+        }
+
+        auto& commandBuffer = context.m_target->GetCommandBuffer();
+
+        if (m_vertexBuffer) {
+            commandBuffer.BindVertexBuffer(*m_vertexBuffer);
+        }
 
         PushConstants pushConstants;
         pushConstants.xyScale = { 2.0f / static_cast<float>(context.m_targetExtent.width), 2.0f / static_cast<float>(context.m_targetExtent.height) };
@@ -149,7 +150,7 @@ namespace backend::vulkan {
 
         commandBuffer.EndRenderPass();
 
-        if (swapchain) {
+        if (context.m_swapchain) {
             commandBuffer.EndRecord();
             commandBuffer.Submit(context.m_target->GetFence().GetVkFence(), context.m_target->GetAvailableSemaphore(), context.m_target->GetRenderFinishedSemaphore());
         } else {
@@ -354,14 +355,19 @@ namespace backend::vulkan {
     void Graphics::SetTarget(moth_ui::ITarget* target) {
         if (!m_drawStack.empty()) {
             auto& context = m_drawStack.top();
-            if (context.m_target) {
+            if (context.m_target && !context.m_swapchain) {
                 EndContext();
             }
         }
-        BeginContext(static_cast<Framebuffer*>(target));
+
+        if (target) {
+            BeginContext(static_cast<Framebuffer*>(target));
+        }
     }
 
     void Graphics::SetLogicalSize(moth_ui::IntVec2 const& logicalSize) {
+        auto& context = m_drawStack.top();
+        context.m_targetExtent = { static_cast<uint32_t>(logicalSize.x), static_cast<uint32_t>(logicalSize.y) };
     }
 
     bool readFile(std::string const& filename, std::vector<char>& outBuffer) {

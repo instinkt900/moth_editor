@@ -10,7 +10,7 @@ namespace backend::vulkan {
         m_commandBuffer = std::make_unique<CommandBuffer>(context);
         m_fence = std::make_unique<Fence>(context);
 
-        auto imagePtr = std::make_unique<Image>(context, image, view, VkExtent2D{ width, height }, format);
+        auto imagePtr = std::make_unique<Image>(context, image, view, VkExtent2D{ width, height }, format, false);
         moth_ui::IntVec2 dim = { width, height };
         moth_ui::IntRect rec = { { 0, 0 }, { width, height } };
         m_image = std::make_unique<SubImage>(std::move(imagePtr), dim, rec);
@@ -30,6 +30,8 @@ namespace backend::vulkan {
     }
 
     Framebuffer::~Framebuffer() {
+        vkDestroySemaphore(m_context.m_vkDevice, m_imageAvailableSemaphore, nullptr);
+        vkDestroySemaphore(m_context.m_vkDevice, m_renderFinishedSemaphore, nullptr);
         vkDestroyFramebuffer(m_context.m_vkDevice, m_vkFramebuffer, nullptr);
     }
 

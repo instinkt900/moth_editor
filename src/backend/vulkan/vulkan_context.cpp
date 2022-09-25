@@ -250,6 +250,7 @@ namespace backend::vulkan {
         }
         vkDestroyDescriptorPool(m_vkDevice, m_vkDescriptorPool, nullptr);
         vkDestroyCommandPool(m_vkDevice, m_vkCommandPool, nullptr);
+        vmaDestroyAllocator(m_vmaAllocator);
         vkDestroyDevice(m_vkDevice, nullptr);
         vkDestroyInstance(m_vkInstance, nullptr);
     }

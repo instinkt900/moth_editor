@@ -53,13 +53,15 @@ namespace backend::vulkan {
         for (uint32_t i = 0; i < imageCount; ++i) {
             m_framebuffers.push_back(std::make_unique<Framebuffer>(m_context, extent.width, extent.height, swapchainImages[i], swapchainImageViews[i], surfaceFormat.format, renderPass.GetRenderPass(), i));
         }
+
+        m_imageCount = imageCount;
     }
 
     Swapchain::~Swapchain() {
+        vkDestroySwapchainKHR(m_context.m_vkDevice, m_vkSwapchain, nullptr);
     }
 
     Framebuffer* Swapchain::GetNextFramebuffer() {
-
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(m_context.m_vkDevice, m_vkSwapchain, UINT64_MAX, m_framebuffers[m_currentFrame]->GetAvailableSemaphore(), VK_NULL_HANDLE, &imageIndex);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {

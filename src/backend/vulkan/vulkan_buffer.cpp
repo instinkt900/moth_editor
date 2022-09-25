@@ -23,8 +23,7 @@ namespace backend::vulkan {
     }
 
     Buffer::~Buffer() {
-        vkDestroyBuffer(m_context.m_vkDevice, m_vkBuffer, nullptr);
-        vmaFreeMemory(m_context.m_vmaAllocator, m_vmaAllocation);
+        vmaDestroyBuffer(m_context.m_vmaAllocator, m_vkBuffer, m_vmaAllocation);
     }
 
     void* Buffer::Map() {
