@@ -9,12 +9,6 @@ namespace backend::vulkan {
         VkCommandBuffer beginSingleTimeCommands();
         void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-        void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImage& image, VmaAllocation& allocation);
-        VkShaderModule createShaderModule(std::vector<char> const& code);
-
-        VkImageView createImageView(VkImage image, VkFormat format);
-        VkSampler createSampler();
-
         VkInstance m_vkInstance = VK_NULL_HANDLE;
         VkDebugUtilsMessengerEXT m_vkDebugMessenger = VK_NULL_HANDLE;
         VkPhysicalDevice m_vkPhysicalDevice = VK_NULL_HANDLE;
