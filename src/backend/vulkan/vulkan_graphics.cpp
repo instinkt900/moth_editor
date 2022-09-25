@@ -3,12 +3,30 @@
 #include "vulkan_command_buffer.h"
 #include "vulkan_subimage.h"
 
-namespace backend::vulkan {
+namespace {
+    bool readFile(std::string const& filename, std::vector<char>& outBuffer) {
+        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+        if (!file.is_open()) {
+            spdlog::error("Failed to readFile {}", filename);
+            return false;
+        }
+
+        size_t const fileSize = static_cast<size_t>(file.tellg());
+        outBuffer.resize(fileSize);
+
+        file.seekg(0);
+        file.read(outBuffer.data(), fileSize);
+        file.close();
+
+        return true;
+    }
+
     VkVertexInputBindingDescription getVertexBindingDescription() {
         VkVertexInputBindingDescription vertexBindingDesc{};
 
         vertexBindingDesc.binding = 0;
-        vertexBindingDesc.stride = sizeof(Graphics::Vertex);
+        vertexBindingDesc.stride = sizeof(backend::vulkan::Graphics::Vertex);
         vertexBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         return vertexBindingDesc;
@@ -20,26 +38,28 @@ namespace backend::vulkan {
         vertexAttributeDescs[0].binding = 0;
         vertexAttributeDescs[0].location = 0;
         vertexAttributeDescs[0].format = VK_FORMAT_R32G32_SFLOAT;
-        vertexAttributeDescs[0].offset = offsetof(Graphics::Vertex, xy);
+        vertexAttributeDescs[0].offset = offsetof(backend::vulkan::Graphics::Vertex, xy);
 
         vertexAttributeDescs[1].binding = 0;
         vertexAttributeDescs[1].location = 1;
         vertexAttributeDescs[1].format = VK_FORMAT_R32G32_SFLOAT;
-        vertexAttributeDescs[1].offset = offsetof(Graphics::Vertex, uv);
+        vertexAttributeDescs[1].offset = offsetof(backend::vulkan::Graphics::Vertex, uv);
 
         vertexAttributeDescs[2].binding = 0;
         vertexAttributeDescs[2].location = 2;
         vertexAttributeDescs[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        vertexAttributeDescs[2].offset = offsetof(Graphics::Vertex, color);
+        vertexAttributeDescs[2].offset = offsetof(backend::vulkan::Graphics::Vertex, color);
 
         return vertexAttributeDescs;
     }
+}
 
+namespace backend::vulkan {
     Graphics::Graphics(Context& context, VkSurfaceKHR surface, uint32_t surfaceWidth, uint32_t surfaceHeight)
         : m_context(context) {
-        createRenderPass();
-        createPipeline();
-        createDefaultImage();
+        CreateRenderPass();
+        CreatePipeline();
+        CreateDefaultImage();
 
         VkPipelineCacheCreateInfo cacheInfo{};
         cacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -50,113 +70,6 @@ namespace backend::vulkan {
 
     Graphics::~Graphics() {
         vkDestroyPipelineCache(m_context.m_vkDevice, m_vkPipelineCache, nullptr);
-    }
-
-    void Graphics::BeginContext(Framebuffer* target) {
-        auto& context = m_drawStack.emplace();
-
-        if (target) {
-            context.m_target = target;
-            context.m_targetExtent = target->GetVkExtent();
-        } else {
-            context.m_target = m_swapchain->GetNextFramebuffer();
-            context.m_targetExtent = m_swapchain->GetExtent();
-            context.m_swapchain = true;
-            VkFence cmdFence = context.m_target->GetFence().GetVkFence();
-            vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
-            vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
-        }
-
-        auto& commandBuffer = context.m_target->GetCommandBuffer();
-        commandBuffer.Reset();
-        commandBuffer.BeginRecord();
-
-        commandBuffer.BeginRenderPass(*m_renderPass, *context.m_target);
-
-        VkViewport viewport;
-        viewport.x = 0;
-        viewport.y = 0;
-        viewport.width = static_cast<float>(context.m_targetExtent.width);
-        viewport.height = static_cast<float>(context.m_targetExtent.height);
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        commandBuffer.SetViewport(viewport);
-
-        VkRect2D scissor;
-        scissor.offset.x = 0;
-        scissor.offset.y = 0;
-        scissor.extent.width = context.m_target->GetDimensions().x;
-        scissor.extent.height = context.m_target->GetDimensions().y;
-        commandBuffer.SetScissor(scissor);
-
-        context.m_currentColor = moth_ui::BasicColors::White;
-        context.m_currentBlendMode = EBlendMode::None;
-    }
-
-    Framebuffer* Graphics::EndContext() {
-        auto context = m_drawStack.top();
-        m_drawStack.pop();
-
-        VkDeviceSize const vertexBufferSize = context.m_vertexList.size() * sizeof(Vertex);
-
-        if ((m_stagingBuffer == nullptr || vertexBufferSize > m_vertexBuffer->GetSize()) && vertexBufferSize > 0) {
-            m_stagingBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            m_vertexBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        }
-
-        if (m_vertexBuffer) {
-            void* data = m_stagingBuffer->Map();
-            memcpy(data, context.m_vertexList.data(), static_cast<size_t>(vertexBufferSize));
-            m_stagingBuffer->Unmap();
-            m_vertexBuffer->Copy(*m_stagingBuffer);
-        }
-
-        auto& commandBuffer = context.m_target->GetCommandBuffer();
-
-        if (m_vertexBuffer) {
-            commandBuffer.BindVertexBuffer(*m_vertexBuffer);
-        }
-
-        PushConstants pushConstants;
-        pushConstants.xyScale = { 2.0f / static_cast<float>(context.m_targetExtent.width), 2.0f / static_cast<float>(context.m_targetExtent.height) };
-        pushConstants.xyOffset = { -1.0f, -1.0f };
-        commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &pushConstants);
-
-        uint32_t currentPipeline = 0;
-        uint32_t vertexOffset = 0;
-        for (auto& draw : context.m_draws) {
-            if (draw.pipeline != currentPipeline) {
-                auto const it = m_pipelines.find(draw.pipeline);
-                commandBuffer.BindPipeline(*it->second);
-                currentPipeline = draw.pipeline;
-            }
-            if (draw.descriptorSet != VK_NULL_HANDLE) {
-                commandBuffer.BindDescriptorSet(*m_drawingShader, draw.descriptorSet);
-            } else {
-                VkDescriptorSet descriptorSet = m_drawingShader->GetDescriptorSet(*m_defaultImage);
-                commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet);
-            }
-            commandBuffer.Draw(draw.vertCount, vertexOffset);
-            vertexOffset += draw.vertCount;
-        }
-
-        commandBuffer.EndRenderPass();
-
-        if (context.m_swapchain) {
-            commandBuffer.EndRecord();
-            commandBuffer.Submit(context.m_target->GetFence().GetVkFence(), context.m_target->GetAvailableSemaphore(), context.m_target->GetRenderFinishedSemaphore());
-        } else {
-            commandBuffer.TransitionImageLayout(context.m_target->GetVkImage(), context.m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            commandBuffer.EndRecord();
-            //vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
-            VkFence cmdFence = context.m_target->GetFence().GetVkFence();
-            vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
-            commandBuffer.Submit(cmdFence);
-            vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
-            //vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
-        }
-
-        return context.m_target;
     }
 
     void Graphics::Begin() {
@@ -362,94 +275,6 @@ namespace backend::vulkan {
         context.m_targetExtent = { static_cast<uint32_t>(logicalSize.x), static_cast<uint32_t>(logicalSize.y) };
     }
 
-    bool readFile(std::string const& filename, std::vector<char>& outBuffer) {
-        std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-        if (!file.is_open()) {
-            spdlog::error("Failed to readFile {}", filename);
-            return false;
-        }
-
-        size_t const fileSize = static_cast<size_t>(file.tellg());
-        outBuffer.resize(fileSize);
-
-        file.seekg(0);
-        file.read(outBuffer.data(), fileSize);
-        file.close();
-
-        return true;
-    }
-
-    void Graphics::createPipeline() {
-        std::vector<char> vertShaderCode;
-        std::vector<char> fragShaderCode;
-        readFile("resources/drawing_vert.spv", vertShaderCode);
-        readFile("resources/drawing_frag.spv", fragShaderCode);
-
-        m_drawingShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
-                              .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants))
-                              .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-                              .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
-                              .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
-                              .Build();
-    }
-
-    void Graphics::createRenderPass() {
-        VkAttachmentDescription colorAttachment{};
-        //colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB; // TODO this might have to change?
-        colorAttachment.format = VK_FORMAT_B8G8R8A8_UNORM;
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        VkAttachmentReference colorAttachmentRef{};
-        colorAttachmentRef.attachment = 0;
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        VkSubpassDescription subpass{};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorAttachmentRef;
-
-        VkSubpassDependency dependency{};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.srcAccessMask = 0;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-        m_renderPass = RenderPassBuilder(m_context.m_vkDevice)
-                           .AddAttachment(colorAttachment)
-                           .AddSubpass(subpass)
-                           .AddDependency(dependency)
-                           .Build();
-    }
-
-    void Graphics::createDefaultImage() {
-        auto stagingBuffer = std::make_unique<Buffer>(m_context, 4, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-        unsigned char const pixel[] = { 0xFF, 0xFF, 0xFF, 0xFF };
-        void* data = stagingBuffer->Map();
-        memcpy(data, pixel, 4);
-        stagingBuffer->Unmap();
-
-        const VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
-
-        m_defaultImage = std::make_unique<Image>(m_context, 1, 1, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-
-        auto commandBuffer = std::make_unique<CommandBuffer>(m_context);
-        commandBuffer->BeginRecord();
-        commandBuffer->TransitionImageLayout(*m_defaultImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        commandBuffer->CopyBufferToImage(*m_defaultImage, *stagingBuffer);
-        commandBuffer->TransitionImageLayout(*m_defaultImage, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        commandBuffer->SubmitAndWait();
-    }
-
     VkPrimitiveTopology Graphics::ToVulkan(ETopologyType type) const {
         switch (type) {
         default:
@@ -519,6 +344,78 @@ namespace backend::vulkan {
         return currentBlend;
     }
 
+    void Graphics::CreateRenderPass() {
+        VkAttachmentDescription colorAttachment{};
+        //colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB; // TODO this might have to change?
+        colorAttachment.format = VK_FORMAT_B8G8R8A8_UNORM;
+        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+        VkAttachmentReference colorAttachmentRef{};
+        colorAttachmentRef.attachment = 0;
+        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        VkSubpassDescription subpass{};
+        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpass.colorAttachmentCount = 1;
+        subpass.pColorAttachments = &colorAttachmentRef;
+
+        VkSubpassDependency dependency{};
+        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+        dependency.dstSubpass = 0;
+        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.srcAccessMask = 0;
+        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+        m_renderPass = RenderPassBuilder(m_context.m_vkDevice)
+                           .AddAttachment(colorAttachment)
+                           .AddSubpass(subpass)
+                           .AddDependency(dependency)
+                           .Build();
+    }
+
+
+
+    void Graphics::CreatePipeline() {
+        std::vector<char> vertShaderCode;
+        std::vector<char> fragShaderCode;
+        readFile("resources/drawing_vert.spv", vertShaderCode);
+        readFile("resources/drawing_frag.spv", fragShaderCode);
+
+        m_drawingShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
+                              .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants))
+                              .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                              .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
+                              .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
+                              .Build();
+    }
+
+    void Graphics::CreateDefaultImage() {
+        auto stagingBuffer = std::make_unique<Buffer>(m_context, 4, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        unsigned char const pixel[] = { 0xFF, 0xFF, 0xFF, 0xFF };
+        void* data = stagingBuffer->Map();
+        memcpy(data, pixel, 4);
+        stagingBuffer->Unmap();
+
+        const VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+
+        m_defaultImage = std::make_unique<Image>(m_context, 1, 1, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        auto commandBuffer = std::make_unique<CommandBuffer>(m_context);
+        commandBuffer->BeginRecord();
+        commandBuffer->TransitionImageLayout(*m_defaultImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        commandBuffer->CopyBufferToImage(*m_defaultImage, *stagingBuffer);
+        commandBuffer->TransitionImageLayout(*m_defaultImage, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        commandBuffer->SubmitAndWait();
+    }
+
     Pipeline& Graphics::GetCurrentPipeline(ETopologyType topology) {
         auto& context = m_drawStack.top();
         auto const vkTopology = ToVulkan(topology);
@@ -558,5 +455,110 @@ namespace backend::vulkan {
 
         auto const& pipeline = GetCurrentPipeline(topology);
         context.m_draws.push_back({ pipeline.m_hash, vertCount, descriptorSet });
+    }
+
+    void Graphics::BeginContext(Framebuffer* target) {
+        auto& context = m_drawStack.emplace();
+
+        if (target) {
+            context.m_target = target;
+            context.m_targetExtent = target->GetVkExtent();
+        } else {
+            context.m_target = m_swapchain->GetNextFramebuffer();
+            context.m_targetExtent = m_swapchain->GetExtent();
+            context.m_swapchain = true;
+            VkFence cmdFence = context.m_target->GetFence().GetVkFence();
+            vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
+            vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
+        }
+
+        auto& commandBuffer = context.m_target->GetCommandBuffer();
+        commandBuffer.Reset();
+        commandBuffer.BeginRecord();
+
+        commandBuffer.BeginRenderPass(*m_renderPass, *context.m_target);
+
+        VkViewport viewport;
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = static_cast<float>(context.m_targetExtent.width);
+        viewport.height = static_cast<float>(context.m_targetExtent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        commandBuffer.SetViewport(viewport);
+
+        VkRect2D scissor;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        scissor.extent.width = context.m_target->GetDimensions().x;
+        scissor.extent.height = context.m_target->GetDimensions().y;
+        commandBuffer.SetScissor(scissor);
+
+        context.m_currentColor = moth_ui::BasicColors::White;
+        context.m_currentBlendMode = EBlendMode::None;
+    }
+
+    Framebuffer* Graphics::EndContext() {
+        auto context = m_drawStack.top();
+        m_drawStack.pop();
+
+        VkDeviceSize const vertexBufferSize = context.m_vertexList.size() * sizeof(Vertex);
+
+        if ((m_stagingBuffer == nullptr || vertexBufferSize > m_vertexBuffer->GetSize()) && vertexBufferSize > 0) {
+            m_stagingBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            m_vertexBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        }
+
+        if (m_vertexBuffer) {
+            void* data = m_stagingBuffer->Map();
+            memcpy(data, context.m_vertexList.data(), static_cast<size_t>(vertexBufferSize));
+            m_stagingBuffer->Unmap();
+            m_vertexBuffer->Copy(*m_stagingBuffer);
+        }
+
+        auto& commandBuffer = context.m_target->GetCommandBuffer();
+
+        if (m_vertexBuffer) {
+            commandBuffer.BindVertexBuffer(*m_vertexBuffer);
+        }
+
+        PushConstants pushConstants;
+        pushConstants.xyScale = { 2.0f / static_cast<float>(context.m_targetExtent.width), 2.0f / static_cast<float>(context.m_targetExtent.height) };
+        pushConstants.xyOffset = { -1.0f, -1.0f };
+        commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &pushConstants);
+
+        uint32_t currentPipeline = 0;
+        uint32_t vertexOffset = 0;
+        for (auto& draw : context.m_draws) {
+            if (draw.pipeline != currentPipeline) {
+                auto const it = m_pipelines.find(draw.pipeline);
+                commandBuffer.BindPipeline(*it->second);
+                currentPipeline = draw.pipeline;
+            }
+            if (draw.descriptorSet != VK_NULL_HANDLE) {
+                commandBuffer.BindDescriptorSet(*m_drawingShader, draw.descriptorSet);
+            } else {
+                VkDescriptorSet descriptorSet = m_drawingShader->GetDescriptorSet(*m_defaultImage);
+                commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet);
+            }
+            commandBuffer.Draw(draw.vertCount, vertexOffset);
+            vertexOffset += draw.vertCount;
+        }
+
+        commandBuffer.EndRenderPass();
+
+        if (context.m_swapchain) {
+            commandBuffer.EndRecord();
+            commandBuffer.Submit(context.m_target->GetFence().GetVkFence(), context.m_target->GetAvailableSemaphore(), context.m_target->GetRenderFinishedSemaphore());
+        } else {
+            commandBuffer.TransitionImageLayout(context.m_target->GetVkImage(), context.m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            commandBuffer.EndRecord();
+            VkFence cmdFence = context.m_target->GetFence().GetVkFence();
+            vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
+            commandBuffer.Submit(cmdFence);
+            vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
+        }
+
+        return context.m_target;
     }
 }

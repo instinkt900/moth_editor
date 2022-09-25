@@ -207,7 +207,7 @@ namespace backend::vulkan {
             ImGui::RenderPlatformWindowsDefault();
         }
         if (ImDrawData* drawData = ImGui::GetDrawData()) {
-            ImGui_ImplVulkan_RenderDrawData(drawData, m_graphics->GetCurrentCommandBuffer());
+            ImGui_ImplVulkan_RenderDrawData(drawData, m_graphics->GetCurrentCommandBuffer()->GetVkCommandBuffer());
         }
         m_graphics->End();
     }
@@ -262,12 +262,12 @@ namespace backend::vulkan {
         initInfo.Queue = m_context->m_vkQueue;
         initInfo.DescriptorPool = m_context->m_vkDescriptorPool;
         initInfo.Subpass = 0;
-        initInfo.MinImageCount = m_graphics->m_swapchain->GetImageCount();
-        initInfo.ImageCount = m_graphics->m_swapchain->GetImageCount();
+        initInfo.MinImageCount = m_graphics->GetSwapchain().GetImageCount();
+        initInfo.ImageCount = m_graphics->GetSwapchain().GetImageCount();
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator = nullptr;
         initInfo.CheckVkResultFn = checkVkResult;
-        ImGui_ImplVulkan_Init(&initInfo, m_graphics->m_renderPass->GetRenderPass());
+        ImGui_ImplVulkan_Init(&initInfo, m_graphics->GetRenderPass().GetRenderPass());
 
         // create the font texture
         {
