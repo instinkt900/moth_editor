@@ -40,7 +40,6 @@ namespace backend::vulkan {
         Context& m_context;
 
         std::unique_ptr<RenderPass> m_renderPass;
-        std::unique_ptr<RenderPass> m_renderPass2;
         std::unique_ptr<Swapchain> m_swapchain;
         std::unique_ptr<Buffer> m_stagingBuffer;
         std::unique_ptr<Buffer> m_vertexBuffer;

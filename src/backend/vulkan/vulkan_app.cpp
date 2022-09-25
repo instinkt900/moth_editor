@@ -420,62 +420,62 @@ namespace backend::vulkan {
         // test draw
         //m_graphics->Begin();
 
-        //m_graphics->SetTarget(m_testTarget.get());
-        //m_graphics->SetLogicalSize({ 500.0f, 500.0f });
-        //m_graphics->SetBlendMode(EBlendMode::None);
-        //m_graphics->SetColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-        //m_graphics->Clear();
-        //m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
-        //m_graphics->DrawLineF({ 500.0f, 0.0f }, { 0.0f, 500.0f });
-        //m_graphics->SetTarget(nullptr);
+        m_graphics->SetTarget(m_testTarget.get());
+        m_graphics->SetLogicalSize({ 500.0f, 500.0f });
+        m_graphics->SetBlendMode(EBlendMode::None);
+        m_graphics->SetColor({ 0.0f, 0.0f, 0.0f, 1.0f });
+        m_graphics->Clear();
+        m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
+        m_graphics->DrawLineF({ 500.0f, 0.0f }, { 0.0f, 500.0f });
+        m_graphics->SetTarget(nullptr);
 
-        if (ImDrawData* drawData = ImGui::GetDrawData()) {
-            ImGui_ImplVulkan_RenderDrawData(drawData, m_graphics->GetCurrentCommandBuffer());
-        }
+        //if (ImDrawData* drawData = ImGui::GetDrawData()) {
+        //    ImGui_ImplVulkan_RenderDrawData(drawData, m_graphics->GetCurrentCommandBuffer());
+        //}
 
-        //moth_ui::FloatRect rect;
+        moth_ui::FloatRect rect;
 
-        ////rect = moth_ui::MakeRect(10.0f, 10.0f, 320.0f, 320.0f);
-        ////m_graphics->SetBlendMode(EBlendMode::Blend);
-        ////m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
-        ////m_graphics->DrawRectF(rect);
-
-        //m_graphics->SetBlendMode(EBlendMode::None);
-        //m_graphics->SetColor({ 0.3f, 0.3f, 0.3f, 1.0f });
-        //m_graphics->Clear();
-
-        //rect = moth_ui::MakeRect(25.0f, 25.0f, 550.0f, 550.0f);
-        //m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
+        //rect = moth_ui::MakeRect(10.0f, 10.0f, 320.0f, 320.0f);
+        //m_graphics->SetBlendMode(EBlendMode::Blend);
+        //m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
         //m_graphics->DrawRectF(rect);
 
-        //m_graphics->SetBlendMode(EBlendMode::Add);
+        m_graphics->SetBlendMode(EBlendMode::None);
+        m_graphics->SetColor({ 0.3f, 0.3f, 0.3f, 1.0f });
+        m_graphics->Clear();
 
-        //rect = moth_ui::MakeRect(50.0f, 50.0f, 300.0f, 300.0f);
-        //m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
-        //m_graphics->DrawFillRectF(rect);
+        rect = moth_ui::MakeRect(25.0f, 25.0f, 550.0f, 550.0f);
+        m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
+        m_graphics->DrawRectF(rect);
 
-        //rect = moth_ui::MakeRect(250.0f, 50.0f, 300.0f, 300.0f);
-        //m_graphics->SetColor({ 0.0f, 1.0f, 0.0f, 1.0f });
-        //m_graphics->DrawFillRectF(rect);
+        m_graphics->SetBlendMode(EBlendMode::Add);
 
-        //rect = moth_ui::MakeRect(150.0f, 250.0f, 300.0f, 300.0f);
-        //m_graphics->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
-        //m_graphics->DrawFillRectF(rect);
+        rect = moth_ui::MakeRect(50.0f, 50.0f, 300.0f, 300.0f);
+        m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
+        m_graphics->DrawFillRectF(rect);
 
-        //m_graphics->SetBlendMode(EBlendMode::Blend);
+        rect = moth_ui::MakeRect(250.0f, 50.0f, 300.0f, 300.0f);
+        m_graphics->SetColor({ 0.0f, 1.0f, 0.0f, 1.0f });
+        m_graphics->DrawFillRectF(rect);
 
-        //m_graphics->SetColor({ 0.0f, 1.0f, 1.0f, 0.5f });
-        //m_graphics->DrawLineF({ 20.0f, 10.0f }, { 560.0f, 600.0f });
+        rect = moth_ui::MakeRect(150.0f, 250.0f, 300.0f, 300.0f);
+        m_graphics->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
+        m_graphics->DrawFillRectF(rect);
 
-        //auto image = m_imageFactory->GetImage("D:\\Development\\ChristmasProject2021\\resources\\images\\laser.png");
-        //auto irect = moth_ui::MakeRect(300, 300, 300, 300);
-        //m_graphics->SetBlendMode(EBlendMode::Blend);
-        //m_graphics->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-        //auto const srcRect = moth_ui::MakeRect(63, 60, 50, 50);
-        //m_graphics->DrawImage(*image, &srcRect, &irect);
+        m_graphics->SetBlendMode(EBlendMode::Blend);
 
-        //irect = moth_ui::MakeRect(10, 10, 300, 300);
-        //m_graphics->DrawImage(*m_testTarget->GetImage(), nullptr, &irect);
+        m_graphics->SetColor({ 0.0f, 1.0f, 1.0f, 0.5f });
+        m_graphics->DrawLineF({ 20.0f, 10.0f }, { 560.0f, 600.0f });
+
+        auto image = m_imageFactory->GetImage("D:\\Development\\ChristmasProject2021\\resources\\images\\laser.png");
+        auto irect = moth_ui::MakeRect(300, 300, 300, 300);
+        m_graphics->SetBlendMode(EBlendMode::Blend);
+        m_graphics->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+        auto const srcRect = moth_ui::MakeRect(63, 60, 50, 50);
+        m_graphics->DrawImage(*image, &srcRect, &irect);
+
+        irect = moth_ui::MakeRect(10, 10, 300, 300);
+        m_graphics->DrawImage(*m_testTarget->GetImage(), nullptr, &irect);
 
         //m_graphics->End();
     }

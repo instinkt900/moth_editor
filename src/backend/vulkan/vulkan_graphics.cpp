@@ -49,9 +49,6 @@ namespace backend::vulkan {
     }
 
     Graphics::~Graphics() {
-        //for (auto& [hash, pipeline] : m_pipelines) {
-        //    vkDestroyPipeline(m_context.m_vkDevice, pipeline->m_pipeline, nullptr);
-        //}
         vkDestroyPipelineCache(m_context.m_vkDevice, m_vkPipelineCache, nullptr);
     }
 
@@ -74,12 +71,7 @@ namespace backend::vulkan {
         commandBuffer.Reset();
         commandBuffer.BeginRecord();
 
-        if (!context.m_swapchain) {
-            //commandBuffer.TransitionImageLayout(context.m_target->GetVkImage(), context.m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            commandBuffer.BeginRenderPass(*m_renderPass2, *context.m_target);
-        } else {
-            commandBuffer.BeginRenderPass(*m_renderPass, *context.m_target);
-        }
+        commandBuffer.BeginRenderPass(*m_renderPass, *context.m_target);
 
         VkViewport viewport;
         viewport.x = 0;
@@ -97,7 +89,7 @@ namespace backend::vulkan {
         scissor.extent.height = context.m_target->GetDimensions().y;
         commandBuffer.SetScissor(scissor);
 
-        context.m_currentColor = moth_ui::BasicColors::Black;
+        context.m_currentColor = moth_ui::BasicColors::White;
         context.m_currentBlendMode = EBlendMode::None;
     }
 
@@ -154,7 +146,7 @@ namespace backend::vulkan {
             commandBuffer.EndRecord();
             commandBuffer.Submit(context.m_target->GetFence().GetVkFence(), context.m_target->GetAvailableSemaphore(), context.m_target->GetRenderFinishedSemaphore());
         } else {
-            //commandBuffer.TransitionImageLayout(context.m_target->GetVkImage(), context.m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            commandBuffer.TransitionImageLayout(context.m_target->GetVkImage(), context.m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             commandBuffer.EndRecord();
             //vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
             VkFence cmdFence = context.m_target->GetFence().GetVkFence();
@@ -341,7 +333,7 @@ namespace backend::vulkan {
     }
 
     std::unique_ptr<moth_ui::ITarget> Graphics::CreateTarget(int width, int height) {
-        return std::make_unique<Framebuffer>(m_context, width, height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_renderPass2->GetRenderPass());
+        return std::make_unique<Framebuffer>(m_context, width, height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_renderPass->GetRenderPass());
     }
 
     moth_ui::ITarget* Graphics::GetTarget() {
@@ -436,23 +428,6 @@ namespace backend::vulkan {
                            .AddSubpass(subpass)
                            .AddDependency(dependency)
                            .Build();
-
-        VkAttachmentDescription colorAttachment2{};
-        //colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB; // TODO this might have to change?
-        colorAttachment2.format = VK_FORMAT_B8G8R8A8_UNORM;
-        colorAttachment2.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment2.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment2.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment2.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment2.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment2.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment2.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-        m_renderPass2 = RenderPassBuilder(m_context.m_vkDevice)
-                            .AddAttachment(colorAttachment2)
-                            .AddSubpass(subpass)
-                            .AddDependency(dependency)
-                            .Build();
     }
 
     void Graphics::createDefaultImage() {
