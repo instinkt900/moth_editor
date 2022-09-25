@@ -84,10 +84,7 @@ namespace backend::vulkan {
                 int width, height;
                 glfwGetFramebufferSize(m_glfwWindow, &width, &height);
                 if (width > 0 && height > 0) {
-                    //ImGui_ImplVulkan_SetMinImageCount(m_imMinImageCount);
-                    //ImGui_ImplVulkanH_CreateOrResizeWindow(m_context->m_vkInstance, m_context->m_vkPhysicalDevice, m_context->m_vkDevice, &m_imWindowData, m_context->m_vkQueueFamily, nullptr, width, height, m_imMinImageCount);
-                    //m_imWindowData.FrameIndex = 0;
-                    //m_vkSwapChainrebuild = false;
+                    assert(false && "TODO");
                 }
             }
 
@@ -147,18 +144,6 @@ namespace backend::vulkan {
 
         int width, height;
         glfwGetFramebufferSize(m_glfwWindow, &width, &height);
-        //InitVulkanWindow(vkSurface, width, height);
-
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
-
-        ImGui::StyleColorsDark();
-        ImGuiStyle& style = ImGui::GetStyle();
-        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            style.WindowRounding = 0;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-        }
 
         m_graphics = std::make_unique<Graphics>(*m_context, m_customVkSurface, m_windowWidth, m_windowHeight);
         m_imageFactory = std::make_unique<ImageFactory>(*m_context, static_cast<Graphics&>(*m_graphics));
@@ -177,8 +162,7 @@ namespace backend::vulkan {
         }
 
         ImGuiInit();
-        CustomInit();
-
+        
         m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
         m_layerStack->SetEventListener(this);
         m_layerStack->PushLayer(std::make_unique<EditorLayer>());
@@ -217,19 +201,14 @@ namespace backend::vulkan {
 
         m_graphics->Begin();
         m_layerStack->Draw();
-
         ImGui::Render();
-        //ImDrawData* drawData = ImGui::GetDrawData();
-        //VulkanFrameRender(&m_imWindowData, drawData);
-
         if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
         }
-
-        //VulkanFramePresent(&m_imWindowData);
-
-        CustomFrameRender();
+        if (ImDrawData* drawData = ImGui::GetDrawData()) {
+            ImGui_ImplVulkan_RenderDrawData(drawData, m_graphics->GetCurrentCommandBuffer());
+        }
         m_graphics->End();
     }
 
@@ -240,17 +219,10 @@ namespace backend::vulkan {
         m_fontFactory.reset();
         m_imageFactory.reset();
         m_graphics.reset();
-        m_testTarget.reset();
         m_windowMaximized = glfwGetWindowAttrib(m_glfwWindow, GLFW_MAXIMIZED) == GLFW_TRUE;
-        //ImGui_ImplVulkanH_DestroyWindow(m_context->m_vkInstance, m_context->m_vkDevice, &m_imWindowData, nullptr);
         ImGui_ImplVulkan_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
-        //vkDestroyShaderModule(m_context->m_vkDevice, m_vkVertShaderModule, nullptr);
-        //vkDestroyShaderModule(m_context->m_vkDevice, m_vkFragShaderModule, nullptr);
-        //vkDestroyPipelineLayout(m_context->m_vkDevice, m_vkPipelineLayout, nullptr);
-        //vkDestroyPipeline(m_context->m_vkDevice, m_imagePipeline, nullptr);
-        //vkDestroyRenderPass(m_context->m_vkDevice, m_vkRenderPass, nullptr);
         vkDestroySurfaceKHR(m_context->m_vkInstance, m_customVkSurface, nullptr);
         glfwDestroyWindow(m_glfwWindow);
         glfwTerminate();
@@ -269,27 +241,18 @@ namespace backend::vulkan {
         return true;
     }
 
-    void Application::InitVulkanWindow(VkSurfaceKHR vkSurface, int width, int height) {
-        m_imWindowData.Surface = vkSurface;
+    void Application::ImGuiInit() {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
 
-        VkBool32 result;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_context->m_vkPhysicalDevice, m_context->m_vkQueueFamily, m_imWindowData.Surface, &result);
-        if (result != VK_TRUE) {
-            std::cerr << "No WSI support\n";
-            exit(-1);
+        ImGui::StyleColorsDark();
+        ImGuiStyle& style = ImGui::GetStyle();
+        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            style.WindowRounding = 0;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
         }
 
-        VkFormat const requestSurfaceImageFormat[] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_B8G8R8_UNORM };
-        VkColorSpaceKHR const requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-        m_imWindowData.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(m_context->m_vkPhysicalDevice, m_imWindowData.Surface, requestSurfaceImageFormat, static_cast<size_t>(IM_ARRAYSIZE(requestSurfaceImageFormat)), requestSurfaceColorSpace);
-
-        VkPresentModeKHR presentModes[] = { VK_PRESENT_MODE_FIFO_KHR };
-        m_imWindowData.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(m_context->m_vkPhysicalDevice, m_imWindowData.Surface, presentModes, IM_ARRAYSIZE(presentModes));
-
-        ImGui_ImplVulkanH_CreateOrResizeWindow(m_context->m_vkInstance, m_context->m_vkPhysicalDevice, m_context->m_vkDevice, &m_imWindowData, m_context->m_vkQueueFamily, nullptr, width, height, m_imMinImageCount);
-    }
-
-    void Application::ImGuiInit() {
         ImGui_ImplGlfw_InitForVulkan(m_glfwWindow, true);
         ImGui_ImplVulkan_InitInfo initInfo{};
         initInfo.Instance = m_context->m_vkInstance;
@@ -311,172 +274,9 @@ namespace backend::vulkan {
             VkCommandPool commandPool = m_context->m_vkCommandPool;
             CHECK_VK_RESULT(vkResetCommandPool(m_context->m_vkDevice, commandPool, 0));
             VkCommandBuffer commandBuffer = m_context->beginSingleTimeCommands();
-            //VkCommandBufferBeginInfo beginInfo{};
-            //beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            //beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            //CHECK_VK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-
             ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-
-            VkSubmitInfo endInfo{};
-            endInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            endInfo.commandBufferCount = 1;
-            endInfo.pCommandBuffers = &commandBuffer;
-            CHECK_VK_RESULT(vkEndCommandBuffer(commandBuffer));
-            CHECK_VK_RESULT(vkQueueSubmit(m_context->m_vkQueue, 1, &endInfo, VK_NULL_HANDLE));
-            CHECK_VK_RESULT(vkDeviceWaitIdle(m_context->m_vkDevice));
-
+            m_context->endSingleTimeCommands(commandBuffer);
             ImGui_ImplVulkan_DestroyFontUploadObjects();
         }
-    }
-
-    void Application::VulkanFrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData) {
-        VkResult result;
-
-        VkSemaphore imageAcquiredSemaphore = wd->FrameSemaphores[wd->SemaphoreIndex].ImageAcquiredSemaphore;
-        VkSemaphore renderCompleteSemaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-        result = vkAcquireNextImageKHR(m_context->m_vkDevice, wd->Swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &wd->FrameIndex);
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            m_vkSwapChainrebuild = true;
-            return;
-        }
-        CHECK_VK_RESULT(result);
-
-        ImGui_ImplVulkanH_Frame* fd = &wd->Frames[wd->FrameIndex];
-        {
-            CHECK_VK_RESULT(vkWaitForFences(m_context->m_vkDevice, 1, &fd->Fence, VK_TRUE, UINT64_MAX));
-            CHECK_VK_RESULT(vkResetFences(m_context->m_vkDevice, 1, &fd->Fence));
-        }
-
-        {
-            CHECK_VK_RESULT(vkResetCommandPool(m_context->m_vkDevice, fd->CommandPool, 0));
-            VkCommandBufferBeginInfo info{};
-            info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            CHECK_VK_RESULT(vkBeginCommandBuffer(fd->CommandBuffer, &info));
-        }
-
-        {
-            VkRenderPassBeginInfo info{};
-            info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-            info.renderPass = wd->RenderPass;
-            info.framebuffer = fd->Framebuffer;
-            info.renderArea.extent.width = wd->Width;
-            info.renderArea.extent.height = wd->Height;
-            info.clearValueCount = 1;
-            info.pClearValues = &wd->ClearValue;
-            vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
-        }
-
-        ImGui_ImplVulkan_RenderDrawData(drawData, fd->CommandBuffer);
-
-        vkCmdEndRenderPass(fd->CommandBuffer);
-
-        {
-            VkPipelineStageFlags waitStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            VkSubmitInfo info{};
-            info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            info.waitSemaphoreCount = 1;
-            info.pWaitSemaphores = &imageAcquiredSemaphore;
-            info.pWaitDstStageMask = &waitStageFlags;
-            info.commandBufferCount = 1;
-            VkCommandBuffer cmdBuffers[] = { fd->CommandBuffer };
-            info.pCommandBuffers = cmdBuffers;
-            info.signalSemaphoreCount = 1;
-            info.pSignalSemaphores = &renderCompleteSemaphore;
-            CHECK_VK_RESULT(vkEndCommandBuffer(fd->CommandBuffer));
-            CHECK_VK_RESULT(vkQueueSubmit(m_context->m_vkQueue, 1, &info, fd->Fence));
-        }
-    }
-
-    void Application::VulkanFramePresent(ImGui_ImplVulkanH_Window* wd) {
-        if (m_vkSwapChainrebuild) {
-            return;
-        }
-
-        VkSemaphore renderCompleteSemaphore = wd->FrameSemaphores[wd->SemaphoreIndex].RenderCompleteSemaphore;
-        VkPresentInfoKHR info{};
-        info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        info.waitSemaphoreCount = 1;
-        info.pWaitSemaphores = &renderCompleteSemaphore;
-        info.swapchainCount = 1;
-        info.pSwapchains = &wd->Swapchain;
-        info.pImageIndices = &wd->FrameIndex;
-        VkResult result = vkQueuePresentKHR(m_context->m_vkQueue, &info);
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            m_vkSwapChainrebuild = true;
-            return;
-        }
-        CHECK_VK_RESULT(result);
-        wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->ImageCount;
-    }
-
-    void Application::CustomInit() {
-        m_imageFactory->LoadTexturePack("D:/Development/ChristmasProject2021/resources/packs/packed_0.png");
-        m_testTarget = m_graphics->CreateTarget(500, 500);
-    }
-
-    void Application::CustomFrameRender() {
-        // test draw
-        //m_graphics->Begin();
-
-        m_graphics->SetTarget(m_testTarget.get());
-        m_graphics->SetLogicalSize({ 500.0f, 500.0f });
-        m_graphics->SetBlendMode(EBlendMode::None);
-        m_graphics->SetColor({ 0.0f, 0.0f, 0.0f, 1.0f });
-        m_graphics->Clear();
-        m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
-        m_graphics->DrawLineF({ 500.0f, 0.0f }, { 0.0f, 500.0f });
-        m_graphics->SetTarget(nullptr);
-
-        //if (ImDrawData* drawData = ImGui::GetDrawData()) {
-        //    ImGui_ImplVulkan_RenderDrawData(drawData, m_graphics->GetCurrentCommandBuffer());
-        //}
-
-        moth_ui::FloatRect rect;
-
-        //rect = moth_ui::MakeRect(10.0f, 10.0f, 320.0f, 320.0f);
-        //m_graphics->SetBlendMode(EBlendMode::Blend);
-        //m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
-        //m_graphics->DrawRectF(rect);
-
-        m_graphics->SetBlendMode(EBlendMode::None);
-        m_graphics->SetColor({ 0.3f, 0.3f, 0.3f, 1.0f });
-        m_graphics->Clear();
-
-        rect = moth_ui::MakeRect(25.0f, 25.0f, 550.0f, 550.0f);
-        m_graphics->SetColor({ 1.0f, 1.0f, 0.0f, 1.0f });
-        m_graphics->DrawRectF(rect);
-
-        m_graphics->SetBlendMode(EBlendMode::Add);
-
-        rect = moth_ui::MakeRect(50.0f, 50.0f, 300.0f, 300.0f);
-        m_graphics->SetColor({ 1.0f, 0.0f, 0.0f, 1.0f });
-        m_graphics->DrawFillRectF(rect);
-
-        rect = moth_ui::MakeRect(250.0f, 50.0f, 300.0f, 300.0f);
-        m_graphics->SetColor({ 0.0f, 1.0f, 0.0f, 1.0f });
-        m_graphics->DrawFillRectF(rect);
-
-        rect = moth_ui::MakeRect(150.0f, 250.0f, 300.0f, 300.0f);
-        m_graphics->SetColor({ 0.0f, 0.0f, 1.0f, 1.0f });
-        m_graphics->DrawFillRectF(rect);
-
-        m_graphics->SetBlendMode(EBlendMode::Blend);
-
-        m_graphics->SetColor({ 0.0f, 1.0f, 1.0f, 0.5f });
-        m_graphics->DrawLineF({ 20.0f, 10.0f }, { 560.0f, 600.0f });
-
-        auto image = m_imageFactory->GetImage("D:\\Development\\ChristmasProject2021\\resources\\images\\laser.png");
-        auto irect = moth_ui::MakeRect(300, 300, 300, 300);
-        m_graphics->SetBlendMode(EBlendMode::Blend);
-        m_graphics->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
-        auto const srcRect = moth_ui::MakeRect(63, 60, 50, 50);
-        m_graphics->DrawImage(*image, &srcRect, &irect);
-
-        irect = moth_ui::MakeRect(10, 10, 300, 300);
-        m_graphics->DrawImage(*m_testTarget->GetImage(), nullptr, &irect);
-
-        //m_graphics->End();
     }
 }

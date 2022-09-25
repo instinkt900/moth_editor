@@ -71,40 +71,16 @@ namespace backend::vulkan {
 
         std::unique_ptr<backend::vulkan::Graphics> m_graphics;
 
-        // glfw stuff
         GLFWwindow* m_glfwWindow = nullptr;
-        //
 
-        // vulkan stuff
         std::unique_ptr<Context> m_context;
-        ImGui_ImplVulkanH_Window m_imWindowData;
-        int m_imMinImageCount = 2;
         bool m_vkSwapChainrebuild = false;
-
-        void InitVulkanWindow(VkSurfaceKHR vkSurface, int width, int height);
-        void VulkanFrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* drawData);
-        void VulkanFramePresent(ImGui_ImplVulkanH_Window* wd);
-        //
 
         bool OnWindowSizeEvent(EventWindowSize const& event);
         bool OnQuitEvent(EventQuit const& event);
 
         VkSurfaceKHR m_customVkSurface;
-        //VkSwapchainKHR m_customVkSwapchain;
-        //std::vector<VkImage> m_customSwapchainImages;
-        //VkFormat m_customSwapchainImageFormat;
-        //VkExtent2D m_customSwapchainExtent;
-        //std::vector<VkImageView> m_customSwapchainImageViews;
-        //std::vector<VkFramebuffer> m_customSwapchainFramebuffers;
-        //VkSemaphore m_customImageAvailableSemaphore;
-        //VkSemaphore m_customRenderFinishedSemaphore;
-        //VkFence m_customInFlightFence;
-
-        std::shared_ptr<moth_ui::ITarget> m_testTarget;
 
         void ImGuiInit();
-
-        void CustomInit();
-        void CustomFrameRender();
     };
 }
