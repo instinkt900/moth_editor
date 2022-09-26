@@ -35,8 +35,8 @@ bool EditorPanelCanvas::BeginPanel() {
 void EditorPanelCanvas::DrawContents() {
     moth_ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
 
-    //UpdateDisplayTexture(windowRegionSize);
-    //imgui_ext::Image(m_displayTexture->GetImage(), windowRegionSize.x, windowRegionSize.y);
+    UpdateDisplayTexture(windowRegionSize);
+    imgui_ext::Image(m_displayTexture->GetImage(), windowRegionSize.x, windowRegionSize.y);
 
     auto const drawList = ImGui::GetWindowDrawList();
 
@@ -86,7 +86,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
     m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(ImGui::GetWindowPos().x), static_cast<int>(ImGui::GetWindowPos().y) };
     m_canvasWindowSize = windowSize;
 
-    auto const oldRenderTarget = graphics.GetTarget();
+    //auto const oldRenderTarget = graphics.GetTarget();
     graphics.SetTarget(m_displayTexture.get());
 
     auto const& canvasSize = m_editorLayer.GetConfig().CanvasSize;
@@ -178,7 +178,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
         graphics.SetLogicalSize(moth_ui::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
     }
 
-    graphics.SetTarget(oldRenderTarget);
+    graphics.SetTarget(nullptr);
 }
 
 void EditorPanelCanvas::EndPanel() {

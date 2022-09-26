@@ -33,7 +33,6 @@ namespace backend::vulkan {
         VmaAllocation m_vmaAllocation = VK_NULL_HANDLE;
         VkImageView m_vkView = VK_NULL_HANDLE;
         VkSampler m_vkSampler = VK_NULL_HANDLE;
-        VkDescriptorSet m_vkDescriptorSet = VK_NULL_HANDLE;
 
         bool m_owningImage = true;
 

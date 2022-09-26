@@ -275,6 +275,10 @@ namespace backend::vulkan {
         context.m_targetExtent = { static_cast<uint32_t>(logicalSize.x), static_cast<uint32_t>(logicalSize.y) };
     }
 
+    VkDescriptorSet Graphics::GetDescriptorSet(Image& image) {
+        return m_drawingShader->GetDescriptorSet(image);
+    }
+
     VkPrimitiveTopology Graphics::ToVulkan(ETopologyType type) const {
         switch (type) {
         default:

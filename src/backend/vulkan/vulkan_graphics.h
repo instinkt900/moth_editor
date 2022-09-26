@@ -51,6 +51,7 @@ namespace backend::vulkan {
             }
             return nullptr;
         }
+        VkDescriptorSet GetDescriptorSet(Image& image);
 
     private:
         Context& m_context;
