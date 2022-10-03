@@ -3,47 +3,27 @@
 #include "sdl_image.h"
 #include "sdl_utils.h"
 
-namespace {
-    SDL_BlendMode ToSDL(backend::EBlendMode mode) {
-        switch (mode) {
-        default:
-        case backend::EBlendMode::Invalid :
-            return SDL_BlendMode::SDL_BLENDMODE_INVALID;
-        case backend::EBlendMode::None:
-            return SDL_BlendMode::SDL_BLENDMODE_NONE;
-        case backend::EBlendMode::Blend:
-            return SDL_BlendMode::SDL_BLENDMODE_BLEND;
-        case backend::EBlendMode::Add:
-            return SDL_BlendMode::SDL_BLENDMODE_ADD;
-        case backend::EBlendMode::Mod:
-            return SDL_BlendMode::SDL_BLENDMODE_MOD;
-        case backend::EBlendMode::Mul:
-            return SDL_BlendMode::SDL_BLENDMODE_MUL;
-        }
-    }
-}
-
 namespace backend::sdl {
     SDLGraphics::SDLGraphics(SDL_Renderer* renderer)
     :m_renderer(renderer) {
     }
-    void SDLGraphics::SetBlendMode(EBlendMode mode) {
+    void SDLGraphics::SetBlendMode(moth_ui::BlendMode mode) {
         SDL_SetRenderDrawBlendMode(m_renderer, ToSDL(mode));
     }
 
-    void SDLGraphics::SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) {
-        auto sdlImage = std::dynamic_pointer_cast<Image>(target);
-        auto sdlTexture = sdlImage->GetTexture();
-        SDL_SetTextureBlendMode(sdlTexture->GetImpl(), ToSDL(mode));
-    }
+    //void SDLGraphics::SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) {
+    //    auto sdlImage = std::dynamic_pointer_cast<Image>(target);
+    //    auto sdlTexture = sdlImage->GetTexture();
+    //    SDL_SetTextureBlendMode(sdlTexture->GetImpl(), ToSDL(mode));
+    //}
 
-    void SDLGraphics::SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) {
-        auto sdlImage = std::dynamic_pointer_cast<Image>(target);
-        auto sdlTexture = sdlImage->GetTexture();
-        ColorComponents components(color);
-        SDL_SetTextureColorMod(sdlTexture->GetImpl(), components.r, components.g, components.b);
-        SDL_SetTextureAlphaMod(sdlTexture->GetImpl(), components.a);
-    }
+    //void SDLGraphics::SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) {
+    //    auto sdlImage = std::dynamic_pointer_cast<Image>(target);
+    //    auto sdlTexture = sdlImage->GetTexture();
+    //    ColorComponents components(color);
+    //    SDL_SetTextureColorMod(sdlTexture->GetImpl(), components.r, components.g, components.b);
+    //    SDL_SetTextureAlphaMod(sdlTexture->GetImpl(), components.a);
+    //}
 
     void SDLGraphics::SetColor(moth_ui::Color const& color) {
         ColorComponents components(color);

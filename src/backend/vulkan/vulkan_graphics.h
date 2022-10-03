@@ -25,9 +25,9 @@ namespace backend::vulkan {
         void Begin();
         void End();
 
-        void SetBlendMode(EBlendMode mode) override;
-        void SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) override;
-        void SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) override;
+        void SetBlendMode(moth_ui::BlendMode mode) override;
+        //void SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) override;
+        //void SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) override;
         void SetColor(moth_ui::Color const& color) override;
         void Clear() override;
         void DrawImage(moth_ui::IImage& image, moth_ui::IntRect const* sourceRect, moth_ui::IntRect const* destRect) override;
@@ -77,7 +77,7 @@ namespace backend::vulkan {
             Framebuffer* m_target = nullptr;
             VkExtent2D m_targetExtent;
 
-            EBlendMode m_currentBlendMode = EBlendMode::None;
+            moth_ui::BlendMode m_currentBlendMode = moth_ui::BlendMode::Replace;
             moth_ui::Color m_currentColor;
             std::vector<Vertex> m_vertexList;
             std::vector<DrawCmd> m_draws;
@@ -97,7 +97,7 @@ namespace backend::vulkan {
         bool m_passBegun = false;
 
         VkPrimitiveTopology ToVulkan(ETopologyType type) const;
-        VkPipelineColorBlendAttachmentState ToVulkan(EBlendMode mode) const;
+        VkPipelineColorBlendAttachmentState ToVulkan(moth_ui::BlendMode mode) const;
 
         void CreateRenderPass();
         void CreatePipeline();

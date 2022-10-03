@@ -4,7 +4,7 @@
 
 #include "vulkan_image_factory.h"
 #include "font_factory_vulkan.h"
-#include "ui_renderer_vulkan.h"
+#include "vulkan_ui_renderer.h"
 #include "vulkan_graphics.h"
 
 #include "moth_ui/context.h"
@@ -148,9 +148,11 @@ namespace backend::vulkan {
         m_graphics = std::make_unique<Graphics>(*m_context, m_customVkSurface, m_windowWidth, m_windowHeight);
         m_imageFactory = std::make_unique<ImageFactory>(*m_context, static_cast<Graphics&>(*m_graphics));
         m_fontFactory = std::make_unique<FontFactory>();
-        m_uiRenderer = std::make_unique<UIRenderer>();
+        m_uiRenderer = std::make_unique<UIRenderer>(*m_graphics);
         auto uiContext = std::make_shared<moth_ui::Context>(m_imageFactory.get(), m_fontFactory.get(), m_uiRenderer.get());
         moth_ui::Context::SetCurrentContext(uiContext);
+
+        SubImage::s_graphicsContext = m_graphics.get();
 
         if (m_persistentState.contains("current_path")) {
             std::string const currentPath = m_persistentState["current_path"];
@@ -213,8 +215,8 @@ namespace backend::vulkan {
     }
 
     void Application::Shutdown() {
-        m_layerStack.reset(); // force layers to cleanup before we destroy all the devices.
         vkDeviceWaitIdle(m_context->m_vkDevice);
+        m_layerStack.reset(); // force layers to cleanup before we destroy all the devices.
         m_uiRenderer.reset();
         m_fontFactory.reset();
         m_imageFactory.reset();

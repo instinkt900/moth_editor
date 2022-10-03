@@ -27,7 +27,7 @@ namespace backend::vulkan {
 
                 stbi_image_free(pixels);
 
-                VkFormat const format = VK_FORMAT_R8G8B8A8_SRGB;
+                VkFormat const format = VK_FORMAT_R8G8B8A8_UNORM;
                 auto newImage = std::make_unique<Image>(context, texWidth, texHeight, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
                 auto commandBuffer = std::make_unique<CommandBuffer>(context);

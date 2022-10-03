@@ -93,16 +93,16 @@ namespace backend::vulkan {
         vkQueuePresentKHR(m_context.m_vkQueue, &presentInfo);
     }
 
-    void Graphics::SetBlendMode(EBlendMode mode) {
+    void Graphics::SetBlendMode(moth_ui::BlendMode mode) {
         auto& context = m_drawStack.top();
         context.m_currentBlendMode = mode;
     }
 
-    void Graphics::SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) {
-    }
+    //void Graphics::SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) {
+    //}
 
-    void Graphics::SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) {
-    }
+    //void Graphics::SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) {
+    //}
 
     void Graphics::SetColor(moth_ui::Color const& color) {
         auto& context = m_drawStack.top();
@@ -290,11 +290,11 @@ namespace backend::vulkan {
         }
     }
 
-    VkPipelineColorBlendAttachmentState Graphics::ToVulkan(EBlendMode mode) const {
+    VkPipelineColorBlendAttachmentState Graphics::ToVulkan(moth_ui::BlendMode mode) const {
         VkPipelineColorBlendAttachmentState currentBlend{};
         switch (mode) {
         default:
-        case EBlendMode::None:
+        case moth_ui::BlendMode::Replace:
             currentBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             currentBlend.blendEnable = VK_FALSE;
             currentBlend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -304,7 +304,7 @@ namespace backend::vulkan {
             currentBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
             currentBlend.alphaBlendOp = VK_BLEND_OP_ADD;
             break;
-        case EBlendMode::Add:
+        case moth_ui::BlendMode::Add:
             currentBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             currentBlend.blendEnable = VK_TRUE;
             currentBlend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -314,7 +314,7 @@ namespace backend::vulkan {
             currentBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
             currentBlend.alphaBlendOp = VK_BLEND_OP_ADD;
             break;
-        case EBlendMode::Blend:
+        case moth_ui::BlendMode::Alpha:
             currentBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             currentBlend.blendEnable = VK_TRUE;
             currentBlend.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -324,7 +324,7 @@ namespace backend::vulkan {
             currentBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
             currentBlend.alphaBlendOp = VK_BLEND_OP_ADD;
             break;
-        case EBlendMode::Mod:
+        case moth_ui::BlendMode::Modulate:
             currentBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             currentBlend.blendEnable = VK_TRUE;
             currentBlend.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -334,7 +334,7 @@ namespace backend::vulkan {
             currentBlend.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
             currentBlend.alphaBlendOp = VK_BLEND_OP_ADD;
             break;
-        case EBlendMode::Mul:
+        case moth_ui::BlendMode::Multiply:
             currentBlend.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
             currentBlend.blendEnable = VK_TRUE;
             currentBlend.srcColorBlendFactor = VK_BLEND_FACTOR_DST_COLOR;
@@ -408,7 +408,7 @@ namespace backend::vulkan {
         memcpy(data, pixel, 4);
         stagingBuffer->Unmap();
 
-        const VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+        const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
         m_defaultImage = std::make_unique<Image>(m_context, 1, 1, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
@@ -499,7 +499,7 @@ namespace backend::vulkan {
         commandBuffer.SetScissor(scissor);
 
         context.m_currentColor = moth_ui::BasicColors::White;
-        context.m_currentBlendMode = EBlendMode::None;
+        context.m_currentBlendMode = moth_ui::BlendMode::Invalid;
     }
 
     Framebuffer* Graphics::EndContext() {
@@ -509,6 +509,7 @@ namespace backend::vulkan {
         VkDeviceSize const vertexBufferSize = context.m_vertexList.size() * sizeof(Vertex);
 
         if ((m_stagingBuffer == nullptr || vertexBufferSize > m_vertexBuffer->GetSize()) && vertexBufferSize > 0) {
+            vkDeviceWaitIdle(m_context.m_vkDevice);
             m_stagingBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
             m_vertexBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         }

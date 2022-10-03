@@ -206,8 +206,8 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
 
             moth_ui::IntRect destRect = moth_ui::MakeRect(rect.x, rect.y, rect.w, rect.h);
 
-            graphics.SetBlendMode(image, backend::EBlendMode::None);
-            graphics.SetColorMod(image, moth_ui::BasicColors::White);
+            //graphics.SetBlendMode(image, backend::EBlendMode::None);
+            //graphics.SetColorMod(image, moth_ui::BasicColors::White);
             graphics.DrawImage(*image, nullptr, &destRect);
 
             nlohmann::json details;

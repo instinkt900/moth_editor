@@ -69,7 +69,7 @@ namespace backend::vulkan {
         std::unique_ptr<moth_ui::IFontFactory> m_fontFactory;
         std::unique_ptr<moth_ui::IRenderer> m_uiRenderer;
 
-        std::unique_ptr<backend::vulkan::Graphics> m_graphics;
+        std::unique_ptr<Graphics> m_graphics;
 
         GLFWwindow* m_glfwWindow = nullptr;
 

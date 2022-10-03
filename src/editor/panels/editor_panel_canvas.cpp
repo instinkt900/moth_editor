@@ -109,7 +109,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
 
     // grid lines
     {
-        graphics.SetBlendMode(backend::EBlendMode::Blend);
+        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
         auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
         auto const& gridMajorFactor = m_editorLayer.GetConfig().CanvasGridMajorFactor;
         if (gridSpacing > 0) {
@@ -144,7 +144,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
 
     // outline the canvas
     {
-        graphics.SetBlendMode(backend::EBlendMode::Blend);
+        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
         graphics.SetColor(m_editorLayer.GetConfig().CanvasOutlineColor);
         moth_ui::IntRect canvasRect;
         canvasRect.topLeft = { 0, 0 };
@@ -161,7 +161,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
         auto const newRenderOffsetX = static_cast<int>(m_canvasOffset.x / scaleFactor);
         auto const newRenderOffsetY = static_cast<int>(m_canvasOffset.y / scaleFactor);
 
-        graphics.SetBlendMode(backend::EBlendMode::None);
+        graphics.SetBlendMode(moth_ui::BlendMode::Replace);
         graphics.SetLogicalSize(moth_ui::IntVec2{ newRenderWidth, newRenderHeight });
         {
 

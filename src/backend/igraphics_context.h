@@ -1,22 +1,14 @@
 #pragma once
 
 #include "moth_ui/iimage.h"
+#include "moth_ui/blend_mode.h"
 
 namespace backend {
-    enum class EBlendMode {
-        Invalid,
-        None,
-        Blend,
-        Add,
-        Mod,
-        Mul,
-    };
-
     class IGraphicsContext {
     public:
-        virtual void SetBlendMode(EBlendMode mode) = 0;
-        virtual void SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) = 0;
-        virtual void SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) = 0;
+        virtual void SetBlendMode(moth_ui::BlendMode mode) = 0;
+        //virtual void SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) = 0;
+        //virtual void SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) = 0;
         virtual void SetColor(moth_ui::Color const& color) = 0;
         virtual void Clear() = 0;
         virtual void DrawImage(moth_ui::IImage& image, moth_ui::IntRect const* sourceRect, moth_ui::IntRect const* destRect) = 0;

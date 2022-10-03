@@ -8,9 +8,9 @@ namespace backend::sdl {
     public:
         SDLGraphics(SDL_Renderer* renderer);
 
-        void SetBlendMode(EBlendMode mode) override;
-        void SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) override;
-        void SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) override;
+        void SetBlendMode(moth_ui::BlendMode mode) override;
+        //void SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) override;
+        //void SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) override;
         void SetColor(moth_ui::Color const& color) override;
         void Clear() override;
         void DrawImage(moth_ui::IImage& image, moth_ui::IntRect const* sourceRect, moth_ui::IntRect const* destRect) override;

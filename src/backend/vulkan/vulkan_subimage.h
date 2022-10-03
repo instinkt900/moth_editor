@@ -17,5 +17,7 @@ namespace backend::vulkan {
         std::shared_ptr<Image> m_texture;
         moth_ui::IntVec2 m_textureDimensions;
         moth_ui::IntRect m_sourceRect;
+
+        static class Graphics* s_graphicsContext;
     };
 }

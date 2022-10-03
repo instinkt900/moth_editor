@@ -1,8 +1,10 @@
 #include "common.h"
 #include "vulkan_subimage.h"
-#include "vulkan_app.h"
+#include "vulkan_graphics.h"
 
 namespace backend::vulkan {
+    Graphics* SubImage::s_graphicsContext = nullptr;
+
     SubImage::SubImage(std::shared_ptr<Image> texture, moth_ui::IntVec2 const& textureDimensions, moth_ui::IntRect const& sourceRect)
         : m_texture(texture)
         , m_textureDimensions(textureDimensions)
@@ -25,10 +27,8 @@ namespace backend::vulkan {
     }
 
     void SubImage::ImGui(moth_ui::IntVec2 const& size, moth_ui::FloatVec2 const& uv0, moth_ui::FloatVec2 const& uv1) const {
-        if (m_texture) {
-            Application* app = static_cast<Application*>(g_App);
-            Graphics& graphics = static_cast<Graphics&>(app->GetGraphics());
-            VkDescriptorSet descriptorSet = graphics.GetDescriptorSet(*m_texture);
+        if (m_texture && s_graphicsContext) {
+            VkDescriptorSet descriptorSet = s_graphicsContext->GetDescriptorSet(*m_texture);
             ImGui::Image(descriptorSet,
                            ImVec2(static_cast<float>(size.x), static_cast<float>(size.y)),
                            ImVec2(uv0.x, uv0.y),
