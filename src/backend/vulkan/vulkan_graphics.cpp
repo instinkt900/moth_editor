@@ -272,7 +272,10 @@ namespace backend::vulkan {
 
     void Graphics::SetLogicalSize(moth_ui::IntVec2 const& logicalSize) {
         auto& context = m_drawStack.top();
-        context.m_targetExtent = { static_cast<uint32_t>(logicalSize.x), static_cast<uint32_t>(logicalSize.y) };
+        DrawCmd draw(EDrawCmdType::Size);
+        draw.constants.xyScale = { 2.0f / static_cast<float>(logicalSize.x), 2.0f / static_cast<float>(logicalSize.y) };
+        draw.constants.xyOffset = { -1.0f, -1.0f };
+        context.m_draws.push_back(draw);
     }
 
     VkDescriptorSet Graphics::GetDescriptorSet(Image& image) {
@@ -458,7 +461,11 @@ namespace backend::vulkan {
         }
 
         auto const& pipeline = GetCurrentPipeline(topology);
-        context.m_draws.push_back({ pipeline.m_hash, vertCount, descriptorSet });
+        DrawCmd draw(EDrawCmdType::Draw);
+        draw.pipeline = pipeline.m_hash;
+        draw.vertCount = vertCount;
+        draw.descriptorSet = descriptorSet;
+        context.m_draws.push_back(draw);
     }
 
     void Graphics::BeginContext(Framebuffer* target) {
@@ -500,6 +507,11 @@ namespace backend::vulkan {
 
         context.m_currentColor = moth_ui::BasicColors::White;
         context.m_currentBlendMode = moth_ui::BlendMode::Invalid;
+
+        PushConstants pushConstants;
+        pushConstants.xyScale = { 2.0f / static_cast<float>(context.m_targetExtent.width), 2.0f / static_cast<float>(context.m_targetExtent.height) };
+        pushConstants.xyOffset = { -1.0f, -1.0f };
+        commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &pushConstants);
     }
 
     Framebuffer* Graphics::EndContext() {
@@ -527,27 +539,26 @@ namespace backend::vulkan {
             commandBuffer.BindVertexBuffer(*m_vertexBuffer);
         }
 
-        PushConstants pushConstants;
-        pushConstants.xyScale = { 2.0f / static_cast<float>(context.m_targetExtent.width), 2.0f / static_cast<float>(context.m_targetExtent.height) };
-        pushConstants.xyOffset = { -1.0f, -1.0f };
-        commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &pushConstants);
-
         uint32_t currentPipeline = 0;
         uint32_t vertexOffset = 0;
         for (auto& draw : context.m_draws) {
-            if (draw.pipeline != currentPipeline) {
-                auto const it = m_pipelines.find(draw.pipeline);
-                commandBuffer.BindPipeline(*it->second);
-                currentPipeline = draw.pipeline;
+            if (draw.type == EDrawCmdType::Draw) {
+                if (draw.pipeline != currentPipeline) {
+                    auto const it = m_pipelines.find(draw.pipeline);
+                    commandBuffer.BindPipeline(*it->second);
+                    currentPipeline = draw.pipeline;
+                }
+                if (draw.descriptorSet != VK_NULL_HANDLE) {
+                    commandBuffer.BindDescriptorSet(*m_drawingShader, draw.descriptorSet);
+                } else {
+                    VkDescriptorSet descriptorSet = m_drawingShader->GetDescriptorSet(*m_defaultImage);
+                    commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet);
+                }
+                commandBuffer.Draw(draw.vertCount, vertexOffset);
+                vertexOffset += draw.vertCount;
+            } else if (draw.type == EDrawCmdType::Size) {
+                commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &draw.constants);
             }
-            if (draw.descriptorSet != VK_NULL_HANDLE) {
-                commandBuffer.BindDescriptorSet(*m_drawingShader, draw.descriptorSet);
-            } else {
-                VkDescriptorSet descriptorSet = m_drawingShader->GetDescriptorSet(*m_defaultImage);
-                commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet);
-            }
-            commandBuffer.Draw(draw.vertCount, vertexOffset);
-            vertexOffset += draw.vertCount;
         }
 
         commandBuffer.EndRenderPass();

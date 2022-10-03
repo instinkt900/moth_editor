@@ -67,10 +67,19 @@ namespace backend::vulkan {
             Triangles
         };
 
+        enum class EDrawCmdType {
+            Draw,
+            Size,
+        };
+
         struct DrawCmd {
+            DrawCmd(EDrawCmdType drawType)
+                : type(drawType) {}
+            EDrawCmdType type;
             uint32_t pipeline;
             uint32_t vertCount;
             VkDescriptorSet descriptorSet;
+            PushConstants constants;
         };
 
         struct DrawContext {
