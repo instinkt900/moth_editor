@@ -66,22 +66,37 @@ namespace backend::vulkan {
         CHECK_VK_RESULT(vkCreatePipelineCache(m_context.m_vkDevice, &cacheInfo, nullptr, &m_vkPipelineCache));
 
         m_swapchain = std::make_unique<Swapchain>(m_context, *m_renderPass, surface, VkExtent2D{ surfaceWidth, surfaceHeight });
+
+        m_contextStack.push(nullptr);
     }
 
     Graphics::~Graphics() {
+        if (m_overrideContext.m_vertexBuffer && m_overrideContext.m_vertexBufferData) {
+            m_overrideContext.m_vertexBuffer->Unmap();
+            m_overrideContext.m_vertexBufferData = nullptr;
+        }
+        if (m_defaultContext.m_vertexBuffer && m_defaultContext.m_vertexBufferData) {
+            m_defaultContext.m_vertexBuffer->Unmap();
+            m_defaultContext.m_vertexBufferData = nullptr;
+        }
         vkDestroyPipelineCache(m_context.m_vkDevice, m_vkPipelineCache, nullptr);
     }
 
     void Graphics::Begin() {
-        BeginContext();
+        m_defaultContext.m_target = m_swapchain->GetNextFramebuffer();
+        VkFence cmdFence = m_defaultContext.m_target->GetFence().GetVkFence();
+        vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
+        vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
+
+        BeginContext(&m_defaultContext);
     }
 
     void Graphics::End() {
-        Framebuffer* target = EndContext();
+        EndContext();
 
-        VkSemaphore waitSemaphores[] = { target->GetRenderFinishedSemaphore() };
+        VkSemaphore waitSemaphores[] = { m_defaultContext.m_target->GetRenderFinishedSemaphore() };
         VkSwapchainKHR swapChains[] = { m_swapchain->GetVkSwapchain() };
-        uint32_t swapchainIndices[] = { target->GetSwapchainIndex() };
+        uint32_t swapchainIndices[] = { m_defaultContext.m_target->GetSwapchainIndex() };
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -94,8 +109,8 @@ namespace backend::vulkan {
     }
 
     void Graphics::SetBlendMode(moth_ui::BlendMode mode) {
-        auto& context = m_drawStack.top();
-        context.m_currentBlendMode = mode;
+        auto context = m_contextStack.top();
+        context->m_currentBlendMode = mode;
     }
 
     //void Graphics::SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) {
@@ -105,22 +120,21 @@ namespace backend::vulkan {
     //}
 
     void Graphics::SetColor(moth_ui::Color const& color) {
-        auto& context = m_drawStack.top();
-        context.m_currentColor = color;
+        auto context = m_contextStack.top();
+        context->m_currentColor = color;
     }
 
     void Graphics::Clear() {
-        auto& context = m_drawStack.top();
-        DrawFillRectF({ { 0, 0 }, { static_cast<float>(context.m_targetExtent.width), static_cast<float>(context.m_targetExtent.height) } });
+        auto context = m_contextStack.top();
+        DrawFillRectF({ { 0, 0 }, { static_cast<float>(context->m_logicalExtent.width), static_cast<float>(context->m_logicalExtent.height) } });
     }
 
     void Graphics::DrawImage(moth_ui::IImage& image, moth_ui::IntRect const* sourceRect, moth_ui::IntRect const* destRect) {
-        auto& context = m_drawStack.top();
-
+        auto context = m_contextStack.top();
         auto& vulkanImage = dynamic_cast<SubImage&>(image);
         auto texture = vulkanImage.m_texture;
 
-        moth_ui::FloatRect const targetRect = moth_ui::MakeRect(0.0f, 0.0f, static_cast<float>(context.m_targetExtent.width), static_cast<float>(context.m_targetExtent.height));
+        moth_ui::FloatRect const targetRect = moth_ui::MakeRect(0.0f, 0.0f, static_cast<float>(context->m_logicalExtent.width), static_cast<float>(context->m_logicalExtent.height));
 
         moth_ui::FloatRect fDestRect;
         if (destRect) {
@@ -144,23 +158,23 @@ namespace backend::vulkan {
 
         vertices[0].xy = { fDestRect.topLeft.x, fDestRect.topLeft.y };
         vertices[0].uv = { imageRect.topLeft.x, imageRect.topLeft.y };
-        vertices[0].color = context.m_currentColor;
+        vertices[0].color = context->m_currentColor;
         vertices[1].xy = { fDestRect.bottomRight.x, fDestRect.topLeft.y };
         vertices[1].uv = { imageRect.bottomRight.x, imageRect.topLeft.y };
-        vertices[1].color = context.m_currentColor;
+        vertices[1].color = context->m_currentColor;
         vertices[2].xy = { fDestRect.topLeft.x, fDestRect.bottomRight.y };
         vertices[2].uv = { imageRect.topLeft.x, imageRect.bottomRight.y };
-        vertices[2].color = context.m_currentColor;
+        vertices[2].color = context->m_currentColor;
 
         vertices[3].xy = { fDestRect.topLeft.x, fDestRect.bottomRight.y };
         vertices[3].uv = { imageRect.topLeft.x, imageRect.bottomRight.y };
-        vertices[3].color = context.m_currentColor;
+        vertices[3].color = context->m_currentColor;
         vertices[4].xy = { fDestRect.bottomRight.x, fDestRect.bottomRight.y };
         vertices[4].uv = { imageRect.bottomRight.x, imageRect.bottomRight.y };
-        vertices[4].color = context.m_currentColor;
+        vertices[4].color = context->m_currentColor;
         vertices[5].xy = { fDestRect.bottomRight.x, fDestRect.topLeft.y };
         vertices[5].uv = { imageRect.bottomRight.x, imageRect.topLeft.y };
-        vertices[5].color = context.m_currentColor;
+        vertices[5].color = context->m_currentColor;
 
         VkDescriptorSet descriptorSet = m_drawingShader->GetDescriptorSet(*texture);
         SubmitVertices(vertices, 6, ETopologyType::Triangles, descriptorSet);
@@ -170,77 +184,77 @@ namespace backend::vulkan {
     }
 
     void Graphics::DrawRectF(moth_ui::FloatRect const& rect) {
-        auto& context = m_drawStack.top();
+        auto context = m_contextStack.top();
         Vertex vertices[8];
 
         vertices[0].xy = { rect.topLeft.x, rect.topLeft.y };
         vertices[0].uv = { 0, 0 };
-        vertices[0].color = context.m_currentColor;
+        vertices[0].color = context->m_currentColor;
         vertices[1].xy = { rect.bottomRight.x, rect.topLeft.y };
         vertices[1].uv = { 0, 0 };
-        vertices[1].color = context.m_currentColor;
+        vertices[1].color = context->m_currentColor;
 
         vertices[2].xy = { rect.bottomRight.x, rect.topLeft.y };
         vertices[2].uv = { 0, 0 };
-        vertices[2].color = context.m_currentColor;
+        vertices[2].color = context->m_currentColor;
         vertices[3].xy = { rect.bottomRight.x, rect.bottomRight.y };
         vertices[3].uv = { 0, 0 };
-        vertices[3].color = context.m_currentColor;
+        vertices[3].color = context->m_currentColor;
 
         vertices[4].xy = { rect.bottomRight.x, rect.bottomRight.y };
         vertices[4].uv = { 0, 0 };
-        vertices[4].color = context.m_currentColor;
+        vertices[4].color = context->m_currentColor;
         vertices[5].xy = { rect.topLeft.x, rect.bottomRight.y };
         vertices[5].uv = { 0, 0 };
-        vertices[5].color = context.m_currentColor;
+        vertices[5].color = context->m_currentColor;
 
         vertices[6].xy = { rect.topLeft.x, rect.bottomRight.y };
         vertices[6].uv = { 0, 0 };
-        vertices[6].color = context.m_currentColor;
+        vertices[6].color = context->m_currentColor;
         vertices[7].xy = { rect.topLeft.x, rect.topLeft.y };
         vertices[7].uv = { 0, 0 };
-        vertices[7].color = context.m_currentColor;
+        vertices[7].color = context->m_currentColor;
 
         SubmitVertices(vertices, 8, ETopologyType::Lines);
     }
 
     void Graphics::DrawFillRectF(moth_ui::FloatRect const& rect) {
-        auto& context = m_drawStack.top();
+        auto context = m_contextStack.top();
         Vertex vertices[6];
 
         vertices[0].xy = { rect.topLeft.x, rect.topLeft.y };
         vertices[0].uv = { 0, 0 };
-        vertices[0].color = context.m_currentColor;
+        vertices[0].color = context->m_currentColor;
         vertices[1].xy = { rect.bottomRight.x, rect.topLeft.y };
         vertices[1].uv = { 0, 0 };
-        vertices[1].color = context.m_currentColor;
+        vertices[1].color = context->m_currentColor;
         vertices[2].xy = { rect.topLeft.x, rect.bottomRight.y };
         vertices[2].uv = { 0, 0 };
-        vertices[2].color = context.m_currentColor;
+        vertices[2].color = context->m_currentColor;
 
         vertices[3].xy = { rect.topLeft.x, rect.bottomRight.y };
         vertices[3].uv = { 0, 0 };
-        vertices[3].color = context.m_currentColor;
+        vertices[3].color = context->m_currentColor;
         vertices[4].xy = { rect.bottomRight.x, rect.bottomRight.y };
         vertices[4].uv = { 0, 0 };
-        vertices[4].color = context.m_currentColor;
+        vertices[4].color = context->m_currentColor;
         vertices[5].xy = { rect.bottomRight.x, rect.topLeft.y };
         vertices[5].uv = { 0, 0 };
-        vertices[5].color = context.m_currentColor;
+        vertices[5].color = context->m_currentColor;
 
         SubmitVertices(vertices, 6, ETopologyType::Triangles);
     }
 
     void Graphics::DrawLineF(moth_ui::FloatVec2 const& p0, moth_ui::FloatVec2 const& p1) {
-        auto& context = m_drawStack.top();
+        auto context = m_contextStack.top();
         Vertex vertices[2];
 
         vertices[0].xy = { p0.x, p0.y };
         vertices[0].uv = { 0, 0 };
-        vertices[0].color = context.m_currentColor;
+        vertices[0].color = context->m_currentColor;
         vertices[1].xy = { p1.x, p1.y };
         vertices[1].uv = { 0, 0 };
-        vertices[1].color = context.m_currentColor;
+        vertices[1].color = context->m_currentColor;
 
         SubmitVertices(vertices, 2, ETopologyType::Lines);
     }
@@ -249,33 +263,34 @@ namespace backend::vulkan {
         return std::make_unique<Framebuffer>(m_context, width, height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_renderPass->GetRenderPass());
     }
 
+    bool Graphics::IsRenderTarget() const {
+        return m_contextStack.top() == &m_overrideContext;
+    }
+
     moth_ui::ITarget* Graphics::GetTarget() {
-        if (!m_drawStack.empty()) {
-            auto& context = m_drawStack.top();
-            return context.m_target;
-        }
-        return nullptr;
+        return m_overrideContext.m_target;
     }
 
     void Graphics::SetTarget(moth_ui::ITarget* target) {
-        if (!m_drawStack.empty()) {
-            auto& context = m_drawStack.top();
-            if (context.m_target && !context.m_swapchain) {
-                EndContext();
-            }
+        if (IsRenderTarget()) {
+            EndContext();
         }
 
         if (target) {
-            BeginContext(static_cast<Framebuffer*>(target));
+            m_overrideContext.m_target = static_cast<Framebuffer*>(target);
+            VkFence fence = m_overrideContext.m_target->GetFence().GetVkFence();
+            vkResetFences(m_context.m_vkDevice, 1, &fence);
+            BeginContext(&m_overrideContext);
         }
     }
 
     void Graphics::SetLogicalSize(moth_ui::IntVec2 const& logicalSize) {
-        auto& context = m_drawStack.top();
-        DrawCmd draw(EDrawCmdType::Size);
-        draw.constants.xyScale = { 2.0f / static_cast<float>(logicalSize.x), 2.0f / static_cast<float>(logicalSize.y) };
-        draw.constants.xyOffset = { -1.0f, -1.0f };
-        context.m_draws.push_back(draw);
+        auto context = m_contextStack.top();
+        auto& commandBuffer = context->m_target->GetCommandBuffer();
+        PushConstants constants;
+        constants.xyScale = { 2.0f / static_cast<float>(logicalSize.x), 2.0f / static_cast<float>(logicalSize.y) };
+        constants.xyOffset = { -1.0f, -1.0f };
+        commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &constants);
     }
 
     VkDescriptorSet Graphics::GetDescriptorSet(Image& image) {
@@ -424,9 +439,9 @@ namespace backend::vulkan {
     }
 
     Pipeline& Graphics::GetCurrentPipeline(ETopologyType topology) {
-        auto& context = m_drawStack.top();
+        auto context = m_contextStack.top();
         auto const vkTopology = ToVulkan(topology);
-        auto const blendAttachment = ToVulkan(context.m_currentBlendMode);
+        auto const blendAttachment = ToVulkan(context->m_currentBlendMode);
         auto const vertexInputBinding = getVertexBindingDescription();
         auto const vertexAttributeBindings = getVertexAttributeDescriptions();
 
@@ -453,47 +468,39 @@ namespace backend::vulkan {
         return *it->second;
     }
 
-    void Graphics::SubmitVertices(Vertex* vertices, uint32_t vertCount, ETopologyType topology, VkDescriptorSet descriptorSet) {
-        auto& context = m_drawStack.top();
+    void Graphics::BeginContext(DrawContext* context) {
+        context->m_logicalExtent = context->m_target->GetVkExtent();
+        context->m_vertexCount = 0;
+        context->m_maxVertexCount = 1024;
+        context->m_currentPipelineId = 0;
 
-        for (uint32_t i = 0; i < vertCount; ++i) {
-            context.m_vertexList.push_back(vertices[i]);
+        if (!context->m_vertexBuffer) {
+            context->m_vertexBuffer = std::make_unique<Buffer>(m_context, 1024 * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            context->m_vertexBufferData = static_cast<uint8_t*>(context->m_vertexBuffer->Map());
         }
 
-        auto const& pipeline = GetCurrentPipeline(topology);
-        DrawCmd draw(EDrawCmdType::Draw);
-        draw.pipeline = pipeline.m_hash;
-        draw.vertCount = vertCount;
-        draw.descriptorSet = descriptorSet;
-        context.m_draws.push_back(draw);
+        m_contextStack.push(context);
+        StartCommands();
     }
 
-    void Graphics::BeginContext(Framebuffer* target) {
-        auto& context = m_drawStack.emplace();
+    void Graphics::EndContext() {
+        FlushCommands();
+        m_contextStack.pop();
+    }
 
-        if (target) {
-            context.m_target = target;
-            context.m_targetExtent = target->GetVkExtent();
-        } else {
-            context.m_target = m_swapchain->GetNextFramebuffer();
-            context.m_targetExtent = m_swapchain->GetExtent();
-            context.m_swapchain = true;
-            VkFence cmdFence = context.m_target->GetFence().GetVkFence();
-            vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
-            vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
-        }
-
-        auto& commandBuffer = context.m_target->GetCommandBuffer();
+    void Graphics::StartCommands() {
+        auto context = m_contextStack.top();
+        auto& commandBuffer = context->m_target->GetCommandBuffer();
         commandBuffer.Reset();
         commandBuffer.BeginRecord();
-
-        commandBuffer.BeginRenderPass(*m_renderPass, *context.m_target);
+        commandBuffer.BeginRenderPass(*m_renderPass, *context->m_target);
+        commandBuffer.BindVertexBuffer(*context->m_vertexBuffer);
 
         VkViewport viewport;
         viewport.x = 0;
         viewport.y = 0;
-        viewport.width = static_cast<float>(context.m_targetExtent.width);
-        viewport.height = static_cast<float>(context.m_targetExtent.height);
+        viewport.width = static_cast<float>(context->m_logicalExtent.width);
+        viewport.height = static_cast<float>(context->m_logicalExtent.height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         commandBuffer.SetViewport(viewport);
@@ -501,80 +508,64 @@ namespace backend::vulkan {
         VkRect2D scissor;
         scissor.offset.x = 0;
         scissor.offset.y = 0;
-        scissor.extent.width = context.m_target->GetDimensions().x;
-        scissor.extent.height = context.m_target->GetDimensions().y;
+        scissor.extent.width = context->m_target->GetDimensions().x;
+        scissor.extent.height = context->m_target->GetDimensions().y;
         commandBuffer.SetScissor(scissor);
 
-        context.m_currentColor = moth_ui::BasicColors::White;
-        context.m_currentBlendMode = moth_ui::BlendMode::Invalid;
-
         PushConstants pushConstants;
-        pushConstants.xyScale = { 2.0f / static_cast<float>(context.m_targetExtent.width), 2.0f / static_cast<float>(context.m_targetExtent.height) };
+        pushConstants.xyScale = { 2.0f / static_cast<float>(context->m_logicalExtent.width), 2.0f / static_cast<float>(context->m_logicalExtent.height) };
         pushConstants.xyOffset = { -1.0f, -1.0f };
         commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &pushConstants);
     }
 
-    Framebuffer* Graphics::EndContext() {
-        auto context = m_drawStack.top();
-        m_drawStack.pop();
-
-        VkDeviceSize const vertexBufferSize = context.m_vertexList.size() * sizeof(Vertex);
-
-        if ((m_stagingBuffer == nullptr || vertexBufferSize > m_vertexBuffer->GetSize()) && vertexBufferSize > 0) {
-            vkDeviceWaitIdle(m_context.m_vkDevice);
-            m_stagingBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            m_vertexBuffer = std::make_unique<Buffer>(m_context, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        }
-
-        if (m_vertexBuffer) {
-            void* data = m_stagingBuffer->Map();
-            memcpy(data, context.m_vertexList.data(), static_cast<size_t>(vertexBufferSize));
-            m_stagingBuffer->Unmap();
-            m_vertexBuffer->Copy(*m_stagingBuffer);
-        }
-
-        auto& commandBuffer = context.m_target->GetCommandBuffer();
-
-        if (m_vertexBuffer) {
-            commandBuffer.BindVertexBuffer(*m_vertexBuffer);
-        }
-
-        uint32_t currentPipeline = 0;
-        uint32_t vertexOffset = 0;
-        for (auto& draw : context.m_draws) {
-            if (draw.type == EDrawCmdType::Draw) {
-                if (draw.pipeline != currentPipeline) {
-                    auto const it = m_pipelines.find(draw.pipeline);
-                    commandBuffer.BindPipeline(*it->second);
-                    currentPipeline = draw.pipeline;
-                }
-                if (draw.descriptorSet != VK_NULL_HANDLE) {
-                    commandBuffer.BindDescriptorSet(*m_drawingShader, draw.descriptorSet);
-                } else {
-                    VkDescriptorSet descriptorSet = m_drawingShader->GetDescriptorSet(*m_defaultImage);
-                    commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet);
-                }
-                commandBuffer.Draw(draw.vertCount, vertexOffset);
-                vertexOffset += draw.vertCount;
-            } else if (draw.type == EDrawCmdType::Size) {
-                commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &draw.constants);
-            }
-        }
-
+    void Graphics::FlushCommands() {
+        auto context = m_contextStack.top();
+        VkFence cmdFence = context->m_target->GetFence().GetVkFence();
+        auto& commandBuffer = context->m_target->GetCommandBuffer();
         commandBuffer.EndRenderPass();
-
-        if (context.m_swapchain) {
-            commandBuffer.EndRecord();
-            commandBuffer.Submit(context.m_target->GetFence().GetVkFence(), context.m_target->GetAvailableSemaphore(), context.m_target->GetRenderFinishedSemaphore());
-        } else {
-            commandBuffer.TransitionImageLayout(context.m_target->GetVkImage(), context.m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            commandBuffer.EndRecord();
-            VkFence cmdFence = context.m_target->GetFence().GetVkFence();
-            vkResetFences(m_context.m_vkDevice, 1, &cmdFence);
+        if (IsRenderTarget()) {
+            commandBuffer.TransitionImageLayout(context->m_target->GetVkImage(), context->m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+        commandBuffer.EndRecord();
+        if (IsRenderTarget()) {
             commandBuffer.Submit(cmdFence);
-            vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
+        } else {
+            commandBuffer.Submit(cmdFence, context->m_target->GetAvailableSemaphore(), context->m_target->GetRenderFinishedSemaphore());
+        }
+        vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
+    }
+
+    void Graphics::SubmitVertices(Vertex* vertices, uint32_t vertCount, ETopologyType topology, VkDescriptorSet descriptorSet) {
+        auto context = m_contextStack.top();
+
+        assert(vertCount <= context->m_maxVertexCount);
+
+        const uint32_t availableVertices = context->m_maxVertexCount - context->m_vertexCount;
+        if (availableVertices < vertCount) {
+            FlushCommands();
+            StartCommands();
         }
 
-        return context.m_target;
+        const uint32_t vertexDataSize = sizeof(Vertex) * vertCount;
+        const uint32_t existingVertexOffset = sizeof(Vertex) * context->m_vertexCount;
+        memcpy(context->m_vertexBufferData + existingVertexOffset, vertices, vertexDataSize);
+
+        auto& commandBuffer = context->m_target->GetCommandBuffer();
+
+        auto const& pipeline = GetCurrentPipeline(topology);
+        if (context->m_currentPipelineId != pipeline.m_hash) {
+            commandBuffer.BindPipeline(pipeline);
+            context->m_currentPipelineId = pipeline.m_hash;
+        }
+
+        if (descriptorSet != VK_NULL_HANDLE) {
+            commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet);
+        } else {
+            VkDescriptorSet defaultDescriptorSet = m_drawingShader->GetDescriptorSet(*m_defaultImage);
+            commandBuffer.BindDescriptorSet(*m_drawingShader, defaultDescriptorSet);
+        }
+
+        commandBuffer.Draw(vertCount, context->m_vertexCount);
+        context->m_vertexCount += vertCount;
     }
 }

@@ -28,7 +28,7 @@ namespace backend::vulkan {
         void SetViewport(VkViewport viewport);
         void SetScissor(VkRect2D scissor);
         void BindDescriptorSet(Shader& shader, VkDescriptorSet descriptorSet);
-        void BindPipeline(Pipeline& pipeline);
+        void BindPipeline(Pipeline const& pipeline);
         void PushConstants(Shader& shader, VkShaderStageFlagBits stageFlags, size_t bufferSize, void const* data);
         void BindVertexBuffer(Buffer& buffer);
         void Draw(uint32_t vertexCount, uint32_t offset);

@@ -180,7 +180,7 @@ namespace backend::vulkan {
         vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader.m_pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
     }
 
-    void CommandBuffer::BindPipeline(Pipeline& pipeline) {
+    void CommandBuffer::BindPipeline(Pipeline const& pipeline) {
         vkCmdBindPipeline(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.m_pipeline);
     }
 

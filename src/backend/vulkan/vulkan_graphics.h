@@ -45,9 +45,9 @@ namespace backend::vulkan {
         Swapchain& GetSwapchain() const { return *m_swapchain; }
         RenderPass& GetRenderPass() const { return *m_renderPass; }
         CommandBuffer* GetCurrentCommandBuffer() {
-            if (!m_drawStack.empty()) {
-                auto context = m_drawStack.top();
-                return &context.m_target->GetCommandBuffer();
+            auto context = m_contextStack.top();
+            if (context) {
+                return &context->m_target->GetCommandBuffer();
             }
             return nullptr;
         }
@@ -67,43 +67,30 @@ namespace backend::vulkan {
             Triangles
         };
 
-        enum class EDrawCmdType {
-            Draw,
-            Size,
-        };
-
-        struct DrawCmd {
-            DrawCmd(EDrawCmdType drawType)
-                : type(drawType) {}
-            EDrawCmdType type;
-            uint32_t pipeline;
-            uint32_t vertCount;
-            VkDescriptorSet descriptorSet;
-            PushConstants constants;
-        };
-
         struct DrawContext {
             Framebuffer* m_target = nullptr;
-            VkExtent2D m_targetExtent;
+            VkExtent2D m_logicalExtent;
 
             moth_ui::BlendMode m_currentBlendMode = moth_ui::BlendMode::Replace;
-            moth_ui::Color m_currentColor;
-            std::vector<Vertex> m_vertexList;
-            std::vector<DrawCmd> m_draws;
+            moth_ui::Color m_currentColor = moth_ui::BasicColors::White;
 
-            bool m_swapchain = false;
+            std::unique_ptr<Buffer> m_vertexBuffer;
+            uint8_t* m_vertexBufferData = nullptr;
+            uint32_t m_vertexCount = 0;
+            uint32_t m_maxVertexCount = 0;
+            uint32_t m_currentPipelineId = 0;
         };
 
         VkPipelineCache m_vkPipelineCache;
         std::map<uint32_t, std::shared_ptr<Pipeline>> m_pipelines;
         std::unique_ptr<RenderPass> m_renderPass;
         std::unique_ptr<Swapchain> m_swapchain;
-        std::unique_ptr<Buffer> m_stagingBuffer;
-        std::unique_ptr<Buffer> m_vertexBuffer;
         std::shared_ptr<Shader> m_drawingShader;
         std::unique_ptr<Image> m_defaultImage;
-        std::stack<DrawContext> m_drawStack;
-        bool m_passBegun = false;
+
+        DrawContext m_defaultContext;
+        DrawContext m_overrideContext;
+        std::stack<DrawContext*> m_contextStack;
 
         VkPrimitiveTopology ToVulkan(ETopologyType type) const;
         VkPipelineColorBlendAttachmentState ToVulkan(moth_ui::BlendMode mode) const;
@@ -112,8 +99,13 @@ namespace backend::vulkan {
         void CreatePipeline();
         void CreateDefaultImage();
         Pipeline& GetCurrentPipeline(ETopologyType topology);
+
+        void BeginContext(DrawContext* target);
+        void EndContext();
+        void StartCommands();
+        void FlushCommands();
         void SubmitVertices(Vertex* vertices, uint32_t vertCount, ETopologyType topology, VkDescriptorSet descriptorSet = VK_NULL_HANDLE);
-        void BeginContext(Framebuffer* target = nullptr);
-        Framebuffer* EndContext();
+
+        bool IsRenderTarget() const;
     };
 }
