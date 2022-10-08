@@ -527,11 +527,7 @@ namespace backend::vulkan {
             commandBuffer.TransitionImageLayout(context->m_target->GetVkImage(), context->m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
         commandBuffer.EndRecord();
-        if (IsRenderTarget()) {
-            commandBuffer.Submit(cmdFence);
-        } else {
-            commandBuffer.Submit(cmdFence, context->m_target->GetAvailableSemaphore(), context->m_target->GetRenderFinishedSemaphore());
-        }
+        commandBuffer.Submit(cmdFence, context->m_target->GetAvailableSemaphore(), context->m_target->GetRenderFinishedSemaphore());
         vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
     }
 

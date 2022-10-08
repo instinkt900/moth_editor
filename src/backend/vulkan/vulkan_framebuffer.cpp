@@ -15,6 +15,11 @@ namespace backend::vulkan {
         moth_ui::IntRect rec = { { 0, 0 }, { width, height } };
         m_image = std::make_unique<SubImage>(std::move(imagePtr), dim, rec);
         CreateFramebufferResource(context, renderPass);
+
+        VkSemaphoreCreateInfo semaphoreInfo{};
+        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        CHECK_VK_RESULT(vkCreateSemaphore(m_context.m_vkDevice, &semaphoreInfo, nullptr, &m_imageAvailableSemaphore));
+        CHECK_VK_RESULT(vkCreateSemaphore(m_context.m_vkDevice, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore));
     }
 
     Framebuffer::Framebuffer(Context& context, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkRenderPass renderPass)
@@ -30,8 +35,12 @@ namespace backend::vulkan {
     }
 
     Framebuffer::~Framebuffer() {
-        vkDestroySemaphore(m_context.m_vkDevice, m_imageAvailableSemaphore, nullptr);
-        vkDestroySemaphore(m_context.m_vkDevice, m_renderFinishedSemaphore, nullptr);
+        if (m_imageAvailableSemaphore) {
+            vkDestroySemaphore(m_context.m_vkDevice, m_imageAvailableSemaphore, nullptr);
+        }
+        if (m_renderFinishedSemaphore) {
+            vkDestroySemaphore(m_context.m_vkDevice, m_renderFinishedSemaphore, nullptr);
+        }
         vkDestroyFramebuffer(m_context.m_vkDevice, m_vkFramebuffer, nullptr);
     }
 
@@ -63,10 +72,5 @@ namespace backend::vulkan {
         info.height = m_image->GetHeight();
         info.layers = 1;
         CHECK_VK_RESULT(vkCreateFramebuffer(context.m_vkDevice, &info, nullptr, &m_vkFramebuffer));
-
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        CHECK_VK_RESULT(vkCreateSemaphore(m_context.m_vkDevice, &semaphoreInfo, nullptr, &m_imageAvailableSemaphore));
-        CHECK_VK_RESULT(vkCreateSemaphore(m_context.m_vkDevice, &semaphoreInfo, nullptr, &m_renderFinishedSemaphore));
     }
 }
