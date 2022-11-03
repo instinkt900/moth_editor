@@ -156,6 +156,7 @@ namespace backend::vulkan {
                 vkGetPhysicalDeviceFeatures(gpus[i], &features);
                 if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && features.samplerAnisotropy == VK_TRUE) {
                     selectedGpu = i;
+                    m_vkDeviceProperties = properties;
                     break;
                 }
             }

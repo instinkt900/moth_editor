@@ -22,6 +22,19 @@ namespace backend::vulkan {
             moth_ui::Color color;
         };
 
+        struct FontRect {
+            float min_x;
+            float min_y;
+            float max_x;
+            float max_y;
+        };
+
+        struct FontGlyphInstance {
+            FontRect rect;
+            uint32_t glyph_index;
+            float sharpness;
+        };
+
         void Begin();
         void End();
 
@@ -35,6 +48,7 @@ namespace backend::vulkan {
         void DrawRectF(moth_ui::FloatRect const& rect) override;
         void DrawFillRectF(moth_ui::FloatRect const& rect) override;
         void DrawLineF(moth_ui::FloatVec2 const& p0, moth_ui::FloatVec2 const& p1) override;
+        void DrawText(std::string const& text, moth_ui::IntRect const& pos) override;
 
         std::unique_ptr<moth_ui::ITarget> CreateTarget(int width, int height) override;
         moth_ui::ITarget* GetTarget() override;
@@ -52,6 +66,8 @@ namespace backend::vulkan {
             return nullptr;
         }
         VkDescriptorSet GetDescriptorSet(Image& image);
+
+        Shader& GetFontShader() { return *m_fontShader; }
 
     private:
         Context& m_context;
@@ -75,7 +91,12 @@ namespace backend::vulkan {
             moth_ui::Color m_currentColor = moth_ui::BasicColors::White;
 
             std::unique_ptr<Buffer> m_vertexBuffer;
-            uint8_t* m_vertexBufferData = nullptr;
+            Vertex* m_vertexBufferData = nullptr;
+
+            std::unique_ptr<Buffer> m_fontBuffer;
+            FontGlyphInstance* m_fontBufferData = nullptr;
+            uint32_t m_glyphCount = 0;
+
             uint32_t m_vertexCount = 0;
             uint32_t m_maxVertexCount = 0;
             uint32_t m_currentPipelineId = 0;
@@ -83,9 +104,11 @@ namespace backend::vulkan {
 
         VkPipelineCache m_vkPipelineCache;
         std::map<uint32_t, std::shared_ptr<Pipeline>> m_pipelines;
+        std::map<uint32_t, std::shared_ptr<Pipeline>> m_fontPipelines;
         std::unique_ptr<RenderPass> m_renderPass;
         std::unique_ptr<Swapchain> m_swapchain;
         std::shared_ptr<Shader> m_drawingShader;
+        std::shared_ptr<Shader> m_fontShader;
         std::unique_ptr<Image> m_defaultImage;
 
         DrawContext m_defaultContext;
@@ -96,9 +119,10 @@ namespace backend::vulkan {
         VkPipelineColorBlendAttachmentState ToVulkan(moth_ui::BlendMode mode) const;
 
         void CreateRenderPass();
-        void CreatePipeline();
+        void CreateShaders();
         void CreateDefaultImage();
         Pipeline& GetCurrentPipeline(ETopologyType topology);
+        Pipeline& GetCurrentFontPipeline();
 
         void BeginContext(DrawContext* target);
         void EndContext();

@@ -18,6 +18,7 @@ namespace backend::vulkan {
         VkDescriptorPool m_vkDescriptorPool = VK_NULL_HANDLE;
         VkCommandPool m_vkCommandPool = VK_NULL_HANDLE;
         VmaAllocator m_vmaAllocator = VK_NULL_HANDLE;
+        VkPhysicalDeviceProperties m_vkDeviceProperties;
 
         static VkSurfaceFormatKHR selectSurfaceFormat(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const VkFormat* request_formats, int request_formats_count, VkColorSpaceKHR request_color_space);
         static VkPresentModeKHR selectPresentMode(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const VkPresentModeKHR* request_modes, int request_modes_count);

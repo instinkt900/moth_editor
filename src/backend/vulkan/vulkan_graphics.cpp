@@ -52,13 +52,44 @@ namespace {
 
         return vertexAttributeDescs;
     }
+
+    VkVertexInputBindingDescription getFontVertexBindingDescription() {
+        VkVertexInputBindingDescription vertexBindingDesc{};
+
+        vertexBindingDesc.binding = 0;
+        vertexBindingDesc.stride = sizeof(backend::vulkan::Graphics::FontGlyphInstance);
+        vertexBindingDesc.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+
+        return vertexBindingDesc;
+    }
+
+    std::vector<VkVertexInputAttributeDescription> getFontVertexAttributeDescriptions() {
+        std::vector<VkVertexInputAttributeDescription> vertexAttributeDescs(3);
+
+        vertexAttributeDescs[0].binding = 0;
+        vertexAttributeDescs[0].location = 0;
+        vertexAttributeDescs[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        vertexAttributeDescs[0].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, rect);
+
+        vertexAttributeDescs[1].binding = 0;
+        vertexAttributeDescs[1].location = 1;
+        vertexAttributeDescs[1].format = VK_FORMAT_R32_UINT;
+        vertexAttributeDescs[1].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, glyph_index);
+
+        vertexAttributeDescs[2].binding = 0;
+        vertexAttributeDescs[2].location = 2;
+        vertexAttributeDescs[2].format = VK_FORMAT_R32_SFLOAT;
+        vertexAttributeDescs[2].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, sharpness);
+
+        return vertexAttributeDescs;
+    }
 }
 
 namespace backend::vulkan {
     Graphics::Graphics(Context& context, VkSurfaceKHR surface, uint32_t surfaceWidth, uint32_t surfaceHeight)
         : m_context(context) {
         CreateRenderPass();
-        CreatePipeline();
+        CreateShaders();
         CreateDefaultImage();
 
         VkPipelineCacheCreateInfo cacheInfo{};
@@ -259,6 +290,54 @@ namespace backend::vulkan {
         SubmitVertices(vertices, 2, ETopologyType::Lines);
     }
 
+    void Graphics::DrawText(std::string const& text_, moth_ui::IntRect const& pos) {
+        auto context = m_contextStack.top();
+        char const text = text_.c_str();
+        moth_ui::FloatVec2 charPos = static_cast<moth_ui::FloatVec2>(pos);
+        uint32_t const glyphStart = context->m_glyphCount;
+
+        while (*text) {
+            if (context.m_glyphCount >= 1024)
+                break;
+
+            uint32_t glyph_index = *text - 32;
+
+            FontGlyphInfo* gi = &glyph_infos[glyph_index];
+            FontGlyphInstance* inst = &m_fontBufferData[context.m_glyphCount];
+
+            inst->rect.min_x = (charPos.x + gi->bbox.min_x) / (m_logicalExtent.width / 2.0f) - 1.0f;
+            inst->rect.min_y = (charPos.y - gi->bbox.min_y) / (m_logicalExtent.height / 2.0f) - 1.0f;
+            inst->rect.max_x = (charPos.x + gi->bbox.max_x) / (m_logicalExtent.width / 2.0f) - 1.0f;
+            inst->rect.max_y = (charPos.y - gi->bbox.max_y) / (m_logicalExtent.height / 2.0f) - 1.0f;
+
+            if (inst->rect.min_x <= 1 && inst->rect.max_x >= -1 &&
+                inst->rect.max_y <= 1 && inst->rect.min_y >= -1) {
+                inst->glyph_index = glyph_index;
+                inst->sharpness = 1.0f;
+
+                context.++;
+            }
+
+            text++;
+            charPos.x += gi->advance;
+        }
+
+        uint32_t const glyphCount = context->m_glyphCount - glyphStart;
+        if (glyphCount) {
+            auto& commandBuffer = context->m_target->GetCommandBuffer();
+            commandBuffer.BindVertexBuffer(*context->m_fontBuffer);
+
+            auto const& pipeline = GetCurrentFontPipeline();
+            if (context->m_currentPipelineId != pipeline.m_hash) {
+                commandBuffer.BindPipeline(pipeline);
+                context->m_currentPipelineId = pipeline.m_hash;
+            }
+
+            commandBuffer.BindDescriptorSet(*m_fontShader, m_fontDescriptorSet);
+            commandBuffer.Draw(glyphStart, context.m_glyphCount - glyphStart);
+        }
+    }
+
     std::unique_ptr<moth_ui::ITarget> Graphics::CreateTarget(int width, int height) {
         return std::make_unique<Framebuffer>(m_context, width, height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_renderPass->GetRenderPass());
     }
@@ -402,20 +481,34 @@ namespace backend::vulkan {
                            .Build();
     }
 
+    void Graphics::CreateShaders() {
+        {
+            std::vector<char> vertShaderCode;
+            std::vector<char> fragShaderCode;
+            readFile("resources/drawing_vert.spv", vertShaderCode);
+            readFile("resources/drawing_frag.spv", fragShaderCode);
 
+            m_drawingShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
+                                  .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants))
+                                  .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                  .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
+                                  .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
+                                  .Build();
+        }
+        {
+            std::vector<char> vertShaderCode;
+            std::vector<char> fragShaderCode;
+            readFile("resources/font_vert.spv", vertShaderCode);
+            readFile("resources/font_frag.spv", fragShaderCode);
 
-    void Graphics::CreatePipeline() {
-        std::vector<char> vertShaderCode;
-        std::vector<char> fragShaderCode;
-        readFile("resources/drawing_vert.spv", vertShaderCode);
-        readFile("resources/drawing_frag.spv", fragShaderCode);
-
-        m_drawingShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
-                              .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants))
-                              .AddBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-                              .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
-                              .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
-                              .Build();
+            m_fontShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
+                               .AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
+                               .AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                               .AddBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                               .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
+                               .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
+                               .Build();
+        }
     }
 
     void Graphics::CreateDefaultImage() {
@@ -468,6 +561,36 @@ namespace backend::vulkan {
         return *it->second;
     }
 
+    Pipeline& Graphics::GetCurrentFontPipeline() {
+        auto context = m_contextStack.top();
+        auto const vkTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+        auto const blendAttachment = ToVulkan(context->m_currentBlendMode);
+        auto const vertexInputBinding = getFontVertexBindingDescription();
+        auto const vertexAttributeBindings = getFontVertexAttributeDescriptions();
+
+        auto const builder = PipelineBuilder(m_context.m_vkDevice)
+                                 .SetPipelineCache(m_vkPipelineCache)
+                                 .SetRenderPass(*m_renderPass)
+                                 .SetShader(m_drawingShader)
+                                 .AddVertexInputBinding(vertexInputBinding)
+                                 .AddVertexAttribute(vertexAttributeBindings[0])
+                                 .AddVertexAttribute(vertexAttributeBindings[1])
+                                 .AddVertexAttribute(vertexAttributeBindings[2])
+                                 .AddColorBlendAttachment(blendAttachment)
+                                 .AddDynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+                                 .AddDynamicState(VK_DYNAMIC_STATE_SCISSOR)
+                                 .SetTopology(vkTopology);
+
+        uint32_t const pipelineHash = builder.CalculateHash();
+        auto it = m_fontPipelines.find(pipelineHash);
+        if (std::end(m_fontPipelines) == it) {
+            auto const insertResult = m_fontPipelines.insert(std::make_pair(pipelineHash, builder.Build()));
+            it = insertResult.first;
+        }
+
+        return *it->second;
+    }
+
     void Graphics::BeginContext(DrawContext* context) {
         context->m_logicalExtent = context->m_target->GetVkExtent();
         context->m_vertexCount = 0;
@@ -476,8 +599,15 @@ namespace backend::vulkan {
 
         if (!context->m_vertexBuffer) {
             context->m_vertexBuffer = std::make_unique<Buffer>(m_context, 1024 * sizeof(Vertex), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            context->m_vertexBufferData = static_cast<uint8_t*>(context->m_vertexBuffer->Map());
+            context->m_vertexBufferData = static_cast<Vertex*>(context->m_vertexBuffer->Map());
         }
+
+        if (!context->m_fontBuffer) {
+            context->m_fontBuffer = std::make_unique<Buffer>(m_context, 1024 * sizeof(FontGlyphInstance), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            context->m_fontBufferData = static_cast<FontGlyphInstance*>(context->m_fontBuffer->Map());
+        }
+
+        context->m_glyphCount = 0;
 
         m_contextStack.push(context);
         StartCommands();
@@ -494,7 +624,6 @@ namespace backend::vulkan {
         commandBuffer.Reset();
         commandBuffer.BeginRecord();
         commandBuffer.BeginRenderPass(*m_renderPass, *context->m_target);
-        commandBuffer.BindVertexBuffer(*context->m_vertexBuffer);
 
         VkViewport viewport;
         viewport.x = 0;
@@ -547,6 +676,7 @@ namespace backend::vulkan {
         memcpy(context->m_vertexBufferData + existingVertexOffset, vertices, vertexDataSize);
 
         auto& commandBuffer = context->m_target->GetCommandBuffer();
+        commandBuffer.BindVertexBuffer(*context->m_vertexBuffer);
 
         auto const& pipeline = GetCurrentPipeline(topology);
         if (context->m_currentPipelineId != pipeline.m_hash) {
