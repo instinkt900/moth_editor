@@ -2,6 +2,7 @@
 #include "vulkan_graphics.h"
 #include "vulkan_command_buffer.h"
 #include "vulkan_subimage.h"
+#include "vulkan_font.h"
 
 namespace {
     bool readFile(std::string const& filename, std::vector<char>& outBuffer) {
@@ -290,52 +291,86 @@ namespace backend::vulkan {
         SubmitVertices(vertices, 2, ETopologyType::Lines);
     }
 
-    void Graphics::DrawText(std::string const& text_, moth_ui::IntRect const& pos) {
-        auto context = m_contextStack.top();
-        char const text = text_.c_str();
-        moth_ui::FloatVec2 charPos = static_cast<moth_ui::FloatVec2>(pos);
-        uint32_t const glyphStart = context->m_glyphCount;
+    void Graphics::DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::IntRect const& box) {
+        //auto context = m_contextStack.top();
+        //char const* currentCharPtr = text.c_str();
+        //Font& vulkanFont = static_cast<Font&>(font);
 
-        while (*text) {
-            if (context.m_glyphCount >= 1024)
-                break;
+        //moth_ui::FloatVec2 charPos = static_cast<moth_ui::FloatVec2>(box.topLeft);
+        //uint32_t const glyphStart = context->m_glyphCount;
+        //FontGlyphInstance* glyphInstances = static_cast<FontGlyphInstance*>(context->m_fontInstanceStagingBuffer->Map());
 
-            uint32_t glyph_index = *text - 32;
+        //while (*currentCharPtr) {
+        //    if (context->m_glyphCount >= 1024)
+        //        break;
 
-            FontGlyphInfo* gi = &glyph_infos[glyph_index];
-            FontGlyphInstance* inst = &m_fontBufferData[context.m_glyphCount];
+        //    uint32_t glyph_index = *currentCharPtr - 32;
 
-            inst->rect.min_x = (charPos.x + gi->bbox.min_x) / (m_logicalExtent.width / 2.0f) - 1.0f;
-            inst->rect.min_y = (charPos.y - gi->bbox.min_y) / (m_logicalExtent.height / 2.0f) - 1.0f;
-            inst->rect.max_x = (charPos.x + gi->bbox.max_x) / (m_logicalExtent.width / 2.0f) - 1.0f;
-            inst->rect.max_y = (charPos.y - gi->bbox.max_y) / (m_logicalExtent.height / 2.0f) - 1.0f;
+        //    HostGlyphInfo const* gi = vulkanFont.GetGlyphInfo(glyph_index);
+        //    FontGlyphInstance* inst = &glyphInstances[context->m_glyphCount];
 
-            if (inst->rect.min_x <= 1 && inst->rect.max_x >= -1 &&
-                inst->rect.max_y <= 1 && inst->rect.min_y >= -1) {
-                inst->glyph_index = glyph_index;
-                inst->sharpness = 1.0f;
+        //    inst->rect.min_x = (charPos.x + gi->bbox.min_x) / (context->m_logicalExtent.width / 2.0f) - 1.0f;
+        //    inst->rect.min_y = (charPos.y - gi->bbox.min_y) / (context->m_logicalExtent.height / 2.0f) - 1.0f;
+        //    inst->rect.max_x = (charPos.x + gi->bbox.max_x) / (context->m_logicalExtent.width / 2.0f) - 1.0f;
+        //    inst->rect.max_y = (charPos.y - gi->bbox.max_y) / (context->m_logicalExtent.height / 2.0f) - 1.0f;
 
-                context.++;
-            }
+        //    if (inst->rect.min_x <= 1 && inst->rect.max_x >= -1 &&
+        //        inst->rect.max_y <= 1 && inst->rect.min_y >= -1) {
+        //        inst->glyph_index = glyph_index;
+        //        inst->sharpness = 1.0f;
 
-            text++;
-            charPos.x += gi->advance;
-        }
+        //        context->m_glyphCount++;
+        //    }
 
-        uint32_t const glyphCount = context->m_glyphCount - glyphStart;
-        if (glyphCount) {
-            auto& commandBuffer = context->m_target->GetCommandBuffer();
-            commandBuffer.BindVertexBuffer(*context->m_fontBuffer);
+        //    currentCharPtr++;
+        //    charPos.x += gi->advance;
+        //}
 
-            auto const& pipeline = GetCurrentFontPipeline();
-            if (context->m_currentPipelineId != pipeline.m_hash) {
-                commandBuffer.BindPipeline(pipeline);
-                context->m_currentPipelineId = pipeline.m_hash;
-            }
+        //context->m_fontInstanceStagingBuffer->Unmap();
 
-            commandBuffer.BindDescriptorSet(*m_fontShader, m_fontDescriptorSet);
-            commandBuffer.Draw(glyphStart, context.m_glyphCount - glyphStart);
-        }
+        //uint32_t const glyphCount = context->m_glyphCount - glyphStart;
+        //if (glyphCount) {
+        //    auto& commandBuffer = context->m_target->GetCommandBuffer();
+
+        //    VkBufferMemoryBarrier barrier;
+        //    barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        //    barrier.srcAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+        //    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        //    barrier.buffer = context->m_fontInstanceStagingBuffer->GetVKBuffer();
+        //    barrier.offset = 0;
+        //    barrier.size = context->m_fontInstanceStagingBuffer->GetSize();
+
+        //    vkCmdPipelineBarrier(commandBuffer.GetVkCommandBuffer(),
+        //                         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+        //                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+        //                         0, 0, nullptr, 1, &barrier, 0, nullptr);
+
+        //    VkBufferCopy copy;
+        //    copy.srcOffset = 0;
+        //    copy.dstOffset = 0;
+        //    copy.size = context->m_fontInstanceStagingBuffer->GetSize();
+
+        //    vkCmdCopyBuffer(commandBuffer.GetVkCommandBuffer(), context->m_fontInstanceStagingBuffer->GetVKBuffer(), context->m_fontInstanceBuffer->GetVKBuffer(), 1, &copy);
+
+        //    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        //    barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+
+        //    vkCmdPipelineBarrier(commandBuffer.GetVkCommandBuffer(),
+        //                         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+        //                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+        //                         0, 0, nullptr, 1, &barrier, 0, nullptr);
+
+        //    commandBuffer.BindVertexBuffer(*context->m_fontInstanceBuffer);
+
+        //    auto const& pipeline = GetCurrentFontPipeline();
+        //    if (context->m_currentPipelineId != pipeline.m_hash) {
+        //        commandBuffer.BindPipeline(pipeline);
+        //        context->m_currentPipelineId = pipeline.m_hash;
+        //    }
+
+        //    commandBuffer.BindDescriptorSet(*m_fontShader, vulkanFont.GetDescriptorSet());
+        //    commandBuffer.Draw(glyphStart, context->m_glyphCount - glyphStart);
+        //}
     }
 
     std::unique_ptr<moth_ui::ITarget> Graphics::CreateTarget(int width, int height) {
@@ -602,9 +637,9 @@ namespace backend::vulkan {
             context->m_vertexBufferData = static_cast<Vertex*>(context->m_vertexBuffer->Map());
         }
 
-        if (!context->m_fontBuffer) {
-            context->m_fontBuffer = std::make_unique<Buffer>(m_context, 1024 * sizeof(FontGlyphInstance), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-            context->m_fontBufferData = static_cast<FontGlyphInstance*>(context->m_fontBuffer->Map());
+        if (!context->m_fontInstanceBuffer) {
+            context->m_fontInstanceBuffer = std::make_unique<Buffer>(m_context, 1024 * sizeof(FontGlyphInstance), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            context->m_fontInstanceStagingBuffer = std::make_unique<Buffer>(m_context, 1024 * sizeof(FontGlyphInstance), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
         }
 
         context->m_glyphCount = 0;

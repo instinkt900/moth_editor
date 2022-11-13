@@ -18,7 +18,7 @@ namespace backend::sdl {
         void DrawRectF(moth_ui::FloatRect const& rect) override;
         void DrawFillRectF(moth_ui::FloatRect const& rect) override;
         void DrawLineF(moth_ui::FloatVec2 const& p0, moth_ui::FloatVec2 const& p1) override;
-        void DrawText(std::string const& text, moth_ui::IntRect const& pos) override {}
+        void DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::IntRect const& pos) override {}
 
         std::unique_ptr<moth_ui::ITarget> CreateTarget(int width, int height) override;
         moth_ui::ITarget* GetTarget() override;

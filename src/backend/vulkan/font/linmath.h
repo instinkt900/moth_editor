@@ -4,18 +4,18 @@
 #include <math.h>
 #include <stdbool.h>
 
-#ifndef max
-#define max(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a > _b ? _a : _b; })
-#endif
-#ifndef min
-#define min(a,b) \
-   ({ __typeof__ (a) _a = (a); \
-       __typeof__ (b) _b = (b); \
-     _a < _b ? _a : _b; })
-#endif
+//#ifndef max
+//#define max(a,b) \
+//   ({ __typeof__ (a) _a = (a); \
+//       __typeof__ (b) _b = (b); \
+//     _a > _b ? _a : _b; })
+//#endif
+//#ifndef min
+//#define min(a,b) \
+//   ({ __typeof__ (a) _a = (a); \
+//       __typeof__ (b) _b = (b); \
+//     _a < _b ? _a : _b; })
+//#endif
 
 static inline float clampf(float x, float min, float max)
 {

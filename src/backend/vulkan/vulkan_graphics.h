@@ -48,7 +48,7 @@ namespace backend::vulkan {
         void DrawRectF(moth_ui::FloatRect const& rect) override;
         void DrawFillRectF(moth_ui::FloatRect const& rect) override;
         void DrawLineF(moth_ui::FloatVec2 const& p0, moth_ui::FloatVec2 const& p1) override;
-        void DrawText(std::string const& text, moth_ui::IntRect const& pos) override;
+        void DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::IntRect const& box) override;
 
         std::unique_ptr<moth_ui::ITarget> CreateTarget(int width, int height) override;
         moth_ui::ITarget* GetTarget() override;
@@ -93,8 +93,8 @@ namespace backend::vulkan {
             std::unique_ptr<Buffer> m_vertexBuffer;
             Vertex* m_vertexBufferData = nullptr;
 
-            std::unique_ptr<Buffer> m_fontBuffer;
-            FontGlyphInstance* m_fontBufferData = nullptr;
+            std::unique_ptr<Buffer> m_fontInstanceBuffer;
+            std::unique_ptr<Buffer> m_fontInstanceStagingBuffer;
             uint32_t m_glyphCount = 0;
 
             uint32_t m_vertexCount = 0;

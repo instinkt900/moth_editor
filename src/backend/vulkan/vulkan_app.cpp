@@ -3,7 +3,7 @@
 #include "editor/editor_layer.h"
 
 #include "vulkan_image_factory.h"
-#include "font_factory_vulkan.h"
+#include "vulkan_font_factory.h"
 #include "vulkan_ui_renderer.h"
 #include "vulkan_graphics.h"
 

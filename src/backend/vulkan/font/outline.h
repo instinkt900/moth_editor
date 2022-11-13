@@ -6,7 +6,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include FT_BBOX_H 
+//#include FT_BBOX_H 
 #include FT_OUTLINE_H
 
 #define FT_CHECK(r) { FT_Error err = (r); assert(!err); } while (0)

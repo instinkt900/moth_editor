@@ -16,7 +16,7 @@ namespace backend {
         virtual void DrawRectF(moth_ui::FloatRect const& rect) = 0;
         virtual void DrawFillRectF(moth_ui::FloatRect const& rect) = 0;
         virtual void DrawLineF(moth_ui::FloatVec2 const& p0, moth_ui::FloatVec2 const& p1) = 0;
-        virtual void DrawText(std::string const& text, moth_ui::IntRect const& pos) = 0;
+        virtual void DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::IntRect const& box) = 0;
 
         virtual std::unique_ptr<moth_ui::ITarget> CreateTarget(int width, int height) = 0;
         virtual moth_ui::ITarget* GetTarget() = 0;
