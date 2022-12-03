@@ -101,6 +101,8 @@ namespace backend::sdl {
             return false;
         }
 
+        load_sdl_ttf_shim();
+
         m_graphics = std::make_unique<backend::sdl::SDLGraphics>(m_renderer);
         m_imageFactory = std::make_unique<ImageFactory>(*m_renderer);
         m_fontFactory = std::make_unique<FontFactory>(*m_renderer);

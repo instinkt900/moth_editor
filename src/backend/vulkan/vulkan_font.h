@@ -31,7 +31,7 @@ namespace backend::vulkan {
 
     class Font : public moth_ui::IFont {
     public:
-        std::unique_ptr<Font> Load(char const* path, Context& context, Graphics& graphics);
+        static std::unique_ptr<Font> Load(char const* path, Context& context, Graphics& graphics);
         virtual ~Font();
 
         const HostGlyphInfo* GetGlyphInfo(int index) const { return &m_glyphInfos[index]; }
