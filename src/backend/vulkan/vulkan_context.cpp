@@ -1,14 +1,6 @@
 #include "common.h"
 #include "vulkan_context.h"
-
-#define CHECK_VK_RESULT(expr)                                                               \
-    {                                                                                       \
-        VkResult result_ = expr;                                                            \
-        if (result_ != VK_SUCCESS) {                                                        \
-            spdlog::error("File: {} Line: {} {} = {}", __FILE__, __LINE__, #expr, result_); \
-            abort();                                                                        \
-        }                                                                                   \
-    }
+#include "vulkan_utils.h"
 
 namespace {
     std::vector<char const*> validationLayers = {

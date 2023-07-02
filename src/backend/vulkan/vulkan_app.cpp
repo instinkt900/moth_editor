@@ -18,15 +18,6 @@
 namespace backend::vulkan {
     char const* const Application::PERSISTENCE_FILE = "editor.json";
 
-#define CHECK_VK_RESULT(expr)                                                               \
-    {                                                                                       \
-        VkResult result_ = expr;                                                            \
-        if (result_ != VK_SUCCESS) {                                                        \
-            spdlog::error("File: {} Line: {} {} = {}", __FILE__, __LINE__, #expr, result_); \
-            abort();                                                                        \
-        }                                                                                   \
-    }
-
     void checkVkResult(VkResult err) {
         CHECK_VK_RESULT(err);
     }

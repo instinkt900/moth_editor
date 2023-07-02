@@ -2,13 +2,13 @@
 
 #include "murmurhash.h"
 
-#define CHECK_VK_RESULT(expr)                                                               \
-    {                                                                                       \
-        VkResult result_ = expr;                                                            \
-        if (result_ != VK_SUCCESS) {                                                        \
-            spdlog::error("File: {} Line: {} {} = {}", __FILE__, __LINE__, #expr, result_); \
-            abort();                                                                        \
-        }                                                                                   \
+#define CHECK_VK_RESULT(expr)                                                                                   \
+    {                                                                                                           \
+        VkResult result_ = expr;                                                                                \
+        if (result_ != VK_SUCCESS) {                                                                            \
+            spdlog::error("File: {} Line: {} {} = {}", __FILE__, __LINE__, #expr, static_cast<int>(result_));   \
+            abort();                                                                                            \
+        }                                                                                                       \
     }
 
 namespace backend::vulkan {
