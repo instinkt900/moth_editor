@@ -374,7 +374,7 @@ namespace backend::vulkan {
     }
 
     std::unique_ptr<moth_ui::ITarget> Graphics::CreateTarget(int width, int height) {
-        return std::make_unique<Framebuffer>(m_context, width, height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_renderPass->GetRenderPass());
+        return std::make_unique<Framebuffer>(m_context, width, height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_rtRenderPass->GetRenderPass());
     }
 
     bool Graphics::IsRenderTarget() const {
@@ -481,39 +481,76 @@ namespace backend::vulkan {
     }
 
     void Graphics::CreateRenderPass() {
-        VkAttachmentDescription colorAttachment{};
-        //colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB; // TODO this might have to change?
-        colorAttachment.format = VK_FORMAT_B8G8R8A8_UNORM;
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        {
+            VkAttachmentDescription colorAttachment{};
+            // colorAttachment.format = VK_FORMAT_R8G8B8A8_SRGB; // TODO this might have to change?
+            colorAttachment.format = VK_FORMAT_B8G8R8A8_UNORM;
+            colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-        VkAttachmentReference colorAttachmentRef{};
-        colorAttachmentRef.attachment = 0;
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            VkAttachmentReference colorAttachmentRef{};
+            colorAttachmentRef.attachment = 0;
+            colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        VkSubpassDescription subpass{};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorAttachmentRef;
+            VkSubpassDescription subpass{};
+            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.colorAttachmentCount = 1;
+            subpass.pColorAttachments = &colorAttachmentRef;
 
-        VkSubpassDependency dependency{};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.srcAccessMask = 0;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            VkSubpassDependency dependency{};
+            dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+            dependency.dstSubpass = 0;
+            dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependency.srcAccessMask = 0;
+            dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-        m_renderPass = RenderPassBuilder(m_context.m_vkDevice)
-                           .AddAttachment(colorAttachment)
-                           .AddSubpass(subpass)
-                           .AddDependency(dependency)
-                           .Build();
+            m_renderPass = RenderPassBuilder(m_context.m_vkDevice)
+                               .AddAttachment(colorAttachment)
+                               .AddSubpass(subpass)
+                               .AddDependency(dependency)
+                               .Build();
+        }
+        {
+            // specifically for rendering to render targets
+            VkAttachmentDescription colorAttachment{};
+            colorAttachment.format = VK_FORMAT_B8G8R8A8_UNORM;
+            colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+            colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            VkAttachmentReference colorAttachmentRef{};
+            colorAttachmentRef.attachment = 0;
+            colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            VkSubpassDescription subpass{};
+            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.colorAttachmentCount = 1;
+            subpass.pColorAttachments = &colorAttachmentRef;
+
+            VkSubpassDependency dependency{};
+            dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+            dependency.dstSubpass = 0;
+            dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependency.srcAccessMask = 0;
+            dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+            m_rtRenderPass = RenderPassBuilder(m_context.m_vkDevice)
+                               .AddAttachment(colorAttachment)
+                               .AddSubpass(subpass)
+                               .AddDependency(dependency)
+                               .Build();
+        }
     }
 
     void Graphics::CreateShaders() {
@@ -531,18 +568,18 @@ namespace backend::vulkan {
                                   .Build();
         }
         {
-            std::vector<char> vertShaderCode;
-            std::vector<char> fragShaderCode;
-            readFile("resources/font_vert.spv", vertShaderCode);
-            readFile("resources/font_frag.spv", fragShaderCode);
+            //std::vector<char> vertShaderCode;
+            //std::vector<char> fragShaderCode;
+            //readFile("resources/font_vert.spv", vertShaderCode);
+            //readFile("resources/font_frag.spv", fragShaderCode);
 
-            m_fontShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
-                               .AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
-                               .AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-                               .AddBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-                               .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
-                               .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
-                               .Build();
+            //m_fontShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
+            //                   .AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
+            //                   .AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+            //                   .AddBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+            //                   .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
+            //                   .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
+            //                   .Build();
         }
     }
 
@@ -566,6 +603,10 @@ namespace backend::vulkan {
         commandBuffer->SubmitAndWait();
     }
 
+    RenderPass& Graphics::GetCurrentRenderPass() {
+        return IsRenderTarget() ? *m_rtRenderPass : *m_renderPass;
+    }
+
     Pipeline& Graphics::GetCurrentPipeline(ETopologyType topology) {
         auto context = m_contextStack.top();
         auto const vkTopology = ToVulkan(topology);
@@ -575,7 +616,7 @@ namespace backend::vulkan {
 
         auto const builder = PipelineBuilder(m_context.m_vkDevice)
                                  .SetPipelineCache(m_vkPipelineCache)
-                                 .SetRenderPass(*m_renderPass)
+                                 .SetRenderPass(GetCurrentRenderPass())
                                  .SetShader(m_drawingShader)
                                  .AddVertexInputBinding(vertexInputBinding)
                                  .AddVertexAttribute(vertexAttributeBindings[0])
@@ -605,7 +646,7 @@ namespace backend::vulkan {
 
         auto const builder = PipelineBuilder(m_context.m_vkDevice)
                                  .SetPipelineCache(m_vkPipelineCache)
-                                 .SetRenderPass(*m_renderPass)
+                                 .SetRenderPass(GetCurrentRenderPass())
                                  .SetShader(m_drawingShader)
                                  .AddVertexInputBinding(vertexInputBinding)
                                  .AddVertexAttribute(vertexAttributeBindings[0])
@@ -658,7 +699,7 @@ namespace backend::vulkan {
         auto& commandBuffer = context->m_target->GetCommandBuffer();
         commandBuffer.Reset();
         commandBuffer.BeginRecord();
-        commandBuffer.BeginRenderPass(*m_renderPass, *context->m_target);
+        commandBuffer.BeginRenderPass(GetCurrentRenderPass(), *context->m_target);
 
         VkViewport viewport;
         viewport.x = 0;
@@ -687,9 +728,6 @@ namespace backend::vulkan {
         VkFence cmdFence = context->m_target->GetFence().GetVkFence();
         auto& commandBuffer = context->m_target->GetCommandBuffer();
         commandBuffer.EndRenderPass();
-        if (IsRenderTarget()) {
-            commandBuffer.TransitionImageLayout(context->m_target->GetVkImage(), context->m_target->GetVkFormat(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
         commandBuffer.EndRecord();
         commandBuffer.Submit(cmdFence, context->m_target->GetAvailableSemaphore(), context->m_target->GetRenderFinishedSemaphore());
         vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
@@ -707,7 +745,7 @@ namespace backend::vulkan {
         }
 
         const uint32_t vertexDataSize = sizeof(Vertex) * vertCount;
-        const uint32_t existingVertexOffset = sizeof(Vertex) * context->m_vertexCount;
+        const uint32_t existingVertexOffset = /*sizeof(Vertex) **/ context->m_vertexCount;
         memcpy(context->m_vertexBufferData + existingVertexOffset, vertices, vertexDataSize);
 
         auto& commandBuffer = context->m_target->GetCommandBuffer();

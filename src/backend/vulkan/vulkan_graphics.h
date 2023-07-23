@@ -106,6 +106,7 @@ namespace backend::vulkan {
         std::map<uint32_t, std::shared_ptr<Pipeline>> m_pipelines;
         std::map<uint32_t, std::shared_ptr<Pipeline>> m_fontPipelines;
         std::unique_ptr<RenderPass> m_renderPass;
+        std::unique_ptr<RenderPass> m_rtRenderPass;
         std::unique_ptr<Swapchain> m_swapchain;
         std::shared_ptr<Shader> m_drawingShader;
         std::shared_ptr<Shader> m_fontShader;
@@ -121,6 +122,7 @@ namespace backend::vulkan {
         void CreateRenderPass();
         void CreateShaders();
         void CreateDefaultImage();
+        RenderPass& GetCurrentRenderPass();
         Pipeline& GetCurrentPipeline(ETopologyType topology);
         Pipeline& GetCurrentFontPipeline();
 

@@ -82,6 +82,13 @@ namespace backend::vulkan {
         }
     }
 
+    VkDescriptorSet Image::GetDescriptorSet() {
+        if (m_vkDescriptorSet == VK_NULL_HANDLE) {
+            m_vkDescriptorSet = ImGui_ImplVulkan_AddTexture(m_vkSampler, m_vkView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+        return m_vkDescriptorSet;
+    }
+
     void Image::CreateResource(VkImageTiling tiling, VkImageUsageFlags usage) {
         VkImageCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

@@ -19,6 +19,7 @@ namespace backend::vulkan {
         VkFormat GetVkFormat() const { return m_vkFormat; }
         VkImageView GetVkView() const { return m_vkView; }
         VkSampler GetVkSampler() const { return m_vkSampler; }
+        VkDescriptorSet GetDescriptorSet();
 
         Image(Image const&) = delete;
         Image& operator=(Image const&) = delete;
@@ -33,6 +34,7 @@ namespace backend::vulkan {
         VmaAllocation m_vmaAllocation = VK_NULL_HANDLE;
         VkImageView m_vkView = VK_NULL_HANDLE;
         VkSampler m_vkSampler = VK_NULL_HANDLE;
+        VkDescriptorSet m_vkDescriptorSet = VK_NULL_HANDLE;
 
         bool m_owningImage = true;
 

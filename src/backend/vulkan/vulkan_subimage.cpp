@@ -28,11 +28,10 @@ namespace backend::vulkan {
 
     void SubImage::ImGui(moth_ui::IntVec2 const& size, moth_ui::FloatVec2 const& uv0, moth_ui::FloatVec2 const& uv1) const {
         if (m_texture && s_graphicsContext) {
-            VkDescriptorSet descriptorSet = s_graphicsContext->GetDescriptorSet(*m_texture);
-            ImGui::Image(descriptorSet,
-                           ImVec2(static_cast<float>(size.x), static_cast<float>(size.y)),
-                           ImVec2(uv0.x, uv0.y),
-                           ImVec2(uv1.x, uv1.y));
+            ImGui::Image(m_texture->GetDescriptorSet(),
+                            ImVec2(static_cast<float>(size.x), static_cast<float>(size.y)),
+                            ImVec2(uv0.x, uv0.y),
+                            ImVec2(uv1.x, uv1.y));
         }
     }
 }
