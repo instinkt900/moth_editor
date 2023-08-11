@@ -43,6 +43,26 @@ namespace backend::vulkan {
         return nullptr;
     }
 
+    std::unique_ptr<Image> Image::FromRGBA(Context& context, int width, int height, unsigned char const* pixels) {
+        VkDeviceSize imageSize = width * height * 4;
+        auto stagingBuffer = std::make_unique<Buffer>(context, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        void* data = stagingBuffer->Map();
+        memcpy(data, pixels, static_cast<size_t>(imageSize));
+        stagingBuffer->Unmap();
+
+        VkFormat const format = VK_FORMAT_R8G8B8A8_UNORM;
+        auto newImage = std::make_unique<Image>(context, width, height, format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        auto commandBuffer = std::make_unique<CommandBuffer>(context);
+        commandBuffer->BeginRecord();
+        commandBuffer->TransitionImageLayout(*newImage, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        commandBuffer->CopyBufferToImage(*newImage, *stagingBuffer);
+        commandBuffer->TransitionImageLayout(*newImage, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        commandBuffer->SubmitAndWait();
+
+        return newImage;
+    }
+
     Image::Image(Context& context)
         : m_id(NextTextureId++)
         , m_context(context) {

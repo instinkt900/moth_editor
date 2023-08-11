@@ -30,9 +30,9 @@ namespace backend::vulkan {
         };
 
         struct FontGlyphInstance {
-            FontRect rect;
-            uint32_t glyph_index;
-            float sharpness;
+            moth_ui::FloatVec2 pos;
+            uint32_t glyphIndex;
+            moth_ui::Color color;
         };
 
         void Begin();

@@ -69,18 +69,18 @@ namespace {
 
         vertexAttributeDescs[0].binding = 0;
         vertexAttributeDescs[0].location = 0;
-        vertexAttributeDescs[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-        vertexAttributeDescs[0].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, rect);
+        vertexAttributeDescs[0].format = VK_FORMAT_R32G32_SFLOAT;
+        vertexAttributeDescs[0].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, pos);
 
         vertexAttributeDescs[1].binding = 0;
         vertexAttributeDescs[1].location = 1;
         vertexAttributeDescs[1].format = VK_FORMAT_R32_UINT;
-        vertexAttributeDescs[1].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, glyph_index);
+        vertexAttributeDescs[1].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, glyphIndex);
 
         vertexAttributeDescs[2].binding = 0;
         vertexAttributeDescs[2].location = 2;
-        vertexAttributeDescs[2].format = VK_FORMAT_R32_SFLOAT;
-        vertexAttributeDescs[2].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, sharpness);
+        vertexAttributeDescs[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        vertexAttributeDescs[2].offset = offsetof(backend::vulkan::Graphics::FontGlyphInstance, color);
 
         return vertexAttributeDescs;
     }
@@ -292,85 +292,49 @@ namespace backend::vulkan {
     }
 
     void Graphics::DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::IntRect const& box) {
-        //auto context = m_contextStack.top();
-        //char const* currentCharPtr = text.c_str();
-        //Font& vulkanFont = static_cast<Font&>(font);
+        auto context = m_contextStack.top();
+        char const* currentCharPtr = text.c_str();
+        Font& vulkanFont = static_cast<Font&>(font);
 
-        //moth_ui::FloatVec2 charPos = static_cast<moth_ui::FloatVec2>(box.topLeft);
-        //uint32_t const glyphStart = context->m_glyphCount;
-        //FontGlyphInstance* glyphInstances = static_cast<FontGlyphInstance*>(context->m_fontInstanceStagingBuffer->Map());
+        moth_ui::FloatVec2 charPos = static_cast<moth_ui::FloatVec2>(box.topLeft);
+        uint32_t const glyphStart = context->m_glyphCount;
+        FontGlyphInstance* glyphInstances = static_cast<FontGlyphInstance*>(context->m_fontInstanceStagingBuffer->Map());
 
-        //while (*currentCharPtr) {
-        //    if (context->m_glyphCount >= 1024)
-        //        break;
+        while (*currentCharPtr) {
+            if (context->m_glyphCount >= 1024)
+                break;
 
-        //    uint32_t glyph_index = *currentCharPtr - 32;
+            int const gi = vulkanFont.GetGlyphIndex(*currentCharPtr);
+            moth_ui::IntVec2 const gs = vulkanFont.GetGlyphSize(*currentCharPtr);
+            FontGlyphInstance* inst = &glyphInstances[context->m_glyphCount];
 
-        //    HostGlyphInfo const* gi = vulkanFont.GetGlyphInfo(glyph_index);
-        //    FontGlyphInstance* inst = &glyphInstances[context->m_glyphCount];
+            inst->pos = charPos;
+            inst->glyphIndex = gi;
+            inst->color = context->m_currentColor;
 
-        //    inst->rect.min_x = (charPos.x + gi->bbox.min_x) / (context->m_logicalExtent.width / 2.0f) - 1.0f;
-        //    inst->rect.min_y = (charPos.y - gi->bbox.min_y) / (context->m_logicalExtent.height / 2.0f) - 1.0f;
-        //    inst->rect.max_x = (charPos.x + gi->bbox.max_x) / (context->m_logicalExtent.width / 2.0f) - 1.0f;
-        //    inst->rect.max_y = (charPos.y - gi->bbox.max_y) / (context->m_logicalExtent.height / 2.0f) - 1.0f;
+            context->m_glyphCount++;
+            currentCharPtr++;
+            charPos.x += gs.x;
+        }
 
-        //    if (inst->rect.min_x <= 1 && inst->rect.max_x >= -1 &&
-        //        inst->rect.max_y <= 1 && inst->rect.min_y >= -1) {
-        //        inst->glyph_index = glyph_index;
-        //        inst->sharpness = 1.0f;
+        context->m_fontInstanceStagingBuffer->Unmap();
 
-        //        context->m_glyphCount++;
-        //    }
+        uint32_t const glyphCount = context->m_glyphCount - glyphStart;
+        if (glyphCount) {
+            auto& commandBuffer = context->m_target->GetCommandBuffer();
 
-        //    currentCharPtr++;
-        //    charPos.x += gi->advance;
-        //}
+            commandBuffer.BindVertexBuffer(*context->m_fontInstanceBuffer, 0);
 
-        //context->m_fontInstanceStagingBuffer->Unmap();
+            auto const& pipeline = GetCurrentFontPipeline();
+            if (context->m_currentPipelineId != pipeline.m_hash) {
+                commandBuffer.BindPipeline(pipeline);
+                context->m_currentPipelineId = pipeline.m_hash;
+            }
 
-        //uint32_t const glyphCount = context->m_glyphCount - glyphStart;
-        //if (glyphCount) {
-        //    auto& commandBuffer = context->m_target->GetCommandBuffer();
-
-        //    VkBufferMemoryBarrier barrier;
-        //    barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-        //    barrier.srcAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-        //    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        //    barrier.buffer = context->m_fontInstanceStagingBuffer->GetVKBuffer();
-        //    barrier.offset = 0;
-        //    barrier.size = context->m_fontInstanceStagingBuffer->GetSize();
-
-        //    vkCmdPipelineBarrier(commandBuffer.GetVkCommandBuffer(),
-        //                         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-        //                         VK_PIPELINE_STAGE_TRANSFER_BIT,
-        //                         0, 0, nullptr, 1, &barrier, 0, nullptr);
-
-        //    VkBufferCopy copy;
-        //    copy.srcOffset = 0;
-        //    copy.dstOffset = 0;
-        //    copy.size = context->m_fontInstanceStagingBuffer->GetSize();
-
-        //    vkCmdCopyBuffer(commandBuffer.GetVkCommandBuffer(), context->m_fontInstanceStagingBuffer->GetVKBuffer(), context->m_fontInstanceBuffer->GetVKBuffer(), 1, &copy);
-
-        //    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        //    barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-
-        //    vkCmdPipelineBarrier(commandBuffer.GetVkCommandBuffer(),
-        //                         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
-        //                         VK_PIPELINE_STAGE_TRANSFER_BIT,
-        //                         0, 0, nullptr, 1, &barrier, 0, nullptr);
-
-        //    commandBuffer.BindVertexBuffer(*context->m_fontInstanceBuffer);
-
-        //    auto const& pipeline = GetCurrentFontPipeline();
-        //    if (context->m_currentPipelineId != pipeline.m_hash) {
-        //        commandBuffer.BindPipeline(pipeline);
-        //        context->m_currentPipelineId = pipeline.m_hash;
-        //    }
-
-        //    commandBuffer.BindDescriptorSet(*m_fontShader, vulkanFont.GetDescriptorSet());
-        //    commandBuffer.Draw(glyphStart, context->m_glyphCount - glyphStart);
-        //}
+            commandBuffer.BindDescriptorSet(*m_fontShader, vulkanFont.GetVKDescriptorSet(), 0);
+            //commandBuffer.Draw(glyphStart, context->m_glyphCount - glyphStart);
+            commandBuffer.Draw(4, 0, glyphCount, glyphStart);
+        }
     }
 
     std::unique_ptr<moth_ui::ITarget> Graphics::CreateTarget(int width, int height) {
@@ -405,6 +369,7 @@ namespace backend::vulkan {
         constants.xyScale = { 2.0f / static_cast<float>(logicalSize.x), 2.0f / static_cast<float>(logicalSize.y) };
         constants.xyOffset = { -1.0f, -1.0f };
         commandBuffer.PushConstants(*m_drawingShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &constants);
+        commandBuffer.PushConstants(*m_fontShader, VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstants), &constants);
     }
 
     VkDescriptorSet Graphics::GetDescriptorSet(Image& image) {
@@ -568,18 +533,18 @@ namespace backend::vulkan {
                                   .Build();
         }
         {
-            //std::vector<char> vertShaderCode;
-            //std::vector<char> fragShaderCode;
-            //readFile("resources/font_vert.spv", vertShaderCode);
-            //readFile("resources/font_frag.spv", fragShaderCode);
+            std::vector<char> vertShaderCode;
+            std::vector<char> fragShaderCode;
+            readFile("resources/font_vert.spv", vertShaderCode);
+            readFile("resources/font_frag.spv", fragShaderCode);
 
-            //m_fontShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
-            //                   .AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
-            //                   .AddBinding(1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-            //                   .AddBinding(2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
-            //                   .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
-            //                   .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
-            //                   .Build();
+            m_fontShader = ShaderBuilder(m_context.m_vkDevice, m_context.m_vkDescriptorPool)
+                               .AddPushConstant(VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants))
+                               .AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT)
+                               .AddBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT)
+                               .AddStage(VK_SHADER_STAGE_VERTEX_BIT, "main", vertShaderCode.data(), vertShaderCode.size())
+                               .AddStage(VK_SHADER_STAGE_FRAGMENT_BIT, "main", fragShaderCode.data(), fragShaderCode.size())
+                               .Build();
         }
     }
 
@@ -647,7 +612,7 @@ namespace backend::vulkan {
         auto const builder = PipelineBuilder(m_context.m_vkDevice)
                                  .SetPipelineCache(m_vkPipelineCache)
                                  .SetRenderPass(GetCurrentRenderPass())
-                                 .SetShader(m_drawingShader)
+                                 .SetShader(m_fontShader)
                                  .AddVertexInputBinding(vertexInputBinding)
                                  .AddVertexAttribute(vertexAttributeBindings[0])
                                  .AddVertexAttribute(vertexAttributeBindings[1])
@@ -729,6 +694,42 @@ namespace backend::vulkan {
         auto& commandBuffer = context->m_target->GetCommandBuffer();
         commandBuffer.EndRenderPass();
         commandBuffer.EndRecord();
+
+        if (context->m_glyphCount) {
+            auto uploadCommandBuffer = std::make_unique<CommandBuffer>(m_context);
+            uploadCommandBuffer->BeginRecord();
+
+            VkBufferMemoryBarrier barrier{};
+            barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            barrier.srcAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.buffer = context->m_fontInstanceStagingBuffer->GetVKBuffer();
+            barrier.offset = 0;
+            barrier.size = context->m_fontInstanceStagingBuffer->GetSize();
+
+            vkCmdPipelineBarrier(uploadCommandBuffer->GetVkCommandBuffer(),
+                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 0, 0, nullptr, 1, &barrier, 0, nullptr);
+
+            VkBufferCopy copy;
+            copy.srcOffset = 0;
+            copy.dstOffset = 0;
+            copy.size = context->m_fontInstanceStagingBuffer->GetSize();
+
+            vkCmdCopyBuffer(uploadCommandBuffer->GetVkCommandBuffer(), context->m_fontInstanceStagingBuffer->GetVKBuffer(), context->m_fontInstanceBuffer->GetVKBuffer(), 1, &copy);
+
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+
+            vkCmdPipelineBarrier(uploadCommandBuffer->GetVkCommandBuffer(),
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+                                 0, 0, nullptr, 1, &barrier, 0, nullptr);
+
+            uploadCommandBuffer->SubmitAndWait();
+        }
+
         commandBuffer.Submit(cmdFence, context->m_target->GetAvailableSemaphore(), context->m_target->GetRenderFinishedSemaphore());
         vkWaitForFences(m_context.m_vkDevice, 1, &cmdFence, VK_TRUE, UINT64_MAX);
     }
@@ -749,7 +750,7 @@ namespace backend::vulkan {
         memcpy(context->m_vertexBufferData + existingVertexOffset, vertices, vertexDataSize);
 
         auto& commandBuffer = context->m_target->GetCommandBuffer();
-        commandBuffer.BindVertexBuffer(*context->m_vertexBuffer);
+        commandBuffer.BindVertexBuffer(*context->m_vertexBuffer, 0);
 
         auto const& pipeline = GetCurrentPipeline(topology);
         if (context->m_currentPipelineId != pipeline.m_hash) {
@@ -758,10 +759,10 @@ namespace backend::vulkan {
         }
 
         if (descriptorSet != VK_NULL_HANDLE) {
-            commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet);
+            commandBuffer.BindDescriptorSet(*m_drawingShader, descriptorSet, 0);
         } else {
             VkDescriptorSet defaultDescriptorSet = m_drawingShader->GetDescriptorSet(*m_defaultImage);
-            commandBuffer.BindDescriptorSet(*m_drawingShader, defaultDescriptorSet);
+            commandBuffer.BindDescriptorSet(*m_drawingShader, defaultDescriptorSet, 0);
         }
 
         commandBuffer.Draw(vertCount, context->m_vertexCount);

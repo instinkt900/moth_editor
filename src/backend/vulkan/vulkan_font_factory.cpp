@@ -31,6 +31,6 @@ namespace backend::vulkan {
         if (std::end(m_fontPaths) == it) {
             return GetDefaultFont(size);
         }
-        return Font::Load(it->second.string().c_str(), m_context, m_graphics);
+        return Font::Load(it->second.string().c_str(), size, m_context, m_graphics);
     }
 }

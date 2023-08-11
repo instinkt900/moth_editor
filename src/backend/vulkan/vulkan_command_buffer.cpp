@@ -176,8 +176,8 @@ namespace backend::vulkan {
         vkCmdSetScissor(m_vkCommandBuffer, 0, 1, &scissor);
     }
 
-    void CommandBuffer::BindDescriptorSet(Shader& shader, VkDescriptorSet descriptorSet) {
-        vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader.m_pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+    void CommandBuffer::BindDescriptorSet(Shader& shader, VkDescriptorSet descriptorSet, uint32_t index) {
+        vkCmdBindDescriptorSets(m_vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader.m_pipelineLayout, index, 1, &descriptorSet, 0, nullptr);
     }
 
     void CommandBuffer::BindPipeline(Pipeline const& pipeline) {
@@ -188,13 +188,25 @@ namespace backend::vulkan {
         vkCmdPushConstants(m_vkCommandBuffer, shader.m_pipelineLayout, stageFlags, 0, static_cast<uint32_t>(dataSize), data);
     }
 
-    void CommandBuffer::BindVertexBuffer(Buffer& buffer) {
+    void CommandBuffer::BindVertexBuffer(Buffer& buffer, int index) {
         VkBuffer vertexBuffers[] = { buffer.GetVKBuffer() };
         VkDeviceSize offsets[] = { 0 };
-        vkCmdBindVertexBuffers(m_vkCommandBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindVertexBuffers(m_vkCommandBuffer, index, 1, vertexBuffers, offsets);
+    }
+
+    void CommandBuffer::BindIndexBuffer(Buffer& buffer, int index) {
+        vkCmdBindIndexBuffer(m_vkCommandBuffer, buffer.GetVKBuffer(), index, VK_INDEX_TYPE_UINT32);
     }
 
     void CommandBuffer::Draw(uint32_t vertexCount, uint32_t offset) {
         vkCmdDraw(m_vkCommandBuffer, vertexCount, 1, offset, 0);
+    }
+
+    void CommandBuffer::Draw(uint32_t vertexCount, uint32_t offset, uint32_t instanceCount, uint32_t firstInstance) {
+        vkCmdDraw(m_vkCommandBuffer, vertexCount, instanceCount, offset, firstInstance);
+    }
+
+    void CommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t indexOffset, uint32_t instanceOffset) {
+        vkCmdDrawIndexed(m_vkCommandBuffer, indexCount, instanceCount, indexOffset, 0, instanceOffset);
     }
 }

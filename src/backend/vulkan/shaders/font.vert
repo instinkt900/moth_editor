@@ -8,13 +8,8 @@ out gl_PerVertex
 
 struct GlyphInfo
 {
-    vec4 bbox;
-
-    // point offset
-    // cell offset
-    // cell count in x
-    // cell count in y
-    uvec4 cell_info;
+    uvec2 glyph_size;
+    vec4 uv;
 };
 
 layout (set = 0, binding = 0) buffer GlyphBuffer
@@ -22,43 +17,37 @@ layout (set = 0, binding = 0) buffer GlyphBuffer
 	GlyphInfo glyphs[];
 } glyph_buffer;
 
-layout(location = 0) in vec4 in_rect;
-layout(location = 1) in uint in_glyph_index;
-layout(location = 2) in float in_sharpness;
+layout(push_constant) uniform uPushConstant
+{
+    vec2 xyScale;
+    vec2 xyOffset;
+} pc;
 
-layout(location = 0) out vec2 out_glyph_pos;
-layout(location = 1) out uvec4 out_cell_info;
-layout(location = 2) out float out_sharpness;
-layout(location = 3) out vec2 out_cell_coord;
+layout(location = 0) in vec2 inPos;
+layout(location = 1) in uint inGlyphIndex;
+layout(location = 2) in vec4 inColor;
+
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec2 outTexCoord;
 
 void main()
 {
-    GlyphInfo gi = glyph_buffer.glyphs[in_glyph_index];
+    GlyphInfo gi = glyph_buffer.glyphs[inGlyphIndex];
 
     vec2 pos[4] = vec2[](
-        vec2(in_rect.x, in_rect.y),
-        vec2(in_rect.z, in_rect.y),
-        vec2(in_rect.x, in_rect.w),
-        vec2(in_rect.z, in_rect.w)
+        vec2(0.0, 0.0),             vec2(gi.glyph_size.x,   0.0),
+        vec2(0.0, gi.glyph_size.y), vec2(gi.glyph_size.x,   gi.glyph_size.y)
     );
 
-    vec2 glyph_pos[4] = vec2[](
-        vec2(gi.bbox.x, gi.bbox.y),
-        vec2(gi.bbox.z, gi.bbox.y),
-        vec2(gi.bbox.x, gi.bbox.w),
-        vec2(gi.bbox.z, gi.bbox.w)
+    vec2 uv[4] = vec2[](
+        vec2(gi.uv.x, gi.uv.y),
+        vec2(gi.uv.z, gi.uv.y),
+        vec2(gi.uv.x, gi.uv.w),
+        vec2(gi.uv.z, gi.uv.w)
     );
 
-    vec2 cell_coord[4] = vec2[](
-        vec2(0,              0),
-        vec2(gi.cell_info.z, 0),
-        vec2(0,              gi.cell_info.w),
-        vec2(gi.cell_info.z, gi.cell_info.w)
-    );
-
-    gl_Position = vec4(pos[gl_VertexIndex], 0.0, 1.0);
-    out_glyph_pos = glyph_pos[gl_VertexIndex];
-    out_cell_info = gi.cell_info;
-    out_sharpness = in_sharpness;
-    out_cell_coord = cell_coord[gl_VertexIndex];
+    //gl_Position = vec4(pos[gl_VertexIndex] * gi.glyph_size + inPos, 0.0, 1.0);
+    gl_Position = vec4((pos[gl_VertexIndex] + inPos) * pc.xyScale + pc.xyOffset, 0.0, 1.0);
+    outColor = inColor;
+    outTexCoord = uv[gl_VertexIndex];
 }

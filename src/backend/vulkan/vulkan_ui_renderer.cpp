@@ -81,6 +81,8 @@ namespace backend::vulkan {
     }
 
     void UIRenderer::RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextHorizAlignment horizontalAlignment, moth_ui::TextVertAlignment verticalAlignment, moth_ui::IntRect const& destRect) {
-        // todo
+        m_graphics.SetBlendMode(m_blendMode.top());
+        m_graphics.SetColor(m_drawColor.top());
+        m_graphics.DrawText(text, font, destRect);
     }
 }
