@@ -16,7 +16,7 @@ PFNTTFWASINITPROC TTF_WasInit_Shim = NULL;
 static HMODULE libSDLTTF;
 
 void load_sdl_ttf_shim() {
-    libSDLTTF = LoadLibraryW(L"SDL_ttf.dll");
+    libSDLTTF = LoadLibraryW(L"SDL2_ttf.dll");
     if (libSDLTTF != NULL) {
         TTF_Init_Shim = (PFNTTFINITPROC)GetProcAddress(libSDLTTF, "TTF_Init");
         TTF_OpenFontRW_Shim = (PFNTTFOPENFONTRWPROC)GetProcAddress(libSDLTTF, "TTF_OpenFontRW");

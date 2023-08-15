@@ -291,30 +291,84 @@ namespace backend::vulkan {
         SubmitVertices(vertices, 2, ETopologyType::Lines);
     }
 
-    void Graphics::DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::IntRect const& box) {
+    void Graphics::DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::TextHorizAlignment horizontalAlignment, moth_ui::IntVec2 const& pos, uint32_t width) {
         auto context = m_contextStack.top();
-        char const* currentCharPtr = text.c_str();
         Font& vulkanFont = static_cast<Font&>(font);
 
-        moth_ui::FloatVec2 charPos = static_cast<moth_ui::FloatVec2>(box.topLeft);
         uint32_t const glyphStart = context->m_glyphCount;
         FontGlyphInstance* glyphInstances = static_cast<FontGlyphInstance*>(context->m_fontInstanceStagingBuffer->Map());
 
-        while (*currentCharPtr) {
+        // use this to actually submit characters at a position
+        auto SubmitCharacter = [&](char c, moth_ui::FloatVec2& pos) {
             if (context->m_glyphCount >= 1024)
-                break;
+                return;
 
-            int const gi = vulkanFont.GetGlyphIndex(*currentCharPtr);
-            moth_ui::IntVec2 const gs = vulkanFont.GetGlyphSize(*currentCharPtr);
+            int const gi = vulkanFont.GetGlyphIndex(c);
+            moth_ui::IntVec2 const gs = vulkanFont.GetGlyphSize(c);
             FontGlyphInstance* inst = &glyphInstances[context->m_glyphCount];
 
-            inst->pos = charPos;
+            inst->pos = pos;
             inst->glyphIndex = gi;
             inst->color = context->m_currentColor;
 
             context->m_glyphCount++;
-            currentCharPtr++;
-            charPos.x += gs.x;
+            pos.x += gs.x;
+        };
+
+        // split up into lines
+        auto const spaceWidth = vulkanFont.GetStringWidth(" ");
+        auto const words = split_str(text);
+        struct Line {
+            uint32_t fullWidth;
+            uint32_t wordCount;
+        };
+        std::vector<Line> lines;
+        uint32_t currentLineWidth = 0;
+        uint32_t currentWordCount = 0;
+        for (auto& word : words) {
+            auto const wordWidth = vulkanFont.GetStringWidth(word);
+            if (currentWordCount > 0) {
+                if ((currentLineWidth + wordWidth) > width) {
+                    lines.push_back({ currentLineWidth, currentWordCount });
+                    currentLineWidth = 0;
+                    currentWordCount = 0;
+                }
+                currentLineWidth += spaceWidth;
+            }
+
+            currentLineWidth += wordWidth;
+            ++currentWordCount;
+        }
+        lines.push_back({ currentLineWidth - spaceWidth, currentWordCount });
+
+        // render lines one by one
+        moth_ui::FloatVec2 charPos = static_cast<moth_ui::FloatVec2>(pos);
+        uint32_t wordIndex = 0;
+        for (auto& line : lines) {
+            switch (horizontalAlignment) {
+            case moth_ui::TextHorizAlignment::Left:
+                charPos.x = static_cast<float>(pos.x);
+                break;
+            case moth_ui::TextHorizAlignment::Center:
+                charPos.x = static_cast<float>(pos.x) - (line.fullWidth / 2.0f);
+                break;
+            case moth_ui::TextHorizAlignment::Right:
+                charPos.x = static_cast<float>(pos.x) - line.fullWidth;
+                break;
+            }
+
+            for (uint32_t w = 0; w < line.wordCount; ++w) {
+                auto& word = words[wordIndex];
+                for (int i = 0; i < word.size(); ++i) {
+                    SubmitCharacter(word[i], charPos);
+                }
+                if (w < (words.size() - 1)) {
+                    SubmitCharacter(' ', charPos);
+                }
+                ++wordIndex;
+            }
+
+            charPos.y += vulkanFont.GetLineHeight();
         }
 
         context->m_fontInstanceStagingBuffer->Unmap();
@@ -332,7 +386,6 @@ namespace backend::vulkan {
             }
 
             commandBuffer.BindDescriptorSet(*m_fontShader, vulkanFont.GetVKDescriptorSet(), 0);
-            //commandBuffer.Draw(glyphStart, context->m_glyphCount - glyphStart);
             commandBuffer.Draw(4, 0, glyphCount, glyphStart);
         }
     }

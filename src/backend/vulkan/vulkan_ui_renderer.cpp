@@ -1,5 +1,6 @@
 #include "common.h"
 #include "vulkan_ui_renderer.h"
+#include "vulkan_font.h"
 
 namespace backend::vulkan {
     UIRenderer::UIRenderer(Graphics& graphics)
@@ -81,8 +82,38 @@ namespace backend::vulkan {
     }
 
     void UIRenderer::RenderText(std::string const& text, moth_ui::IFont& font, moth_ui::TextHorizAlignment horizontalAlignment, moth_ui::TextVertAlignment verticalAlignment, moth_ui::IntRect const& destRect) {
-        m_graphics.SetBlendMode(m_blendMode.top());
+        auto const& vFont = static_cast<Font&>(font);
+
+        auto const destWidth = destRect.bottomRight.x - destRect.topLeft.x;
+        auto const destHeight = destRect.bottomRight.y - destRect.topLeft.y;
+        auto const textHeight = vFont.GetColumnHeight(text, destWidth);
+
+        auto x = static_cast<float>(destRect.topLeft.x);
+        switch (horizontalAlignment) {
+        case moth_ui::TextHorizAlignment::Left:
+            break;
+        case moth_ui::TextHorizAlignment::Center:
+            x = x + destWidth / 2;
+            break;
+        case moth_ui::TextHorizAlignment::Right:
+            x = x + destWidth;
+            break;
+        }
+
+        auto y = static_cast<float>(destRect.topLeft.y);
+        switch (verticalAlignment) {
+        case moth_ui::TextVertAlignment::Top:
+            break;
+        case moth_ui::TextVertAlignment::Middle:
+            y = y + (destHeight - textHeight) / 2;
+            break;
+        case moth_ui::TextVertAlignment::Bottom:
+            y = y + destHeight - textHeight;
+            break;
+        }
+
+        m_graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
         m_graphics.SetColor(m_drawColor.top());
-        m_graphics.DrawText(text, font, destRect);
+        m_graphics.DrawText(text, font, horizontalAlignment, { x, y }, destWidth);
     }
 }

@@ -34,6 +34,10 @@ namespace backend::vulkan {
             return m_vkDescriptorSet;
         }
 
+        uint32_t GetLineHeight() const { return m_lineHeight; }
+        uint32_t GetStringWidth(std::string_view const& str) const;
+        uint32_t GetColumnHeight(std::string const& str, uint32_t width) const;
+
     private:
         Font();
         void Init(Context& context, Graphics& graphics);
@@ -45,6 +49,7 @@ namespace backend::vulkan {
             moth_ui::FloatVec2 UV1;
         };
 
+        uint32_t m_lineHeight;
         std::map<int, int> m_charCodeToIndex;
         std::vector<GlyphInfo> m_glyphInfo;
         std::unique_ptr<Image> m_glyphAtlas;
