@@ -25,9 +25,9 @@ public:
             return point;
         } else if constexpr (OutSpace == CoordSpace::AppSpace) {
             if constexpr (InSpace == CoordSpace::WindowSpace) {
-                // TODO need to take into account borders etc
+                auto const tl = ImGui::GetWindowContentRegionMin();
                 auto const windowOffset = static_cast<moth_ui::FloatVec2>(m_canvasWindowPos);
-                return point + windowOffset;
+                return moth_ui::FloatVec2{ tl.x, tl.y } + point + windowOffset;
             } else if constexpr (InSpace == CoordSpace::WorldSpace) {
                 auto const windowSpace = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::WindowSpace>(point);
                 return ConvertSpace<CoordSpace::WindowSpace, CoordSpace::AppSpace>(windowSpace);
@@ -38,9 +38,9 @@ public:
             }
         } else if constexpr (OutSpace == CoordSpace::WindowSpace) {
             if constexpr (InSpace == CoordSpace::AppSpace) {
-                // TODO need to take into account borders etc
+                auto const tl = ImGui::GetWindowContentRegionMin();
                 auto const windowOffset = static_cast<moth_ui::FloatVec2>(m_canvasWindowPos);
-                return point - windowOffset;
+                return point - windowOffset - moth_ui::FloatVec2{ tl.x, tl.y };
             } else if constexpr (InSpace == CoordSpace::WorldSpace) {
                 float const scaleFactor = m_canvasZoom / 100.0f;
                 return point * scaleFactor;
