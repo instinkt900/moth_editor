@@ -1,10 +1,11 @@
 #include "common.h"
 #include "texture_packer.h"
-#include "iapp.h"
+#include "backend/iapplication.h"
 
 #include "moth_ui/context.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/itarget.h"
 
 #include "imgui-filebrowser/imfilebrowser.h"
 
@@ -25,7 +26,7 @@ namespace {
     int s_maxHeight = 1024;
 }
 
-extern IApp* g_App;
+extern backend::IApplication* g_App;
 
 TexturePacker::TexturePacker() {
 }
@@ -77,7 +78,7 @@ void TexturePacker::Draw() {
             }
 
             if (m_outputTexture) {
-                imgui_ext::Image(m_outputTexture, m_textureWidth, m_textureHeight);
+                imgui_ext::Image(m_outputTexture->GetImage(), m_textureWidth, m_textureHeight);
             }
         }
         ImGui::End();
@@ -190,10 +191,10 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
 
 void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
     auto& graphics = g_App->GetGraphics();
-    std::shared_ptr<moth_ui::IImage> outputTexture = graphics.CreateTarget(width, height);
+    std::shared_ptr<moth_ui::ITarget> outputTexture = graphics.CreateTarget(width, height);
     auto oldRenderTarget = graphics.GetTarget();
-    graphics.SetTarget(outputTexture);
-    graphics.SetBlendMode(outputTexture, backend::EBlendMode::Blend);
+    graphics.SetTarget(outputTexture.get());
+    //graphics.SetBlendMode(outputTexture, backend::EBlendMode::Blend);
     graphics.SetColor(moth_ui::BasicColors::Black);
     graphics.Clear();
 
@@ -205,13 +206,13 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
 
             moth_ui::IntRect destRect = moth_ui::MakeRect(rect.x, rect.y, rect.w, rect.h);
 
-            graphics.SetBlendMode(image, backend::EBlendMode::None);
-            graphics.SetColorMod(image, moth_ui::BasicColors::White);
-            graphics.DrawImage(image, nullptr, &destRect);
+            //graphics.SetBlendMode(image, backend::EBlendMode::None);
+            //graphics.SetColorMod(image, moth_ui::BasicColors::White);
+            graphics.DrawImage(*image, nullptr, &destRect);
 
             nlohmann::json details;
             auto const relativePath = std::filesystem::relative(imagePath, outputPath);
-            details["path"] = relativePath.string();
+            details["path"] = relativePath;
             details["rect"] = destRect;
             packDetails.push_back(details);
         }

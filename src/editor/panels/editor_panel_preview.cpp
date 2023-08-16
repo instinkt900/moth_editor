@@ -4,8 +4,9 @@
 #include "moth_ui/animation_clip.h"
 #include "moth_ui/group.h"
 #include "moth_ui/layout/layout.h"
+#include "moth_ui/itarget.h"
 #include "../editor_layer.h"
-#include "iapp.h"
+#include "backend/iapplication.h"
 
 EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Preview", visible, true) {
@@ -65,7 +66,7 @@ void EditorPanelPreview::DrawContents() {
         auto const windowRegionMax = ImGui::GetContentRegionAvail();
         moth_ui::IntVec2 const previewSize{ static_cast<int>(windowRegionMax.x), static_cast<int>(windowRegionMax.y) };
         UpdateRenderSurface(previewSize);
-        g_App->GetGraphics().SetTarget(m_renderSurface);
+        g_App->GetGraphics().SetTarget(m_renderSurface.get());
 
         moth_ui::IntRect displayRect;
         displayRect.topLeft = { 0, 0 };
@@ -75,7 +76,7 @@ void EditorPanelPreview::DrawContents() {
 
         g_App->GetGraphics().SetTarget(nullptr);
 
-        imgui_ext::Image(m_renderSurface, previewSize.x, previewSize.y);
+        imgui_ext::Image(m_renderSurface->GetImage(), previewSize.x, previewSize.y);
     }
 }
 

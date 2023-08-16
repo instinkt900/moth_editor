@@ -18,7 +18,7 @@ private:
     std::vector<std::string> m_clipNames;
     std::string m_selectedClip;
 
-    std::shared_ptr<moth_ui::IImage> m_renderSurface;
+    std::shared_ptr<moth_ui::ITarget> m_renderSurface;
     moth_ui::IntVec2 m_currentSurfaceSize;
 
     void SetLayout(std::shared_ptr<moth_ui::Layout> layout);

@@ -11,7 +11,8 @@
 #include "moth_ui/layout/layout.h"
 #include "../actions/composite_action.h"
 #include "imgui_internal.h"
-#include "iapp.h"
+#include "backend/iapplication.h"
+#include "moth_ui/itarget.h"
 
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
@@ -35,7 +36,7 @@ void EditorPanelCanvas::DrawContents() {
     moth_ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
 
     UpdateDisplayTexture(windowRegionSize);
-    imgui_ext::Image(m_displayTexture, windowRegionSize.x, windowRegionSize.y);
+    imgui_ext::Image(m_displayTexture->GetImage(), windowRegionSize.x, windowRegionSize.y);
 
     auto const drawList = ImGui::GetWindowDrawList();
 
@@ -85,8 +86,8 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
     m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(ImGui::GetWindowPos().x), static_cast<int>(ImGui::GetWindowPos().y) };
     m_canvasWindowSize = windowSize;
 
-    auto const oldRenderTarget = graphics.GetTarget();
-    graphics.SetTarget(m_displayTexture);
+    //auto const oldRenderTarget = graphics.GetTarget();
+    graphics.SetTarget(m_displayTexture.get());
 
     auto const& canvasSize = m_editorLayer.GetConfig().CanvasSize;
 
@@ -108,7 +109,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
 
     // grid lines
     {
-        graphics.SetBlendMode(backend::EBlendMode::Blend);
+        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
         auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
         auto const& gridMajorFactor = m_editorLayer.GetConfig().CanvasGridMajorFactor;
         if (gridSpacing > 0) {
@@ -143,7 +144,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
 
     // outline the canvas
     {
-        graphics.SetBlendMode(backend::EBlendMode::Blend);
+        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
         graphics.SetColor(m_editorLayer.GetConfig().CanvasOutlineColor);
         moth_ui::IntRect canvasRect;
         canvasRect.topLeft = { 0, 0 };
@@ -160,7 +161,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
         auto const newRenderOffsetX = static_cast<int>(m_canvasOffset.x / scaleFactor);
         auto const newRenderOffsetY = static_cast<int>(m_canvasOffset.y / scaleFactor);
 
-        graphics.SetBlendMode(backend::EBlendMode::None);
+        graphics.SetBlendMode(moth_ui::BlendMode::Replace);
         graphics.SetLogicalSize(moth_ui::IntVec2{ newRenderWidth, newRenderHeight });
         {
 
@@ -177,7 +178,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
         graphics.SetLogicalSize(moth_ui::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
     }
 
-    graphics.SetTarget(oldRenderTarget);
+    graphics.SetTarget(nullptr);
 }
 
 void EditorPanelCanvas::EndPanel() {

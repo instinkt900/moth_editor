@@ -9,4 +9,6 @@ namespace imgui_ext {
 
     void InputIntVec2(char const* label, moth_ui::IntVec2* vec);
     void InputFloatVec2(char const* label, moth_ui::FloatVec2* vec);
+
+    void Image(moth_ui::IImage const* image, int width, int height);
 }
