@@ -11,9 +11,9 @@ namespace backend::sdl {
         FontFactory(SDL_Renderer& renderer);
         virtual ~FontFactory() = default;
 
-        std::unique_ptr<moth_ui::IFont> GetDefaultFont(int size) override;
+        std::shared_ptr<moth_ui::IFont> GetDefaultFont(int size) override;
         std::vector<std::string> GetFontNameList() override;
-        std::unique_ptr<moth_ui::IFont> GetFont(char const* name, int size) override;
+        std::shared_ptr<moth_ui::IFont> GetFont(char const* name, int size) override;
 
     private:
         SDL_Renderer& m_renderer;

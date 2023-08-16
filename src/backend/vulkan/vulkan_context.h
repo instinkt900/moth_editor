@@ -1,5 +1,8 @@
 #pragma once
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 namespace backend::vulkan {
     class Context {
     public:
@@ -19,6 +22,8 @@ namespace backend::vulkan {
         VkCommandPool m_vkCommandPool = VK_NULL_HANDLE;
         VmaAllocator m_vmaAllocator = VK_NULL_HANDLE;
         VkPhysicalDeviceProperties m_vkDeviceProperties;
+
+        FT_Library m_ftLibrary;
 
         static VkSurfaceFormatKHR selectSurfaceFormat(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const VkFormat* request_formats, int request_formats_count, VkColorSpaceKHR request_color_space);
         static VkPresentModeKHR selectPresentMode(VkPhysicalDevice physical_device, VkSurfaceKHR surface, const VkPresentModeKHR* request_modes, int request_modes_count);

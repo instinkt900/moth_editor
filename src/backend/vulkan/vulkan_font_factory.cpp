@@ -5,7 +5,8 @@
 namespace backend::vulkan {
     FontFactory::FontFactory(Context& context, Graphics& graphics)
         : m_context(context)
-        , m_graphics(graphics) {
+        , m_graphics(graphics)
+        , m_fontCache(context, graphics) {
         m_fontPaths["Pilot Command"] = std::filesystem::current_path() / "pilotcommand.ttf";
         m_fontPaths["Daniel Davis"] = std::filesystem::current_path() / "Daniel Davis.ttf";
         m_fontPaths["Game of Squids"] = std::filesystem::current_path() / "Game Of Squids.ttf";
@@ -13,7 +14,7 @@ namespace backend::vulkan {
         m_fontPaths["28 Days Later"] = std::filesystem::current_path() / "28 Days Later.ttf";
     }
 
-    std::unique_ptr<moth_ui::IFont> FontFactory::GetDefaultFont(int size) {
+    std::shared_ptr<moth_ui::IFont> FontFactory::GetDefaultFont(int size) {
         return GetFont(m_fontPaths.begin()->first.c_str(), size);
     }
 
@@ -25,12 +26,12 @@ namespace backend::vulkan {
         return nameList;
     }
 
-    std::unique_ptr<moth_ui::IFont> FontFactory::GetFont(char const* name, int size) {
+    std::shared_ptr<moth_ui::IFont> FontFactory::GetFont(char const* name, int size) {
         assert(!m_fontPaths.empty() && "No known fonts.");
         auto const it = m_fontPaths.find(name);
         if (std::end(m_fontPaths) == it) {
             return GetDefaultFont(size);
         }
-        return Font::Load(it->second.string().c_str(), size, m_context, m_graphics);
+        return m_fontCache.GetFont(it->second.string().c_str(), size);
     }
 }

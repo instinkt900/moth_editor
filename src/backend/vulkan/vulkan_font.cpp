@@ -12,15 +12,9 @@
     }                       \
     while (0)
 
-static uint32_t align_uint32(uint32_t value, uint32_t alignment) {
-    return (value + alignment - 1) / alignment * alignment;
-}
-
-namespace backend::vulkan {
-    Font::Font() {
-    }
-
-    Font::~Font() {
+namespace {
+    static uint32_t align_uint32(uint32_t value, uint32_t alignment) {
+        return (value + alignment - 1) / alignment * alignment;
     }
 
     int NextPowerOf2(int value) {
@@ -94,20 +88,19 @@ namespace backend::vulkan {
         std::sort(std::begin(testDimensions), std::end(testDimensions), [](auto const& a, auto const& b) { return b.m_ratio < a.m_ratio; });
         return std::begin(testDimensions)->m_dimensions;
     }
+}
 
-    std::unique_ptr<Font> Font::Load(char const* path, int size, Context& context, Graphics& graphics) {
-        FT_Library library;
-        FT_CHECK(FT_Init_FreeType(&library));
-
+namespace backend::vulkan {
+    std::shared_ptr<Font> Font::Load(char const* path, int size, Context& context, Graphics& graphics) {
         FT_Face face;
-        if (FT_New_Face(library, path, 0, &face) != 0) {
+        if (FT_New_Face(context.m_ftLibrary, path, 0, &face) != 0) {
             return nullptr;
         }
+        return std::shared_ptr<Font>(new Font(face, size, context, graphics));
+    }
 
+    Font::Font(FT_Face face, int size, Context& context, Graphics& graphics) {
         FT_CHECK(FT_Set_Pixel_Sizes(face, 0, size));
-
-        uint32_t total_points = 0;
-        uint32_t total_cells = 0;
 
         std::vector<stbrp_rect> stbRects;
         int minGlyphWidth, maxGlyphWidth;
@@ -118,10 +111,9 @@ namespace backend::vulkan {
         minGlyphWidth = minGlyphHeight = std::numeric_limits<int>::max();
         maxGlyphWidth = maxGlyphHeight = 0;
 
-        std::unique_ptr<Font> font(new Font);
         std::vector<int> charcodes;
 
-        // first we iterate through all the glyphs in the font. measuring them and preparing
+        // first we iterate through all the glyphs in the fontData. measuring them and preparing
         // the rects for the stb packer
         FT_ULong charcode;
         FT_UInt gindex;
@@ -186,35 +178,29 @@ namespace backend::vulkan {
             }
 
             // store info
-            int const glyphIndex = static_cast<int>(font->m_glyphInfo.size());
+            int const glyphIndex = static_cast<int>(m_glyphInfo.size());
             int const glyphCode = charcodes[glyphIndex];
             moth_ui::FloatVec2 const pos0(static_cast<float>(glyphPosX), static_cast<float>(glyphPosY));
             moth_ui::FloatVec2 const pos1(static_cast<float>(glyphPosX + glyphWidth), static_cast<float>(glyphPosY + glyphHeight));
             moth_ui::FloatVec2 const uv0 = pos0 / texSize;
             moth_ui::FloatVec2 const uv1 = pos1 / texSize;
             // https://stackoverflow.com/questions/66265216/how-is-freetype-calculating-advance
-            font->m_glyphInfo.push_back({ { glyphWidth, glyphHeight }, { glyphSlot->advance.x / 64, glyphSlot->advance.y / 64 }, uv0, uv1 });
-            font->m_charCodeToIndex.insert(std::make_pair(glyphCode, glyphIndex));
+            m_glyphInfo.push_back({ { glyphWidth, glyphHeight }, { glyphSlot->advance.x / 64, glyphSlot->advance.y / 64 }, uv0, uv1 });
+            m_charCodeToIndex.insert(std::make_pair(glyphCode, glyphIndex));
         }
 
-        font->m_glyphAtlas = Image::FromRGBA(context, packDim.x, packDim.y, packData.data());
-        font->m_lineHeight = face->size->metrics.height / 64;
+        m_glyphAtlas = Image::FromRGBA(context, packDim.x, packDim.y, packData.data());
+        m_lineHeight = face->size->metrics.height / 64;
 
-        int const dataSize = static_cast<int>(font->m_glyphInfo.size() * sizeof(GlyphInfo));
-        font->m_storageBuffer = std::make_unique<Buffer>(context, dataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        int const dataSize = static_cast<int>(m_glyphInfo.size() * sizeof(GlyphInfo));
+        m_storageBuffer = std::make_unique<Buffer>(context, dataSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         std::unique_ptr<Buffer> staging = std::make_unique<Buffer>(context, dataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 
         unsigned char* stagingPtr = static_cast<unsigned char*>(staging->Map());
-        memcpy(stagingPtr, font->m_glyphInfo.data(), dataSize);
+        memcpy(stagingPtr, m_glyphInfo.data(), dataSize);
         staging->Unmap();
-        font->m_storageBuffer->Copy(*staging);
+        m_storageBuffer->Copy(*staging);
 
-        font->Init(context, graphics);
-
-        return font;
-    }
-
-    void Font::Init(Context& context, Graphics& graphics) {
         Shader& fontShader = graphics.GetFontShader();
 
         VkDescriptorSetAllocateInfo alloc_info{};
@@ -254,8 +240,24 @@ namespace backend::vulkan {
         vkUpdateDescriptorSets(context.m_vkDevice, 2, write_desc, 0, nullptr);
     }
 
-    uint32_t Font::GetStringWidth(std::string_view const& str) const {
-        uint32_t width = 0;
+    Font::~Font() {
+    }
+
+    int Font::GetGlyphIndex(int charCode) const {
+        auto const it = m_charCodeToIndex.find(charCode);
+        if (std::end(m_charCodeToIndex) == it) {
+            return 0;
+        }
+        return it->second;
+    }
+
+    moth_ui::IntVec2 Font::GetGlyphSize(int charCode) const {
+        int const gi = GetGlyphIndex(charCode);
+        return m_glyphInfo[gi].Advance;
+    }
+
+    int32_t Font::GetStringWidth(std::string_view const& str) const {
+        int32_t width = 0;
         for (auto& c : str) {
             auto glyphIndex = m_charCodeToIndex.at(c);
             auto const& glyphInfo = m_glyphInfo[glyphIndex];
@@ -264,15 +266,15 @@ namespace backend::vulkan {
         return width;
     }
 
-    uint32_t Font::GetColumnHeight(std::string const& str, uint32_t width) const {
-        uint32_t runningHeight = m_lineHeight;
+    int32_t Font::GetColumnHeight(std::string const& str, int32_t width) const {
+        int32_t runningHeight = m_lineHeight;
         // go word by word until we hit the limits
         auto words = split_str(str);
-        uint32_t runningWidth = 0;
+        int32_t runningWidth = 0;
 
-        uint32_t lineWordIndex = 0;
+        int32_t lineWordIndex = 0;
         for (auto& word : words) {
-            uint32_t wordWidth = GetStringWidth(word);
+            int32_t wordWidth = GetStringWidth(word);
             if (lineWordIndex > 0 && (runningWidth + wordWidth) > width) {
                 lineWordIndex = 0;
                 runningWidth = 0;

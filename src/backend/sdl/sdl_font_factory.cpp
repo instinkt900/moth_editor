@@ -12,7 +12,7 @@ namespace backend::sdl {
         m_fontPaths["28 Days Later"] = std::filesystem::current_path() / "28 Days Later.ttf";
     }
 
-    std::unique_ptr<moth_ui::IFont> FontFactory::GetDefaultFont(int size) {
+    std::shared_ptr<moth_ui::IFont> FontFactory::GetDefaultFont(int size) {
         return GetFont(m_fontPaths.begin()->first.c_str(), size);
     }
 
@@ -24,7 +24,7 @@ namespace backend::sdl {
         return nameList;
     }
 
-    std::unique_ptr<moth_ui::IFont> FontFactory::GetFont(char const* name, int size) {
+    std::shared_ptr<moth_ui::IFont> FontFactory::GetFont(char const* name, int size) {
         assert(!m_fontPaths.empty() && "No known fonts.");
         auto const it = m_fontPaths.find(name);
         if (std::end(m_fontPaths) == it) {

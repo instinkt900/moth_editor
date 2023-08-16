@@ -68,8 +68,17 @@ namespace {
     }
 }
 
+#define FT_CHECK(r)         \
+    {                       \
+        FT_Error err = (r); \
+        assert(!err);       \
+    }                       \
+    while (0)
+
 namespace backend::vulkan {
     Context::Context() {
+
+        FT_CHECK(FT_Init_FreeType(&m_ftLibrary));
 
         // create instance
         {
