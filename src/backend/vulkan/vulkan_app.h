@@ -82,5 +82,7 @@ namespace backend::vulkan {
         VkSurfaceKHR m_customVkSurface;
 
         void ImGuiInit();
+
+        void OnResize();
     };
 }

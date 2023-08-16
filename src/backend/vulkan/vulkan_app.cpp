@@ -121,6 +121,7 @@ namespace backend::vulkan {
                 app->m_windowWidth = width;
                 app->m_windowHeight = height;
             }
+            app->OnResize();
         });
 
         if (m_windowMaximized) {
@@ -271,5 +272,9 @@ namespace backend::vulkan {
             m_context->endSingleTimeCommands(commandBuffer);
             ImGui_ImplVulkan_DestroyFontUploadObjects();
         }
+    }
+
+    void Application::OnResize() {
+        m_graphics->OnResize(m_customVkSurface, m_windowWidth, m_windowHeight);
     }
 }

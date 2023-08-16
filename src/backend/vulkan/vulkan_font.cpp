@@ -119,7 +119,7 @@ namespace backend::vulkan {
         FT_UInt gindex;
         charcode = FT_Get_First_Char(face, &gindex);
         while (gindex != 0) {
-            FT_CHECK(FT_Load_Glyph(face, gindex, FT_LOAD_NO_HINTING));
+            FT_CHECK(FT_Load_Glyph(face, gindex, FT_LOAD_DEFAULT));
 
             const int glyphWidth = face->glyph->bitmap.width;
             const int glyphHeight = face->glyph->bitmap.rows;
@@ -160,8 +160,7 @@ namespace backend::vulkan {
         for (auto&& rect : stbRects) {
             // render glyph
             FT_GlyphSlot glyphSlot = face->glyph;
-            FT_CHECK(FT_Load_Glyph(face, rect.id, FT_LOAD_NO_HINTING));
-            FT_Render_Glyph(glyphSlot, FT_RENDER_MODE_NORMAL);
+            FT_CHECK(FT_Load_Glyph(face, rect.id, FT_LOAD_RENDER));
             int const glyphStride = face->glyph->bitmap.pitch;
             int const glyphPosX = rect.x;
             int const glyphPosY = rect.y;

@@ -2,10 +2,32 @@
 #include "vulkan_swapchain.h"
 #include "vulkan_utils.h"
 
+namespace {
+    VkExtent2D chooseSwapExtent(uint32_t width, uint32_t height, const VkSurfaceCapabilitiesKHR& capabilities) {
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return capabilities.currentExtent;
+        } else {
+            VkExtent2D actualExtent = {
+                static_cast<uint32_t>(width),
+                static_cast<uint32_t>(height)
+            };
+
+            actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+            actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+            return actualExtent;
+        }
+    }
+}
+
 namespace backend::vulkan {
     Swapchain::Swapchain(Context& context, RenderPass& renderPass, VkSurfaceKHR surface, VkExtent2D extent)
         : m_context(context)
         , m_extent(extent) {
+        VkSurfaceCapabilitiesKHR capabilities;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_context.m_vkPhysicalDevice, surface, &capabilities);
+        extent = chooseSwapExtent(extent.width, extent.height, capabilities);
+
         const VkFormat requestSurfaceImageFormat[] = { VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8_UNORM, VK_FORMAT_R8G8B8_UNORM };
         const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
         VkSurfaceFormatKHR surfaceFormat = Context::selectSurfaceFormat(m_context.m_vkPhysicalDevice, surface, requestSurfaceImageFormat, 4, requestSurfaceColorSpace);

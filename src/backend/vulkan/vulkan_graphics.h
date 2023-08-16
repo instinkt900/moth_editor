@@ -69,6 +69,7 @@ namespace backend::vulkan {
 
         Shader& GetFontShader() { return *m_fontShader; }
 
+        void OnResize(VkSurfaceKHR surface, uint32_t surfaceWidth, uint32_t surfaceHeight);
     private:
         Context& m_context;
 

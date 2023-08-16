@@ -821,4 +821,10 @@ namespace backend::vulkan {
         commandBuffer.Draw(vertCount, context->m_vertexCount);
         context->m_vertexCount += vertCount;
     }
+
+    void Graphics::OnResize(VkSurfaceKHR surface, uint32_t surfaceWidth, uint32_t surfaceHeight) {
+        vkDeviceWaitIdle(m_context.m_vkDevice);
+        m_swapchain.reset();
+        m_swapchain = std::make_unique<Swapchain>(m_context, *m_renderPass, surface, VkExtent2D{ surfaceWidth, surfaceHeight });
+    }
 }
