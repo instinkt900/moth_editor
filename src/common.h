@@ -17,7 +17,9 @@
 #include <imgui.h>
 #include <magic_enum.hpp>
 
+#ifndef SPDLOG_FMT_EXTERNAL
 #define SPDLOG_FMT_EXTERNAL
+#endif
 #include <spdlog/spdlog.h>
 
 #include <range/v3/algorithm/find.hpp>
@@ -36,4 +38,4 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
