@@ -6,6 +6,7 @@
 #include "vulkan_font_factory.h"
 #include "vulkan_ui_renderer.h"
 #include "vulkan_graphics.h"
+#include "vulkan_events.h"
 
 #include "moth_ui/context.h"
 #include "moth_ui/event_dispatch.h"
@@ -122,6 +123,13 @@ namespace backend::vulkan {
                 app->m_windowHeight = height;
             }
             app->OnResize();
+        });
+
+        glfwSetKeyCallback(m_glfwWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+            Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+            if (auto const translatedEvent = FromGLFW(key, scancode, action, mods)) {
+                app->OnEvent(*translatedEvent);
+            }
         });
 
         if (m_windowMaximized) {

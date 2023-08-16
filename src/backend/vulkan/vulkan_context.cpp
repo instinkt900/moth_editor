@@ -247,6 +247,7 @@ namespace backend::vulkan {
     }
 
     Context::~Context() {
+        vkDeviceWaitIdle(m_vkDevice);
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(m_vkInstance, m_vkDebugMessenger, nullptr);
         }
