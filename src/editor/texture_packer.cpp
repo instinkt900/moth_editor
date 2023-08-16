@@ -211,7 +211,7 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
 
             nlohmann::json details;
             auto const relativePath = std::filesystem::relative(imagePath, outputPath);
-            details["path"] = relativePath;
+            details["path"] = relativePath.string();
             details["rect"] = destRect;
             packDetails.push_back(details);
         }
