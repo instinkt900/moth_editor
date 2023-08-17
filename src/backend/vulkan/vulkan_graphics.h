@@ -49,6 +49,7 @@ namespace backend::vulkan {
         void DrawFillRectF(moth_ui::FloatRect const& rect) override;
         void DrawLineF(moth_ui::FloatVec2 const& p0, moth_ui::FloatVec2 const& p1) override;
         void DrawText(std::string const& text, moth_ui::IFont& font, moth_ui::TextHorizAlignment horizontalAlignment, moth_ui::IntVec2 const& pos, uint32_t width) override;
+        void SetClipRect(moth_ui::IntRect const* clipRect);
 
         std::unique_ptr<moth_ui::ITarget> CreateTarget(int width, int height) override;
         moth_ui::ITarget* GetTarget() override;

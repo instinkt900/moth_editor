@@ -390,6 +390,26 @@ namespace backend::vulkan {
         }
     }
 
+    void Graphics::SetClipRect(moth_ui::IntRect const* clipRect) {
+        auto context = m_contextStack.top();
+        auto& commandBuffer = context->m_target->GetCommandBuffer();
+        if (clipRect) {
+            VkRect2D scissor;
+            scissor.offset.x = clipRect->x();
+            scissor.offset.y = clipRect->y();
+            scissor.extent.width = clipRect->w();
+            scissor.extent.height = clipRect->h();
+            commandBuffer.SetScissor(scissor);
+        } else {
+            VkRect2D scissor;
+            scissor.offset.x = 0;
+            scissor.offset.y = 0;
+            scissor.extent.width = context->m_target->GetDimensions().x;
+            scissor.extent.height = context->m_target->GetDimensions().y;
+            commandBuffer.SetScissor(scissor);
+        }
+    }
+
     std::unique_ptr<moth_ui::ITarget> Graphics::CreateTarget(int width, int height) {
         return std::make_unique<Framebuffer>(m_context, width, height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, m_rtRenderPass->GetRenderPass());
     }

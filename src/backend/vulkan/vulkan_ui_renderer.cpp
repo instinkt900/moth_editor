@@ -47,7 +47,7 @@ namespace backend::vulkan {
         }
 
         auto const currentRect = m_clip.top();
-        //m_graphics.SetClipRect(&currentRect);
+        m_graphics.SetClipRect(&currentRect);
     }
 
     void UIRenderer::PopClip() {
@@ -56,10 +56,10 @@ namespace backend::vulkan {
         }
 
         if (m_clip.empty()) {
-            //m_graphics.SetClipRect(nullptr);
+            m_graphics.SetClipRect(nullptr);
         } else {
             auto const currentRect = m_clip.top();
-            //m_graphics.SetClipRect(&currentRect);
+            m_graphics.SetClipRect(&currentRect);
         }
     }
 
