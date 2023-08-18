@@ -51,6 +51,7 @@ EditorLayer::EditorLayer() {
     AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
+    AddEditorPanel<EditorPanelAnimation>(*this, true);
     AddEditorPanel<EditorPanelUndoStack>(*this, false);
     AddEditorPanel<EditorPanelPreview>(*this, false);
 
