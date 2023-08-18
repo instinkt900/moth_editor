@@ -133,3 +133,5 @@ target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-all
 target_link_libraries(${PROJECT_NAME} freetype)
 target_link_libraries(${PROJECT_NAME} glm::glm)
 set_source_files_properties(src/backend/sdl/SDL_FontCache.c PROPERTIES COMPILE_FLAGS "/W0")
+
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
