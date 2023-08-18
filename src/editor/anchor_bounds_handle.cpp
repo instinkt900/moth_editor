@@ -68,16 +68,10 @@ bool AnchorBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
 
     int const halfSize = m_size / 2;
 
-    int x1 = 0;
-    int x2 = 0;
-    int y1 = 0;
-    int y2 = 0;
     int const offset = halfSize + 3;
 
     auto& canvasPanel = m_widget.GetCanvasPanel();
     auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, int>(m_position);
-
-    bool inside = false;
 
     if (!m_anchor.Top || !m_anchor.Bottom) {
         moth_ui::IntRect r1;

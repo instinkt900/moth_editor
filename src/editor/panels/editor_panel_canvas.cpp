@@ -289,7 +289,7 @@ void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
 }
 
 void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
-    bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseMove(appPosition, static_cast<moth_ui::FloatVec2>(appPosition - m_lastMousePos)));
+    m_boundsWidget->OnEvent(moth_ui::EventMouseMove(appPosition, static_cast<moth_ui::FloatVec2>(appPosition - m_lastMousePos)));
 
     if (m_holdingSelection) {
         auto const worldPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(appPosition);

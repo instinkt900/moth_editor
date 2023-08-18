@@ -31,7 +31,7 @@ void ConfirmPrompt::Open() {
 
 void ConfirmPrompt::Draw() {
     if (ImGui::BeginPopupModal(m_title.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped(m_message.c_str());
+        ImGui::TextWrapped("%s", m_message.c_str());
         ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
         if (ImGui::Button(m_positiveText.c_str(), button_size)) {
             if (m_positiveAction) {

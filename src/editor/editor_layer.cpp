@@ -51,7 +51,7 @@ EditorLayer::EditorLayer() {
     AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
-    auto const animationPanel = AddEditorPanel<EditorPanelAnimation>(*this, true);
+    AddEditorPanel<EditorPanelAnimation>(*this, true);
     AddEditorPanel<EditorPanelUndoStack>(*this, false);
     AddEditorPanel<EditorPanelPreview>(*this, false);
 
@@ -85,7 +85,7 @@ void EditorLayer::Draw() {
     m_rootDockId = ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
     if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::TextWrapped(m_lastErrorMsg.c_str());
+        ImGui::TextWrapped("%s", m_lastErrorMsg.c_str());
         ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
         if (ImGui::Button("OK", button_size)) {
             ImGui::CloseCurrentPopup();
@@ -516,6 +516,8 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
         case moth_ui::Key::Pagedown:
             MoveSelectionDown();
             return true;
+	default:
+	    return false;
         }
     }
     return false;

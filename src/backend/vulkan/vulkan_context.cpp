@@ -37,6 +37,8 @@ namespace {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             spdlog::error("Validation Layer: {}", pCallbackData->pMessage);
             break;
+	default:
+	    break;
         }
 
         return VK_FALSE;
@@ -68,12 +70,15 @@ namespace {
     }
 }
 
+#define _unused(x) ((void)(x))
 #define FT_CHECK(r)         \
     {                       \
         FT_Error err = (r); \
         assert(!err);       \
+	_unused(err);       \
     }                       \
-    while (0)
+    while (0)               \
+    ;
 
 namespace backend::vulkan {
     Context::Context() {

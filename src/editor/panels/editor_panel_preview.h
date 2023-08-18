@@ -11,7 +11,7 @@ public:
     void Update(uint32_t ticks) override;
 
 private:
-    void DrawContents();
+    void DrawContents() override;
 
     bool m_wasVisible = false;
     std::unique_ptr<moth_ui::Node> m_root;

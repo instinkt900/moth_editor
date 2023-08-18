@@ -1,6 +1,9 @@
 #include "common.h"
 #include "sdl_app.h"
 #include "editor/editor_layer.h"
+#include "editor/texture_packer.h"
+#include "editor/actions/editor_action.h"
+#include "editor/panels/editor_panel.h"
 
 #include "sdl_events.h"
 #include "sdl_image_factory.h"
@@ -101,7 +104,9 @@ namespace backend::sdl {
             return false;
         }
 
+#ifdef _WIN32
         load_sdl_ttf_shim();
+#endif
 
         m_graphics = std::make_unique<backend::sdl::SDLGraphics>(m_renderer);
         m_imageFactory = std::make_unique<ImageFactory>(*m_renderer);

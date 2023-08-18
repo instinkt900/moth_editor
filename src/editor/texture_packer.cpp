@@ -135,16 +135,12 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
     int maxWidth = std::numeric_limits<int>::min();
     int maxHeight = std::numeric_limits<int>::min();
     int totalArea = 0;
-    int totalWidth = 0;
-    int totalHeight = 0;
 
     for (auto&& rect : rects) {
         minWidth = std::min(minWidth, rect.w);
         minHeight = std::min(minHeight, rect.h);
         maxWidth = std::max(maxWidth, rect.w);
         maxHeight = std::max(maxHeight, rect.h);
-        totalWidth += rect.w;
-        totalHeight += rect.h;
         totalArea += rect.w * rect.h;
     }
 

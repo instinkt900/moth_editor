@@ -5,8 +5,7 @@
 
 namespace backend::vulkan {
     ImageFactory::ImageFactory(Context& context, Graphics& graphics)
-        : m_context(context)
-        , m_graphics(graphics) {
+        : m_context(context) {
     }
 
     void ImageFactory::FlushCache() {

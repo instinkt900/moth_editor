@@ -17,8 +17,6 @@ namespace backend::vulkan {
         std::shared_ptr<moth_ui::IFont> GetFont(char const* name, int size) override;
 
     private:
-        Context& m_context;
-        Graphics& m_graphics;
         std::map<std::string, std::filesystem::path> m_fontPaths;
         FontCache m_fontCache;
     };

@@ -7,7 +7,7 @@ class Layer;
 class LayerStack : public moth_ui::EventListener {
 public:
     LayerStack(int renderWidth, int renderHeight, int windowWidth, int windowHeight);
-    ~LayerStack();
+    virtual ~LayerStack();
 
     void PushLayer(std::unique_ptr<Layer>&& layer);
     std::unique_ptr<Layer> PopLayer();

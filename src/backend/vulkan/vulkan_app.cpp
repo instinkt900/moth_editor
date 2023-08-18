@@ -1,6 +1,9 @@
 #include "common.h"
 #include "vulkan_app.h"
 #include "editor/editor_layer.h"
+#include "editor/texture_packer.h"
+#include "editor/actions/editor_action.h"
+#include "editor/panels/editor_panel.h"
 
 #include "vulkan_image_factory.h"
 #include "vulkan_font_factory.h"

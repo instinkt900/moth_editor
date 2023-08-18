@@ -147,8 +147,6 @@ private:
     float const m_rowHeight = 20;
     float const m_legendWidth = 200;
 
-    bool m_movingClip = false;
-    bool m_keyframeGrabbed = false;
     bool m_movingScrollBar = false;
 
     ImVec2 m_panningViewSource;

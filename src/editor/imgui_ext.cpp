@@ -36,7 +36,7 @@ namespace imgui_ext {
         ImGui::InputInt("", &vec->y, 0);
         ImGui::PopID();
         ImGui::SameLine(0, 4);
-        ImGui::Text(label);
+        ImGui::Text("%s", label);
     }
 
     void InputFloatVec2(char const* label, FloatVec2* vec) {
@@ -54,7 +54,7 @@ namespace imgui_ext {
         ImGui::InputFloat("", &vec->y, 0);
         ImGui::PopID();
         ImGui::SameLine(0, 4);
-        ImGui::Text(label);
+        ImGui::Text("%s", label);
     }
 
     void Image(moth_ui::IImage const* image, int width, int height) {

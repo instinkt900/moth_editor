@@ -7,8 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS _ITERATOR_DEBUG_LEVEL=0 IMGUI_DEFINE_MATH_OPERATORS)
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MD")
+if (MSVC)
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MD")
+else()
+endif()
 
 find_package(nlohmann_json REQUIRED)
 find_package(fmt REQUIRED)
@@ -49,7 +52,6 @@ set(SOURCES ${SOURCES}
 	src/backend/sdl/sdl_graphics.cpp
 	src/backend/sdl/sdl_image.cpp
 	src/backend/sdl/sdl_image_factory.cpp
-	src/backend/sdl/sdl_ttf_shim.c
 	src/backend/sdl/sdl_ui_renderer.cpp
 	src/backend/vulkan/vulkan_app.cpp
 	src/backend/vulkan/vulkan_buffer.cpp
@@ -111,13 +113,21 @@ set(SOURCES ${SOURCES}
 	src/layers/layer_stack.cpp
 	src/main.cpp
 )
+if (MSVC)
+	set(SOURCES ${SOURCES} src/backend/sdl/sdl_ttf_shim.c)
+else()
+endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 target_link_libraries(${PROJECT_NAME} moth_ui ${CONAN_LIBS})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
-set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3 /WX")
+if (MSVC)
+	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
+	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3 /WX")
+else()
+	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall -Werror")
+endif()
 target_link_libraries(${PROJECT_NAME} nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} fmt::fmt)
 target_link_libraries(${PROJECT_NAME} magic_enum::magic_enum)
@@ -132,6 +142,9 @@ target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
 target_link_libraries(${PROJECT_NAME} freetype)
 target_link_libraries(${PROJECT_NAME} glm::glm)
-set_source_files_properties(src/backend/sdl/SDL_FontCache.c PROPERTIES COMPILE_FLAGS "/W0")
+if (MSVC)
+	set_source_files_properties(src/backend/sdl/SDL_FontCache.c PROPERTIES COMPILE_FLAGS "/W0")
+else()
+endif()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

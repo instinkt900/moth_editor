@@ -84,6 +84,8 @@ void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> no
     case moth_ui::LayoutEntityType::Layout:
         DrawLayoutProperties(std::static_pointer_cast<moth_ui::Group>(node));
         break;
+    default:
+	break;
     }
 }
 
@@ -363,8 +365,9 @@ char const* GetChildName(std::shared_ptr<moth_ui::LayoutEntity> entity) {
         return "Text";
     case moth_ui::LayoutEntityType::Ref:
         return "Ref";
+    default:
+	return "Unknown";
     }
-    return "Unknown";
 }
 
 void EditorPanelProperties::DrawRefProperties(std::shared_ptr<moth_ui::Group> node, bool recurseChildren) {

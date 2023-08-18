@@ -2,9 +2,9 @@
 #include "editor_panel.h"
 
 EditorPanel::EditorPanel(EditorLayer& editorLayer, std::string const& title, bool visible, bool exposed)
-    : m_editorLayer(editorLayer)
+    : m_visible(visible) 
+    , m_editorLayer(editorLayer)
     , m_title(title)
-    , m_visible(visible)
     , m_exposed(exposed) {
 }
 

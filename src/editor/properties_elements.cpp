@@ -19,7 +19,6 @@ namespace {
     moth_ui::LayoutRect editLayoutRect;
     moth_ui::IntRect preEditRect;
     moth_ui::IntRect editRect;
-    bool preEditTextSet = false;
     std::function<void(char const*, char const*)> editCompleteCallback;
     std::function<void(int, int)> commitIntAction;
     std::function<void(float, float)> commitFloatAction;
