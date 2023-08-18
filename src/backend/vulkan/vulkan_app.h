@@ -53,7 +53,6 @@ namespace backend::vulkan {
 
         bool m_running = false;
         bool m_paused = false;
-        bool m_editorMode = false;
         std::chrono::milliseconds m_updateTicks;
         std::chrono::time_point<std::chrono::steady_clock> m_lastUpdateTicks;
 

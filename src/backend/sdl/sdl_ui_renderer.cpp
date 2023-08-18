@@ -97,8 +97,6 @@ namespace backend::sdl {
             SDL_RenderCopy(&m_renderer, texture->GetImpl(), &sdlsourceRect, &sdlDestRect);
         } else if (scaleType == moth_ui::ImageScaleType::Tile) {
             // sdl doesnt have a tiling texture ability. we need to manually tile
-            auto const destWidth = destRect.bottomRight.x - destRect.topLeft.x;
-            auto const destHeight = destRect.bottomRight.y - destRect.topLeft.y;
             auto const imageWidth = static_cast<int>(image.GetWidth() * scale);
             auto const imageHeight = static_cast<int>(image.GetHeight() * scale);
             auto const sdlTotalDestRect{ ToSDL(destRect) };

@@ -19,7 +19,6 @@ namespace backend::vulkan {
 
     private:
         Context& m_context;
-        Graphics& m_graphics;
 
         struct ImageDesc {
             std::shared_ptr<Image> m_texture;

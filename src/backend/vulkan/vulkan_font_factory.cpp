@@ -4,9 +4,7 @@
 
 namespace backend::vulkan {
     FontFactory::FontFactory(Context& context, Graphics& graphics)
-        : m_context(context)
-        , m_graphics(graphics)
-        , m_fontCache(context, graphics) {
+        : m_fontCache(context, graphics) {
         m_fontPaths["Pilot Command"] = std::filesystem::current_path() / "pilotcommand.ttf";
         m_fontPaths["Daniel Davis"] = std::filesystem::current_path() / "Daniel Davis.ttf";
         m_fontPaths["Game of Squids"] = std::filesystem::current_path() / "Game Of Squids.ttf";

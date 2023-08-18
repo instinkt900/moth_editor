@@ -9,7 +9,7 @@ class BoundsHandle;
 class BoundsWidget : public moth_ui::EventListener {
 public:
     BoundsWidget(EditorPanelCanvas& canvasPanel);
-    ~BoundsWidget();
+    virtual ~BoundsWidget();
 
     void BeginEdit();
     void EndEdit();

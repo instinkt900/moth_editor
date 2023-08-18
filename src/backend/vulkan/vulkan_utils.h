@@ -15,19 +15,19 @@ namespace backend::vulkan {
     static constexpr uint32_t HashSeed = 0xc00db11c;
 
     template<typename T>
-    static uint32_t CalcHash(T const& source) {
+    inline uint32_t CalcHash(T const& source) {
         return murmurhash(reinterpret_cast<char const*>(&source), sizeof(T), HashSeed);
     }
 
-    static uint32_t CalcHash(std::string const& source) {
+    inline uint32_t CalcHash(std::string const& source) {
         return murmurhash(source.c_str(), static_cast<uint32_t>(source.length()), HashSeed);
     }
 
-    static uint32_t CalcHash(void const* source, size_t sourceSize) {
+    inline uint32_t CalcHash(void const* source, size_t sourceSize) {
         return murmurhash(static_cast<char const*>(source), static_cast<uint32_t>(sourceSize), HashSeed);
     }
 
-    static std::vector<std::string_view> split_str(std::string const& str, char const delim = ' ') {
+    inline std::vector<std::string_view> split_str(std::string const& str, char const delim = ' ') {
         std::vector<std::string_view> result;
 
         int leftIndex = 0;

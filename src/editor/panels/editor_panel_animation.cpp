@@ -19,24 +19,7 @@
 #undef min
 #undef max
 
-namespace {
-    using namespace moth_ui;
-
-    char const* ToString(AnimationTrack::Target target) {
-        switch (target) {
-        case AnimationTrack::Target::TopOffset:
-            return "TopOffset";
-        case AnimationTrack::Target::BottomOffset:
-            return "BottomOffset";
-        case AnimationTrack::Target::LeftOffset:
-            return "LeftOffset";
-        case AnimationTrack::Target::RightOffset:
-            return "RightOffset";
-        default:
-            return "Unknown";
-        }
-    }
-}
+using namespace moth_ui;
 
 EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Animation", visible, true) {
@@ -341,8 +324,6 @@ void EditorPanelAnimation::DrawFrameRow() {
 }
 
 bool EditorPanelAnimation::DrawClipPopup() {
-    ImGuiIO const& io = ImGui::GetIO();
-
     if (ImGui::BeginPopup("clip_popup")) {
         auto layout = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const it = ranges::find_if(layout->m_clips, [&](auto const& clip) {
@@ -512,8 +493,6 @@ void EditorPanelAnimation::DrawClipRow() {
 }
 
 bool EditorPanelAnimation::DrawEventPopup() {
-    ImGuiIO const& io = ImGui::GetIO();
-
     if (ImGui::BeginPopup(EventPopupName)) {
         auto layout = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const it = ranges::find_if(layout->m_events, [&](auto const& event) {
@@ -631,8 +610,6 @@ void EditorPanelAnimation::DrawEventsRow() {
 }
 
 bool EditorPanelAnimation::DrawKeyframePopup() {
-    ImGuiIO const& io = ImGui::GetIO();
-
     if (ImGui::BeginPopup(KeyframePopupName)) {
         auto const child = m_group->GetChildren()[m_clickedChildIdx];
         auto const childEntity = child->GetLayoutEntity();
@@ -835,8 +812,6 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 }
 
 void EditorPanelAnimation::DrawTrackRows() {
-    ImGuiIO const& io = ImGui::GetIO();
-
     bool const popupShown = DrawKeyframePopup();
 
     // cancel pending selection clear if we click in a popup
@@ -973,7 +948,6 @@ void EditorPanelAnimation::DrawWidget() {
     SanitizeExtraData();
     m_rowCounter = 0;
 
-    int a = 0;
     ImGui::PushItemWidth(130);
     ImGui::InputInt("Frame Min", &m_minFrame);
     ImGui::SameLine();
@@ -1081,7 +1055,6 @@ void EditorPanelAnimation::UpdateMouseDragging() {
                     }
                 } else if (auto keyframeContext = std::get_if<KeyframeContext>(&context)) {
                     if (keyframeContext->current->m_frame != keyframeContext->mutableFrame) {
-                        auto& track = keyframeContext->entity->m_tracks.at(keyframeContext->target);
                         auto moveAction = std::make_unique<MoveKeyframeAction>(keyframeContext->entity, keyframeContext->target, keyframeContext->current->m_frame, keyframeContext->mutableFrame);
                         compositeAction->GetActions().push_back(std::move(moveAction));
                     }

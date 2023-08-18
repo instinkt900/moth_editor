@@ -5,18 +5,17 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#define _unused(x) ((void)(x))
 #define FT_CHECK(r)         \
     {                       \
         FT_Error err = (r); \
         assert(!err);       \
+	_unused(err);       \
     }                       \
-    while (0)
+    while (0)               \
+    ;
 
 namespace {
-    static uint32_t align_uint32(uint32_t value, uint32_t alignment) {
-        return (value + alignment - 1) / alignment * alignment;
-    }
-
     int NextPowerOf2(int value) {
         value--;
         value |= value >> 1;
@@ -35,16 +34,12 @@ namespace {
         int maxWidth = std::numeric_limits<int>::min();
         int maxHeight = std::numeric_limits<int>::min();
         int totalArea = 0;
-        int totalWidth = 0;
-        int totalHeight = 0;
 
         for (auto&& rect : rects) {
             minWidth = std::min(minWidth, rect.w);
             minHeight = std::min(minHeight, rect.h);
             maxWidth = std::max(maxWidth, rect.w);
             maxHeight = std::max(maxHeight, rect.h);
-            totalWidth += rect.w;
-            totalHeight += rect.h;
             totalArea += rect.w * rect.h;
         }
 

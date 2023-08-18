@@ -6,6 +6,7 @@
 namespace backend {
     class IGraphicsContext {
     public:
+	virtual ~IGraphicsContext() {}
         virtual void SetBlendMode(moth_ui::BlendMode mode) = 0;
         //virtual void SetBlendMode(std::shared_ptr<moth_ui::IImage> target, EBlendMode mode) = 0;
         //virtual void SetColorMod(std::shared_ptr<moth_ui::IImage> target, moth_ui::Color const& color) = 0;
