@@ -64,19 +64,21 @@ void EditorPanelPreview::DrawContents() {
         }
 
         auto const windowRegionMax = ImGui::GetContentRegionAvail();
-        moth_ui::IntVec2 const previewSize{ static_cast<int>(windowRegionMax.x), static_cast<int>(windowRegionMax.y) };
-        UpdateRenderSurface(previewSize);
-        g_App->GetGraphics().SetTarget(m_renderSurface.get());
+        if (windowRegionMax.x > 0 && windowRegionMax.y > 0) {
+            moth_ui::IntVec2 const previewSize{ static_cast<int>(windowRegionMax.x), static_cast<int>(windowRegionMax.y) };
+            UpdateRenderSurface(previewSize);
+            g_App->GetGraphics().SetTarget(m_renderSurface.get());
 
-        moth_ui::IntRect displayRect;
-        displayRect.topLeft = { 0, 0 };
-        displayRect.bottomRight = previewSize;
-        m_root->SetScreenRect(displayRect);
-        m_root->Draw();
+            moth_ui::IntRect displayRect;
+            displayRect.topLeft = { 0, 0 };
+            displayRect.bottomRight = previewSize;
+            m_root->SetScreenRect(displayRect);
+            m_root->Draw();
 
-        g_App->GetGraphics().SetTarget(nullptr);
+            g_App->GetGraphics().SetTarget(nullptr);
 
-        imgui_ext::Image(m_renderSurface->GetImage(), previewSize.x, previewSize.y);
+            imgui_ext::Image(m_renderSurface->GetImage(), previewSize.x, previewSize.y);
+        }
     }
 }
 
