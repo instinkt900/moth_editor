@@ -105,6 +105,14 @@ void EditorLayer::Draw() {
         panel->Draw();
     }
 
+    if (IsEditorPanelFocused<EditorPanelCanvas>() || IsEditorPanelFocused<EditorPanelAnimation>()) {
+        if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
+            DeleteEntity();
+        } else if (ImGui::IsKeyPressed(ImGuiKey_H)) {
+            ToggleEntityVisibility();
+        }
+    }
+
     s_fileDialog.Display();
     if (s_fileDialog.HasSelected()) {
         if (s_fileOpenMode == FileOpenMode::OpenLayout) {
@@ -454,6 +462,20 @@ void EditorLayer::DeleteEntity() {
     }
 
     ClearSelection();
+}
+
+void EditorLayer::ToggleEntityVisibility() {
+    auto const selection = GetSelection();
+    if (!selection.empty()) {
+        bool const visible = !(*selection.begin())->IsVisible();
+        std::unique_ptr<CompositeAction> actions = std::make_unique<CompositeAction>();
+        for (auto&& node : selection) {
+            auto entity = node->GetLayoutEntity();
+            auto action = MakeChangeValueAction(entity->m_visible, entity->m_visible, visible, [node]() { node->ReloadEntity(); });
+            actions->GetActions().push_back(std::move(action));
+        }
+        PerformEditAction(std::move(actions));
+    }
 }
 
 void EditorLayer::ResetCanvas() {

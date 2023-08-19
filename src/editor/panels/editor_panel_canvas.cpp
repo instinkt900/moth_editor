@@ -366,24 +366,6 @@ void EditorPanelCanvas::UpdateInput() {
         }
     }
 
-    if (ImGui::IsWindowFocused()) {
-        if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-            m_editorLayer.DeleteEntity();
-        } else if (ImGui::IsKeyPressed(ImGuiKey_H)) {
-            auto const selection = m_editorLayer.GetSelection();
-            if (!selection.empty()) {
-                bool const visible = !(*selection.begin())->IsVisible();
-                std::unique_ptr<CompositeAction> actions = std::make_unique<CompositeAction>();
-                for (auto&& node : selection) {
-                    auto entity = node->GetLayoutEntity();
-                    auto action = MakeChangeValueAction(entity->m_visible, entity->m_visible, visible, [node]() { node->ReloadEntity(); });
-                    actions->GetActions().push_back(std::move(action));
-                }
-                m_editorLayer.PerformEditAction(std::move(actions));
-            }
-        }
-    }
-
     // always want to accept released so we dont end up stuck down
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });

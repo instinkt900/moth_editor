@@ -24,6 +24,7 @@ public:
 
     std::string const& GetTitle() const { return m_title; }
     bool IsExposed() const { return m_exposed; }
+    bool IsFocused() const { return m_focused; }
 
     virtual void OnLayoutLoaded() {}
     virtual void OnShutdown() {}
@@ -41,6 +42,7 @@ protected:
     std::string m_title;
     bool m_exposed = false;
     bool m_wasVisible = false;
+    bool m_focused = false;
 
     virtual void OnOpen() {}
     virtual void OnClose() {}
