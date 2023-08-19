@@ -44,7 +44,6 @@ set(SOURCES ${SOURCES}
 	../external/imgui/backends/imgui_impl_vulkan.cpp
 	../external/imgui/backends/imgui_impl_glfw.cpp
 	../external/murmurhash.c/murmurhash.c
-	../backends/src/sdl/sdl_app.cpp
 	../backends/src/sdl/sdl_events.cpp
 	../backends/src/sdl/sdl_font.cpp
 	../backends/src/sdl/sdl_font_factory.cpp
@@ -53,7 +52,6 @@ set(SOURCES ${SOURCES}
 	../backends/src/sdl/sdl_image.cpp
 	../backends/src/sdl/sdl_image_factory.cpp
 	../backends/src/sdl/sdl_ui_renderer.cpp
-	../backends/src/vulkan/vulkan_app.cpp
 	../backends/src/vulkan/vulkan_buffer.cpp
 	../backends/src/vulkan/vulkan_command_buffer.cpp
 	../backends/src/vulkan/vulkan_context.cpp
@@ -111,7 +109,9 @@ set(SOURCES ${SOURCES}
 	src/editor/texture_packer.cpp
 	src/layers/layer.cpp
 	src/layers/layer_stack.cpp
+	src/sdl_app.cpp
 	src/main.cpp
+	src/vulkan_app.cpp
 )
 if (MSVC)
 	set(SOURCES ${SOURCES} ../backends/src/sdl/sdl_ttf_shim.c)
