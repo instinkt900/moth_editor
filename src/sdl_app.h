@@ -51,9 +51,10 @@ namespace backend::sdl {
 
         std::unique_ptr<LayerStack> m_layerStack;
 
-        std::filesystem::path m_originalCwd;
+        std::string m_imguiSettingsPath;
         std::filesystem::path m_persistentFilePath;
         nlohmann::json m_persistentState;
+        static char const* const IMGUI_FILE;
         static char const* const PERSISTENCE_FILE;
 
         std::unique_ptr<moth_ui::IImageFactory> m_imageFactory;

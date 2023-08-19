@@ -19,6 +19,7 @@
 #include <backends/imgui_impl_sdlrenderer.h>
 
 namespace backend::sdl {
+    char const* const Application::IMGUI_FILE = "imgui.ini";
     char const* const Application::PERSISTENCE_FILE = "editor.json";
 
     std::unique_ptr<IApplication> CreateApplication() {
@@ -29,6 +30,7 @@ namespace backend::sdl {
         : m_windowWidth(INIT_WINDOW_WIDTH)
         , m_windowHeight(INIT_WINDOW_HEIGHT) {
 
+        m_imguiSettingsPath = (std::filesystem::current_path() / IMGUI_FILE).string();
         m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
         std::ifstream persistenceFile(m_persistentFilePath.string());
         if (persistenceFile.is_open()) {
@@ -90,15 +92,12 @@ namespace backend::sdl {
             return false;
         }
 
-        m_originalCwd = std::filesystem::current_path();
-
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         auto& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.IniFilename = nullptr;
+        io.IniFilename = m_imguiSettingsPath.c_str();
         ImGui::StyleColorsDark();
-        ImGui::LoadIniSettingsFromDisk((m_originalCwd / "imgui.ini").string().c_str());
 
         ImGui_ImplSDL2_InitForSDLRenderer(m_window, m_renderer);
         ImGui_ImplSDLRenderer_Init(m_renderer);
@@ -115,6 +114,11 @@ namespace backend::sdl {
         m_graphics = std::make_unique<backend::sdl::SDLGraphics>(m_renderer);
         m_imageFactory = std::make_unique<ImageFactory>(*m_renderer);
         m_fontFactory = std::make_unique<FontFactory>(*m_renderer);
+        m_fontFactory->AddFont("Pilot Command", std::filesystem::current_path() / "pilotcommand.ttf");
+        m_fontFactory->AddFont("Daniel Davis", std::filesystem::current_path() / "Daniel Davis.ttf");
+        m_fontFactory->AddFont("Game of Squids", std::filesystem::current_path() / "Game Of Squids.ttf");
+        m_fontFactory->AddFont("Southern Aire", std::filesystem::current_path() / "SouthernAire_Personal_Use_Only.ttf");
+        m_fontFactory->AddFont("28 Days Later", std::filesystem::current_path() / "28 Days Later.ttf");
         m_uiRenderer = std::make_unique<UIRenderer>(*m_renderer);
         auto uiContext = std::make_shared<moth_ui::Context>(m_imageFactory.get(), m_fontFactory.get(), m_uiRenderer.get());
         moth_ui::Context::SetCurrentContext(uiContext);
@@ -173,8 +177,6 @@ namespace backend::sdl {
             m_persistentState["window_height"] = m_windowHeight;
             ofile << m_persistentState;
         }
-        ImGui::SaveIniSettingsToDisk((m_originalCwd / "imgui.ini").string().c_str());
-        std::filesystem::current_path(m_originalCwd);
 
         ImGui_ImplSDLRenderer_Shutdown();
         ImGui_ImplSDL2_Shutdown();
