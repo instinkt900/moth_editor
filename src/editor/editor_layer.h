@@ -82,10 +82,28 @@ public:
     }
 
     template <typename T>
+    T* GetEditorPanel() const {
+        auto const id = typeid(T).hash_code();
+        auto const it = m_panels.find(id);
+        if (std::end(m_panels) != it) {
+            return static_cast<T*>(it->second.get());
+        }
+        return nullptr;
+    }
+
+    template <typename T>
     void SetEditorPanelVisible(bool visible) {
         if (auto const panel = GetEditorPanel<T>()) {
             panel->m_visible = visible;
         }
+    }
+
+    template <typename T>
+    bool IsEditorPanelFocused() const {
+        if (auto const panel = GetEditorPanel<T>()) {
+            return panel->IsFocused();
+        }
+        return false;
     }
 
     void ShowError(std::string const& message);
@@ -93,6 +111,7 @@ public:
     ImGuiID GetDockID() const { return m_rootDockId; }
 
     void DeleteEntity();
+    void ToggleEntityVisibility();
 
     EditorConfig& GetConfig() { return m_config; }
 

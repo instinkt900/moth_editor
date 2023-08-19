@@ -16,9 +16,11 @@ void EditorPanel::Draw() {
     }
 
     m_wasVisible = m_visible;
-
+    
     if (m_visible) {
+        m_focused = false;
         if (BeginPanel()) {
+            m_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
             DrawContents();
         }
         EndPanel();
