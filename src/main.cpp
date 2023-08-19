@@ -1,12 +1,12 @@
 #include "common.h"
-#include "backend/sdl/sdl_app.h"
-#include "backend/vulkan/vulkan_app.h"
+#include "sdl/sdl_application.h"
+#include "vulkan/vulkan_application.h"
 
 backend::IApplication* g_App = nullptr;
 
 int main(int argc, char** argv) {
-    //backend::sdl::Application application;
-    backend::vulkan::Application application;
-    g_App = &application;
-    return application.Run();
+    //std::unique_ptr<backend::IApplication> application = backend::sdl::CreateApplication();
+    std::unique_ptr<backend::IApplication> application = backend::vulkan::CreateApplication();
+    g_App = application.get();
+    return application->Run();
 }

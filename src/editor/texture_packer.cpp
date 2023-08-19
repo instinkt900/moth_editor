@@ -1,6 +1,6 @@
 #include "common.h"
 #include "texture_packer.h"
-#include "backend/iapplication.h"
+#include "iapplication.h"
 
 #include "moth_ui/context.h"
 #include "moth_ui/layout/layout.h"
