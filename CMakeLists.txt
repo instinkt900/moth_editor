@@ -31,6 +31,7 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(.. moth_ui)
 
 #include_directories(../include)
+include_directories(../backends/include)
 include_directories(../external/imgui)
 include_directories(../external/murmurhash.c)
 
@@ -44,35 +45,35 @@ set(SOURCES ${SOURCES}
 	../external/imgui/backends/imgui_impl_vulkan.cpp
 	../external/imgui/backends/imgui_impl_glfw.cpp
 	../external/murmurhash.c/murmurhash.c
-	src/backend/sdl/sdl_app.cpp
-	src/backend/sdl/sdl_events.cpp
-	src/backend/sdl/sdl_font.cpp
-	src/backend/sdl/sdl_font_factory.cpp
-	src/backend/sdl/SDL_FontCache.c
-	src/backend/sdl/sdl_graphics.cpp
-	src/backend/sdl/sdl_image.cpp
-	src/backend/sdl/sdl_image_factory.cpp
-	src/backend/sdl/sdl_ui_renderer.cpp
-	src/backend/vulkan/vulkan_app.cpp
-	src/backend/vulkan/vulkan_buffer.cpp
-	src/backend/vulkan/vulkan_command_buffer.cpp
-	src/backend/vulkan/vulkan_context.cpp
-	src/backend/vulkan/vulkan_events.cpp
-	src/backend/vulkan/vulkan_fence.cpp
-	src/backend/vulkan/vulkan_font.cpp
-	src/backend/vulkan/vulkan_font_cache.cpp
-	src/backend/vulkan/vulkan_font_factory.cpp
-	src/backend/vulkan/vulkan_framebuffer.cpp
-	src/backend/vulkan/vulkan_graphics.cpp
-	src/backend/vulkan/vulkan_image.cpp
-	src/backend/vulkan/vulkan_image_factory.cpp
-	src/backend/vulkan/vulkan_pipeline.cpp
-	src/backend/vulkan/vulkan_renderpass.cpp
-	src/backend/vulkan/vulkan_shader.cpp
-	src/backend/vulkan/vulkan_subimage.cpp
-	src/backend/vulkan/vulkan_swapchain.cpp
-	src/backend/vulkan/vulkan_ui_renderer.cpp
-	src/backend/vulkan/vulkan_vma.cpp
+	../backends/src/sdl/sdl_app.cpp
+	../backends/src/sdl/sdl_events.cpp
+	../backends/src/sdl/sdl_font.cpp
+	../backends/src/sdl/sdl_font_factory.cpp
+	../backends/src/sdl/SDL_FontCache.c
+	../backends/src/sdl/sdl_graphics.cpp
+	../backends/src/sdl/sdl_image.cpp
+	../backends/src/sdl/sdl_image_factory.cpp
+	../backends/src/sdl/sdl_ui_renderer.cpp
+	../backends/src/vulkan/vulkan_app.cpp
+	../backends/src/vulkan/vulkan_buffer.cpp
+	../backends/src/vulkan/vulkan_command_buffer.cpp
+	../backends/src/vulkan/vulkan_context.cpp
+	../backends/src/vulkan/vulkan_events.cpp
+	../backends/src/vulkan/vulkan_fence.cpp
+	../backends/src/vulkan/vulkan_font.cpp
+	../backends/src/vulkan/vulkan_font_cache.cpp
+	../backends/src/vulkan/vulkan_font_factory.cpp
+	../backends/src/vulkan/vulkan_framebuffer.cpp
+	../backends/src/vulkan/vulkan_graphics.cpp
+	../backends/src/vulkan/vulkan_image.cpp
+	../backends/src/vulkan/vulkan_image_factory.cpp
+	../backends/src/vulkan/vulkan_pipeline.cpp
+	../backends/src/vulkan/vulkan_renderpass.cpp
+	../backends/src/vulkan/vulkan_shader.cpp
+	../backends/src/vulkan/vulkan_subimage.cpp
+	../backends/src/vulkan/vulkan_swapchain.cpp
+	../backends/src/vulkan/vulkan_ui_renderer.cpp
+	../backends/src/vulkan/vulkan_vma.cpp
 	src/editor/actions/add_action.cpp
 	src/editor/actions/add_clip_action.cpp
 	src/editor/actions/add_event_action.cpp
@@ -114,7 +115,7 @@ set(SOURCES ${SOURCES}
 	src/main.cpp
 )
 if (MSVC)
-	set(SOURCES ${SOURCES} src/backend/sdl/sdl_ttf_shim.c)
+	set(SOURCES ${SOURCES} ../backends/src/sdl/sdl_ttf_shim.c)
 else()
 endif()
 
@@ -143,7 +144,7 @@ target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-all
 target_link_libraries(${PROJECT_NAME} freetype)
 target_link_libraries(${PROJECT_NAME} glm::glm)
 if (MSVC)
-	set_source_files_properties(src/backend/sdl/SDL_FontCache.c PROPERTIES COMPILE_FLAGS "/W0")
+	set_source_files_properties(../backends/src/sdl/SDL_FontCache.c PROPERTIES COMPILE_FLAGS "/W0")
 else()
 endif()
 
