@@ -30,7 +30,6 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(.. moth_ui)
 
-#include_directories(../include)
 include_directories(../backends/include)
 include_directories(../external/imgui)
 include_directories(../external/murmurhash.c)
