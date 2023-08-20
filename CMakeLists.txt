@@ -102,6 +102,7 @@ set(SOURCES ${SOURCES}
 	src/editor/panels/editor_panel_canvas_properties.cpp
 	src/editor/panels/editor_panel_config.cpp
 	src/editor/panels/editor_panel_elements.cpp
+	src/editor/panels/editor_panel_fonts.cpp
 	src/editor/panels/editor_panel_preview.cpp
 	src/editor/panels/editor_panel_properties.cpp
 	src/editor/panels/editor_panel_undo_stack.cpp

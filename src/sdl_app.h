@@ -4,9 +4,8 @@
 #include "layers/layer_stack.h"
 #include "events/event.h"
 #include "moth_ui/iimage_factory.h"
-#include "moth_ui/ifont_factory.h"
+#include "moth_ui/font_factory.h"
 #include "moth_ui/irenderer.h"
-//#include "sdl/sdl_graphics.h"
 
 #include <SDL.h>
 
@@ -58,7 +57,7 @@ namespace backend::sdl {
         static char const* const PERSISTENCE_FILE;
 
         std::unique_ptr<moth_ui::IImageFactory> m_imageFactory;
-        std::unique_ptr<moth_ui::IFontFactory> m_fontFactory;
+        std::unique_ptr<moth_ui::FontFactory> m_fontFactory;
         std::unique_ptr<moth_ui::IRenderer> m_uiRenderer;
 
         bool OnWindowSizeEvent(EventWindowSize const& event);

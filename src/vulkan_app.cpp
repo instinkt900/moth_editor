@@ -157,11 +157,6 @@ namespace backend::vulkan {
         m_graphics = std::make_unique<Graphics>(*m_context, m_customVkSurface, m_windowWidth, m_windowHeight);
         m_imageFactory = std::make_unique<ImageFactory>(*m_context, static_cast<Graphics&>(*m_graphics));
         m_fontFactory = std::make_unique<FontFactory>(*m_context, *m_graphics);
-        m_fontFactory->AddFont("Pilot Command", std::filesystem::current_path() / "pilotcommand.ttf");
-        m_fontFactory->AddFont("Daniel Davis", std::filesystem::current_path() / "Daniel Davis.ttf");
-        m_fontFactory->AddFont("Game of Squids", std::filesystem::current_path() / "Game Of Squids.ttf");
-        m_fontFactory->AddFont("Southern Aire", std::filesystem::current_path() / "SouthernAire_Personal_Use_Only.ttf");
-        m_fontFactory->AddFont("28 Days Later", std::filesystem::current_path() / "28 Days Later.ttf");
         m_uiRenderer = std::make_unique<UIRenderer>(*m_graphics);
         auto uiContext = std::make_shared<moth_ui::Context>(m_imageFactory.get(), m_fontFactory.get(), m_uiRenderer.get());
         moth_ui::Context::SetCurrentContext(uiContext);
