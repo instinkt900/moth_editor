@@ -20,27 +20,28 @@ EditorPanelFonts::EditorPanelFonts(EditorLayer& editorLayer, bool visible)
 }
 
 void EditorPanelFonts::DrawContents() {
+    static char NameBuffer[1024] = { 0 };
     auto& fontFactory = moth_ui::Context::GetCurrentContext()->GetFontFactory();
     auto fontNames = fontFactory.GetFontNameList();
 
-    if (ImGui::Button("Load Font List")) {
+    auto const windowWidth = ImGui::GetWindowContentRegionWidth();
+    auto const buttonSize = ImVec2{ windowWidth / 2.0f - 5, 20 };
+    if (ImGui::Button("Load List", buttonSize)) {
         s_fileMode = FileDialogMode::LOAD_FONT_LIST;
-        s_fileDialog.SetTitle("Load font project..");
+        s_fileDialog.SetTitle("Load list..");
         s_fileDialog.SetTypeFilters({ ".json" });
         s_fileDialog.SetPwd();
         s_fileDialog.Open();
     }
-
     ImGui::SameLine();
-    if (ImGui::Button("Save Font List")) {
+    if (ImGui::Button("Save List", buttonSize)) {
         s_fileMode = FileDialogMode::SAVE_FONT_LIST;
-        s_fileDialog.SetTitle("Save font project..");
+        s_fileDialog.SetTitle("Save list..");
         s_fileDialog.SetTypeFilters({ ".json" });
         s_fileDialog.SetPwd();
         s_fileDialog.Open();
     }
-
-    if (ImGui::Button("Add Font")) {
+    if (ImGui::Button("Add Font", buttonSize)) {
         s_fileMode = FileDialogMode::ADD_FONT;
         s_fileDialog.SetTitle("Select font..");
         s_fileDialog.SetTypeFilters({ ".ttf" });
@@ -48,16 +49,17 @@ void EditorPanelFonts::DrawContents() {
         s_fileDialog.Open();
     }
     ImGui::SameLine();
-    if (ImGui::Button("Remove Font")) {
+    if (ImGui::Button("Remove Font", buttonSize)) {
         if (m_selectedIndex >= 0) {
             
             fontFactory.RemoveFont(fontNames[m_selectedIndex].c_str());
             fontNames = fontFactory.GetFontNameList();
         }
     }
+    ImGui::Columns(1);
 
     ImGui::PushID(this);
-    if (ImGui::BeginListBox("##font_list", ImVec2(-FLT_MIN, -FLT_MIN))) {
+    if (ImGui::BeginListBox("##font_list", ImVec2(-FLT_MIN, 0))) {
         for (int i = 0; i < fontNames.size(); ++i) {
             auto const& entryInfo = fontNames[i];
             bool const selected = m_selectedIndex == i;
@@ -68,6 +70,12 @@ void EditorPanelFonts::DrawContents() {
         ImGui::EndListBox();
     }
     ImGui::PopID();
+
+    if (m_selectedIndex >= 0) {
+        ImGui::Text("Absolute path:");
+        std::string path = fontFactory.GetFontPath(fontNames[m_selectedIndex].c_str()).string();
+        ImGui::TextWrapped("%s", path.c_str());
+    }
 
     s_fileDialog.Display();
     if (s_fileDialog.HasSelected()) {
@@ -88,6 +96,7 @@ void EditorPanelFonts::DrawContents() {
         }
         case FileDialogMode::ADD_FONT: {
             m_pendingFontPath = s_fileDialog.GetSelected();
+            NameBuffer[0] = 0;
             ImGui::OpenPopup("Name Font");
             break;
         }
@@ -95,7 +104,6 @@ void EditorPanelFonts::DrawContents() {
         s_fileDialog.ClearSelected();
     }
 
-    static char NameBuffer[1024] = { 0 };
     if (ImGui::BeginPopupModal("Name Font", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("Name this font. %s", m_pendingFontPath.filename().string().c_str());
         ImGui::InputText("Name", NameBuffer, 1024);
