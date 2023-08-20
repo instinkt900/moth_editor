@@ -11,6 +11,7 @@
 #include "panels/editor_panel_properties.h"
 #include "panels/editor_panel_elements.h"
 #include "panels/editor_panel_animation.h"
+#include "panels/editor_panel_fonts.h"
 #include "panels/editor_panel_undo_stack.h"
 #include "panels/editor_panel_preview.h"
 #include "panels/editor_panel_canvas.h"
@@ -25,6 +26,8 @@
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/group.h"
 #include "moth_ui/event_dispatch.h"
+
+#include "moth_ui/context.h"
 
 #include "texture_packer.h"
 
@@ -52,6 +55,7 @@ EditorLayer::EditorLayer() {
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
     AddEditorPanel<EditorPanelAnimation>(*this, true);
+    AddEditorPanel<EditorPanelFonts>(*this, true);
     AddEditorPanel<EditorPanelUndoStack>(*this, false);
     AddEditorPanel<EditorPanelPreview>(*this, false);
 
@@ -764,11 +768,17 @@ void EditorLayer::Shutdown() {
 void EditorLayer::SaveConfig() {
     auto& j = g_App->GetPersistentState();
     j["editor_config"] = m_config;
+    j["font_project"] = moth_ui::Context::GetCurrentContext()->GetFontFactory().GetCurrentProjectPath();
 }
 
 void EditorLayer::LoadConfig() {
     auto& j = g_App->GetPersistentState();
     if (!j.is_null()) {
         m_config = j.value("editor_config", m_config);
+        
+        std::filesystem::path fontProjectPath = j.value("font_project", "");
+        if (!fontProjectPath.empty()) {
+            moth_ui::Context::GetCurrentContext()->GetFontFactory().LoadProject(fontProjectPath);
+        }
     }
 }
