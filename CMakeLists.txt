@@ -114,10 +114,6 @@ set(SOURCES ${SOURCES}
 	src/main.cpp
 	src/vulkan_app.cpp
 )
-if (MSVC)
-	set(SOURCES ${SOURCES} ../backends/src/sdl/sdl_ttf_shim.c)
-else()
-endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src)

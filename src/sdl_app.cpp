@@ -108,7 +108,7 @@ namespace backend::sdl {
         }
 
 #ifdef _WIN32
-        load_sdl_ttf_shim();
+        //load_sdl_ttf_shim();
 #endif
 
         m_graphics = std::make_unique<backend::sdl::SDLGraphics>(m_renderer);
