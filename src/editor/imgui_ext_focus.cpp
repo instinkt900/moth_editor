@@ -23,11 +23,12 @@ namespace imgui_ext {
     }
 
     void FocusGroupInputText(char const* label, std::string const& target, std::function<void(std::string const&)> const& onChanged, std::function<void()> const& onLostFocus) {
-        static char buffer[1024];
-        strncpy(buffer, target.c_str(), 1024);
+        static size_t const BufferSize = 1024;
+        static char buffer[BufferSize];
+        strncpy(buffer, target.c_str(), BufferSize - 1);
 
         g_focusContext.LostFocusCallbacks[label] = onLostFocus;
-        if (ImGui::InputText(label, buffer, 1024)) {
+        if (ImGui::InputText(label, buffer, BufferSize - 1)) {
             onChanged(buffer);
         }
 

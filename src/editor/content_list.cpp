@@ -58,7 +58,7 @@ void ContentList::Refresh() {
                 }
                 m_currentList.push_back(listEntry);
             }
-        } catch (std::exception e) {
+        } catch (std::exception&) {
         }
     }
 
@@ -76,7 +76,7 @@ void ContentList::Refresh() {
 void ContentList::Draw() {
     ImGui::PushID(this);
     if (ImGui::BeginListBox("##content_list", ImVec2(-FLT_MIN, -FLT_MIN))) {
-        for (int i = 0; i < m_currentList.size(); ++i) {
+        for (int i = 0; i < static_cast<int>(m_currentList.size()); ++i) {
             auto const& entryInfo = m_currentList[i];
             bool const selected = m_selectedIndex == i;
             if (ImGui::Selectable(entryInfo.m_displayName.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick)) {

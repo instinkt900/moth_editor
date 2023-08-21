@@ -60,7 +60,7 @@ void EditorPanelFonts::DrawContents() {
 
     ImGui::PushID(this);
     if (ImGui::BeginListBox("##font_list", ImVec2(-FLT_MIN, 0))) {
-        for (int i = 0; i < fontNames.size(); ++i) {
+        for (int i = 0; i < static_cast<int>(fontNames.size()); ++i) {
             auto const& entryInfo = fontNames[i];
             bool const selected = m_selectedIndex == i;
             if (ImGui::Selectable(entryInfo.c_str(), selected)) {
@@ -100,6 +100,8 @@ void EditorPanelFonts::DrawContents() {
             ImGui::OpenPopup("Name Font");
             break;
         }
+        default:
+            break;
         }
         s_fileDialog.ClearSelected();
     }

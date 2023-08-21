@@ -8,9 +8,10 @@ namespace imgui_ext {
     using namespace moth_ui;
 
     bool InputString(char const* label, std::string* str) {
-        static char buffer[1024];
-        strncpy(buffer, str->c_str(), 1024);
-        if (ImGui::InputText(label, buffer, 1024)) {
+        static size_t const BufferSize = 1024;
+        static char buffer[BufferSize];
+        strncpy(buffer, str->c_str(), BufferSize - 1);
+        if (ImGui::InputText(label, buffer, BufferSize - 1)) {
             *str = buffer;
             return true;
         }

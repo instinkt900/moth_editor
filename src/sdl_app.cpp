@@ -36,7 +36,7 @@ namespace backend::sdl {
         if (persistenceFile.is_open()) {
             try {
                 persistenceFile >> m_persistentState;
-            } catch (std::exception) {
+            } catch (std::exception&) {
             }
 
             m_windowWidth = m_persistentState.value("window_width", m_windowWidth);

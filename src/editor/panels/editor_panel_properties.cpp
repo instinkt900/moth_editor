@@ -94,11 +94,11 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
 
     PropertiesInput(
         "ID", entity->m_id.c_str(),
-        [&](auto changedValue) {
+        [&](char const* changedValue) {
             node->SetId(changedValue);
         },
-        [=](std::string oldValue, std::string newValue) {
-            auto action = MakeChangeValueAction(entity->m_id, oldValue, newValue, [node]() { node->ReloadEntity(); });
+        [=](char const* oldValue, char const* newValue) {
+            auto action = MakeChangeValueAction(entity->m_id, std::string(oldValue), std::string(newValue), [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
 

@@ -363,7 +363,7 @@ bool EditorPanelAnimation::DrawClipPopup() {
 
             std::string preview = std::string(magic_enum::enum_name(m_pendingClipEdit.value().mutableValue.m_loopType));
             if (ImGui::BeginCombo("Loop Type", preview.c_str())) {
-                for (int n = 0; n < magic_enum::enum_count<AnimationClip::LoopType>(); n++) {
+                for (size_t n = 0; n < magic_enum::enum_count<AnimationClip::LoopType>(); n++) {
                     auto const enumValue = magic_enum::enum_value<AnimationClip::LoopType>(n);
                     std::string enumName = std::string(magic_enum::enum_name(enumValue));
                     const bool is_selected = m_pendingClipEdit.value().mutableValue.m_loopType == enumValue;
@@ -674,7 +674,7 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
             if (multipleInterps) {
                 ImGui::RadioButton("(multiple values)", multipleInterps);
             }
-            for (int i = 0; i < magic_enum::enum_count<moth_ui::InterpType>(); ++i) {
+            for (size_t i = 0; i < magic_enum::enum_count<moth_ui::InterpType>(); ++i) {
                 auto const interpType = magic_enum::enum_value<moth_ui::InterpType>(i);
                 if (interpType == moth_ui::InterpType::Unknown) {
                     continue;

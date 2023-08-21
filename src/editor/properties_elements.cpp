@@ -36,7 +36,7 @@ namespace {
         if (newBufferSize > buffer.size()) {
             buffer.resize(newBufferSize);
         }
-        for (int i = 0; i < textLength; ++i) {
+        for (size_t i = 0; i < textLength; ++i) {
             buffer[i] = text[i];
         }
         buffer[textLength] = '\0';

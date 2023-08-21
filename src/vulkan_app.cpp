@@ -42,7 +42,7 @@ namespace backend::vulkan {
         if (persistenceFile.is_open()) {
             try {
                 persistenceFile >> m_persistentState;
-            } catch (std::exception) {
+            } catch (std::exception&) {
             }
 
             if (!m_persistentState.is_null()) {
@@ -169,7 +169,7 @@ namespace backend::vulkan {
             std::string const currentPath = m_persistentState["current_path"];
             try {
                 std::filesystem::current_path(currentPath);
-            } catch (std::exception) {
+            } catch (std::exception&) {
                 // ...
             }
         }
