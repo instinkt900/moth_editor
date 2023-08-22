@@ -1,7 +1,7 @@
 #include "common.h"
 #include "layer_stack.h"
 #include "layer.h"
-#include "iapplication.h"
+#include "editor_application.h"
 
 LayerStack::LayerStack(int renderWidth, int renderHeight, int windowWidth, int windowHeight)
     : m_renderWidth(renderWidth)

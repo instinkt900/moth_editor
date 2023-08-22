@@ -11,7 +11,7 @@
 #include "moth_ui/layout/layout.h"
 #include "../actions/composite_action.h"
 #include "imgui_internal.h"
-#include "iapplication.h"
+#include "editor_application.h"
 #include "moth_ui/itarget.h"
 
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
