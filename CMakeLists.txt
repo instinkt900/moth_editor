@@ -113,10 +113,8 @@ set(SOURCES ${SOURCES}
 	src/editor/texture_packer.cpp
 	src/layers/layer.cpp
 	src/layers/layer_stack.cpp
-	src/sdl_app.cpp
 	src/editor_application.cpp
 	src/main.cpp
-	src/vulkan_app.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})
