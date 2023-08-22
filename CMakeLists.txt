@@ -52,6 +52,7 @@ set(SOURCES ${SOURCES}
 	../backends/src/sdl/sdl_image.cpp
 	../backends/src/sdl/sdl_image_factory.cpp
 	../backends/src/sdl/sdl_ui_renderer.cpp
+	../backends/src/sdl/sdl_app.cpp
 	../backends/src/vulkan/vulkan_buffer.cpp
 	../backends/src/vulkan/vulkan_command_buffer.cpp
 	../backends/src/vulkan/vulkan_context.cpp
@@ -71,6 +72,8 @@ set(SOURCES ${SOURCES}
 	../backends/src/vulkan/vulkan_swapchain.cpp
 	../backends/src/vulkan/vulkan_ui_renderer.cpp
 	../backends/src/vulkan/vulkan_vma.cpp
+	../backends/src/vulkan/vulkan_app.cpp
+	../backends/src/application.cpp
 	src/editor/actions/add_action.cpp
 	src/editor/actions/add_clip_action.cpp
 	src/editor/actions/add_event_action.cpp
@@ -111,6 +114,7 @@ set(SOURCES ${SOURCES}
 	src/layers/layer.cpp
 	src/layers/layer_stack.cpp
 	src/sdl_app.cpp
+	src/editor_application.cpp
 	src/main.cpp
 	src/vulkan_app.cpp
 )
