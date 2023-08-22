@@ -1,6 +1,6 @@
 #include "common.h"
 #include "editor_layer.h"
-#include "iapplication.h"
+#include "editor_application.h"
 #include "bounds_widget.h"
 
 #include "actions/add_action.h"
@@ -32,8 +32,6 @@
 #include "texture_packer.h"
 
 #include "imgui-filebrowser/imfilebrowser.h"
-
-extern backend::IApplication* g_App;
 
 namespace {
     enum class FileOpenMode {
