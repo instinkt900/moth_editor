@@ -4,6 +4,9 @@
 #include "events/event.h"
 #include "confirm_prompt.h"
 #include "editor_config.h"
+#include "editor/texture_packer.h"
+#include "editor/actions/editor_action.h"
+#include "editor/panels/editor_panel.h"
 
 #include "moth_ui/layout/layout_rect.h"
 #include "moth_ui/events/event_mouse.h"
@@ -184,5 +187,5 @@ private:
     void SaveConfig();
     void LoadConfig();
 
-    std::unique_ptr<class TexturePacker> m_texturePacker;
+    std::unique_ptr<TexturePacker> m_texturePacker;
 };
