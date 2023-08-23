@@ -2,6 +2,7 @@
 
 #include "vulkan/vulkan_app.h"
 #include "sdl/sdl_app.h"
+#include "events/event.h"
 
 #define USE_VULKAN
 

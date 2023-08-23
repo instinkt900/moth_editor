@@ -1,13 +1,16 @@
 #include "common.h"
 #include "editor_application.h"
-
 #include "editor/editor_layer.h"
+#include "editor/editor_layer_stack.h"
+
+#include "moth_ui/event_dispatch.h"
 
 char const* const EditorApplication::IMGUI_FILE = "imgui.ini";
 char const* const EditorApplication::PERSISTENCE_FILE = "editor.json";
 EditorApplication* g_App;
 
-EditorApplication::EditorApplication() {
+EditorApplication::EditorApplication()
+    : Application("Moth UI Tool") {
     m_imguiSettingsPath = (std::filesystem::current_path() / IMGUI_FILE).string();
     m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
     std::ifstream persistenceFile(m_persistentFilePath.string());
@@ -52,7 +55,7 @@ void EditorApplication::SetupLayers() {
         }
     }
 
-    m_layerStack = std::make_unique<LayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
+    m_layerStack = std::make_unique<EditorLayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
     m_layerStack->SetEventListener(this);
     m_layerStack->PushLayer(std::make_unique<EditorLayer>());
 }

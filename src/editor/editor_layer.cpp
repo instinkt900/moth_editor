@@ -203,7 +203,7 @@ void EditorLayer::DrawMainMenu() {
 void EditorLayer::DebugDraw() {
 }
 
-void EditorLayer::OnAddedToStack(LayerStack* layerStack) {
+void EditorLayer::OnAddedToStack(moth_ui::LayerStack* layerStack) {
     Layer::OnAddedToStack(layerStack);
     NewLayout();
 }
