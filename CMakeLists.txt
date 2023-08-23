@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(moth_editor VERSION 1.0 DESCRIPTION "An editor implementation for uilib")
+project(moth_editor VERSION 1.0 DESCRIPTION "An editor for Moth UI data")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 
-add_compile_definitions(_CRT_SECURE_NO_WARNINGS _ITERATOR_DEBUG_LEVEL=0 IMGUI_DEFINE_MATH_OPERATORS)
 if (MSVC)
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MD")
-else()
 endif()
+
+add_compile_definitions(_CRT_SECURE_NO_WARNINGS _ITERATOR_DEBUG_LEVEL=0 IMGUI_DEFINE_MATH_OPERATORS)
 
 add_subdirectory(../backends moth_ui_backends)
 
@@ -70,10 +70,37 @@ set(SOURCES ${SOURCES}
 	src/main.cpp
 )
 
+find_package(fmt REQUIRED)
+find_package(freetype REQUIRED)
+find_package(glfw3 REQUIRED)
+find_package(magic_enum REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(range-v3 REQUIRED)
+find_package(SDL2 REQUIRED)
+find_package(SDL2_image REQUIRED)
+find_package(SDL2_ttf REQUIRED)
+find_package(spdlog REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(vulkan-memory-allocator REQUIRED)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_include_directories(${PROJECT_NAME} PRIVATE src)
-target_link_libraries(${PROJECT_NAME} moth_ui_backends)
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
+target_include_directories(${PROJECT_NAME} PRIVATE src)
+target_link_libraries(${PROJECT_NAME} moth_ui)
+target_link_libraries(${PROJECT_NAME} moth_ui_backends)
+target_link_libraries(${PROJECT_NAME} fmt::fmt)
+target_link_libraries(${PROJECT_NAME} freetype)
+target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries(${PROJECT_NAME} magic_enum::magic_enum)
+target_link_libraries(${PROJECT_NAME} nlohmann_json::nlohmann_json)
+target_link_libraries(${PROJECT_NAME} range-v3::range-v3)
+target_link_libraries(${PROJECT_NAME} SDL2::SDL2main)
+target_link_libraries(${PROJECT_NAME} SDL2_image::SDL2_image)
+target_link_libraries(${PROJECT_NAME} SDL2_ttf::SDL2_ttf-static)
+target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
+target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
+target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
+
 if (MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
 	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3 /WX")
