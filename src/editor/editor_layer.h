@@ -1,6 +1,6 @@
 #pragma once
 
-#include "layers/layer.h"
+#include "moth_ui/layers/layer.h"
 #include "events/event.h"
 #include "confirm_prompt.h"
 #include "editor_config.h"
@@ -16,7 +16,7 @@ class BoundsWidget;
 class IEditorAction;
 class EditorPanel;
 
-class EditorLayer : public Layer {
+class EditorLayer : public moth_ui::Layer {
 public:
     EditorLayer();
     virtual ~EditorLayer() = default;
@@ -27,7 +27,7 @@ public:
     void Draw() override;
     void DebugDraw() override;
 
-    void OnAddedToStack(LayerStack* layerStack) override;
+    void OnAddedToStack(moth_ui::LayerStack* layerStack) override;
     void OnRemovedFromStack() override;
 
     bool UseRenderSize() const override { return false; }
