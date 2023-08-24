@@ -354,7 +354,7 @@ bool EditorPanelAnimation::DrawClipPopup() {
             }
 
             static char buf[1024];
-            snprintf(buf, 1024, "%s", clipContext->mutableValue.m_name.c_str());
+            snprintf(buf, 1024, "%s", m_pendingClipEdit->mutableValue.m_name.c_str());
             if (ImGui::InputText("Name", buf, 1024)) {
                 m_pendingClipEdit.value().mutableValue.m_name = std::string(buf);
             }
