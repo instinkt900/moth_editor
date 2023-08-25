@@ -273,7 +273,7 @@ void EditorPanelAnimation::DrawFrameRow() {
     ImGuiIO const& io = ImGui::GetIO();
     RowDimensions const rowDimensions = AddRow(nullptr, {});
 
-    //header frame number and lines
+    // header frame number and lines
     int modFrameCount = 10;
     int frameStep = 1;
     while ((modFrameCount * m_framePixelWidth) < 150) {
@@ -802,11 +802,11 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                 }
             }
 
-            //if (DoBoxSelect) {
-            //    if (keyRect.Overlaps(boxSelectBox)) {
-            //        SelectKeyframe(childEntity, target, keyframe.m_frame);
-            //    }
-            //}
+            // if (DoBoxSelect) {
+            //     if (keyRect.Overlaps(boxSelectBox)) {
+            //         SelectKeyframe(childEntity, target, keyframe.m_frame);
+            //     }
+            // }
         }
     }
 }
@@ -846,8 +846,8 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     bool const inScrollBar = scrollBarRect.Contains(io.MousePos);
 
     // disabled these for taste
-    //m_drawList->AddRectFilled(scrollBarA, scrollBarB, 0xFF222222, 0); // light square background
-    //m_drawList->AddRectFilled(scrollBarA, scrollBarB, 0xFF101010, 8); // rounded darker background
+    // m_drawList->AddRectFilled(scrollBarA, scrollBarB, 0xFF222222, 0); // light square background
+    // m_drawList->AddRectFilled(scrollBarA, scrollBarB, 0xFF101010, 8); // rounded darker background
 
     // middle section of scroll bar
     ImVec2 const scrollBarC{ scrollBarMin.x + m_legendWidth + startFrameOffset, scrollBarMin.y };
@@ -934,7 +934,7 @@ bool EditorPanelAnimation::IsAnyPopupOpen() const {
 
 void EditorPanelAnimation::DrawCursor() {
     if (m_currentFrame >= m_firstVisibleFrame && m_currentFrame <= m_maxFrame) {
-        float const cursorLeft = m_panelBounds.Min.x + m_legendWidth + (m_currentFrame - m_minFrame) * m_framePixelWidth;
+        float const cursorLeft = m_panelBounds.Min.x + m_legendWidth + (m_currentFrame - m_minFrame) * m_framePixelWidth - static_cast<int>(m_firstVisibleFrame) * m_framePixelWidth;
         float const cursorOffset = cursorLeft + m_framePixelWidth / 2;
         m_drawList->AddLine(ImVec2(cursorOffset, m_panelBounds.Min.y), ImVec2(cursorOffset, m_panelBounds.Max.y), 0xA02A2AFF, m_framePixelWidth - 1);
         char tmps[512];
