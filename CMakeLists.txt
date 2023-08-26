@@ -13,6 +13,7 @@ endif()
 
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS _ITERATOR_DEBUG_LEVEL=0 IMGUI_DEFINE_MATH_OPERATORS)
 
+add_subdirectory(../external/harfbuzz-icu-freetype)
 add_subdirectory(../backends moth_ui_backends)
 
 include_directories(../backends/include)
@@ -100,6 +101,7 @@ target_link_libraries(${PROJECT_NAME} SDL2_ttf::SDL2_ttf-static)
 target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
+target_link_libraries(${PROJECT_NAME} harfbuzz icucommon)
 
 if (MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
