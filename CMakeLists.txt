@@ -13,6 +13,7 @@ endif()
 
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS _ITERATOR_DEBUG_LEVEL=0 IMGUI_DEFINE_MATH_OPERATORS)
 
+add_subdirectory(../external/harfbuzz-icu-freetype harfbuzz-icu-freetype)
 add_subdirectory(../backends moth_ui_backends)
 
 include_directories(../backends/include)
@@ -71,7 +72,7 @@ set(SOURCES ${SOURCES}
 )
 
 find_package(fmt REQUIRED)
-find_package(freetype REQUIRED)
+#find_package(freetype REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(magic_enum REQUIRED)
 find_package(nlohmann_json REQUIRED)
@@ -89,7 +90,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE src)
 target_link_libraries(${PROJECT_NAME} moth_ui)
 target_link_libraries(${PROJECT_NAME} moth_ui_backends)
 target_link_libraries(${PROJECT_NAME} fmt::fmt)
-target_link_libraries(${PROJECT_NAME} freetype)
+#target_link_libraries(${PROJECT_NAME} freetype)
 target_link_libraries(${PROJECT_NAME} glfw)
 target_link_libraries(${PROJECT_NAME} magic_enum::magic_enum)
 target_link_libraries(${PROJECT_NAME} nlohmann_json::nlohmann_json)
@@ -100,6 +101,7 @@ target_link_libraries(${PROJECT_NAME} SDL2_ttf::SDL2_ttf-static)
 target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
+target_link_libraries(${PROJECT_NAME} harfbuzz)
 
 if (MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
