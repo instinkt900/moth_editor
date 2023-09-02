@@ -9,7 +9,6 @@
 
 #include "imgui-filebrowser/imfilebrowser.h"
 
-#define STB_RECT_PACK_IMPLEMENTATION
 #include "stb_rect_pack.h"
 
 #undef min
@@ -186,12 +185,12 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
 void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
     auto& graphics = g_App->GetGraphics();
     std::shared_ptr<moth_ui::ITarget> outputTexture = graphics.CreateTarget(width, height);
-    auto oldRenderTarget = graphics.GetTarget();
+
     graphics.SetTarget(outputTexture.get());
-    //graphics.SetBlendMode(outputTexture, backend::EBlendMode::Blend);
     graphics.SetColor(moth_ui::BasicColors::Black);
     graphics.Clear();
 
+    graphics.SetColor(moth_ui::BasicColors::White);
     nlohmann::json packDetails;
     for (auto&& rect : rects) {
         if (rect.was_packed) {
@@ -216,7 +215,7 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
     auto const imagePackName = fmt::format("packed_{}.png", num);
     graphics.DrawToPNG(outputPath / imagePackName);
 
-    graphics.SetTarget(oldRenderTarget);    
+    graphics.SetTarget(nullptr);
 
     // save description
     auto const packDetailsName = fmt::format("packed_{}.json", num);
