@@ -30,12 +30,13 @@ void EditorPanelAnimation::OnLayoutLoaded() {
 
     m_minFrame = 0;
     m_maxFrame = 100;
+    m_totalFrames = 300;
     m_currentFrame = 0;
-    m_firstVisibleFrame = 0;
+    m_hScrollFactors = { m_minFrame / static_cast<float>(m_totalFrames), m_maxFrame / static_cast<float>(m_totalFrames) };
 
     m_framePixelWidth = 10.f;
 
-    m_extraData.clear();
+    m_trackMetadata.clear();
 }
 
 void EditorPanelAnimation::DrawContents() {
@@ -226,8 +227,8 @@ void EditorPanelAnimation::FilterKeyframeSelections(std::shared_ptr<LayoutEntity
 EditorPanelAnimation::RowDimensions EditorPanelAnimation::AddRow(char const* label, RowOptions const& rowOptions) {
     RowDimensions resultDimensions;
 
-    ImVec2 const rowMin = m_panelBounds.Min + ImVec2{ 0.0f, m_rowHeight * m_rowCounter };
-    ImVec2 const rowMax = rowMin + ImVec2{ m_panelBounds.GetWidth(), m_rowHeight };
+    ImVec2 const rowMin = m_scrollingPanelBounds.Min + ImVec2{ 0.0f, m_rowHeight * m_rowCounter };
+    ImVec2 const rowMax = rowMin + ImVec2{ m_scrollingPanelBounds.GetWidth(), m_rowHeight };
     ImRect const rowBounds{ rowMin, rowMax };
     ImU32 const rowColor = rowOptions.colorOverride.has_value() ? rowOptions.colorOverride.value() : (((m_rowCounter % 2) == 0) ? 0xFF3A3636 : 0xFF413D3D);
 
@@ -251,7 +252,7 @@ EditorPanelAnimation::RowDimensions EditorPanelAnimation::AddRow(char const* lab
     // optional label
     if (label != nullptr) {
         ImVec2 const labelMin{ cursorPos, rowMin.y };
-        ImVec2 const labelMax{ rowMin.x + m_legendWidth, rowMax.y };
+        ImVec2 const labelMax{ rowMin.x + m_labelColumnWidth, rowMax.y };
         ImRect const labelBounds{ labelMin, labelMax };
         ImVec2 const textPos = labelMin + ImVec2(rowOptions.indented ? 50.0f : 3.0f, 0.0f);
         m_drawList->AddText(textPos, 0xFFFFFFFF, label);
@@ -259,46 +260,50 @@ EditorPanelAnimation::RowDimensions EditorPanelAnimation::AddRow(char const* lab
         resultDimensions.labelBounds = labelBounds;
     }
 
-    ImVec2 const trackMin{ rowMin.x + m_legendWidth, rowMin.y };
+    ImVec2 const trackMin{ rowMin.x + m_labelColumnWidth, rowMin.y };
     ImVec2 const trackMax = rowMax;
     resultDimensions.trackBounds = ImRect{ trackMin, trackMax };
-    resultDimensions.trackOffset = -static_cast<int>(m_firstVisibleFrame) * m_framePixelWidth;
+    resultDimensions.trackOffset = -static_cast<int>(m_minFrame) * m_framePixelWidth;
 
     ++m_rowCounter;
 
     return resultDimensions;
 }
 
-void EditorPanelAnimation::DrawFrameRow() {
+void EditorPanelAnimation::DrawFrameNumberRibbon() {
     ImGuiIO const& io = ImGui::GetIO();
     RowDimensions const rowDimensions = AddRow(nullptr, {});
 
     // header frame number and lines
-    int modFrameCount = 10;
-    int frameStep = 1;
-    while ((modFrameCount * m_framePixelWidth) < 150) {
-        modFrameCount *= 2;
-        frameStep *= 2;
-    };
-    int const halfModFrameCount = modFrameCount / 2;
+    int const minStep = 1;
+    int const stepFactor = 5;
+    int const maxStepWidth = 150;
+    int const majorFrameStep = [&]() {
+        int step = minStep;
+        for (int i = 0; (step * m_framePixelWidth) < maxStepWidth; ++i) {
+            step = static_cast<int>(std::floor(stepFactor * std::pow(2, i)));
+        };
+        return step;
+    }();
+    int const minorFrameStep = majorFrameStep / 2;
 
-    for (int i = m_minFrame; i <= m_maxFrame; i += frameStep) {
-        bool const baseIndex = ((i % modFrameCount) == 0) || (i == m_maxFrame || i == m_minFrame);
-        bool const halfIndex = (i % halfModFrameCount) == 0;
-        float const px = rowDimensions.trackBounds.Min.x + (i - m_minFrame) * m_framePixelWidth + rowDimensions.trackOffset;
-        float const tiretStart = baseIndex ? 4.0f : (halfIndex ? 10.0f : 14.0f);
+    for (int i = m_minFrame; i <= m_maxFrame; ++i) {
+        bool const majorTick = ((i % majorFrameStep) == 0) || (i == m_maxFrame || i == m_minFrame);
+        bool const minorTick = (minorFrameStep > 0) && ((i % minorFrameStep) == 0);
+        float const px = rowDimensions.trackBounds.Min.x + i * m_framePixelWidth + rowDimensions.trackOffset;
+        float const tickYOffset = majorTick ? 4.0f : (minorTick ? 10.0f : 14.0f);
 
         // frame edge ticks
         if (px >= rowDimensions.trackBounds.Min.x && px <= rowDimensions.trackBounds.Max.x) {
-            ImVec2 const start{ px, m_panelBounds.Min.y + tiretStart };
-            ImVec2 const end{ px, m_panelBounds.Min.y + m_rowHeight - 1 };
+            ImVec2 const start{ px, m_scrollingPanelBounds.Min.y + tickYOffset };
+            ImVec2 const end{ px, m_scrollingPanelBounds.Min.y + m_rowHeight - 1 };
             m_drawList->AddLine(start, end, 0xFF606060, 1);
 
             // frame numbers
-            if (baseIndex) {
-                static char tmps[512];
+            if (majorTick) {
+                static char tmps[32];
                 ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", i);
-                m_drawList->AddText(ImVec2(px + 3.f, m_panelBounds.Min.y), 0xFFBBBBBB, tmps);
+                m_drawList->AddText(ImVec2(px + 3.f, m_scrollingPanelBounds.Min.y), 0xFFBBBBBB, tmps);
             }
         }
     }
@@ -311,7 +316,7 @@ void EditorPanelAnimation::DrawFrameRow() {
     float const frameCount = static_cast<float>(ImMax(m_maxFrame - m_minFrame, 1));
     if (m_movingCurrentFrame) {
         if (frameCount) {
-            m_currentFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset) / m_framePixelWidth) + static_cast<int>(m_firstVisibleFrame);
+            m_currentFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
             if (m_currentFrame < m_minFrame)
                 m_currentFrame = m_minFrame;
             if (m_currentFrame >= m_maxFrame)
@@ -396,6 +401,17 @@ bool EditorPanelAnimation::DrawClipPopup() {
     return false;
 }
 
+ImRect DrawClippedRect(ImDrawList* drawList, ImRect const& originalRect, int const color, float const rounding, ImVec2 const& bounds) {
+    ImRect clippedRect = {
+        ImVec2{ std::max(bounds.x, originalRect.Min.x), originalRect.Min.y },
+        ImVec2{ std::min(bounds.y, originalRect.Max.x), originalRect.Max.y }
+    };
+    if (clippedRect.Max.x >= bounds.x && clippedRect.Min.x <= bounds.y) {
+        drawList->AddRectFilled(clippedRect.Min, clippedRect.Max, color, rounding);
+    }
+    return clippedRect;
+}
+
 void EditorPanelAnimation::DrawClipRow() {
     RowDimensions const rowDimensions = AddRow("Clips", RowOptions().ColorOverride(0xFF3D3837));
 
@@ -409,85 +425,87 @@ void EditorPanelAnimation::DrawClipRow() {
         m_pendingClearSelection = false;
     }
 
+    float const trackStartOffsetX = rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset;
+    float const trackStartOffsetY = rowDimensions.trackBounds.Min.y;
+
     // draw clips
     auto& animationClips = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->m_clips;
     for (auto&& clip : animationClips) {
-        float const px = rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset;
-        float const py = rowDimensions.trackBounds.Min.y;
-        ImVec2 const slotP1{ px + clip->m_startFrame * m_framePixelWidth, py + 2.0f };
-        ImVec2 const slotP2{ px + clip->m_endFrame * m_framePixelWidth + m_framePixelWidth, py + m_rowHeight - 2.0f };
         bool const selected = IsClipSelected(clip.get());
         unsigned int const slotColor = selected ? 0xFF00CCAA : 0xFF13BDF3;
 
-        ImRect drawnClipRect;
+        auto& clipValues = (m_mouseDragging && selected) ? GetSelectedClipContext(clip.get())->mutableValue : *clip;
 
-        if (slotP1.x <= (m_panelBounds.GetWidth() + m_panelBounds.Min.x) && slotP2.x >= (m_panelBounds.Min.x + m_legendWidth)) {
-            if (m_mouseDragging && selected) {
-                // draw the moving clip
-                auto context = GetSelectedClipContext(clip.get());
-                ImVec2 const newClipP1{ px + context->mutableValue.m_startFrame * m_framePixelWidth + 2.0f, py + 2.0f };
-                ImVec2 const newClipP2{ px + context->mutableValue.m_endFrame * m_framePixelWidth + m_framePixelWidth - 1, py + m_rowHeight - 2.0f };
-                m_drawList->AddRectFilled(newClipP1, newClipP2, slotColor, 2);
-                drawnClipRect.Min = newClipP1;
-                drawnClipRect.Max = newClipP2;
-            }
-            if (io.KeyAlt || !(m_mouseDragging && selected)) {
-                // draw the current keyframe
-                m_drawList->AddRectFilled(slotP1, slotP2, slotColor, 2);
-                drawnClipRect.Min = slotP1;
-                drawnClipRect.Max = slotP2;
-            }
+        float const clipStartOffset = clipValues.m_startFrame * m_framePixelWidth;
+        float const clipEndOffset = (clipValues.m_endFrame + 1) * m_framePixelWidth;
+        ImVec2 const clipBoundsMin{ trackStartOffsetX + clipStartOffset, trackStartOffsetY + 2.0f };
+        ImVec2 const clipBoundsMax{ trackStartOffsetX + clipEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+        auto const fullRectBounds = DrawClippedRect(m_drawList, { clipBoundsMin, clipBoundsMax }, slotColor, 2.0f, { rowDimensions.trackBounds.Min.x, rowDimensions.trackBounds.Max.x });
+
+        if (io.KeyAlt) {
+            // alt will allow you to dupe drag the clip. so draw the original clip here if we're holding alt
+            float const clipStartOffset = clip->m_startFrame * m_framePixelWidth;
+            float const clipEndOffset = (clip->m_endFrame + 1) * m_framePixelWidth;
+            ImVec2 const clipBoundsMin{ trackStartOffsetX + clipStartOffset, trackStartOffsetY + 2.0f };
+            ImVec2 const clipBoundsMax{ trackStartOffsetX + clipEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+            DrawClippedRect(m_drawList, { clipBoundsMin, clipBoundsMax }, slotColor, 2.0f, { rowDimensions.trackBounds.Min.x, rowDimensions.trackBounds.Max.x });
         }
 
+        float const clipEdgeWidth = m_framePixelWidth / 2;
         ImRect const rects[3] = {
-            ImRect{ slotP1, ImVec2{ slotP1.x + m_framePixelWidth / 2, slotP2.y } },
-            ImRect{ ImVec2{ slotP2.x - m_framePixelWidth / 2, slotP1.y }, slotP2 },
-            ImRect{ slotP1, slotP2 }
+            ImRect{ clipBoundsMin, ImVec2{ clipBoundsMin.x + clipEdgeWidth, clipBoundsMax.y } },
+            ImRect{ ImVec2{ clipBoundsMax.x - clipEdgeWidth, clipBoundsMin.y }, clipBoundsMax },
+            ImRect{ clipBoundsMin, clipBoundsMax }
         };
 
         unsigned int const quadColor[] = { 0xFFFFFFFF, 0xFFFFFFFF, slotColor };
-        if (!m_mouseDragging && m_panelBounds.Contains(io.MousePos)) {
-            for (int j = 2; j >= 0; j--) {
-                ImRect const& rc = rects[j];
+        if (!m_mouseDragging && m_scrollingPanelBounds.Contains(io.MousePos)) {
+            for (int i = 2; i >= 0; --i) {
+                ImRect const& rc = rects[i];
                 if (!rc.Contains(io.MousePos))
                     continue;
-                m_drawList->AddRectFilled(rc.Min, rc.Max, quadColor[j], 2);
+
+                DrawClippedRect(m_drawList, { rc.Min, rc.Max }, quadColor[i], 2.0f, { rowDimensions.trackBounds.Min.x, rowDimensions.trackBounds.Max.x });
             }
 
-            for (int j = 0; j < 3; j++) {
-                ImRect const& rc = rects[j];
-                if (!rc.Contains(io.MousePos))
-                    continue;
+            if (io.MousePos.x >= rowDimensions.trackBounds.Min.x && io.MousePos.x <= rowDimensions.trackBounds.Max.x) {
+                for (int j = 0; j < 3; j++) {
+                    ImRect const& rc = rects[j];
+                    if (!rc.Contains(io.MousePos))
+                        continue;
 
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                    if (!IsClipSelected(clip.get())) {
-                        if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
-                            ClearSelections();
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                        if (!IsClipSelected(clip.get())) {
+                            if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
+                                ClearSelections();
+                            }
                         }
-                    }
 
-                    SelectClip(clip.get());
-                    m_pendingClearSelection = false;
+                        SelectClip(clip.get());
+                        m_pendingClearSelection = false;
 
-                    // action logic
-                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                        m_mouseDragging = true;
-                        m_mouseDragStartX = io.MousePos.x;
-                        m_clipDragSection = j + 1;
-                        break;
+                        // action logic
+                        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                            m_mouseDragging = true;
+                            m_mouseDragStartX = io.MousePos.x;
+                            m_clipDragSection = j + 1;
+                            break;
+                        }
                     }
                 }
             }
         }
 
         ImVec2 const tsize = ImGui::CalcTextSize(clip->m_name.c_str());
-        ImVec2 const tpos(drawnClipRect.Min.x + (drawnClipRect.Max.x - drawnClipRect.Min.x - tsize.x) / 2, drawnClipRect.Min.y + (drawnClipRect.Max.y - drawnClipRect.Min.y - tsize.y) / 2);
+        ImVec2 const tpos(fullRectBounds.Min.x + (fullRectBounds.Max.x - fullRectBounds.Min.x - tsize.x) / 2, fullRectBounds.Min.y + (fullRectBounds.Max.y - fullRectBounds.Min.y - tsize.y) / 2);
+        m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max);
         m_drawList->AddText(tpos, 0xFFFFFFFF, clip->m_name.c_str());
+        m_drawList->PopClipRect();
     }
 
     // detect popup click
     if (rowDimensions.trackBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset) / m_framePixelWidth);
+        m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
         ImGui::OpenPopup("clip_popup");
     }
 }
@@ -567,7 +585,7 @@ void EditorPanelAnimation::DrawEventsRow() {
         ImVec2 const keyP2{ px + event->m_frame * m_framePixelWidth + m_framePixelWidth - 1, py + m_rowHeight - 2 };
         ImRect const keyRect{ keyP1, keyP2 };
         bool const selected = IsEventSelected(event.get());
-        if (keyP1.x <= (m_panelBounds.GetWidth() + m_panelBounds.Min.x) && keyP2.x >= (m_panelBounds.Min.x + m_legendWidth)) {
+        if (keyP1.x <= (m_scrollingPanelBounds.GetWidth() + m_scrollingPanelBounds.Min.x) && keyP2.x >= (m_scrollingPanelBounds.Min.x + m_labelColumnWidth)) {
             if (m_mouseDragging && selected) {
                 // draw the moving keyframe
                 auto context = GetSelectedEventContext(event.get());
@@ -754,7 +772,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             ImVec2 const keyP2{ childTrackBounds.Min.x + keyframe->m_frame * m_framePixelWidth + m_framePixelWidth - 1, childTrackBounds.Max.y - 2 };
             ImRect const keyRect{ keyP1, keyP2 };
             bool const selected = IsKeyframeSelected(childEntity, target, keyframe->m_frame);
-            if (keyP1.x <= (m_panelBounds.GetWidth() + m_panelBounds.Min.x) && keyP2.x >= (m_panelBounds.Min.x + m_legendWidth)) {
+            if (keyP1.x <= (m_scrollingPanelBounds.GetWidth() + m_scrollingPanelBounds.Min.x) && keyP2.x >= (m_scrollingPanelBounds.Min.x + m_labelColumnWidth)) {
                 if (m_mouseDragging && selected) {
                     // draw the moving keyframe
                     auto context = GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame);
@@ -828,99 +846,107 @@ void EditorPanelAnimation::DrawTrackRows() {
 
 void EditorPanelAnimation::DrawHorizScrollBar() {
     ImGuiIO const& io = ImGui::GetIO();
-    float const canvasWidth = m_panelBounds.GetWidth();
-    ImVec2 const scrollBarSize{ canvasWidth, 14.f };
-    ImGui::InvisibleButton("scrollBar", scrollBarSize);
-    ImVec2 const scrollBarMin = ImGui::GetItemRectMin();
-    ImVec2 const scrollBarMax = ImGui::GetItemRectMax();
+    float const scrollingPanelWidth = m_scrollingPanelBounds.GetWidth();
+    ImGui::InvisibleButton("scrollBar", { scrollingPanelWidth, m_horizontalScrollbarHeight - 4.0f });
+    ImVec2 const elementBoundsMin = ImGui::GetItemRectMin();
+    ImVec2 const elementBoundsMax = ImGui::GetItemRectMax();
+    ImRect const elementBounds{ elementBoundsMin, elementBoundsMax };
 
-    float const frameCount = static_cast<float>(ImMax(m_maxFrame - m_minFrame, 1));
-    float const visibleFrameCount = floorf((canvasWidth - m_legendWidth) / m_framePixelWidth);
-    float const barWidthRatio = ImMin(visibleFrameCount / frameCount, 1.0f);
-    float const barWidthInPixels = barWidthRatio * (canvasWidth - m_legendWidth);
+    // scroll track
+    ImVec2 const scrollTrackMin{ elementBounds.Min.x + m_labelColumnWidth, elementBounds.Min.y - 2 };
+    ImVec2 const scrollTrackMax{ elementBounds.Min.x + scrollingPanelWidth, elementBounds.Max.y - 1 };
+    ImRect const scrollTrackBounds{ scrollTrackMin, scrollTrackMax };
 
-    float const startFrameOffset = ((static_cast<int>(m_firstVisibleFrame) - m_minFrame) / frameCount) * (canvasWidth - m_legendWidth);
-    ImVec2 const scrollBarA{ scrollBarMin.x + m_legendWidth, scrollBarMin.y - 2 };
-    ImVec2 const scrollBarB{ scrollBarMin.x + canvasWidth, scrollBarMax.y - 1 };
-    ImRect const scrollBarRect{ scrollBarA, scrollBarB };
-    bool const inScrollBar = scrollBarRect.Contains(io.MousePos);
+    // scroll bar
+    ImVec2 const scrollBarMin = { scrollTrackBounds.Min.x + scrollTrackBounds.GetWidth() * m_hScrollFactors.x, elementBounds.Min.y };
+    ImVec2 const scrollBarMax = { scrollTrackBounds.Min.x + scrollTrackBounds.GetWidth() * m_hScrollFactors.y, elementBounds.Max.y - 2 };
+    ImRect const scrollBarBounds{ scrollBarMin, scrollBarMax };
 
-    // disabled these for taste
-    // m_drawList->AddRectFilled(scrollBarA, scrollBarB, 0xFF222222, 0); // light square background
-    // m_drawList->AddRectFilled(scrollBarA, scrollBarB, 0xFF101010, 8); // rounded darker background
+    // handles
+    float const handleWidth = 14.0f;
+    ImRect const barHandleLeft{ scrollBarMin, { scrollBarMin.x + handleWidth, scrollBarMax.y } };
+    ImRect const barHandleRight{ { scrollBarMax.x - handleWidth, scrollBarMin.y }, scrollBarMax };
 
-    // middle section of scroll bar
-    ImVec2 const scrollBarC{ scrollBarMin.x + m_legendWidth + startFrameOffset, scrollBarMin.y };
-    ImVec2 const scrollBarD{ scrollBarMin.x + m_legendWidth + barWidthInPixels + startFrameOffset, scrollBarMax.y - 2 };
-    m_drawList->AddRectFilled(scrollBarC, scrollBarD, (inScrollBar || m_movingScrollBar) ? 0xFF606060 : 0xFF505050, 6);
+    bool const mouseInScrollBar = scrollTrackBounds.Contains(io.MousePos);
+    bool const mouseInLeftHandle = barHandleLeft.Contains(io.MousePos);
+    bool const mouseInRightHandle = barHandleRight.Contains(io.MousePos);
 
-    // left and right handles
-    ImRect const barHandleLeft{ scrollBarC, ImVec2{ scrollBarC.x + 14, scrollBarD.y } };
-    ImRect const barHandleRight(ImVec2{ scrollBarD.x - 14, scrollBarC.y }, scrollBarD);
-    bool const onLeft = barHandleLeft.Contains(io.MousePos);
-    bool const onRight = barHandleRight.Contains(io.MousePos);
-    m_drawList->AddRectFilled(barHandleLeft.Min, barHandleLeft.Max, (onLeft || m_hScrollGrabbedLeft) ? 0xFFAAAAAA : 0xFF666666, 6);
-    m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (onRight || m_hScrollGrabbedRight) ? 0xFFAAAAAA : 0xFF666666, 6);
+    // draw the scroll bar and its handles
+    m_drawList->AddRectFilled(scrollBarMin, scrollBarMax, (mouseInScrollBar || m_movingScrollBar) ? 0xFF606060 : 0xFF505050, 6);
+    m_drawList->AddRectFilled(barHandleLeft.Min, barHandleLeft.Max, (mouseInLeftHandle || m_hScrollGrabbedLeft) ? 0xFFAAAAAA : 0xFF666666, 6);
+    m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (mouseInRightHandle || m_hScrollGrabbedRight) ? 0xFFAAAAAA : 0xFF666666, 6);
 
     if (m_hScrollGrabbedRight) {
+        // moving the max scroll handle
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedRight = false;
         } else {
-            float const barNewWidth = ImMax(barWidthInPixels + io.MouseDelta.x, m_hScrollMinSize);
-            float const barRatio = barNewWidth / barWidthInPixels;
-            m_framePixelWidth = m_framePixelWidth / barRatio;
-            float const newVisibleFrameCount = visibleFrameCount / barRatio;
-            int const lastFrame = static_cast<int>(m_firstVisibleFrame + newVisibleFrameCount);
-            if (lastFrame > m_maxFrame) {
-                m_framePixelWidth = (canvasWidth - m_legendWidth) / static_cast<float>(m_maxFrame - m_firstVisibleFrame);
+            if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
+                float const deltaToScrollFactor = io.MouseDelta.x / scrollTrackBounds.GetWidth();
+                m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + deltaToScrollFactor, 0.0f, 1.0f);
+                m_maxFrame = static_cast<int>(m_totalFrames * m_hScrollFactors.y);
             }
         }
     } else if (m_hScrollGrabbedLeft) {
+        // moving the min scroll handle
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedLeft = false;
         } else {
             if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-                float const barNewWidth = ImMax(barWidthInPixels - io.MouseDelta.x, m_hScrollMinSize);
-                float const barRatio = barNewWidth / barWidthInPixels;
-                m_framePixelWidth = m_framePixelWidth / barRatio;
-                float const newVisibleFrameCount = visibleFrameCount / barRatio;
-                float newFirstFrame = m_firstVisibleFrame + newVisibleFrameCount - visibleFrameCount;
-                newFirstFrame = ImClamp(newFirstFrame, static_cast<float>(m_minFrame), ImMax(static_cast<float>(m_maxFrame) - newVisibleFrameCount, static_cast<float>(m_minFrame)));
-                if (newFirstFrame != m_firstVisibleFrame) {
-                    m_firstVisibleFrame = newFirstFrame;
-                }
+                float const deltaToScrollFactor = io.MouseDelta.x / scrollTrackBounds.GetWidth();
+                m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + deltaToScrollFactor, 0.0f, 1.0f);
+                m_minFrame = static_cast<int>(m_totalFrames * m_hScrollFactors.x);
             }
         }
     } else {
         if (m_movingScrollBar) {
+            // moving the scroll bar as a whole
             if (!io.MouseDown[ImGuiMouseButton_Left]) {
                 m_movingScrollBar = false;
             } else {
-                float const framesPerPixelInBar = barWidthInPixels / static_cast<float>(visibleFrameCount);
-                m_firstVisibleFrame = static_cast<int>((io.MousePos.x - m_panningViewSource.x) / framesPerPixelInBar) - m_panningViewFrame;
-                m_firstVisibleFrame = ImClamp(m_firstVisibleFrame, static_cast<float>(m_minFrame), ImMax(static_cast<float>(m_maxFrame) - visibleFrameCount, static_cast<float>(m_minFrame)));
+                if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
+                    float const deltaToScrollFactor = io.MouseDelta.x / scrollTrackBounds.GetWidth();
+                    ImVec2 const newScrollFactors = m_hScrollFactors + ImVec2{ deltaToScrollFactor, deltaToScrollFactor };
+                    if (newScrollFactors.x < 0.0f) {
+                        float const clampedMove = m_hScrollFactors.x;
+                        m_hScrollFactors.x = 0.0f;
+                        m_hScrollFactors.y -= clampedMove;
+                    } else if (newScrollFactors.y > 1.0f) {
+                        float const clampedMove = m_hScrollFactors.y - 1.0f;
+                        m_hScrollFactors.x += clampedMove;
+                        m_hScrollFactors.y = 1.0f;
+                    } else {
+                        m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + deltaToScrollFactor, 0.0f, 1.0f);
+                        m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + deltaToScrollFactor, 0.0f, 1.0f);
+                    }
+
+                    m_minFrame = static_cast<int>(m_totalFrames * m_hScrollFactors.x);
+                    m_maxFrame = static_cast<int>(m_totalFrames * m_hScrollFactors.y);
+                }
             }
         } else {
-            ImRect const scrollBarThumb{ scrollBarC, scrollBarD };
-            if (scrollBarThumb.Contains(io.MousePos) && ImGui::IsMouseClicked(0) && !m_movingCurrentFrame && m_movingEntry == -1) {
+            if (scrollBarBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_movingCurrentFrame && m_movingEntry == -1) {
                 m_movingScrollBar = true;
-                m_panningViewSource = io.MousePos;
-                m_panningViewFrame = -m_firstVisibleFrame;
             }
-            if (!m_hScrollGrabbedRight && onRight && ImGui::IsMouseClicked(0))
+            if (!m_hScrollGrabbedRight && mouseInRightHandle && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 m_hScrollGrabbedRight = true;
-            if (!m_hScrollGrabbedLeft && onLeft && ImGui::IsMouseClicked(0))
+            }
+            if (!m_hScrollGrabbedLeft && mouseInLeftHandle && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 m_hScrollGrabbedLeft = true;
+            }
         }
     }
+
+    // calculate the scale of a single frame
+    m_framePixelWidth = scrollTrackBounds.GetWidth() / (m_maxFrame - m_minFrame + 1); // +1 so that the max frame is "in" the track
 }
 
 int EditorPanelAnimation::CalcNumRows() const {
     int count = 3; // frames + clips + events;
     count += m_group->GetChildCount();
-    for (auto& [p, extra] : m_extraData) {
-        if (auto child = extra.ptr.lock()) {
-            if (extra.expanded) {
+    for (auto& [p, metadata] : m_trackMetadata) {
+        if (auto child = metadata.ptr.lock()) {
+            if (metadata.expanded) {
                 count += static_cast<int>(child->GetLayoutEntity()->m_tracks.size());
             }
         }
@@ -933,14 +959,34 @@ bool EditorPanelAnimation::IsAnyPopupOpen() const {
 }
 
 void EditorPanelAnimation::DrawCursor() {
-    if (m_currentFrame >= m_firstVisibleFrame && m_currentFrame <= m_maxFrame) {
-        float const cursorLeft = m_panelBounds.Min.x + m_legendWidth + (m_currentFrame - m_minFrame) * m_framePixelWidth - static_cast<int>(m_firstVisibleFrame) * m_framePixelWidth;
+    if (m_currentFrame >= m_minFrame && m_currentFrame <= m_maxFrame) {
+        float const cursorLeft = m_scrollingPanelBounds.Min.x + m_labelColumnWidth + (m_currentFrame - m_minFrame) * m_framePixelWidth;
         float const cursorOffset = cursorLeft + m_framePixelWidth / 2;
-        m_drawList->AddLine(ImVec2(cursorOffset, m_panelBounds.Min.y), ImVec2(cursorOffset, m_panelBounds.Max.y), 0xA02A2AFF, m_framePixelWidth - 1);
+        m_drawList->AddLine(ImVec2(cursorOffset, m_scrollingPanelBounds.Min.y), ImVec2(cursorOffset, m_scrollingPanelBounds.Max.y), 0xA02A2AFF, m_framePixelWidth - 1);
         char tmps[512];
         ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", m_currentFrame);
-        m_drawList->AddText(ImVec2(cursorLeft + 3.0f, m_panelBounds.Min.y), 0xFFFFFFFF, tmps);
+        m_drawList->AddText(ImVec2(cursorLeft + 3.0f, m_scrollingPanelBounds.Min.y), 0xFFFFFFFF, tmps);
     }
+}
+
+void EditorPanelAnimation::DrawFrameRangeSettings() {
+    ImGui::PushItemWidth(130);
+    ImGui::InputInt("Current Frame ", &m_currentFrame);
+    ImGui::SameLine();
+    if (ImGui::InputInt("Min Frame", &m_minFrame)) {
+        m_hScrollFactors.x = m_minFrame / static_cast<float>(m_totalFrames);
+    }
+    ImGui::SameLine();
+
+    if (ImGui::InputInt("Max Frame", &m_maxFrame)) {
+        m_hScrollFactors.y = m_maxFrame / static_cast<float>(m_totalFrames);
+    }
+    ImGui::SameLine();
+    if (ImGui::InputInt("Total Frames", &m_totalFrames)) {
+        m_hScrollFactors.x = m_minFrame / static_cast<float>(m_totalFrames);
+        m_hScrollFactors.y = m_maxFrame / static_cast<float>(m_totalFrames);
+    }
+    ImGui::PopItemWidth();
 }
 
 void EditorPanelAnimation::DrawWidget() {
@@ -948,38 +994,37 @@ void EditorPanelAnimation::DrawWidget() {
     SanitizeExtraData();
     m_rowCounter = 0;
 
-    ImGui::PushItemWidth(130);
-    ImGui::InputInt("Frame Min", &m_minFrame);
-    ImGui::SameLine();
-    ImGui::InputInt("Frame ", &m_currentFrame);
-    ImGui::SameLine();
-    ImGui::InputInt("Frame Max", &m_maxFrame);
-    ImGui::PopItemWidth();
+    DrawFrameRangeSettings();
 
     m_minFrame = std::max(0, m_minFrame);
-    m_currentFrame = std::clamp(m_currentFrame, m_minFrame, m_maxFrame);
+    m_currentFrame = std::min(m_totalFrames, m_currentFrame);
 
-    int const targetRowCount = CalcNumRows();
     m_windowBounds.Min = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     m_windowBounds.Max = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMax();
-    ImVec2 const canvasSize = ImGui::GetContentRegionAvail();
-    float const panelHeight = m_rowHeight * targetRowCount;
-    float const vScrollBarWidth = panelHeight > canvasSize.y ? 18.0f : 0.0f;
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
     ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
-    ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x, canvasSize.y - 18.0f });
+
+    // prepare the vertical scrolling panel
+    ImVec2 const canvasSize = ImGui::GetContentRegionAvail();
+    int const targetRowCount = CalcNumRows();
+    float const panelHeight = m_rowHeight * targetRowCount;
+    float const vScrollBarWidth = panelHeight > canvasSize.y ? m_verticalScrollbarWidth : 0.0f;
+    ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x, canvasSize.y - m_horizontalScrollbarHeight });
     ImGui::InvisibleButton("contentBar", ImVec2(canvasSize.x - vScrollBarWidth, static_cast<float>(panelHeight)));
-    m_panelBounds.Min = ImGui::GetItemRectMin();
-    m_panelBounds.Max = ImGui::GetItemRectMax();
+    m_scrollingPanelBounds.Min = ImGui::GetItemRectMin();
+    m_scrollingPanelBounds.Max = ImGui::GetItemRectMax();
+
+    // clicking on blank track area will clear the selection.
+    // clickable objects will reset this value if they are interacted with.
+    ImRect trackAreaBounds;
+    trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y + m_rowHeight };
+    trackAreaBounds.Max = m_scrollingPanelBounds.Max;
+    m_pendingClearSelection = trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+
     m_drawList = ImGui::GetWindowDrawList();
 
-    ImRect trackBounds;
-    trackBounds.Min = { m_panelBounds.Min.x + m_legendWidth, m_panelBounds.Min.y + m_rowHeight };
-    trackBounds.Max = m_panelBounds.Max;
-    m_pendingClearSelection = trackBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-
-    DrawFrameRow();
+    DrawFrameNumberRibbon();
     DrawClipRow();
     DrawEventsRow();
     DrawTrackRows();
@@ -993,6 +1038,7 @@ void EditorPanelAnimation::DrawWidget() {
 
     m_drawList = nullptr;
 
+    // now we clear selections if nothing reset this bool
     if (m_pendingClearSelection) {
         ClearSelections();
     }
@@ -1072,26 +1118,26 @@ void EditorPanelAnimation::UpdateMouseDragging() {
 }
 
 bool EditorPanelAnimation::IsExpanded(std::shared_ptr<moth_ui::Node> child) const {
-    auto it = m_extraData.find(child.get());
-    if (std::end(m_extraData) == it) {
+    auto it = m_trackMetadata.find(child.get());
+    if (std::end(m_trackMetadata) == it) {
         return false;
     }
     return it->second.expanded;
 }
 
 void EditorPanelAnimation::SetExpanded(std::shared_ptr<moth_ui::Node> child, bool expanded) {
-    auto it = m_extraData.find(child.get());
-    if (std::end(m_extraData) == it) {
-        m_extraData.insert(std::make_pair<void*, TrackExtraData>(child.get(), { child, expanded }));
+    auto it = m_trackMetadata.find(child.get());
+    if (std::end(m_trackMetadata) == it) {
+        m_trackMetadata.insert(std::make_pair(child.get(), TrackMetadata{ child, expanded }));
     } else {
         it->second.expanded = expanded;
     }
 }
 
 void EditorPanelAnimation::SanitizeExtraData() {
-    for (auto it = std::begin(m_extraData); it != std::end(m_extraData); /* skip */) {
+    for (auto it = std::begin(m_trackMetadata); it != std::end(m_trackMetadata); /* skip */) {
         if (!it->second.ptr.lock()) {
-            it = m_extraData.erase(it);
+            it = m_trackMetadata.erase(it);
         } else {
             ++it;
         }
