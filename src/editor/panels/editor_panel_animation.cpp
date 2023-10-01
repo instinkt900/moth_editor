@@ -214,13 +214,12 @@ KeyframeContext* EditorPanelAnimation::GetSelectedKeyframeContext(std::shared_pt
 void EditorPanelAnimation::FilterKeyframeSelections(std::shared_ptr<LayoutEntity> entity, int frameNo) {
     for (auto it = std::begin(m_selections); it != std::end(m_selections); /* skip */) {
         auto& context = *it;
-        if (auto keyframeContext = std::get_if<KeyframeContext>(&context)) {
-            if (keyframeContext->entity != entity || keyframeContext->current->m_frame != frameNo) {
-                it = m_selections.erase(it);
-                continue;
-            }
+        auto keyframeContext = std::get_if<KeyframeContext>(&context);
+        if (!keyframeContext || (keyframeContext->entity != entity || keyframeContext->current->m_frame != frameNo)) {
+            it = m_selections.erase(it);
+        } else {
+            ++it;
         }
-        ++it;
     }
 }
 
