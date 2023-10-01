@@ -310,11 +310,11 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
 
     // moving current frame
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && rowDimensions.trackBounds.Contains(io.MousePos)) {
-        m_movingCurrentFrame = true;
+        m_grabbedCurrentFrame = true;
     }
 
     float const frameCount = static_cast<float>(ImMax(m_maxFrame - m_minFrame, 1));
-    if (m_movingCurrentFrame) {
+    if (m_grabbedCurrentFrame) {
         if (frameCount) {
             m_currentFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
             if (m_currentFrame < m_minFrame)
@@ -323,7 +323,7 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
                 m_currentFrame = m_maxFrame;
         }
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
-            m_movingCurrentFrame = false;
+            m_grabbedCurrentFrame = false;
         }
     }
 }
@@ -401,17 +401,6 @@ bool EditorPanelAnimation::DrawClipPopup() {
     return false;
 }
 
-ImRect DrawClippedRect(ImDrawList* drawList, ImRect const& originalRect, int const color, float const rounding, ImVec2 const& bounds) {
-    ImRect clippedRect = {
-        ImVec2{ std::max(bounds.x, originalRect.Min.x), originalRect.Min.y },
-        ImVec2{ std::min(bounds.y, originalRect.Max.x), originalRect.Max.y }
-    };
-    if (clippedRect.Max.x >= bounds.x && clippedRect.Min.x <= bounds.y) {
-        drawList->AddRectFilled(clippedRect.Min, clippedRect.Max, color, rounding);
-    }
-    return clippedRect;
-}
-
 void EditorPanelAnimation::DrawClipRow() {
     RowDimensions const rowDimensions = AddRow("Clips", RowOptions().ColorOverride(0xFF3D3837));
 
@@ -424,6 +413,8 @@ void EditorPanelAnimation::DrawClipRow() {
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
         m_pendingClearSelection = false;
     }
+
+    m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max, true);
 
     float const trackStartOffsetX = rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset;
     float const trackStartOffsetY = rowDimensions.trackBounds.Min.y;
@@ -440,7 +431,7 @@ void EditorPanelAnimation::DrawClipRow() {
         float const clipEndOffset = (clipValues.m_endFrame + 1) * m_framePixelWidth;
         ImVec2 const clipBoundsMin{ trackStartOffsetX + clipStartOffset, trackStartOffsetY + 2.0f };
         ImVec2 const clipBoundsMax{ trackStartOffsetX + clipEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
-        auto const fullRectBounds = DrawClippedRect(m_drawList, { clipBoundsMin, clipBoundsMax }, slotColor, 2.0f, { rowDimensions.trackBounds.Min.x, rowDimensions.trackBounds.Max.x });
+        m_drawList->AddRectFilled(clipBoundsMin, clipBoundsMax, slotColor, 2.0f);
 
         if (io.KeyAlt) {
             // alt will allow you to dupe drag the clip. so draw the original clip here if we're holding alt
@@ -448,7 +439,7 @@ void EditorPanelAnimation::DrawClipRow() {
             float const clipEndOffset = (clip->m_endFrame + 1) * m_framePixelWidth;
             ImVec2 const clipBoundsMin{ trackStartOffsetX + clipStartOffset, trackStartOffsetY + 2.0f };
             ImVec2 const clipBoundsMax{ trackStartOffsetX + clipEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
-            DrawClippedRect(m_drawList, { clipBoundsMin, clipBoundsMax }, slotColor, 2.0f, { rowDimensions.trackBounds.Min.x, rowDimensions.trackBounds.Max.x });
+            m_drawList->AddRectFilled(clipBoundsMin, clipBoundsMax, slotColor, 2.0f);
         }
 
         float const clipEdgeWidth = m_framePixelWidth / 2;
@@ -465,7 +456,7 @@ void EditorPanelAnimation::DrawClipRow() {
                 if (!rc.Contains(io.MousePos))
                     continue;
 
-                DrawClippedRect(m_drawList, { rc.Min, rc.Max }, quadColor[i], 2.0f, { rowDimensions.trackBounds.Min.x, rowDimensions.trackBounds.Max.x });
+                m_drawList->AddRectFilled(rc.Min, rc.Max, quadColor[i], 2.0f);
             }
 
             if (io.MousePos.x >= rowDimensions.trackBounds.Min.x && io.MousePos.x <= rowDimensions.trackBounds.Max.x) {
@@ -488,7 +479,7 @@ void EditorPanelAnimation::DrawClipRow() {
                         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                             m_mouseDragging = true;
                             m_mouseDragStartX = io.MousePos.x;
-                            m_clipDragSection = j + 1;
+                            m_clipDragHandle = j + 1;
                             break;
                         }
                     }
@@ -497,11 +488,11 @@ void EditorPanelAnimation::DrawClipRow() {
         }
 
         ImVec2 const tsize = ImGui::CalcTextSize(clip->m_name.c_str());
-        ImVec2 const tpos(fullRectBounds.Min.x + (fullRectBounds.Max.x - fullRectBounds.Min.x - tsize.x) / 2, fullRectBounds.Min.y + (fullRectBounds.Max.y - fullRectBounds.Min.y - tsize.y) / 2);
-        m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max);
+        ImVec2 const tpos(clipBoundsMin.x + (clipBoundsMax.x - clipBoundsMin.x - tsize.x) / 2, clipBoundsMin.y + (clipBoundsMax.y - clipBoundsMin.y - tsize.y) / 2);
         m_drawList->AddText(tpos, 0xFFFFFFFF, clip->m_name.c_str());
-        m_drawList->PopClipRect();
     }
+
+    m_drawList->PopClipRect();
 
     // detect popup click
     if (rowDimensions.trackBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -576,31 +567,44 @@ void EditorPanelAnimation::DrawEventsRow() {
         m_pendingClearSelection = false;
     }
 
+    m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max, true);
+
+    float const trackStartOffsetX = rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset;
+    float const trackStartOffsetY = rowDimensions.trackBounds.Min.y;
+
     // draw events
     auto& animationEvents = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->m_events;
     for (auto& event : animationEvents) {
-        float const px = rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset;
-        float const py = rowDimensions.trackBounds.Min.y;
-        ImVec2 const keyP1{ px + event->m_frame * m_framePixelWidth + 2, py + 2 };
-        ImVec2 const keyP2{ px + event->m_frame * m_framePixelWidth + m_framePixelWidth - 1, py + m_rowHeight - 2 };
-        ImRect const keyRect{ keyP1, keyP2 };
         bool const selected = IsEventSelected(event.get());
-        if (keyP1.x <= (m_scrollingPanelBounds.GetWidth() + m_scrollingPanelBounds.Min.x) && keyP2.x >= (m_scrollingPanelBounds.Min.x + m_labelColumnWidth)) {
-            if (m_mouseDragging && selected) {
-                // draw the moving keyframe
-                auto context = GetSelectedEventContext(event.get());
-                ImVec2 const newEventP1{ px + context->mutableValue.m_frame * m_framePixelWidth + 2, py + 2 };
-                ImVec2 const newEventP2{ px + context->mutableValue.m_frame * m_framePixelWidth + m_framePixelWidth - 1, py + m_rowHeight - 2 };
-                m_drawList->AddRectFilled(newEventP1, newEventP2, selected ? eventColorSelected : eventColor, 4);
-            }
-            if (io.KeyAlt || !(m_mouseDragging && selected)) {
-                // draw the current keyframe
-                m_drawList->AddRectFilled(keyP1, keyP2, selected ? eventColorSelected : eventColor, 4);
-            }
+        unsigned int const slotColor = selected ? eventColorSelected : eventColor;
+
+        auto& eventValues = (m_mouseDragging && selected) ? GetSelectedEventContext(event.get())->mutableValue : *event;
+
+        float const eventStartOffset = eventValues.m_frame * m_framePixelWidth;
+        float const eventEndOffset = (eventValues.m_frame + 1) * m_framePixelWidth;
+        ImVec2 const eventBoundsMin{ trackStartOffsetX + eventStartOffset, trackStartOffsetY + 2.0f };
+        ImVec2 const eventBoundsMax{ trackStartOffsetX + eventEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+        ImRect const eventBounds{ eventBoundsMin, eventBoundsMax };
+        m_drawList->AddRectFilled(eventBoundsMin, eventBoundsMax, slotColor, 2.0f);
+
+        // tooltip to display the event name
+        if (eventBounds.Contains(io.MousePos)) {
+            ImGui::BeginTooltip();
+            ImGui::Text("Event \"%s\"", eventValues.m_name.c_str());
+            ImGui::EndTooltip();
+        }
+
+        if (io.KeyAlt) {
+            // alt will allow you to dupe drag the clip. so draw the original clip here if we're holding alt
+            float const eventStartOffset = event->m_frame * m_framePixelWidth;
+            float const eventEndOffset = (event->m_frame + 1) * m_framePixelWidth;
+            ImVec2 const eventBoundsMin{ trackStartOffsetX + eventStartOffset, trackStartOffsetY + 2.0f };
+            ImVec2 const eventBoundsMax{ trackStartOffsetX + eventEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+            m_drawList->AddRectFilled(eventBoundsMin, eventBoundsMax, slotColor, 2.0f);
         }
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-            if (keyRect.Contains(io.MousePos)) {
+            if (eventBounds.Contains(io.MousePos)) {
                 if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
                     ClearSelections();
                 }
@@ -618,10 +622,12 @@ void EditorPanelAnimation::DrawEventsRow() {
         }
     }
 
+    m_drawList->PopClipRect();
+
     // if we right clicked on this track we pop up a context dialog
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         if (rowDimensions.trackBounds.Contains(io.MousePos)) {
-            m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset) / m_framePixelWidth);
+            m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
             ImGui::OpenPopup(EventPopupName);
         }
     }
@@ -737,14 +743,16 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
     }
     RowDimensions const rowDimensions = AddRow(GetChildLabel(childIndex), rowOptions);
 
+    // expanding and unexpanding
     if (rowDimensions.buttonBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         expanded = !expanded;
     }
 
     SetExpanded(child, expanded);
 
+    // selecting the entity for the track
     if (rowDimensions.labelBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        if (!io.KeyCtrl) {
+        if (!io.KeyCtrl) { // holding ctrl will let you add to the selection. otherwise we clear it before making the selection
             m_editorLayer.ClearSelection();
         }
         if (m_editorLayer.IsSelected(child)) {
@@ -765,29 +773,35 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             subTrackBounds = subRowDimensions.trackBounds;
         }
 
-        ImRect const childTrackBounds{ subTrackBounds.Min + ImVec2{ rowDimensions.trackOffset, 0 }, subTrackBounds.Max + ImVec2{ rowDimensions.trackOffset, 0 } };
+        m_drawList->PushClipRect(subTrackBounds.Min, subTrackBounds.Max, true);
+
+        float const trackStartOffsetX = subTrackBounds.Min.x + rowDimensions.trackOffset;
+        float const trackStartOffsetY = subTrackBounds.Min.y;
 
         for (auto& keyframe : track->m_keyframes) {
-            ImVec2 const keyP1{ childTrackBounds.Min.x + keyframe->m_frame * m_framePixelWidth + 2, childTrackBounds.Min.y + 2 };
-            ImVec2 const keyP2{ childTrackBounds.Min.x + keyframe->m_frame * m_framePixelWidth + m_framePixelWidth - 1, childTrackBounds.Max.y - 2 };
-            ImRect const keyRect{ keyP1, keyP2 };
             bool const selected = IsKeyframeSelected(childEntity, target, keyframe->m_frame);
-            if (keyP1.x <= (m_scrollingPanelBounds.GetWidth() + m_scrollingPanelBounds.Min.x) && keyP2.x >= (m_scrollingPanelBounds.Min.x + m_labelColumnWidth)) {
-                if (m_mouseDragging && selected) {
-                    // draw the moving keyframe
-                    auto context = GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame);
-                    ImVec2 const oldKeyP1{ childTrackBounds.Min.x + context->mutableFrame * m_framePixelWidth + 2, childTrackBounds.Min.y + 2 };
-                    ImVec2 const oldKeyP2{ childTrackBounds.Min.x + context->mutableFrame * m_framePixelWidth + m_framePixelWidth - 1, childTrackBounds.Max.y - 2 };
-                    m_drawList->AddRectFilled(oldKeyP1, oldKeyP2, keyframeColorSelected, 4);
-                }
-                if (io.KeyAlt || !(m_mouseDragging && selected)) {
-                    // draw the current keyframe
-                    m_drawList->AddRectFilled(keyP1, keyP2, selected ? keyframeColorSelected : keyframeColor, 4);
-                }
+            unsigned int const slotColor = selected ? keyframeColorSelected : keyframeColor;
+
+            int const frameNumber = (m_mouseDragging && selected) ? GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame)->mutableFrame : keyframe->m_frame;
+
+            float const frameStartOffset = frameNumber * m_framePixelWidth;
+            float const frameEndOffset = (frameNumber + 1) * m_framePixelWidth;
+            ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2 };
+            ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2 };
+            ImRect const frameBounds{ frameBoundsMin, frameBoundsMax };
+            m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 4);
+            
+            if (io.KeyAlt) {
+                // alt will allow you to dupe drag the clip. so draw the original clip here if we're holding alt
+                float const frameStartOffset = keyframe->m_frame * m_framePixelWidth;
+                float const frameEndOffset = (keyframe->m_frame + 1) * m_framePixelWidth;
+                ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2.0f };
+                ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+                m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 4);
             }
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                if (keyRect.Contains(io.MousePos)) {
+                if (frameBounds.Contains(io.MousePos)) {
                     if (!IsKeyframeSelected(childEntity, target, keyframe->m_frame)) {
                         if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
                             if (expanded) {
@@ -820,12 +834,15 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                 }
             }
 
+            // hmm
             // if (DoBoxSelect) {
             //     if (keyRect.Overlaps(boxSelectBox)) {
             //         SelectKeyframe(childEntity, target, keyframe.m_frame);
             //     }
             // }
         }
+
+        m_drawList->PopClipRect();
     }
 }
 
@@ -872,7 +889,7 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     bool const mouseInRightHandle = barHandleRight.Contains(io.MousePos);
 
     // draw the scroll bar and its handles
-    m_drawList->AddRectFilled(scrollBarMin, scrollBarMax, (mouseInScrollBar || m_movingScrollBar) ? 0xFF606060 : 0xFF505050, 6);
+    m_drawList->AddRectFilled(scrollBarMin, scrollBarMax, (mouseInScrollBar || m_hScrollGrabbedBar) ? 0xFF606060 : 0xFF505050, 6);
     m_drawList->AddRectFilled(barHandleLeft.Min, barHandleLeft.Max, (mouseInLeftHandle || m_hScrollGrabbedLeft) ? 0xFFAAAAAA : 0xFF666666, 6);
     m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (mouseInRightHandle || m_hScrollGrabbedRight) ? 0xFFAAAAAA : 0xFF666666, 6);
 
@@ -899,10 +916,10 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
             }
         }
     } else {
-        if (m_movingScrollBar) {
+        if (m_hScrollGrabbedBar) {
             // moving the scroll bar as a whole
             if (!io.MouseDown[ImGuiMouseButton_Left]) {
-                m_movingScrollBar = false;
+                m_hScrollGrabbedBar = false;
             } else {
                 if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
                     float const deltaToScrollFactor = io.MouseDelta.x / scrollTrackBounds.GetWidth();
@@ -925,8 +942,8 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
                 }
             }
         } else {
-            if (scrollBarBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_movingCurrentFrame && m_movingEntry == -1) {
-                m_movingScrollBar = true;
+            if (scrollBarBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !m_grabbedCurrentFrame) {
+                m_hScrollGrabbedBar = true;
             }
             if (!m_hScrollGrabbedRight && mouseInRightHandle && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                 m_hScrollGrabbedRight = true;
@@ -1058,18 +1075,18 @@ void EditorPanelAnimation::UpdateMouseDragging() {
                     if (m_selections.size() == 1) {
                         int& l = clipContext->mutableValue.m_startFrame;
                         int& r = clipContext->mutableValue.m_endFrame;
-                        if (m_clipDragSection & 1)
+                        if (m_clipDragHandle & 1)
                             l = clipContext->clip->m_startFrame + frameDelta;
-                        if (m_clipDragSection & 2)
+                        if (m_clipDragHandle & 2)
                             r = clipContext->clip->m_endFrame + frameDelta;
                         if (l < 0) {
-                            if (m_clipDragSection & 2)
+                            if (m_clipDragHandle & 2)
                                 r -= l;
                             l = 0;
                         }
-                        if (m_clipDragSection & 1 && l > r)
+                        if (m_clipDragHandle & 1 && l > r)
                             l = r;
-                        if (m_clipDragSection & 2 && r < l)
+                        if (m_clipDragHandle & 2 && r < l)
                             r = l;
                     } else {
                         clipContext->mutableValue.m_startFrame = clipContext->clip->m_startFrame + frameDelta;

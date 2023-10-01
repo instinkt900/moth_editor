@@ -98,12 +98,6 @@ private:
 
     void UpdateMouseDragging();
 
-    bool m_mouseDragging = false;
-    float m_mouseDragStartX = 0.0f;
-    int m_clipDragSection = -1;
-    int m_clickedFrame = -1;
-    bool m_pendingClearSelection = false;
-
     template <typename T>
     struct EditContext {
         EditContext(T* value)
@@ -143,21 +137,22 @@ private:
     int m_currentFrame = 0;         // current selected frame
     float m_framePixelWidth = 10.f; // current width of a single frame column in pixels
 
-    ImVec2 m_hScrollFactors;
+    ImVec2 m_hScrollFactors;                // 0 - 1 factors of each edge of the horizontal scroll bar. x = left side, y = right side
+    bool m_hScrollGrabbedBar = false;       // currently dragging the scrollbar around
+    bool m_hScrollGrabbedRight = false;     // currently draggin the right edge of the horizontal scroll bar
+    bool m_hScrollGrabbedLeft = false;      // currently draggin the left edge of the horizontal scroll bar
 
-    float const m_rowHeight = 20;
+    float const m_rowHeight = 20;                       // height of each track row in pixels
     float const m_labelColumnWidth = 200;               // witch of the label column in pixels on the left side
     float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
     float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
 
-    bool m_movingScrollBar = false;
-
-    bool m_movingCurrentFrame = false;
-    int m_movingEntry = -1;
-
-    bool m_hScrollGrabbedRight = false;
-    bool m_hScrollGrabbedLeft = false;
-    float const m_hScrollMinSize = 44.0f;
+    bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
+    float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
+    int m_clipDragHandle = -1;              // section of the clip we're dragging. left/center/right
+    int m_clickedFrame = -1;                // frame number clicked on, for popups etc
+    bool m_pendingClearSelection = false;   // true if we clicked and nothing responded to it
+    bool m_grabbedCurrentFrame = false;     // draging the current frame indicator
 
     int m_clickedChildIdx = -1;
     moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
