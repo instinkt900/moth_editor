@@ -34,8 +34,6 @@ public:
 
     void OnLayoutLoaded() override;
 
-    //std::vector<KeyframeContext>& GetSelectedKeyframes() { return m_selectedKeyframes; };
-
 private:
     void DrawContents() override;
 
@@ -100,12 +98,6 @@ private:
 
     void UpdateMouseDragging();
 
-    bool m_mouseDragging = false;
-    float m_mouseDragStartX = 0.0f;
-    int m_clipDragSection = -1;
-    int m_clickedFrame = -1;
-    bool m_pendingClearSelection = false;
-
     template <typename T>
     struct EditContext {
         EditContext(T* value)
@@ -124,7 +116,7 @@ private:
     bool DrawKeyframePopup();
 
     RowDimensions AddRow(char const* label, RowOptions const& rowOptions);
-    void DrawFrameRow();
+    void DrawFrameNumberRibbon();
     void DrawClipRow();
     void DrawEventsRow();
     void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child);
@@ -133,33 +125,34 @@ private:
     void DrawCursor();
     int CalcNumRows() const;
 
+    void DrawFrameRangeSettings();
+
     void DrawWidget();
     char const* GetChildLabel(int index) const;
     char const* GetTrackLabel(moth_ui::AnimationTrack::Target target) const;
 
-    int m_minFrame = 0;
-    int m_maxFrame = 100;
-    int m_currentFrame = 0;
-    float m_firstVisibleFrame = 0.0f;
+    int m_minFrame = 0;             // first visible frame
+    int m_maxFrame = 100;           // last visible frame
+    int m_totalFrames = 300;        // max length of the track
+    int m_currentFrame = 0;         // current selected frame
+    float m_framePixelWidth = 10.f; // current width of a single frame column in pixels
 
-    float m_framePixelWidth = 10.f;
+    ImVec2 m_hScrollFactors;                // 0 - 1 factors of each edge of the horizontal scroll bar. x = left side, y = right side
+    bool m_hScrollGrabbedBar = false;       // currently dragging the scrollbar around
+    bool m_hScrollGrabbedRight = false;     // currently draggin the right edge of the horizontal scroll bar
+    bool m_hScrollGrabbedLeft = false;      // currently draggin the left edge of the horizontal scroll bar
 
-    float const m_rowHeight = 20;
-    float const m_legendWidth = 200;
+    float const m_rowHeight = 20;                       // height of each track row in pixels
+    float const m_labelColumnWidth = 200;               // witch of the label column in pixels on the left side
+    float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
+    float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
 
-    bool m_movingScrollBar = false;
-
-    ImVec2 m_panningViewSource;
-    float m_panningViewFrame;
-    bool m_movingCurrentFrame = false;
-    int m_movingEntry = -1;
-
-    bool m_hScrollGrabbedRight = false;
-    bool m_hScrollGrabbedLeft = false;
-    float const m_hScrollMinSize = 44.0f;
-
-
-
+    bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
+    float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
+    int m_clipDragHandle = -1;              // section of the clip we're dragging. left/center/right
+    int m_clickedFrame = -1;                // frame number clicked on, for popups etc
+    bool m_pendingClearSelection = false;   // true if we clicked and nothing responded to it
+    bool m_grabbedCurrentFrame = false;     // draging the current frame indicator
 
     int m_clickedChildIdx = -1;
     moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
@@ -172,11 +165,11 @@ private:
 
     std::vector<bool> m_childExpanded;
 
-    struct TrackExtraData {
+    struct TrackMetadata {
         std::weak_ptr<moth_ui::Node> ptr;
         bool expanded;
     };
-    std::map<void*, TrackExtraData> m_extraData;
+    std::map<moth_ui::Node*, TrackMetadata> m_trackMetadata;
 
     bool IsExpanded(std::shared_ptr<moth_ui::Node> child) const;
     void SetExpanded(std::shared_ptr<moth_ui::Node> child, bool expanded);
@@ -184,6 +177,8 @@ private:
 
     ImDrawList* m_drawList = nullptr;
     ImRect m_windowBounds;
-    ImRect m_panelBounds;
+    ImRect m_scrollingPanelBounds;
     int m_rowCounter = 0;
+    
+    ImVec2 TrackspaceToPanel(ImVec2 const& trackPos);
 };
