@@ -13,7 +13,7 @@ class Editor(ConanFile):
 		self.requires("nlohmann_json/3.11.2")
 		self.requires("magic_enum/0.7.3")
 		self.requires("range-v3/0.12.0")
-		self.requires("fmt/10.1.1")
+		self.requires("fmt/10.1.1", override=True)
 		self.requires("vulkan-headers/1.3.243.0")
 		self.requires("vulkan-loader/1.3.243.0")
 		self.requires("spdlog/1.12.0")
@@ -24,5 +24,4 @@ class Editor(ConanFile):
 		self.requires("libwebp/1.3.2", override=True)
 
 		if self.settings.os == "Linux":
-			print("welp")
 			self.requires("libalsa/1.2.10", override=True)
