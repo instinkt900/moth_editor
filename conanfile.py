@@ -22,3 +22,7 @@ class Editor(ConanFile):
 		self.requires("freetype/2.12.1")
 		self.requires("glm/cci.20230113")
 		self.requires("libwebp/1.3.2", override=True)
+
+		if self.settings.os == "Linux":
+			print("welp")
+			self.requires("libalsa/1.2.10", override=True)
