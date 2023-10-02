@@ -178,6 +178,7 @@ private:
     ImDrawList* m_drawList = nullptr;
     ImRect m_windowBounds;
     ImRect m_scrollingPanelBounds;
+    ImRect m_cursorRect;
     int m_rowCounter = 0;
     
     ImVec2 TrackspaceToPanel(ImVec2 const& trackPos);

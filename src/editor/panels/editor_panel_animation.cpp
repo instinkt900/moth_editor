@@ -270,8 +270,17 @@ EditorPanelAnimation::RowDimensions EditorPanelAnimation::AddRow(char const* lab
 }
 
 void EditorPanelAnimation::DrawFrameNumberRibbon() {
-    ImGuiIO const& io = ImGui::GetIO();
-    RowDimensions const rowDimensions = AddRow(nullptr, {});
+
+    ImVec2 const canvasSize = ImGui::GetContentRegionAvail();
+    ImGui::InvisibleButton("frameRibbon_", ImVec2(canvasSize.x, m_rowHeight));
+    ImVec2 aMin = ImGui::GetItemRectMin();
+    ImVec2 aMax = ImGui::GetItemRectMax();
+
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+    //drawList->AddRectFilled(aMin, aMax, 0xFFFF3636, 0);
+
+    //
+    //RowDimensions const rowDimensions = AddRow(nullptr, {});
 
     // header frame number and lines
     int const minStep = 1;
@@ -286,36 +295,42 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
     }();
     int const minorFrameStep = majorFrameStep / 2;
 
+    ImVec2 const trackMin{ aMin.x + m_labelColumnWidth, aMin.y };
+    ImVec2 const trackMax{ aMax.x, aMax.y };
+    ImRect const trackBounds{ trackMin, trackMax };
+    float const trackOffset = -static_cast<int>(m_minFrame) * m_framePixelWidth;
+
     for (int i = m_minFrame; i <= m_maxFrame; ++i) {
         bool const majorTick = ((i % majorFrameStep) == 0) || (i == m_maxFrame || i == m_minFrame);
         bool const minorTick = (minorFrameStep > 0) && ((i % minorFrameStep) == 0);
-        float const px = rowDimensions.trackBounds.Min.x + i * m_framePixelWidth + rowDimensions.trackOffset;
+        float const px = trackMin.x + i * m_framePixelWidth + trackOffset;
         float const tickYOffset = majorTick ? 4.0f : (minorTick ? 10.0f : 14.0f);
 
         // frame edge ticks
-        if (px >= rowDimensions.trackBounds.Min.x && px <= rowDimensions.trackBounds.Max.x) {
-            ImVec2 const start{ px, m_scrollingPanelBounds.Min.y + tickYOffset };
-            ImVec2 const end{ px, m_scrollingPanelBounds.Min.y + m_rowHeight - 1 };
-            m_drawList->AddLine(start, end, 0xFF606060, 1);
+        if (px >= trackMin.x && px <= trackMax.x) {
+            ImVec2 const start{ px, trackMin.y + tickYOffset };
+            ImVec2 const end{ px, trackMax.y - 1 };
+            drawList->AddLine(start, end, 0xFF606060, 1);
 
             // frame numbers
             if (majorTick) {
                 static char tmps[32];
                 ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", i);
-                m_drawList->AddText(ImVec2(px + 3.f, m_scrollingPanelBounds.Min.y), 0xFFBBBBBB, tmps);
+                drawList->AddText(ImVec2(px + 3.f, trackMin.y), 0xFFBBBBBB, tmps);
             }
         }
     }
 
     // moving current frame
-    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && rowDimensions.trackBounds.Contains(io.MousePos)) {
+    ImGuiIO const& io = ImGui::GetIO();
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && trackBounds.Contains(io.MousePos)) {
         m_grabbedCurrentFrame = true;
     }
 
     float const frameCount = static_cast<float>(ImMax(m_maxFrame - m_minFrame, 1));
     if (m_grabbedCurrentFrame) {
         if (frameCount) {
-            m_currentFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
+            m_currentFrame = static_cast<int>((io.MousePos.x - trackBounds.Min.x + -trackOffset) / m_framePixelWidth);
             if (m_currentFrame < m_minFrame)
                 m_currentFrame = m_minFrame;
             if (m_currentFrame >= m_maxFrame)
@@ -325,6 +340,11 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
             m_grabbedCurrentFrame = false;
         }
     }
+
+    // calculate cursor rect (drawn later to be on top)
+    float const cursorLeft = trackBounds.Min.x + (m_currentFrame - m_minFrame) * m_framePixelWidth;
+    m_cursorRect.Min = { cursorLeft, trackBounds.Min.y };
+    m_cursorRect.Max = { cursorLeft + m_framePixelWidth + 1.0f, trackBounds.Min.y + canvasSize.y - m_horizontalScrollbarHeight };
 }
 
 bool EditorPanelAnimation::DrawClipPopup() {
@@ -783,20 +803,20 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
             int const frameNumber = (m_mouseDragging && selected) ? GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame)->mutableFrame : keyframe->m_frame;
 
-            float const frameStartOffset = frameNumber * m_framePixelWidth;
+            float const frameStartOffset = frameNumber * m_framePixelWidth + 1.0f;
             float const frameEndOffset = (frameNumber + 1) * m_framePixelWidth;
-            ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2 };
-            ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2 };
+            ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2.0f };
+            ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
             ImRect const frameBounds{ frameBoundsMin, frameBoundsMax };
-            m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 4);
+            m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
             
             if (io.KeyAlt) {
                 // alt will allow you to dupe drag the clip. so draw the original clip here if we're holding alt
-                float const frameStartOffset = keyframe->m_frame * m_framePixelWidth;
+                float const frameStartOffset = keyframe->m_frame * m_framePixelWidth + 1.0f;
                 float const frameEndOffset = (keyframe->m_frame + 1) * m_framePixelWidth;
                 ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2.0f };
                 ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
-                m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 4);
+                m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
             }
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -976,12 +996,10 @@ bool EditorPanelAnimation::IsAnyPopupOpen() const {
 
 void EditorPanelAnimation::DrawCursor() {
     if (m_currentFrame >= m_minFrame && m_currentFrame <= m_maxFrame) {
-        float const cursorLeft = m_scrollingPanelBounds.Min.x + m_labelColumnWidth + (m_currentFrame - m_minFrame) * m_framePixelWidth;
-        float const cursorOffset = cursorLeft + m_framePixelWidth / 2;
-        m_drawList->AddLine(ImVec2(cursorOffset, m_scrollingPanelBounds.Min.y), ImVec2(cursorOffset, m_scrollingPanelBounds.Max.y), 0xA02A2AFF, m_framePixelWidth - 1);
+        m_drawList->AddRectFilled(m_cursorRect.Min, m_cursorRect.Max, 0xA02A2AFF, 0.0f);
         char tmps[512];
         ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", m_currentFrame);
-        m_drawList->AddText(ImVec2(cursorLeft + 3.0f, m_scrollingPanelBounds.Min.y), 0xFFFFFFFF, tmps);
+        m_drawList->AddText(ImVec2(m_cursorRect.Min.x + 3.0f, m_cursorRect.Min.y), 0xFFFFFFFF, tmps);
     }
 }
 
@@ -1008,15 +1026,17 @@ void EditorPanelAnimation::DrawFrameRangeSettings() {
 void EditorPanelAnimation::DrawWidget() {
     m_group = m_editorLayer.GetRoot();
     SanitizeExtraData();
-    m_rowCounter = 0;
 
-    DrawFrameRangeSettings();
+    m_rowCounter = 0;
 
     m_minFrame = std::max(0, m_minFrame);
     m_currentFrame = std::min(m_totalFrames, m_currentFrame);
 
     m_windowBounds.Min = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     m_windowBounds.Max = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMax();
+
+    DrawFrameRangeSettings();
+    DrawFrameNumberRibbon();
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
     ImGui::PushStyleColor(ImGuiCol_FrameBg, 0);
@@ -1040,15 +1060,15 @@ void EditorPanelAnimation::DrawWidget() {
 
     m_drawList = ImGui::GetWindowDrawList();
 
-    DrawFrameNumberRibbon();
     DrawClipRow();
     DrawEventsRow();
     DrawTrackRows();
-    DrawCursor();
 
     ImGui::EndChildFrame();
     ImGui::PopStyleColor();
     ImGui::PopStyleVar();
+
+    DrawCursor();
 
     DrawHorizScrollBar();
 
