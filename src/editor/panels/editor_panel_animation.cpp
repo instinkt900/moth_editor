@@ -996,7 +996,6 @@ bool EditorPanelAnimation::IsAnyPopupOpen() const {
 
 void EditorPanelAnimation::DrawCursor() {
     if (m_currentFrame >= m_minFrame && m_currentFrame <= m_maxFrame) {
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
         m_drawList->AddRectFilled(m_cursorRect.Min, m_cursorRect.Max, 0xA02A2AFF, 0.0f);
         char tmps[512];
         ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", m_currentFrame);
