@@ -17,6 +17,11 @@ struct EditorConfig {
     moth_ui::IntVec2 CanvasSize{ 640, 480 };
     int CanvasGridSpacing = 10;
     int CanvasGridMajorFactor = 8;
+
+    int MinAnimationFrame = 0;
+    int MaxAnimationFrame = 100;
+    int TotalAnimationFrames = 300;
+    int CurrentAnimationFrame = 0;
 };
 
 inline void to_json(nlohmann::json& j, EditorConfig const& config) {
@@ -32,6 +37,10 @@ inline void to_json(nlohmann::json& j, EditorConfig const& config) {
     j["SelectionSliceColor"] = config.SelectionSliceColor;
     j["PreviewSourceRectColor"] = config.PreviewSourceRectColor;
     j["PreviewImageSliceColor"] = config.PreviewImageSliceColor;
+    j["MinAnimationFrame"] = config.MinAnimationFrame;
+    j["MaxAnimationFrame"] = config.MaxAnimationFrame;
+    j["TotalAnimationFrames"] = config.TotalAnimationFrames;
+    j["CurrentAnimationFrame"] = config.CurrentAnimationFrame;
 }
 
 inline void from_json(nlohmann::json j, EditorConfig& config) {
@@ -47,4 +56,9 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.SelectionSliceColor = j.value("SelectionSliceColor", config.SelectionSliceColor);
     config.PreviewSourceRectColor = j.value("PreviewSourceRectColor", config.PreviewSourceRectColor);
     config.PreviewImageSliceColor = j.value("PreviewImageSliceColor", config.PreviewImageSliceColor);
+    config.MinAnimationFrame = j.value("MinAnimationFrame", config.MinAnimationFrame);
+    config.MaxAnimationFrame = j.value("MaxAnimationFrame", config.MaxAnimationFrame);
+    config.TotalAnimationFrames = j.value("TotalAnimationFrames", config.TotalAnimationFrames);
+    config.CurrentAnimationFrame = j.value("CurrentAnimationFrame", config.CurrentAnimationFrame);
+
 }

@@ -33,6 +33,7 @@ public:
     virtual ~EditorPanelAnimation() = default;
 
     void OnLayoutLoaded() override;
+    void OnShutdown() override;
 
 private:
     void DrawContents() override;
@@ -180,6 +181,8 @@ private:
     ImRect m_scrollingPanelBounds;
     ImRect m_cursorRect;
     int m_rowCounter = 0;
+
+    nlohmann::json* m_persistentLayoutConfig = nullptr;
     
     ImVec2 TrackspaceToPanel(ImVec2 const& trackPos);
 };

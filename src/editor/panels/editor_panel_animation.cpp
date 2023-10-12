@@ -13,6 +13,7 @@
 #include "../actions/add_event_action.h"
 #include "../actions/delete_event_action.h"
 #include "../actions/modify_event_action.h"
+#include "moth_ui/layout/layout.h"
 #include "moth_ui/group.h"
 #include "moth_ui/layout/layout_entity_group.h"
 
@@ -28,15 +29,33 @@ EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visibl
 void EditorPanelAnimation::OnLayoutLoaded() {
     ClearSelections();
 
-    m_minFrame = 0;
-    m_maxFrame = 100;
-    m_totalFrames = 300;
-    m_currentFrame = 0;
-    m_hScrollFactors = { m_minFrame / static_cast<float>(m_totalFrames), m_maxFrame / static_cast<float>(m_totalFrames) };
-
     m_framePixelWidth = 10.f;
 
+    m_minFrame = m_editorLayer.GetConfig().MinAnimationFrame;
+    m_maxFrame = m_editorLayer.GetConfig().MaxAnimationFrame;
+    m_totalFrames = m_editorLayer.GetConfig().TotalAnimationFrames;
+    m_currentFrame = m_editorLayer.GetConfig().CurrentAnimationFrame;
+
+    auto layout = m_editorLayer.GetCurrentLayout();
+    auto& extraData = layout->GetExtraData();
+    m_persistentLayoutConfig = &extraData["animation_panel"];
+    if (!m_persistentLayoutConfig->is_null()) {
+        (*m_persistentLayoutConfig)["m_minFrame"].get_to(m_minFrame);
+        (*m_persistentLayoutConfig)["m_maxFrame"].get_to(m_maxFrame);
+        (*m_persistentLayoutConfig)["m_totalFrames"].get_to(m_totalFrames);
+        (*m_persistentLayoutConfig)["m_currentFrame"].get_to(m_currentFrame);
+    }
+    m_editorLayer.SetSelectedFrame(m_currentFrame);
+
+    m_hScrollFactors = { m_minFrame / static_cast<float>(m_totalFrames), m_maxFrame / static_cast<float>(m_totalFrames) };
     m_trackMetadata.clear();
+}
+
+void EditorPanelAnimation::OnShutdown() {
+    m_editorLayer.GetConfig().MinAnimationFrame = m_minFrame;
+    m_editorLayer.GetConfig().MaxAnimationFrame = m_maxFrame;
+    m_editorLayer.GetConfig().TotalAnimationFrames = m_totalFrames;
+    m_editorLayer.GetConfig().CurrentAnimationFrame = m_currentFrame;
 }
 
 void EditorPanelAnimation::DrawContents() {
@@ -1031,6 +1050,14 @@ void EditorPanelAnimation::DrawWidget() {
 
     m_minFrame = std::max(0, m_minFrame);
     m_currentFrame = std::min(m_totalFrames, m_currentFrame);
+
+    // keep these up to date
+    if (m_persistentLayoutConfig) {
+        (*m_persistentLayoutConfig)["m_minFrame"] = m_minFrame;
+        (*m_persistentLayoutConfig)["m_maxFrame"] = m_maxFrame;
+        (*m_persistentLayoutConfig)["m_currentFrame"] = m_currentFrame;
+        (*m_persistentLayoutConfig)["m_totalFrames"] = m_totalFrames;
+    }
 
     m_windowBounds.Min = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     m_windowBounds.Max = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMax();
