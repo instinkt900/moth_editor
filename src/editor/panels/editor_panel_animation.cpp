@@ -296,10 +296,6 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
     ImVec2 aMax = ImGui::GetItemRectMax();
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
-    //drawList->AddRectFilled(aMin, aMax, 0xFFFF3636, 0);
-
-    //
-    //RowDimensions const rowDimensions = AddRow(nullptr, {});
 
     // header frame number and lines
     int const minStep = 1;
@@ -449,7 +445,7 @@ void EditorPanelAnimation::DrawClipRow() {
 
     // cancel pending selection clear if we click in a popup
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
-        m_pendingClearSelection = false;
+        m_clickConsumed = true;
     }
 
     m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max, true);
@@ -511,7 +507,7 @@ void EditorPanelAnimation::DrawClipRow() {
                         }
 
                         SelectClip(clip.get());
-                        m_pendingClearSelection = false;
+                        m_clickConsumed = true;
 
                         // action logic
                         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -602,7 +598,7 @@ void EditorPanelAnimation::DrawEventsRow() {
 
     // cancel pending selection clear if we click in a popup
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
-        m_pendingClearSelection = false;
+        m_clickConsumed = true;
     }
 
     m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max, true);
@@ -649,7 +645,7 @@ void EditorPanelAnimation::DrawEventsRow() {
 
                 // clicked on a keyframe with left or right mouse buttons
                 SelectEvent(event.get());
-                m_pendingClearSelection = false;
+                m_clickConsumed = true;
 
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                     // left mouse clicks can grab selected keyframes
@@ -817,8 +813,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         float const trackStartOffsetY = subTrackBounds.Min.y;
 
         for (auto& keyframe : track->m_keyframes) {
-            bool const selected = IsKeyframeSelected(childEntity, target, keyframe->m_frame);
-            unsigned int const slotColor = selected ? keyframeColorSelected : keyframeColor;
+            bool selected = IsKeyframeSelected(childEntity, target, keyframe->m_frame);
 
             int const frameNumber = (m_mouseDragging && selected) ? GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame)->mutableFrame : keyframe->m_frame;
 
@@ -827,8 +822,17 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2.0f };
             ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
             ImRect const frameBounds{ frameBoundsMin, frameBoundsMax };
-            m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
             
+            if (m_boxSelecting) {
+                if (frameBounds.Overlaps(m_selectBox)) {
+                    m_pendingBoxSelections.push_back(KeyframeContext{ childEntity, target, keyframe->m_frame });
+                    selected = true;
+                }
+            }
+
+            unsigned int const slotColor = selected ? keyframeColorSelected : keyframeColor;
+            m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
+
             if (io.KeyAlt) {
                 // alt will allow you to dupe drag the clip. so draw the original clip here if we're holding alt
                 float const frameStartOffset = keyframe->m_frame * m_framePixelWidth + 1.0f;
@@ -852,7 +856,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
                     // clicked on a keyframe with left or right mouse buttons
                     SelectKeyframe(childEntity, target, keyframe->m_frame);
-                    m_pendingClearSelection = false;
+                    m_clickConsumed = true;
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                         // left mouse clicks can grab selected keyframes
@@ -871,13 +875,6 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                     }
                 }
             }
-
-            // hmm
-            // if (DoBoxSelect) {
-            //     if (keyRect.Overlaps(boxSelectBox)) {
-            //         SelectKeyframe(childEntity, target, keyframe.m_frame);
-            //     }
-            // }
         }
 
         m_drawList->PopClipRect();
@@ -889,7 +886,7 @@ void EditorPanelAnimation::DrawTrackRows() {
 
     // cancel pending selection clear if we click in a popup
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
-        m_pendingClearSelection = false;
+        m_clickConsumed = true;
     }
 
     int childIndex = 0;
@@ -1081,15 +1078,49 @@ void EditorPanelAnimation::DrawWidget() {
     // clicking on blank track area will clear the selection.
     // clickable objects will reset this value if they are interacted with.
     ImRect trackAreaBounds;
-    trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y + m_rowHeight };
+    trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y };
     trackAreaBounds.Max = m_scrollingPanelBounds.Max;
-    m_pendingClearSelection = trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+    m_clickConsumed = !(trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left));
 
     m_drawList = ImGui::GetWindowDrawList();
+
+    m_pendingBoxSelections.clear();
 
     DrawClipRow();
     DrawEventsRow();
     DrawTrackRows();
+
+    if (!m_clickConsumed) {
+        m_selectBoxStart = ImGui::GetMousePos();
+        m_boxSelectStarted = true;
+    }
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+        if (m_boxSelectStarted) {
+            m_selectBoxEnd = ImGui::GetMousePos();
+
+            m_selectBox.Min.x = std::min(m_selectBoxStart.x, m_selectBoxEnd.x);
+            m_selectBox.Min.y = std::min(m_selectBoxStart.y, m_selectBoxEnd.y);
+            m_selectBox.Max.x = std::max(m_selectBoxStart.x, m_selectBoxEnd.x);
+            m_selectBox.Max.y = std::max(m_selectBoxStart.y, m_selectBoxEnd.y);
+
+            if (m_selectBox.GetArea() > 30) {
+                m_boxSelecting = true;
+            }
+
+            if (m_boxSelecting) {
+                m_drawList->AddRect(m_selectBox.Min, m_selectBox.Max, 0xFF00FFFF);
+            }
+        }
+    } else {
+        m_boxSelectStarted = false;
+        m_boxSelecting = false;
+
+        // commit selections
+        for (auto& pendingSelection : m_pendingBoxSelections) {
+            SelectKeyframe(pendingSelection.entity, pendingSelection.target, pendingSelection.mutableFrame);
+        }
+    }
 
     ImGui::EndChildFrame();
     ImGui::PopStyleColor();
@@ -1102,7 +1133,8 @@ void EditorPanelAnimation::DrawWidget() {
     m_drawList = nullptr;
 
     // now we clear selections if nothing reset this bool
-    if (m_pendingClearSelection) {
+    auto& io = ImGui::GetIO();
+    if (!m_clickConsumed && !io.KeyCtrl) {
         ClearSelections();
     }
 
