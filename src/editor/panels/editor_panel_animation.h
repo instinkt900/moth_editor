@@ -77,6 +77,7 @@ private:
 
     using ElementContext = std::variant<ClipContext, EventContext, KeyframeContext>;
     std::vector<ElementContext> m_selections;
+    std::vector<KeyframeContext> m_pendingBoxSelections;
 
     void ClearSelections();
     void DeleteSelections();
@@ -152,7 +153,7 @@ private:
     float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
     int m_clipDragHandle = -1;              // section of the clip we're dragging. left/center/right
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
-    bool m_pendingClearSelection = false;   // true if we clicked and nothing responded to it
+    bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
     bool m_grabbedCurrentFrame = false;     // draging the current frame indicator
 
     int m_clickedChildIdx = -1;
@@ -185,4 +186,10 @@ private:
     nlohmann::json* m_persistentLayoutConfig = nullptr;
     
     ImVec2 TrackspaceToPanel(ImVec2 const& trackPos);
+
+    bool m_boxSelectStarted = false;
+    bool m_boxSelecting = false;
+    ImVec2 m_selectBoxStart;
+    ImVec2 m_selectBoxEnd;
+    ImRect m_selectBox;
 };
