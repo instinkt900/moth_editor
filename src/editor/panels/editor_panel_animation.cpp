@@ -3,6 +3,7 @@
 #include "../editor_layer.h"
 #include "../utils.h"
 #include "../actions/composite_action.h"
+#include "../actions/add_clip_action.h"
 #include "../actions/modify_clip_action.h"
 #include "../actions/move_keyframe_action.h"
 #include "../actions/add_keyframe_action.h"
@@ -1147,25 +1148,37 @@ void EditorPanelAnimation::UpdateMouseDragging() {
         }
 
         if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+            // commit actions
             m_mouseDragging = false;
+
+            // move the original element to the new position
+            // end if we hold alt down here we add a new element into the originals place.
+            // this way we dont have to juggle with selections and the moved elements
+            // remain selected.
 
             auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
             auto compositeAction = std::make_unique<CompositeAction>();
             for (auto& context : m_selections) {
                 if (auto clipContext = std::get_if<ClipContext>(&context)) {
                     if (clipContext->clip->m_startFrame != clipContext->mutableValue.m_startFrame || clipContext->clip->m_endFrame != clipContext->mutableValue.m_endFrame) {
-                        auto moveAction = std::make_unique<ModifyClipAction>(groupEntity, *clipContext->clip, clipContext->mutableValue);
-                        compositeAction->GetActions().push_back(std::move(moveAction));
+                        compositeAction->GetActions().push_back(std::make_unique<ModifyClipAction>(groupEntity, *clipContext->clip, clipContext->mutableValue));
+                        if (ImGui::GetIO().KeyAlt) {
+                            compositeAction->GetActions().push_back(std::make_unique<AddClipAction>(groupEntity, *clipContext->clip));
+                        }
                     }
                 } else if (auto eventContext = std::get_if<EventContext>(&context)) {
                     if (eventContext->event->m_frame != eventContext->mutableValue.m_frame) {
-                        auto moveAction = std::make_unique<ModifyEventAction>(groupEntity, *eventContext->event, eventContext->mutableValue);
-                        compositeAction->GetActions().push_back(std::move(moveAction));
+                        compositeAction->GetActions().push_back(std::make_unique<ModifyEventAction>(groupEntity, *eventContext->event, eventContext->mutableValue));
+                        if (ImGui::GetIO().KeyAlt) {
+                            compositeAction->GetActions().push_back(std::make_unique<AddEventAction>(groupEntity, eventContext->event->m_frame, eventContext->event->m_name));
+                        }
                     }
                 } else if (auto keyframeContext = std::get_if<KeyframeContext>(&context)) {
                     if (keyframeContext->current->m_frame != keyframeContext->mutableFrame) {
-                        auto moveAction = std::make_unique<MoveKeyframeAction>(keyframeContext->entity, keyframeContext->target, keyframeContext->current->m_frame, keyframeContext->mutableFrame);
-                        compositeAction->GetActions().push_back(std::move(moveAction));
+                        compositeAction->GetActions().push_back(std::make_unique<MoveKeyframeAction>(keyframeContext->entity, keyframeContext->target, keyframeContext->current->m_frame, keyframeContext->mutableFrame));
+                        if (ImGui::GetIO().KeyAlt) {
+                            compositeAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(keyframeContext->entity, keyframeContext->target, keyframeContext->current->m_frame, keyframeContext->current->m_value, keyframeContext->current->m_interpType));
+                        }
                     }
                 }
             }
