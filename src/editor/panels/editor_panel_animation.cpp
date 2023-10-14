@@ -27,6 +27,11 @@ EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visibl
     : EditorPanel(editorLayer, "Animation", visible, true) {
 }
 
+void EditorPanelAnimation::OnNewLayout() {
+    m_currentFrame = 0;
+    m_editorLayer.GetConfig().CurrentAnimationFrame = 0;
+}
+
 void EditorPanelAnimation::OnLayoutLoaded() {
     ClearSelections();
 

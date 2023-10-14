@@ -131,10 +131,14 @@ private:
 
     void UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize);
 
+    void BeginSelectionGrab(moth_ui::IntVec2 const& worldPosition);
+    void EndSelectionGrab();
+
     void OnMouseClicked(moth_ui::IntVec2 const& appPosition);
     void OnMouseReleased(moth_ui::IntVec2 const& appPosition);
     void OnMouseMoved(moth_ui::IntVec2 const& appPosition);
 
+    std::shared_ptr<moth_ui::Node> GetAtPoint(moth_ui::IntVec2 const& selectionPoint);
     void SelectInRect(moth_ui::IntRect const& selectionRect);
 
     void UpdateInput();
