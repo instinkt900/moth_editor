@@ -32,6 +32,7 @@ public:
     EditorPanelAnimation(EditorLayer& editorLayer, bool visible);
     virtual ~EditorPanelAnimation() = default;
 
+    void OnNewLayout() override;
     void OnLayoutLoaded() override;
     void OnShutdown() override;
 

@@ -285,6 +285,7 @@ void EditorLayer::NewLayout(bool discard) {
         m_lockedNodes.clear();
         Rebuild();
         for (auto&& [panelId, panel] : m_panels) {
+            panel->OnNewLayout();
             panel->OnLayoutLoaded();
         }
     }
@@ -428,7 +429,7 @@ void EditorLayer::MenuFuncSaveLayoutAs() {
 void EditorLayer::CopyEntity() {
     m_copiedEntities.clear();
     for (auto&& node : m_selection) {
-        m_copiedEntities.push_back(node->GetLayoutEntity());
+        m_copiedEntities.push_back(node->GetLayoutEntity()->Clone(moth_ui::LayoutEntity::CloneType::Deep));
     }
 }
 

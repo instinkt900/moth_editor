@@ -86,7 +86,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
     m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(ImGui::GetWindowPos().x), static_cast<int>(ImGui::GetWindowPos().y) };
     m_canvasWindowSize = windowSize;
 
-    //auto const oldRenderTarget = graphics.GetTarget();
+    // auto const oldRenderTarget = graphics.GetTarget();
     graphics.SetTarget(m_displayTexture.get());
 
     auto const& canvasSize = m_editorLayer.GetConfig().CanvasSize;
@@ -235,20 +235,52 @@ void EditorPanelCanvas::ResetView() {
     m_canvasZoom = 100;
 }
 
+void EditorPanelCanvas::BeginSelectionGrab(moth_ui::IntVec2 const& worldPosition) {
+    m_holdingSelection = true;
+    m_grabPosition = SnapToGrid(worldPosition);
+    m_editorLayer.BeginEditBounds();
+}
+
+void EditorPanelCanvas::EndSelectionGrab() {
+    m_editorLayer.EndEditBounds();
+    m_holdingSelection = false;
+}
+
 void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
     bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseDown(moth_ui::MouseButton::Left, appPosition));
 
     if (!handled && !m_holdingSelection) {
         auto const worldPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(appPosition);
-        auto const selection = m_editorLayer.GetSelection();
-        for (auto&& node : selection) {
-            if (node->IsInBounds(worldPosition)) {
-                m_holdingSelection = true;
-                m_grabPosition = SnapToGrid(worldPosition);
-                m_editorLayer.BeginEditBounds();
-                //handled = true;
-                break;
+
+        // grab the node we clicked on, if any
+        auto clickedNode = GetAtPoint(worldPosition);
+
+        bool clickedSelection = false;
+
+        if (!m_editorLayer.IsSelected(clickedNode)) {
+            if (!ImGui::GetIO().KeyCtrl) {
+                m_editorLayer.ClearSelection();
             }
+            if (clickedNode) {
+                m_editorLayer.AddSelection(clickedNode);
+                clickedSelection = true;
+            }
+        } else {
+            // next see if we clicked on an existing selection
+            auto const selection = m_editorLayer.GetSelection();
+            for (auto&& node : selection) {
+                if (node->IsInBounds(worldPosition)) {
+                    // clicked on an existing selection
+                    clickedSelection = true;
+                    break;
+                }
+            }
+        }
+
+        if (clickedSelection) {
+            // clicked something that is selected now. begin possible move
+            BeginSelectionGrab(worldPosition);
+            handled = true;
         }
     }
 
@@ -263,8 +295,7 @@ void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
     bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseUp(moth_ui::MouseButton::Left, appPosition));
 
     if (m_holdingSelection) {
-        m_editorLayer.EndEditBounds();
-        m_holdingSelection = false;
+        EndSelectionGrab();
     }
 
     if (!handled && m_dragSelecting) {
@@ -312,21 +343,31 @@ void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
     }
 }
 
+std::shared_ptr<moth_ui::Node> EditorPanelCanvas::GetAtPoint(moth_ui::IntVec2 const& selectionPoint) {
+    auto const& children = m_editorLayer.GetRoot()->GetChildren();
+    for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
+        auto const& child = *it;
+        if (child->IsVisible() && !m_editorLayer.IsLocked(child)) {
+            auto const& screenRect = child->GetScreenRect();
+            if (moth_ui::IsInRect(selectionPoint, screenRect)) {
+                return child;
+            }
+        }
+    }
+    return nullptr;
+}
+
 void EditorPanelCanvas::SelectInRect(moth_ui::IntRect const& selectionRect) {
-    bool const single = selectionRect.w() <= 3 || selectionRect.h() <= 3;
     auto const& children = m_editorLayer.GetRoot()->GetChildren();
     for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
         auto const& child = *it;
         if (child->IsVisible() && !m_editorLayer.IsLocked(child)) {
             auto const& screenRect = child->GetScreenRect();
             if (moth_ui::Intersects(selectionRect, screenRect)) {
-                if (single && m_editorLayer.IsSelected(child)) {
+                if (m_editorLayer.IsSelected(child)) {
                     m_editorLayer.RemoveSelection(child);
                 } else {
                     m_editorLayer.AddSelection(child);
-                }
-                if (single) {
-                    break;
                 }
             }
         }

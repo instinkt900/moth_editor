@@ -26,6 +26,7 @@ public:
     bool IsExposed() const { return m_exposed; }
     bool IsFocused() const { return m_focused; }
 
+    virtual void OnNewLayout() {}
     virtual void OnLayoutLoaded() {}
     virtual void OnShutdown() {}
 
