@@ -156,6 +156,7 @@ private:
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
     bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
     bool m_grabbedCurrentFrame = false;     // draging the current frame indicator
+    bool m_mouseInScrollArea = false;       // true when the mouse is within the scrolling tracks area
 
     int m_clickedChildIdx = -1;
     moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
