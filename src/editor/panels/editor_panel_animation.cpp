@@ -502,7 +502,7 @@ void EditorPanelAnimation::DrawClipRow() {
             if (io.MousePos.x >= rowDimensions.trackBounds.Min.x && io.MousePos.x <= rowDimensions.trackBounds.Max.x) {
                 for (int j = 0; j < 3; j++) {
                     ImRect const& rc = rects[j];
-                    if (!rc.Contains(io.MousePos))
+                    if (!m_mouseInScrollArea || !rc.Contains(io.MousePos))
                         continue;
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -535,7 +535,7 @@ void EditorPanelAnimation::DrawClipRow() {
     m_drawList->PopClipRect();
 
     // detect popup click
-    if (rowDimensions.trackBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (m_mouseInScrollArea && rowDimensions.trackBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
         ImGui::OpenPopup("clip_popup");
     }
@@ -644,7 +644,7 @@ void EditorPanelAnimation::DrawEventsRow() {
         }
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-            if (eventBounds.Contains(io.MousePos)) {
+            if (m_mouseInScrollArea && eventBounds.Contains(io.MousePos)) {
                 if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
                     ClearSelections();
                 }
@@ -666,7 +666,7 @@ void EditorPanelAnimation::DrawEventsRow() {
 
     // if we right clicked on this track we pop up a context dialog
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        if (rowDimensions.trackBounds.Contains(io.MousePos)) {
+        if (m_mouseInScrollArea && rowDimensions.trackBounds.Contains(io.MousePos)) {
             m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
             ImGui::OpenPopup(EventPopupName);
         }
@@ -784,14 +784,14 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
     RowDimensions const rowDimensions = AddRow(GetChildLabel(childIndex), rowOptions);
 
     // expanding and unexpanding
-    if (rowDimensions.buttonBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    if (m_mouseInScrollArea && rowDimensions.buttonBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         expanded = !expanded;
     }
 
     SetExpanded(child, expanded);
 
     // selecting the entity for the track
-    if (rowDimensions.labelBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+    if (m_mouseInScrollArea && rowDimensions.labelBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         if (!io.KeyCtrl) { // holding ctrl will let you add to the selection. otherwise we clear it before making the selection
             m_editorLayer.ClearSelection();
         }
@@ -849,7 +849,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             }
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                if (frameBounds.Contains(io.MousePos)) {
+                if (m_mouseInScrollArea && frameBounds.Contains(io.MousePos)) {
                     if (!IsKeyframeSelected(childEntity, target, keyframe->m_frame)) {
                         if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
                             if (expanded) {
@@ -873,7 +873,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
                 // if we right clicked on this track we pop up a context dialog
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                    if (subTrackBounds.Contains(io.MousePos)) {
+                    if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                         m_clickedChildIdx = childIndex;
                         m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
                         m_clickedFrame = static_cast<int>((io.MousePos.x - subTrackBounds.Min.x + rowDimensions.trackOffset) / m_framePixelWidth);
@@ -1076,7 +1076,9 @@ void EditorPanelAnimation::DrawWidget() {
     int const targetRowCount = CalcNumRows();
     float const panelHeight = m_rowHeight * targetRowCount;
     float const vScrollBarWidth = panelHeight > canvasSize.y ? m_verticalScrollbarWidth : 0.0f;
-    ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x, canvasSize.y - m_horizontalScrollbarHeight });
+    ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x - vScrollBarWidth, canvasSize.y - m_horizontalScrollbarHeight });
+    ImRect const frameRect = { ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize() };
+    m_mouseInScrollArea = frameRect.Contains(ImGui::GetMousePos());
     ImGui::InvisibleButton("contentBar", ImVec2(canvasSize.x - vScrollBarWidth, static_cast<float>(panelHeight)));
     m_scrollingPanelBounds.Min = ImGui::GetItemRectMin();
     m_scrollingPanelBounds.Max = ImGui::GetItemRectMax();
@@ -1086,6 +1088,7 @@ void EditorPanelAnimation::DrawWidget() {
     ImRect trackAreaBounds;
     trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y };
     trackAreaBounds.Max = m_scrollingPanelBounds.Max;
+    
     m_clickConsumed = !(trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left));
 
     m_drawList = ImGui::GetWindowDrawList();
@@ -1096,7 +1099,7 @@ void EditorPanelAnimation::DrawWidget() {
     DrawEventsRow();
     DrawTrackRows();
 
-    if (!m_clickConsumed) {
+    if (m_mouseInScrollArea && !m_clickConsumed) {
         m_selectBoxStart = ImGui::GetMousePos();
         m_boxSelectStarted = true;
     }
