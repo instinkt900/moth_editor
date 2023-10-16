@@ -4,7 +4,8 @@
 #include "sdl/sdl_app.h"
 #include "events/event.h"
 
-#define USE_VULKAN
+//#define USE_VULKAN
+#define USE_SDL
 
 class EditorApplication
 #if defined(USE_SDL)
