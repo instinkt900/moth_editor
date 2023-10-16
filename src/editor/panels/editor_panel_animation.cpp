@@ -848,7 +848,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                 m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
             }
 
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            if (!m_grabbedCurrentFrame && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right))) {
                 if (frameBounds.Contains(io.MousePos)) {
                     if (!IsKeyframeSelected(childEntity, target, keyframe->m_frame)) {
                         if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
@@ -1086,7 +1086,7 @@ void EditorPanelAnimation::DrawWidget() {
     ImRect trackAreaBounds;
     trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y };
     trackAreaBounds.Max = m_scrollingPanelBounds.Max;
-    m_clickConsumed = !(trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left));
+    m_clickConsumed = !m_grabbedCurrentFrame  && !(trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left));
 
     m_drawList = ImGui::GetWindowDrawList();
 
