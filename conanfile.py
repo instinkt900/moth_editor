@@ -7,7 +7,7 @@ class Editor(ConanFile):
 	generators = "CMakeToolchain", "CMakeDeps"
 
 	def requirements(self):
-		self.requires("sdl/2.26.5")
+		self.requires("sdl/2.28.3")
 		self.requires("sdl_image/2.0.5")
 		self.requires("sdl_ttf/2.20.2")
 		self.requires("nlohmann_json/3.11.2")
@@ -26,3 +26,5 @@ class Editor(ConanFile):
 		if self.settings.os == "Linux":
 			self.requires("libalsa/1.2.10", override=True)
 			self.requires("wayland/1.22.0", override=True)
+
+		...
