@@ -3,8 +3,6 @@
 #include "editor_panel.h"
 #include "moth_ui/animation_track.h"
 #include "moth_ui/animation_clip.h"
-#include "../imgui_ext_focus.h"
-#include "../keyframe_context.h"
 #include "imgui_internal.h"
 
 // highly adapted from ImSequencer
