@@ -10,9 +10,12 @@ public:
     void OnLayoutLoaded() override;
 
 private:
+    bool BeginPanel() override;
+    void EndPanel() override;
     void DrawContents() override;
 
-    moth_ui::Node* m_lastSelection = nullptr;
+    std::shared_ptr<moth_ui::Node> m_currentSelection = nullptr;
+    std::shared_ptr<moth_ui::Node> m_lastSelection = nullptr;
 
     void DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren = true);
     void DrawCommonProperties(std::shared_ptr<moth_ui::Node> node);
