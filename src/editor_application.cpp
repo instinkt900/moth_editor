@@ -21,10 +21,22 @@ EditorApplication::EditorApplication()
         }
 
         if (!m_persistentState.is_null()) {
+            auto const oldPos = m_windowPos;
+            auto const oldWidth = m_windowWidth;
+            auto const oldHeight = m_windowHeight;
             m_windowPos = m_persistentState.value("window_pos", m_windowPos);
             m_windowWidth = m_persistentState.value("window_width", m_windowWidth);
             m_windowHeight = m_persistentState.value("window_height", m_windowHeight);
             m_windowMaximized = m_persistentState.value("window_maximized", m_windowMaximized);
+            if (m_windowPos.x <= 0 || m_windowPos.y <= 0) {
+                m_windowPos = oldPos;
+            }
+            if (m_windowWidth <= 0) {
+                m_windowWidth = oldWidth;
+            }
+            if (m_windowHeight <= 0) {
+                m_windowHeight = oldHeight;
+            }
         }
     }
 

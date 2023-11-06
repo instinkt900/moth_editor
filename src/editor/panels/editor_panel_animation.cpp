@@ -1075,11 +1075,10 @@ void EditorPanelAnimation::DrawWidget() {
     ImVec2 const canvasSize = ImGui::GetContentRegionAvail();
     int const targetRowCount = CalcNumRows();
     float const panelHeight = m_rowHeight * targetRowCount;
-    float const vScrollBarWidth = panelHeight > canvasSize.y ? m_verticalScrollbarWidth : 0.0f;
-    ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x - vScrollBarWidth, canvasSize.y - m_horizontalScrollbarHeight });
+    ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x, canvasSize.y - m_horizontalScrollbarHeight });
     ImRect const frameRect = { ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize() };
     m_mouseInScrollArea = frameRect.Contains(ImGui::GetMousePos());
-    ImGui::InvisibleButton("contentBar", ImVec2(canvasSize.x - vScrollBarWidth, static_cast<float>(panelHeight)));
+    ImGui::InvisibleButton("contentBar", ImVec2(canvasSize.x - m_verticalScrollbarWidth, static_cast<float>(panelHeight)));
     m_scrollingPanelBounds.Min = ImGui::GetItemRectMin();
     m_scrollingPanelBounds.Max = ImGui::GetItemRectMax();
 
