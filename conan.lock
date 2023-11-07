@@ -92,8 +92,8 @@
             "libalsa/1.2.10"
         ],
         "wayland/1.22.0": [
-            "wayland/1.22.0",
-            null
+            null,
+            "wayland/1.22.0"
         ]
     }
 }

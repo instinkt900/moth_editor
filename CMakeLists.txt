@@ -13,6 +13,7 @@ endif()
 
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS _ITERATOR_DEBUG_LEVEL=0 IMGUI_DEFINE_MATH_OPERATORS)
 
+add_subdirectory(../external/nativefiledialog nativefiledialog)
 add_subdirectory(../external/harfbuzz-icu-freetype harfbuzz-icu-freetype)
 add_subdirectory(../backends moth_ui_backends)
 
@@ -101,6 +102,7 @@ target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
 target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
 target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
 target_link_libraries(${PROJECT_NAME} harfbuzz)
+target_link_libraries(${PROJECT_NAME} nativefiledialog)
 
 if (MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
