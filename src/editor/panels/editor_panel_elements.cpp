@@ -10,19 +10,9 @@
 #include "moth_ui/group.h"
 #include "../element_utils.h"
 
-#include "imgui-filebrowser/imfilebrowser.h"
+#include <nfd.h>
 
 namespace {
-    enum class FileOpenMode {
-        Unknown,
-        SubLayout,
-        Image,
-        NineSlice,
-    };
-
-    ImGui::FileBrowser s_fileBrowser;
-    FileOpenMode s_fileOpenMode = FileOpenMode::Unknown;
-
     std::vector<std::pair<char const*, std::function<void(EditorLayer&)>>> ElementButtons = {
         {
             "Rect",
@@ -31,21 +21,47 @@ namespace {
         {
             "Image",
             [](EditorLayer& editorLayer) {
-                s_fileBrowser.SetTitle("Open..");
-                s_fileBrowser.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
-                s_fileBrowser.SetPwd();
-                s_fileBrowser.Open();
-                s_fileOpenMode = FileOpenMode::Image;
+                auto const currentPath = std::filesystem::current_path().string();
+                nfdchar_t* outPath = NULL;
+                nfdresult_t result = NFD_OpenDialog("jpg,jpeg,png,bmp", currentPath.c_str(), &outPath);
+
+                if (result == NFD_OKAY) {
+                    std::filesystem::path filePath = outPath;
+                    moth_ui::LayoutRect bounds;
+                    bounds.anchor.topLeft = { 0, 0 };
+                    bounds.anchor.bottomRight = { 0, 0 };
+                    bounds.offset.topLeft = { 0, 0 };
+                    bounds.offset.bottomRight = { 100, 100 };
+                    AddEntityWithBounds<moth_ui::LayoutEntityImage>(editorLayer, bounds, filePath);
+                }
             },
         },
         {
             "Sublayout",
             [](EditorLayer& editorLayer) {
-                s_fileBrowser.SetTitle("Open..");
-                s_fileBrowser.SetTypeFilters({ moth_ui::Layout::Extension });
-                s_fileBrowser.SetPwd();
-                s_fileBrowser.Open();
-                s_fileOpenMode = FileOpenMode::SubLayout;
+                auto const currentPath = std::filesystem::current_path().string();
+                nfdchar_t* outPath = NULL;
+                nfdresult_t result = NFD_OpenDialog(moth_ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
+
+                if (result == NFD_OKAY) {
+                    std::filesystem::path filePath = outPath;
+                    std::shared_ptr<moth_ui::Layout> referencedLayout;
+                    auto const loadResult = moth_ui::Layout::Load(filePath, &referencedLayout);
+                    if (loadResult == moth_ui::Layout::LoadResult::Success) {
+                        moth_ui::LayoutRect bounds;
+                        bounds.anchor.topLeft = { 0, 0 };
+                        bounds.anchor.bottomRight = { 0, 0 };
+                        bounds.offset.topLeft = { 0, 0 };
+                        bounds.offset.bottomRight = { 100, 100 };
+                        AddEntityWithBounds<moth_ui::LayoutEntityRef>(editorLayer, bounds, *referencedLayout);
+                    } else {
+                        if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
+                            editorLayer.ShowError("File not found.");
+                        } else if (loadResult == moth_ui::Layout::LoadResult::IncorrectFormat) {
+                            editorLayer.ShowError("File was not valid.");
+                        }
+                    }
+                }
             },
         },
         {
@@ -64,38 +80,6 @@ EditorPanelElements::EditorPanelElements(EditorLayer& editorLayer, bool visible)
 }
 
 void EditorPanelElements::DrawContents() {
-
-    s_fileBrowser.Display();
-    if (s_fileBrowser.HasSelected()) {
-        if (s_fileOpenMode == FileOpenMode::SubLayout) {
-            std::shared_ptr<moth_ui::Layout> referencedLayout;
-            auto const loadResult = moth_ui::Layout::Load(s_fileBrowser.GetSelected(), &referencedLayout);
-            if (loadResult == moth_ui::Layout::LoadResult::Success) {
-                moth_ui::LayoutRect bounds;
-                bounds.anchor.topLeft = { 0, 0 };
-                bounds.anchor.bottomRight = { 0, 0 };
-                bounds.offset.topLeft = { 0, 0 };
-                bounds.offset.bottomRight = { 100, 100 };
-                AddEntityWithBounds<moth_ui::LayoutEntityRef>(m_editorLayer, bounds, *referencedLayout);
-            } else {
-                if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
-                    m_editorLayer.ShowError("File not found.");
-                } else if (loadResult == moth_ui::Layout::LoadResult::IncorrectFormat) {
-                    m_editorLayer.ShowError("File was not valid.");
-                }
-            }
-            s_fileBrowser.ClearSelected();
-        } else if (s_fileOpenMode == FileOpenMode::Image) {
-            moth_ui::LayoutRect bounds;
-            bounds.anchor.topLeft = { 0, 0 };
-            bounds.anchor.bottomRight = { 0, 0 };
-            bounds.offset.topLeft = { 0, 0 };
-            bounds.offset.bottomRight = { 100, 100 };
-            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, s_fileBrowser.GetSelected());
-            s_fileBrowser.ClearSelected();
-        }
-    }
-
     ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
     ImGui::GetWindowPos();
     ImGui::GetWindowContentRegionMin();

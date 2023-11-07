@@ -2,18 +2,7 @@
 #include "editor_panel_fonts.h"
 #include "moth_ui/context.h"
 
-#include "imgui-filebrowser/imfilebrowser.h"
-
-namespace {
-    enum class FileDialogMode {
-        UNKNOWN,
-        LOAD_FONT_LIST,
-        SAVE_FONT_LIST,
-        ADD_FONT,
-    };
-    static ImGui::FileBrowser s_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename);
-    FileDialogMode s_fileMode = FileDialogMode::UNKNOWN;
-}
+#include <nfd.h>
 
 EditorPanelFonts::EditorPanelFonts(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Fonts", visible, true) {
@@ -27,26 +16,41 @@ void EditorPanelFonts::DrawContents() {
     auto const windowWidth = ImGui::GetWindowContentRegionWidth();
     auto const buttonSize = ImVec2{ windowWidth / 2.0f - 5, 20 };
     if (ImGui::Button("Load List", buttonSize)) {
-        s_fileMode = FileDialogMode::LOAD_FONT_LIST;
-        s_fileDialog.SetTitle("Load list..");
-        s_fileDialog.SetTypeFilters({ ".json" });
-        s_fileDialog.SetPwd();
-        s_fileDialog.Open();
+        auto const currentPath = std::filesystem::current_path().string();
+        nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog("json", currentPath.c_str(), &outPath);
+
+        if (result == NFD_OKAY) {
+            std::filesystem::path filePath = outPath;
+            fontFactory.LoadProject(filePath);
+            fontNames = fontFactory.GetFontNameList();
+        }
     }
     ImGui::SameLine();
     if (ImGui::Button("Save List", buttonSize)) {
-        s_fileMode = FileDialogMode::SAVE_FONT_LIST;
-        s_fileDialog.SetTitle("Save list..");
-        s_fileDialog.SetTypeFilters({ ".json" });
-        s_fileDialog.SetPwd();
-        s_fileDialog.Open();
+        auto const currentPath = std::filesystem::current_path().string();
+        nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_SaveDialog("json", currentPath.c_str(), &outPath);
+
+        if (result == NFD_OKAY) {
+            std::filesystem::path filePath = outPath;
+            if (!filePath.has_extension()) {
+                filePath.replace_extension(".json");
+            }
+            fontFactory.SaveProject(filePath);
+        }
     }
     if (ImGui::Button("Add Font", buttonSize)) {
-        s_fileMode = FileDialogMode::ADD_FONT;
-        s_fileDialog.SetTitle("Select font..");
-        s_fileDialog.SetTypeFilters({ ".ttf" });
-        s_fileDialog.SetPwd();
-        s_fileDialog.Open();
+        auto const currentPath = std::filesystem::current_path().string();
+        nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_SaveDialog("ttf", currentPath.c_str(), &outPath);
+
+        if (result == NFD_OKAY) {
+            std::filesystem::path filePath = outPath;
+            m_pendingFontPath = filePath;
+            NameBuffer[0] = 0;
+            ImGui::OpenPopup("Name Font");
+        }
     }
     ImGui::SameLine();
     if (ImGui::Button("Remove Font", buttonSize)) {
@@ -75,35 +79,6 @@ void EditorPanelFonts::DrawContents() {
         ImGui::Text("Absolute path:");
         std::string path = fontFactory.GetFontPath(fontNames[m_selectedIndex].c_str()).string();
         ImGui::TextWrapped("%s", path.c_str());
-    }
-
-    s_fileDialog.Display();
-    if (s_fileDialog.HasSelected()) {
-        switch (s_fileMode) {
-        case FileDialogMode::LOAD_FONT_LIST: {
-            auto filePath = s_fileDialog.GetSelected();
-            fontFactory.LoadProject(filePath);
-            fontNames = fontFactory.GetFontNameList();
-            break;
-        }
-        case FileDialogMode::SAVE_FONT_LIST: {
-            auto filePath = s_fileDialog.GetSelected();
-            if (!filePath.has_extension()) {
-                filePath.replace_extension(".json");
-            }
-            fontFactory.SaveProject(filePath);
-            break;
-        }
-        case FileDialogMode::ADD_FONT: {
-            m_pendingFontPath = s_fileDialog.GetSelected();
-            NameBuffer[0] = 0;
-            ImGui::OpenPopup("Name Font");
-            break;
-        }
-        default:
-            break;
-        }
-        s_fileDialog.ClearSelected();
     }
 
     if (ImGui::BeginPopupModal("Name Font", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {

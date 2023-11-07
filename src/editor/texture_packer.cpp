@@ -7,16 +7,14 @@
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/itarget.h"
 
-#include "imgui-filebrowser/imfilebrowser.h"
-
 #include "stb_rect_pack.h"
+
+#include <nfd.h>
 
 #undef min
 #undef max
 
 namespace {
-    ImGui::FileBrowser s_fileBrowser;
-    char* s_destPathBuffer = nullptr;
     char s_layoutPathBuffer[1024];
     char s_outputPathBuffer[1024];
     int s_minWidth = 256;
@@ -32,21 +30,17 @@ TexturePacker::~TexturePacker() {
 }
 
 void TexturePacker::Draw() {
-    s_fileBrowser.Display();
-    if (s_fileBrowser.HasSelected()) {
-        strncpy(s_destPathBuffer, s_fileBrowser.GetSelected().string().c_str(), 1024);
-    }
-
     if (m_open) {
         if (ImGui::Begin("Texture Packing", &m_open)) {
             ImGui::InputText("##layouts_path", s_layoutPathBuffer, 1024);
             ImGui::SameLine();
             if (ImGui::Button("...##layout")) {
-                s_fileBrowser = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory);
-                s_fileBrowser.SetTitle("Open..");
-                s_fileBrowser.SetPwd();
-                s_destPathBuffer = s_layoutPathBuffer;
-                s_fileBrowser.Open();
+                auto const currentPath = std::filesystem::current_path().string();
+                nfdchar_t* outPath = NULL;
+                nfdresult_t result = NFD_PickFolder(currentPath.c_str(), &outPath);
+                if (result == NFD_OKAY) {
+                    strncpy(s_layoutPathBuffer, outPath, 1024);
+                }
             }
             ImGui::SameLine();
             ImGui::Text("Layouts path");
@@ -54,11 +48,12 @@ void TexturePacker::Draw() {
             ImGui::InputText("##output_path", s_outputPathBuffer, 1024);
             ImGui::SameLine();
             if (ImGui::Button("...##output")) {
-                s_fileBrowser = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory);
-                s_fileBrowser.SetTitle("Open..");
-                s_fileBrowser.SetPwd();
-                s_destPathBuffer = s_outputPathBuffer;
-                s_fileBrowser.Open();
+                auto const currentPath = std::filesystem::current_path().string();
+                nfdchar_t* outPath = NULL;
+                nfdresult_t result = NFD_PickFolder(currentPath.c_str(), &outPath);
+                if (result == NFD_OKAY) {
+                    strncpy(s_outputPathBuffer, outPath, 1024);
+                }
             }
             ImGui::SameLine();
             ImGui::Text("Output path");

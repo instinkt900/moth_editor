@@ -18,15 +18,10 @@
 #include "moth_ui/group.h"
 #include "moth_ui/context.h"
 
-#include "imgui-filebrowser/imfilebrowser.h"
+#include <nfd.h>
 
 #undef min
 #undef max
-
-namespace {
-    ImGui::FileBrowser s_fileBrowser;
-    std::shared_ptr<moth_ui::NodeImage> s_loadingNodeImage = nullptr;
-}
 
 EditorPanelProperties::EditorPanelProperties(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Properties", visible, true) {
@@ -262,23 +257,17 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
     }
 
     if (ImGui::Button("Load Image..")) {
-        s_fileBrowser.SetTitle("Load Image..");
-        s_fileBrowser.SetTypeFilters({ ".jpg", ".jpeg", ".png", ".bmp" });
-        s_fileBrowser.SetPwd();
-        s_fileBrowser.Open();
-        s_loadingNodeImage = node;
-    }
+        auto const currentPath = std::filesystem::current_path().string();
+        nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog("jpg,jpeg,png,bmp", currentPath.c_str(), &outPath);
 
-    if (s_loadingNodeImage) {
-        s_fileBrowser.Display();
-        if (s_fileBrowser.HasSelected()) {
-            auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(s_loadingNodeImage->GetLayoutEntity());
+        if (result == NFD_OKAY) {
+            std::filesystem::path filePath = outPath;
+            auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(node->GetLayoutEntity());
             auto const oldPath = targetImageEntity->m_imagePath;
-            auto const newPath = s_fileBrowser.GetSelected();
+            auto const newPath = filePath;
             auto action = MakeChangeValueAction(entity->m_imagePath, oldPath, newPath, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
-            s_fileBrowser.ClearSelected();
-            s_loadingNodeImage = nullptr;
         }
     }
 }
