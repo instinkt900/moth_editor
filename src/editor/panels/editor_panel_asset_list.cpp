@@ -13,7 +13,7 @@ namespace {
     };
 
     bool IsSupportedExtension(std::string const& ext) {
-        return ext == moth_ui::Layout::Extension || std::end(s_supportedExtensions) != ranges::find(s_supportedExtensions, ext);
+        return ext == moth_ui::Layout::FullExtension || std::end(s_supportedExtensions) != ranges::find(s_supportedExtensions, ext);
     }
 }
 
@@ -26,7 +26,7 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
     });
 
     m_contentList.SetDoubleClickAction([this](std::filesystem::path const& path) {
-        if (path.extension().string() == moth_ui::Layout::Extension) {
+        if (path.extension().string() == moth_ui::Layout::FullExtension) {
             m_editorLayer.LoadLayout(path);
         }
     });
@@ -34,7 +34,7 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
     m_contentList.SetPerEntryAction([](std::filesystem::path const& path) {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
             DragDropString = path.string();
-            if (path.extension().string() == moth_ui::Layout::Extension) {
+            if (path.extension().string() == moth_ui::Layout::FullExtension) {
                 ImGui::SetDragDropPayload("layout_path", &DragDropString, sizeof(std::string));
                 // could load the layout and render a preview of it here
                 ImGui::Text("%s", DragDropString.c_str());

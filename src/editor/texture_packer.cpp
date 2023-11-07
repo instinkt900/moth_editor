@@ -82,7 +82,7 @@ void TexturePacker::CollectLayouts(std::filesystem::path const& path, std::vecto
     for (auto&& entry : std::filesystem::directory_iterator(path)) {
         if (std::filesystem::is_directory(entry.path())) {
             CollectLayouts(entry.path(), layouts);
-        } else if (entry.path().has_extension() && entry.path().extension() == moth_ui::Layout::Extension) {
+        } else if (entry.path().has_extension() && entry.path().extension() == moth_ui::Layout::FullExtension) {
             std::shared_ptr<moth_ui::Layout> layout;
             auto const result = moth_ui::Layout::Load(entry.path(), &layout);
             if (result == moth_ui::Layout::LoadResult::Success) {

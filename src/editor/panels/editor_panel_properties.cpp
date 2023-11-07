@@ -259,7 +259,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
     if (ImGui::Button("Load Image..")) {
         auto const currentPath = std::filesystem::current_path().string();
         nfdchar_t* outPath = NULL;
-        nfdresult_t result = NFD_OpenDialog("jpg,jpeg,png,bmp", currentPath.c_str(), &outPath);
+        nfdresult_t result = NFD_OpenDialog("jpg, jpeg, png, bmp", currentPath.c_str(), &outPath);
 
         if (result == NFD_OKAY) {
             std::filesystem::path filePath = outPath;
