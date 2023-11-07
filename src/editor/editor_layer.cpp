@@ -31,17 +31,7 @@
 
 #include "texture_packer.h"
 
-#include "imgui-filebrowser/imfilebrowser.h"
-
-namespace {
-    enum class FileOpenMode {
-        Unknown,
-        OpenLayout,
-        SaveLayout,
-    };
-    static FileOpenMode s_fileOpenMode = FileOpenMode::Unknown;
-    static ImGui::FileBrowser s_fileDialog(ImGuiFileBrowserFlags_EnterNewFilename);
-}
+#include <nfd.h>
 
 EditorLayer::EditorLayer() {
     LoadConfig();
@@ -112,23 +102,6 @@ void EditorLayer::Draw() {
             DeleteEntity();
         } else if (ImGui::IsKeyPressed(ImGuiKey_H)) {
             ToggleEntityVisibility();
-        }
-    }
-
-    s_fileDialog.Display();
-    if (s_fileDialog.HasSelected()) {
-        if (s_fileOpenMode == FileOpenMode::OpenLayout) {
-            auto const path = s_fileDialog.GetSelected();
-            //std::filesystem::current_path(path.parent_path());
-            LoadLayout(path);
-            s_fileDialog.ClearSelected();
-        } else if (s_fileOpenMode == FileOpenMode::SaveLayout) {
-            auto filePath = s_fileDialog.GetSelected();
-            if (!filePath.has_extension()) {
-                filePath.replace_extension(moth_ui::Layout::Extension);
-            }
-            SaveLayout(filePath);
-            s_fileDialog.ClearSelected();
         }
     }
 
@@ -403,11 +376,13 @@ void EditorLayer::MenuFuncNewLayout() {
 }
 
 void EditorLayer::MenuFuncOpenLayout() {
-    s_fileDialog.SetTitle("Open Layout..");
-    s_fileDialog.SetTypeFilters({ moth_ui::Layout::Extension });
-    s_fileDialog.SetPwd();
-    s_fileDialog.Open();
-    s_fileOpenMode = FileOpenMode::OpenLayout;
+    auto const currentPath = std::filesystem::current_path().string();
+    nfdchar_t* outPath = NULL;
+    nfdresult_t result = NFD_OpenDialog(moth_ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
+
+    if (result == NFD_OKAY) {
+        LoadLayout(outPath);
+    }
 }
 
 void EditorLayer::MenuFuncSaveLayout() {
@@ -419,11 +394,17 @@ void EditorLayer::MenuFuncSaveLayout() {
 }
 
 void EditorLayer::MenuFuncSaveLayoutAs() {
-    s_fileDialog.SetTitle("Save Layout As..");
-    s_fileDialog.SetTypeFilters({ moth_ui::Layout::Extension });
-    s_fileDialog.SetPwd();
-    s_fileDialog.Open();
-    s_fileOpenMode = FileOpenMode::SaveLayout;
+    auto const currentPath = std::filesystem::current_path().string();
+    nfdchar_t* outPath = NULL;
+    nfdresult_t result = NFD_SaveDialog(moth_ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
+
+    if (result == NFD_OKAY) {
+        std::filesystem::path filePath = outPath;
+        if (!filePath.has_extension()) {
+            filePath.replace_extension(moth_ui::Layout::Extension);
+        }
+        SaveLayout(filePath);
+    }
 }
 
 void EditorLayer::CopyEntity() {
