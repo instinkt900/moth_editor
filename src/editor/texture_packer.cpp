@@ -32,27 +32,27 @@ TexturePacker::~TexturePacker() {
 void TexturePacker::Draw() {
     if (m_open) {
         if (ImGui::Begin("Texture Packing", &m_open)) {
-            ImGui::InputText("##layouts_path", s_layoutPathBuffer, 1024);
+            ImGui::InputText("##layouts_path", s_layoutPathBuffer, 1023);
             ImGui::SameLine();
             if (ImGui::Button("...##layout")) {
                 auto const currentPath = std::filesystem::current_path().string();
                 nfdchar_t* outPath = NULL;
                 nfdresult_t result = NFD_PickFolder(currentPath.c_str(), &outPath);
                 if (result == NFD_OKAY) {
-                    strncpy(s_layoutPathBuffer, outPath, 1024);
+                    strncpy(s_layoutPathBuffer, outPath, 1023);
                 }
             }
             ImGui::SameLine();
             ImGui::Text("Layouts path");
 
-            ImGui::InputText("##output_path", s_outputPathBuffer, 1024);
+            ImGui::InputText("##output_path", s_outputPathBuffer, 1023);
             ImGui::SameLine();
             if (ImGui::Button("...##output")) {
                 auto const currentPath = std::filesystem::current_path().string();
                 nfdchar_t* outPath = NULL;
                 nfdresult_t result = NFD_PickFolder(currentPath.c_str(), &outPath);
                 if (result == NFD_OKAY) {
-                    strncpy(s_outputPathBuffer, outPath, 1024);
+                    strncpy(s_outputPathBuffer, outPath, 1023);
                 }
             }
             ImGui::SameLine();
