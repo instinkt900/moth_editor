@@ -1,8 +1,9 @@
 from conan import ConanFile
+from conan.tools.cmake import cmake_layout
 
 class Editor(ConanFile):
-	name = "Editor"
-	version = "1.0"
+	name = "moth_ui Editor"
+	version = "0.1"
 	settings = "os", "compiler", "build_type", "arch"
 	generators = "CMakeToolchain", "CMakeDeps"
 
@@ -26,3 +27,6 @@ class Editor(ConanFile):
 		if self.settings.os == "Linux":
 			self.requires("libalsa/1.2.10", override=True)
 			self.requires("wayland/1.22.0", override=True)
+
+	def layout(self):
+		cmake_layout(self)
