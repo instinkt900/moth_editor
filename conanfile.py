@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import cmake_layout
 
-class Editor(ConanFile):
+class MothUIEditor(ConanFile):
 	name = "moth_ui Editor"
 	version = "0.1"
 	settings = "os", "compiler", "build_type", "arch"
