@@ -1045,6 +1045,7 @@ void EditorPanelAnimation::DrawFrameRangeSettings() {
     ImGui::PopItemWidth();
 }
 
+// adapted from https://github.com/ocornut/imgui/issues/3379 (thanks ocornut)
 void EditorPanelAnimation::ScrollWhenDraggingOnVoid(const ImVec2& delta, ImGuiMouseButton mouse_button) {
     ImGuiContext& g = *ImGui::GetCurrentContext();
     ImGuiWindow* window = g.CurrentWindow;
@@ -1126,7 +1127,6 @@ void EditorPanelAnimation::DrawWidget() {
     ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x, canvasSize.y - m_horizontalScrollbarHeight });
     ImRect const frameRect = { ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize() };
     m_mouseInScrollArea = frameRect.Contains(ImGui::GetMousePos());
-    //InvisibleButton2("contentBar", ImVec2(canvasSize.x - m_verticalScrollbarWidth, static_cast<float>(panelHeight)));
     AddScrollPanelItem(ImVec2(canvasSize.x - m_verticalScrollbarWidth, static_cast<float>(panelHeight)));
     m_scrollingPanelBounds.Min = ImGui::GetItemRectMin();
     m_scrollingPanelBounds.Max = ImGui::GetItemRectMax();
