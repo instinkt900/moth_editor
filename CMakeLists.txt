@@ -11,7 +11,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS IMGUI_DEFINE_MATH_OPERATORS)
 
 add_subdirectory(../external/nativefiledialog nativefiledialog)
-add_subdirectory(../external/harfbuzz-icu-freetype harfbuzz-icu-freetype)
 add_subdirectory(../backends moth_ui_backends)
 
 include_directories(../backends/include)
