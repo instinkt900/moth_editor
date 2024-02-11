@@ -23,12 +23,6 @@ class MothUIEditor(ConanFile):
         self.requires("freetype/2.13.2")
         self.requires("libpng/1.6.42", override=True)
         self.requires("harfbuzz/8.3.0")
-        #self.requires("glm/cci.20230113")
-        #self.requires("libwebp/1.3.2")
-
-        if self.settings.os == "Linux":
-            self.requires("libalsa/1.2.10", override=True)
-            self.requires("wayland/1.22.0", override=True)
 
     def build_requirements(self):
         self.tool_requires("cmake/3.27.9")
