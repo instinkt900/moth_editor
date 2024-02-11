@@ -1045,6 +1045,55 @@ void EditorPanelAnimation::DrawFrameRangeSettings() {
     ImGui::PopItemWidth();
 }
 
+// adapted from https://github.com/ocornut/imgui/issues/3379 (thanks ocornut)
+void EditorPanelAnimation::ScrollWhenDraggingOnVoid(const ImVec2& delta, ImGuiMouseButton mouse_button) {
+    ImGuiContext& g = *ImGui::GetCurrentContext();
+    ImGuiWindow* window = g.CurrentWindow;
+    bool hovered = false;
+    bool held = false;
+    ImGuiID id = window->GetID("##scrolldraggingoverlay");
+    ImGui::KeepAliveID(id);
+    ImGuiButtonFlags button_flags = (mouse_button == 0) ? ImGuiButtonFlags_MouseButtonLeft : (mouse_button == 1) ? ImGuiButtonFlags_MouseButtonRight
+                                                                                                                 : ImGuiButtonFlags_MouseButtonMiddle;
+
+    static float xDeltaAcc = 0;
+    if (g.HoveredId == 0) { // If nothing hovered so far in the frame (not same as IsAnyItemHovered()!)
+        ImGui::ButtonBehavior(window->Rect(), id, &hovered, &held, button_flags);
+    }
+    if (held && delta.x != 0.0f) {
+        xDeltaAcc += delta.x;
+        int frameDelta = static_cast<int>(xDeltaAcc / m_framePixelWidth);
+        xDeltaAcc -= static_cast<float>(frameDelta * m_framePixelWidth);
+        if (frameDelta != 0) {
+            if (frameDelta < 0) {
+                frameDelta = -std::min(-frameDelta, m_minFrame);
+            } else if (frameDelta > 0) {
+                frameDelta = std::min(frameDelta, m_totalFrames - m_maxFrame);
+            }
+            m_minFrame += static_cast<int>(frameDelta);
+            m_maxFrame += static_cast<int>(frameDelta);
+            m_hScrollFactors.x = m_minFrame / static_cast<float>(m_totalFrames);
+            m_hScrollFactors.y = m_maxFrame / static_cast<float>(m_totalFrames);
+        }
+    }
+    if (held && delta.y != 0.0f) {
+        ImGui::SetScrollY(window, window->Scroll.y + delta.y);
+    }
+
+    if (!held) {
+        xDeltaAcc = 0;
+    }
+}
+
+void AddScrollPanelItem(ImVec2 const& size_arg) {
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    const ImGuiID id = window->GetID("scroll_panel_item");
+    ImVec2 size = ImGui::CalcItemSize(size_arg, 0.0f, 0.0f);
+    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    ImGui::ItemSize(size);
+    ImGui::ItemAdd(bb, id);
+}
+
 void EditorPanelAnimation::DrawWidget() {
     m_group = m_editorLayer.GetRoot();
     SanitizeExtraData();
@@ -1078,7 +1127,7 @@ void EditorPanelAnimation::DrawWidget() {
     ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x, canvasSize.y - m_horizontalScrollbarHeight });
     ImRect const frameRect = { ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize() };
     m_mouseInScrollArea = frameRect.Contains(ImGui::GetMousePos());
-    ImGui::InvisibleButton("contentBar", ImVec2(canvasSize.x - m_verticalScrollbarWidth, static_cast<float>(panelHeight)));
+    AddScrollPanelItem(ImVec2(canvasSize.x - m_verticalScrollbarWidth, static_cast<float>(panelHeight)));
     m_scrollingPanelBounds.Min = ImGui::GetItemRectMin();
     m_scrollingPanelBounds.Max = ImGui::GetItemRectMax();
 
@@ -1129,6 +1178,9 @@ void EditorPanelAnimation::DrawWidget() {
             SelectKeyframe(pendingSelection.entity, pendingSelection.target, pendingSelection.mutableFrame);
         }
     }
+
+    ImVec2 mouse_delta = ImGui::GetIO().MouseDelta;
+    ScrollWhenDraggingOnVoid(mouse_delta * -1, ImGuiMouseButton_Middle);
 
     ImGui::EndChildFrame();
     ImGui::PopStyleColor();

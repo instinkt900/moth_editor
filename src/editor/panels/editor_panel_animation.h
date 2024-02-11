@@ -177,6 +177,8 @@ private:
     void SetExpanded(std::shared_ptr<moth_ui::Node> child, bool expanded);
     void SanitizeExtraData();
 
+    void ScrollWhenDraggingOnVoid(const ImVec2& delta, ImGuiMouseButton mouse_button);
+
     ImDrawList* m_drawList = nullptr;
     ImRect m_windowBounds;
     ImRect m_scrollingPanelBounds;
