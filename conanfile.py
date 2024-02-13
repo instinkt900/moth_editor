@@ -22,7 +22,9 @@ class MothUIEditor(ConanFile):
         self.requires("vulkan-memory-allocator/3.0.1")
         self.requires("freetype/2.13.2")
         self.requires("libpng/1.6.42", override=True)
-        self.requires("harfbuzz/8.3.0")
+
+        if self.settings.os == "Windows":
+            self.requires("harfbuzz/8.3.0")
 
     def build_requirements(self):
         self.tool_requires("cmake/3.27.9")
