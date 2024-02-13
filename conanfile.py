@@ -24,6 +24,7 @@ class MothUIEditor(ConanFile):
         self.requires("libpng/1.6.42", override=True)
 
         if self.settings.os == "Windows":
+            self.requires("libgettext/0.21", override=True)
             self.requires("harfbuzz/8.3.0")
 
     def build_requirements(self):
