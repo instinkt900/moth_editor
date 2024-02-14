@@ -5,7 +5,7 @@ class MothUIEditor(ConanFile):
     name = "moth_ui Editor"
     version = "0.1"
     settings = "os", "compiler", "build_type", "arch"
-    generators = "CMakeToolchain", "CMakeDeps"
+    generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
 
     def requirements(self):
         self.requires("sdl/2.28.3")
