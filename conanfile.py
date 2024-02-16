@@ -6,6 +6,7 @@ class MothUIEditor(ConanFile):
     version = "0.1"
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
+    default_options = { "libpng/*:shared": True }
 
     def requirements(self):
         self.requires("sdl/2.28.3")
@@ -21,7 +22,6 @@ class MothUIEditor(ConanFile):
         self.requires("glfw/3.3.8")
         self.requires("vulkan-memory-allocator/3.0.1")
         self.requires("freetype/2.13.2")
-        self.requires("libpng/1.6.42", override=True)
 
         if self.settings.os == "Windows":
             self.requires("libgettext/0.21", override=True)
