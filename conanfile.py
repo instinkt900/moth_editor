@@ -36,3 +36,4 @@ class MothUIEditor(ConanFile):
 
     def layout(self):
         cmake_layout(self)
+
