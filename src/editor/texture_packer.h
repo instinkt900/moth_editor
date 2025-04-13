@@ -1,10 +1,11 @@
 #pragma once
 
+#include "moth_ui/context.h"
 #include "stb_rect_pack.h"
 
 class TexturePacker {
 public:
-    TexturePacker();
+    TexturePacker(moth_ui::Context& context);
     ~TexturePacker();
 
     void Open() {
@@ -13,6 +14,7 @@ public:
     void Draw();
 
 private:
+    moth_ui::Context& m_context;
     bool m_open = false;
     std::shared_ptr<moth_ui::ITarget> m_outputTexture;
     int m_textureWidth = 0;

@@ -69,5 +69,5 @@ void EditorApplication::SetupLayers() {
 
     m_layerStack = std::make_unique<EditorLayerStack>(m_windowWidth, m_windowHeight, m_windowWidth, m_windowHeight);
     m_layerStack->SetEventListener(this);
-    m_layerStack->PushLayer(std::make_unique<EditorLayer>());
+    m_layerStack->PushLayer(std::make_unique<EditorLayer>(*m_uiContext));
 }

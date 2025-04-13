@@ -23,7 +23,8 @@ namespace {
     int s_maxHeight = 1024;
 }
 
-TexturePacker::TexturePacker() {
+TexturePacker::TexturePacker(moth_ui::Context& context)
+    : m_context(context) {
 }
 
 TexturePacker::~TexturePacker() {
@@ -65,7 +66,7 @@ void TexturePacker::Draw() {
             ImGui::InputInt("Max Height", &s_maxHeight);
 
             if (ImGui::Button("Pack")) {
-                //Pack(s_pathBuffer, s_maxWidth, s_maxHeight);
+                // Pack(s_pathBuffer, s_maxWidth, s_maxHeight);
                 Pack(s_layoutPathBuffer, s_outputPathBuffer, s_minWidth, s_minHeight, s_maxWidth, s_maxHeight);
             }
 
@@ -99,7 +100,7 @@ void TexturePacker::CollectImages(moth_ui::Layout const& layout, std::vector<Ima
             auto imagePath = layout.GetLoadedPath() / imageEntity.m_imagePath;
             // dont add duplicates
             if (std::end(images) == ranges::find_if(images, [&](auto const& detail) { return detail.path == imagePath; })) {
-                auto image = moth_ui::Context::GetCurrentContext()->GetImageFactory().GetImage(imagePath);
+                auto image = m_context.GetImageFactory().GetImage(imagePath);
                 ImageDetails details;
                 details.path = imagePath;
                 details.dimensions = image->GetDimensions();
@@ -190,12 +191,12 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
     for (auto&& rect : rects) {
         if (rect.was_packed) {
             auto const imagePath = images[rect.id].path;
-            std::shared_ptr<moth_ui::IImage> image = moth_ui::Context::GetCurrentContext()->GetImageFactory().GetImage(images[rect.id].path);
+            std::shared_ptr<moth_ui::IImage> image = m_context.GetImageFactory().GetImage(images[rect.id].path);
 
             moth_ui::IntRect destRect = moth_ui::MakeRect(rect.x, rect.y, rect.w, rect.h);
 
-            //graphics.SetBlendMode(image, backend::EBlendMode::None);
-            //graphics.SetColorMod(image, moth_ui::BasicColors::White);
+            // graphics.SetBlendMode(image, backend::EBlendMode::None);
+            // graphics.SetColorMod(image, moth_ui::BasicColors::White);
             graphics.DrawImage(*image, nullptr, &destRect);
 
             nlohmann::json details;

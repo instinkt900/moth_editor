@@ -1,5 +1,6 @@
 #pragma once
 
+#include "moth_ui/context.h"
 #include "moth_ui/layers/layer.h"
 #include "events/event.h"
 #include "confirm_prompt.h"
@@ -18,7 +19,7 @@ class EditorPanel;
 
 class EditorLayer : public moth_ui::Layer {
 public:
-    EditorLayer();
+    EditorLayer(moth_ui::Context& context);
     virtual ~EditorLayer() = default;
 
     bool OnEvent(moth_ui::Event const& event) override;
@@ -117,8 +118,10 @@ public:
     void ToggleEntityVisibility();
 
     EditorConfig& GetConfig() { return m_config; }
+    moth_ui::Context& GetContext() const { return m_context; }
 
 private:
+    moth_ui::Context& m_context;
     EditorConfig m_config;
 
     ImGuiID m_rootDockId;

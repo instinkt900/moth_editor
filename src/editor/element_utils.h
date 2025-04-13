@@ -2,11 +2,12 @@
 
 #include "editor_layer.h"
 #include "actions/add_action.h"
+#include "moth_ui/context.h"
 
 template <typename T, typename... Args>
 void AddEntityWithBounds(EditorLayer& editorLayer, moth_ui::LayoutRect const& bounds, Args&&... args) {
     auto newLayoutEntity = std::make_shared<T>(bounds, std::forward<Args>(args)...);
-    auto instance = newLayoutEntity->Instantiate();
+    auto instance = newLayoutEntity->Instantiate(editorLayer.GetContext());
     auto addAction = std::make_unique<AddAction>(std::move(instance), editorLayer.GetRoot());
     editorLayer.PerformEditAction(std::move(addAction));
     editorLayer.GetRoot()->RecalculateBounds();

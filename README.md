@@ -8,6 +8,20 @@ A custom tool for building UI layouts with Moth UI. This edior provides a flash 
 
 ### Building
 
+#### Installing conan
+```windows
+python -m venv .venv
+.\.venv\Scripts\activate.bat
+pip install conan
+pip install setuptools
+```
+
+```linux
+python3 -m venv .venv
+source ./.venv/bin/activate
+pip install conan
+```
+
 #### Conan
 
 Building the editor from the command line is simplest using conan to install the dependencies and cmake to build.

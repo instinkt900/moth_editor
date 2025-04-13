@@ -1,6 +1,7 @@
 #include "common.h"
 #include "editor_panel_fonts.h"
 #include "moth_ui/context.h"
+#include "../editor_layer.h"
 
 #include <nfd.h>
 
@@ -10,8 +11,7 @@ EditorPanelFonts::EditorPanelFonts(EditorLayer& editorLayer, bool visible)
 
 void EditorPanelFonts::DrawContents() {
     static char NameBuffer[1024] = { 0 };
-    auto& fontFactory = moth_ui::Context::GetCurrentContext()->GetFontFactory();
-    auto fontNames = fontFactory.GetFontNameList();
+    auto fontNames = m_editorLayer.GetContext().GetFontFactory().GetFontNameList();
 
     auto const windowWidth = ImGui::GetWindowContentRegionWidth();
     auto const buttonSize = ImVec2{ windowWidth / 2.0f - 5, 20 };
@@ -22,8 +22,8 @@ void EditorPanelFonts::DrawContents() {
 
         if (result == NFD_OKAY) {
             std::filesystem::path filePath = outPath;
-            fontFactory.LoadProject(filePath);
-            fontNames = fontFactory.GetFontNameList();
+            m_editorLayer.GetContext().GetFontFactory().LoadProject(filePath);
+            fontNames = m_editorLayer.GetContext().GetFontFactory().GetFontNameList();
         }
     }
     ImGui::SameLine();
@@ -37,7 +37,7 @@ void EditorPanelFonts::DrawContents() {
             if (!filePath.has_extension()) {
                 filePath.replace_extension(".json");
             }
-            fontFactory.SaveProject(filePath);
+            m_editorLayer.GetContext().GetFontFactory().SaveProject(filePath);
         }
     }
     if (ImGui::Button("Add Font", buttonSize)) {
@@ -55,9 +55,9 @@ void EditorPanelFonts::DrawContents() {
     ImGui::SameLine();
     if (ImGui::Button("Remove Font", buttonSize)) {
         if (m_selectedIndex >= 0) {
-            
-            fontFactory.RemoveFont(fontNames[m_selectedIndex].c_str());
-            fontNames = fontFactory.GetFontNameList();
+
+            m_editorLayer.GetContext().GetFontFactory().RemoveFont(fontNames[m_selectedIndex].c_str());
+            fontNames = m_editorLayer.GetContext().GetFontFactory().GetFontNameList();
         }
     }
     ImGui::Columns(1);
@@ -77,7 +77,7 @@ void EditorPanelFonts::DrawContents() {
 
     if (m_selectedIndex >= 0) {
         ImGui::Text("Absolute path:");
-        std::string path = fontFactory.GetFontPath(fontNames[m_selectedIndex].c_str()).string();
+        std::string path = m_editorLayer.GetContext().GetFontFactory().GetFontPath(fontNames[m_selectedIndex].c_str()).string();
         ImGui::TextWrapped("%s", path.c_str());
     }
 
@@ -86,8 +86,7 @@ void EditorPanelFonts::DrawContents() {
         ImGui::InputText("Name", NameBuffer, 1024);
         ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
         if (ImGui::Button("OK", button_size)) {
-            auto& fontFactory = moth_ui::Context::GetCurrentContext()->GetFontFactory();
-            fontFactory.AddFont(NameBuffer, m_pendingFontPath);
+            m_editorLayer.GetContext().GetFontFactory().AddFont(NameBuffer, m_pendingFontPath);
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();

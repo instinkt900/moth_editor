@@ -33,7 +33,8 @@
 
 #include <nfd.h>
 
-EditorLayer::EditorLayer() {
+EditorLayer::EditorLayer(moth_ui::Context& context)
+    : m_context(context) {
     LoadConfig();
 
     AddEditorPanel<EditorPanelConfig>(*this, false);
@@ -51,7 +52,7 @@ EditorLayer::EditorLayer() {
         panel->Refresh();
     }
 
-    m_texturePacker = std::make_unique<TexturePacker>();
+    m_texturePacker = std::make_unique<TexturePacker>(m_context);
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
@@ -310,7 +311,7 @@ void EditorLayer::SaveLayout(std::filesystem::path const& path) {
 }
 
 void EditorLayer::Rebuild() {
-    m_root = std::make_unique<moth_ui::Group>(m_rootLayout);
+    m_root = std::make_unique<moth_ui::Group>(m_context, m_rootLayout);
 }
 
 void EditorLayer::MoveSelectionUp() {
@@ -423,7 +424,7 @@ void EditorLayer::PasteEntity() {
     auto compAction = std::make_unique<CompositeAction>();
     for (auto&& copiedEntity : m_copiedEntities) {
         auto clonedEntity = copiedEntity->Clone(moth_ui::LayoutEntity::CloneType::Deep);
-        auto copyInstance = clonedEntity->Instantiate();
+        auto copyInstance = clonedEntity->Instantiate(m_context);
         auto addAction = std::make_unique<AddAction>(std::move(copyInstance), m_root);
         compAction->GetActions().push_back(std::move(addAction));
     }
@@ -522,8 +523,8 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
         case moth_ui::Key::Pagedown:
             MoveSelectionDown();
             return true;
-	default:
-	    return false;
+        default:
+            return false;
         }
     }
     return false;
@@ -748,17 +749,17 @@ void EditorLayer::Shutdown() {
 void EditorLayer::SaveConfig() {
     auto& j = g_App->GetPersistentState();
     j["editor_config"] = m_config;
-    j["font_project"] = moth_ui::Context::GetCurrentContext()->GetFontFactory().GetCurrentProjectPath();
+    j["font_project"] = m_context.GetFontFactory().GetCurrentProjectPath();
 }
 
 void EditorLayer::LoadConfig() {
     auto& j = g_App->GetPersistentState();
     if (!j.is_null()) {
         m_config = j.value("editor_config", m_config);
-        
+
         std::filesystem::path fontProjectPath = j.value("font_project", "");
         if (!fontProjectPath.empty()) {
-            moth_ui::Context::GetCurrentContext()->GetFontFactory().LoadProject(fontProjectPath);
+            m_context.GetFontFactory().LoadProject(fontProjectPath);
         }
     }
 }
