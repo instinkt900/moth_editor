@@ -1,13 +1,11 @@
 #include "common.h"
 #include "texture_packer.h"
-#include "editor_application.h"
 
 #include "moth_ui/context.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/layout/layout_entity_image.h"
-#include "moth_ui/itarget.h"
-
-#include "stb_rect_pack.h"
+#include "canyon/graphics/moth_ui/moth_image.h"
+#include "canyon/graphics/moth_ui/utils.h"
 
 #include <nfd.h>
 
@@ -23,8 +21,9 @@ namespace {
     int s_maxHeight = 1024;
 }
 
-TexturePacker::TexturePacker(moth_ui::Context& context)
-    : m_context(context) {
+TexturePacker::TexturePacker(moth_ui::Context& context, canyon::graphics::IGraphics& graphics)
+    : m_context(context)
+    , m_graphics(graphics) {
 }
 
 TexturePacker::~TexturePacker() {
@@ -72,6 +71,7 @@ void TexturePacker::Draw() {
 
             if (m_outputTexture) {
                 imgui_ext::Image(m_outputTexture->GetImage(), m_textureWidth, m_textureHeight);
+
             }
         }
         ImGui::End();
@@ -179,39 +179,40 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
 }
 
 void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
-    auto& graphics = g_App->GetGraphics();
-    std::shared_ptr<moth_ui::ITarget> outputTexture = graphics.CreateTarget(width, height);
+    std::shared_ptr<canyon::graphics::ITarget> outputTexture = m_graphics.CreateTarget(width, height);
 
-    graphics.SetTarget(outputTexture.get());
-    graphics.SetColor(moth_ui::BasicColors::Black);
-    graphics.Clear();
+    m_graphics.SetTarget(outputTexture.get());
+    m_graphics.SetColor(canyon::graphics::BasicColors::Black);
+    m_graphics.Clear();
 
-    graphics.SetColor(moth_ui::BasicColors::White);
+    m_graphics.SetColor(canyon::graphics::BasicColors::White);
     nlohmann::json packDetails;
     for (auto&& rect : rects) {
         if (rect.was_packed) {
             auto const imagePath = images[rect.id].path;
             std::shared_ptr<moth_ui::IImage> image = m_context.GetImageFactory().GetImage(images[rect.id].path);
+            auto img = std::dynamic_pointer_cast<canyon::graphics::MothImage>(image);
+            auto canyonImage = img->GetImage();
 
-            moth_ui::IntRect destRect = moth_ui::MakeRect(rect.x, rect.y, rect.w, rect.h);
+            canyon::IntRect destRect = canyon::MakeRect(rect.x, rect.y, rect.w, rect.h);
 
             // graphics.SetBlendMode(image, backend::EBlendMode::None);
             // graphics.SetColorMod(image, moth_ui::BasicColors::White);
-            graphics.DrawImage(*image, nullptr, &destRect);
+            m_graphics.DrawImage(*img->GetImage(), destRect, nullptr);
 
             nlohmann::json details;
             auto const relativePath = std::filesystem::relative(imagePath, outputPath);
             details["path"] = relativePath.string();
-            details["rect"] = destRect;
+            details["rect"] = ToMothUI(destRect);
             packDetails.push_back(details);
         }
     }
 
     // save packed image
     auto const imagePackName = fmt::format("packed_{}.png", num);
-    graphics.DrawToPNG(outputPath / imagePackName);
+    m_graphics.DrawToPNG(outputPath / imagePackName);
 
-    graphics.SetTarget(nullptr);
+    m_graphics.SetTarget(nullptr);
 
     // save description
     auto const packDetailsName = fmt::format("packed_{}.json", num);

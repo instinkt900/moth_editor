@@ -13,7 +13,7 @@ void EditorPanelFonts::DrawContents() {
     static char NameBuffer[1024] = { 0 };
     auto fontNames = m_editorLayer.GetContext().GetFontFactory().GetFontNameList();
 
-    auto const windowWidth = ImGui::GetWindowContentRegionWidth();
+    auto const windowWidth = ImGui::GetContentRegionAvail().x;
     auto const buttonSize = ImVec2{ windowWidth / 2.0f - 5, 20 };
     if (ImGui::Button("Load List", buttonSize)) {
         auto const currentPath = std::filesystem::current_path().string();

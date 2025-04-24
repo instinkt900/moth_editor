@@ -68,7 +68,7 @@ void EditorPanelPreview::DrawContents() {
         if (windowRegionMax.x > 0 && windowRegionMax.y > 0) {
             moth_ui::IntVec2 const previewSize{ static_cast<int>(windowRegionMax.x), static_cast<int>(windowRegionMax.y) };
             UpdateRenderSurface(previewSize);
-            g_App->GetGraphics().SetTarget(m_renderSurface.get());
+            m_editorLayer.GetGraphics().SetTarget(m_renderSurface.get());
 
             moth_ui::IntRect displayRect;
             displayRect.topLeft = { 0, 0 };
@@ -76,7 +76,7 @@ void EditorPanelPreview::DrawContents() {
             m_root->SetScreenRect(displayRect);
             m_root->Draw();
 
-            g_App->GetGraphics().SetTarget(nullptr);
+            m_editorLayer.GetGraphics().SetTarget(nullptr);
 
             imgui_ext::Image(m_renderSurface->GetImage(), previewSize.x, previewSize.y);
         }
@@ -86,6 +86,6 @@ void EditorPanelPreview::DrawContents() {
 void EditorPanelPreview::UpdateRenderSurface(moth_ui::IntVec2 surfaceSize) {
     if (!m_renderSurface || m_currentSurfaceSize != surfaceSize) {
         m_currentSurfaceSize = surfaceSize;
-        m_renderSurface = g_App->GetGraphics().CreateTarget(m_currentSurfaceSize.x, m_currentSurfaceSize.y);
+        m_renderSurface = m_editorLayer.GetGraphics().CreateTarget(m_currentSurfaceSize.x, m_currentSurfaceSize.y);
     }
 }

@@ -33,8 +33,9 @@
 
 #include <nfd.h>
 
-EditorLayer::EditorLayer(moth_ui::Context& context)
-    : m_context(context) {
+EditorLayer::EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics)
+    : m_context(context)
+    , m_graphics(graphics) {
     LoadConfig();
 
     AddEditorPanel<EditorPanelConfig>(*this, false);
@@ -52,7 +53,7 @@ EditorLayer::EditorLayer(moth_ui::Context& context)
         panel->Refresh();
     }
 
-    m_texturePacker = std::make_unique<TexturePacker>(m_context);
+    m_texturePacker = std::make_unique<TexturePacker>(m_context, m_graphics);
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
@@ -71,7 +72,7 @@ void EditorLayer::Update(uint32_t ticks) {
     }
 
     auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath.string(), IsWorkPending() ? " *" : "");
-    g_App->SetWindowTitle(windowTitle);
+    // g_App->SetWindowTitle(windowTitle);
 }
 
 void EditorLayer::Draw() {
@@ -126,7 +127,7 @@ void EditorLayer::DrawMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
-                m_layerStack->BroadcastEvent(EventRequestQuit{});
+                m_layerStack->BroadcastEvent(canyon::EventRequestQuit{});
             }
             ImGui::EndMenu();
         }
@@ -530,7 +531,7 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     return false;
 }
 
-bool EditorLayer::OnRequestQuitEvent(EventRequestQuit const& event) {
+bool EditorLayer::OnRequestQuitEvent(canyon::EventRequestQuit const& event) {
     if (IsWorkPending()) {
         m_confirmPrompt.SetTitle("Exit?");
         m_confirmPrompt.SetMessage("You have unsaved work? Exit?");
@@ -743,7 +744,7 @@ void EditorLayer::Shutdown() {
         panel->OnShutdown();
     }
     SaveConfig();
-    m_layerStack->BroadcastEvent(EventQuit());
+    m_layerStack->BroadcastEvent(canyon::EventQuit());
 }
 
 void EditorLayer::SaveConfig() {

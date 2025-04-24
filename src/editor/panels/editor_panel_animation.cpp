@@ -507,7 +507,7 @@ void EditorPanelAnimation::DrawClipRow() {
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                         if (!IsClipSelected(clip.get())) {
-                            if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
+                            if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
                                 ClearSelections();
                             }
                         }
@@ -645,7 +645,7 @@ void EditorPanelAnimation::DrawEventsRow() {
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             if (m_mouseInScrollArea && eventBounds.Contains(io.MousePos)) {
-                if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
+                if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
                     ClearSelections();
                 }
 
@@ -851,7 +851,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 if (m_mouseInScrollArea && frameBounds.Contains(io.MousePos)) {
                     if (!IsKeyframeSelected(childEntity, target, keyframe->m_frame)) {
-                        if ((io.KeyMods & ImGuiKeyModFlags_Ctrl) == 0) {
+                        if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
                             if (expanded) {
                                 ClearSelections();
                             } else {

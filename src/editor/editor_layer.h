@@ -2,7 +2,7 @@
 
 #include "moth_ui/context.h"
 #include "moth_ui/layers/layer.h"
-#include "events/event.h"
+#include "moth_ui/events/event.h"
 #include "confirm_prompt.h"
 #include "editor_config.h"
 #include "editor/texture_packer.h"
@@ -13,14 +13,18 @@
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_key.h"
 
+#include <canyon/events/event_window.h>
+
 class BoundsWidget;
 class IEditorAction;
 class EditorPanel;
 
 class EditorLayer : public moth_ui::Layer {
 public:
-    EditorLayer(moth_ui::Context& context);
+    EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics);
     virtual ~EditorLayer() = default;
+
+    canyon::graphics::IGraphics& GetGraphics() const { return m_graphics; }
 
     bool OnEvent(moth_ui::Event const& event) override;
 
@@ -122,6 +126,8 @@ public:
 
 private:
     moth_ui::Context& m_context;
+    canyon::graphics::IGraphics& m_graphics;
+
     EditorConfig m_config;
 
     ImGuiID m_rootDockId;
@@ -184,7 +190,7 @@ private:
     void ResetCanvas();
 
     bool OnKey(moth_ui::EventKey const& event);
-    bool OnRequestQuitEvent(EventRequestQuit const& event);
+    bool OnRequestQuitEvent(canyon::EventRequestQuit const& event);
 
     void Shutdown();
     void SaveConfig();

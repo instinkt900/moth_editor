@@ -7,27 +7,11 @@ message("Building with CMake version: ${CMAKE_VERSION}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
-add_compile_definitions(_CRT_SECURE_NO_WARNINGS IMGUI_DEFINE_MATH_OPERATORS)
-
 add_subdirectory(../external/nativefiledialog nativefiledialog)
-add_subdirectory(../backends moth_ui_backends)
-
-include_directories(../backends/include)
-include_directories(../external/imgui)
-include_directories(../external/murmurhash.c)
 
 set(SOURCES ${SOURCES}
-	../external/imgui/imgui.cpp
-	../external/imgui/imgui_draw.cpp
-	../external/imgui/imgui_tables.cpp
-	../external/imgui/imgui_widgets.cpp
-	../external/imgui/backends/imgui_impl_sdlrenderer.cpp
-	../external/imgui/backends/imgui_impl_sdl.cpp
-	../external/imgui/backends/imgui_impl_vulkan.cpp
-	../external/imgui/backends/imgui_impl_glfw.cpp
 	src/editor/actions/add_action.cpp
 	src/editor/actions/add_clip_action.cpp
 	src/editor/actions/add_event_action.cpp
@@ -49,7 +33,6 @@ set(SOURCES ${SOURCES}
 	src/editor/confirm_prompt.cpp
 	src/editor/content_list.cpp
 	src/editor/editor_layer.cpp
-	src/editor/editor_layer_stack.cpp
 	src/editor/imgui_ext.cpp
 	src/editor/offset_bounds_handle.cpp
 	src/editor/panels/editor_panel.cpp
@@ -69,42 +52,18 @@ set(SOURCES ${SOURCES}
 	src/main.cpp
 )
 
-find_package(fmt REQUIRED)
-#find_package(freetype REQUIRED)
-find_package(glfw3 REQUIRED)
-find_package(magic_enum REQUIRED)
-find_package(nlohmann_json REQUIRED)
-find_package(range-v3 REQUIRED)
-find_package(SDL2 REQUIRED)
-find_package(SDL2_image REQUIRED)
-find_package(SDL2_ttf REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(Vulkan REQUIRED)
-find_package(vulkan-memory-allocator REQUIRED)
+find_package(canyon REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
-target_link_libraries(${PROJECT_NAME} moth_ui)
-target_link_libraries(${PROJECT_NAME} moth_ui_backends)
-target_link_libraries(${PROJECT_NAME} fmt::fmt)
-#target_link_libraries(${PROJECT_NAME} freetype)
-target_link_libraries(${PROJECT_NAME} glfw)
-target_link_libraries(${PROJECT_NAME} magic_enum::magic_enum)
-target_link_libraries(${PROJECT_NAME} nlohmann_json::nlohmann_json)
-target_link_libraries(${PROJECT_NAME} range-v3::range-v3)
-target_link_libraries(${PROJECT_NAME} SDL2::SDL2main)
-target_link_libraries(${PROJECT_NAME} SDL2_image::SDL2_image)
-target_link_libraries(${PROJECT_NAME} SDL2_ttf::SDL2_ttf-static)
-target_link_libraries(${PROJECT_NAME} spdlog::spdlog)
-target_link_libraries(${PROJECT_NAME} Vulkan::Vulkan)
-target_link_libraries(${PROJECT_NAME} vulkan-memory-allocator::vulkan-memory-allocator)
-target_link_libraries(${PROJECT_NAME} harfbuzz)
 target_link_libraries(${PROJECT_NAME} nativefiledialog)
+target_link_libraries(${PROJECT_NAME} canyon::canyon)
 
 if (MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
 	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3 /WX")
+	target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
 	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall -Werror")
 endif()

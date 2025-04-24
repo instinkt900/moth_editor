@@ -115,7 +115,7 @@ private:
     moth_ui::FloatVec2 m_canvasOffset{ 0, 0 };
     int m_canvasZoom = 100;
 
-    std::shared_ptr<moth_ui::ITarget> m_displayTexture;
+    std::shared_ptr<canyon::graphics::ITarget> m_displayTexture;
     moth_ui::FloatVec2 m_initialCanvasOffset;
     bool m_draggingCanvas = false;
     moth_ui::IntVec2 m_lastMousePos;

@@ -58,11 +58,15 @@ namespace imgui_ext {
         ImGui::Text("%s", label);
     }
 
+    void Image(canyon::graphics::IImage const* image, int width, int height) {
+        if (image) {
+            image->ImGui({ width, height });
+        }
+    }
+
     void Image(moth_ui::IImage const* image, int width, int height) {
         if (image) {
             image->ImGui({ width, height });
-        } else {
-            //ImGui::Image(nullptr, ImVec2(static_cast<float>(width), static_cast<float>(height)));
         }
     }
 }

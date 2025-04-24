@@ -1,11 +1,14 @@
 #pragma once
 
 #include "moth_ui/context.h"
-#include "stb_rect_pack.h"
+#include "canyon/graphics/stb_rect_pack.h"
+#include "canyon/graphics/igraphics.h"
+#include <canyon/graphics/moth_ui/moth_image.h>
+#include <moth_ui/layout/layout.h>
 
 class TexturePacker {
 public:
-    TexturePacker(moth_ui::Context& context);
+    TexturePacker(moth_ui::Context& context, canyon::graphics::IGraphics& graphics);
     ~TexturePacker();
 
     void Open() {
@@ -15,8 +18,9 @@ public:
 
 private:
     moth_ui::Context& m_context;
+    canyon::graphics::IGraphics& m_graphics;
     bool m_open = false;
-    std::shared_ptr<moth_ui::ITarget> m_outputTexture;
+    std::shared_ptr<canyon::graphics::ITarget> m_outputTexture;
     int m_textureWidth = 0;
     int m_textureHeight = 0;
 

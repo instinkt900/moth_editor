@@ -1,28 +1,21 @@
 #pragma once
 
-#include "vulkan/vulkan_app.h"
-#include "sdl/sdl_app.h"
-#include "events/event.h"
+#include "canyon/platform/application.h"
+#include <nlohmann/json.hpp>
 
-#define USE_VULKAN
-//#define USE_SDL
-
-class EditorApplication
-#if defined(USE_SDL)
-    : public backend::sdl::Application
-#elif defined(USE_VULKAN)
-    : public backend::vulkan::Application
-#endif
+class EditorApplication : public canyon::platform::Application
 {
 public:
-    EditorApplication();
+    EditorApplication(canyon::platform::IPlatform& platform);
     virtual ~EditorApplication();
+
 
     nlohmann::json& GetPersistentState() { return m_persistentState; }
 
 private:
-    void SetupLayers() override;
+    void PostCreateWindow() override;
 
+    std::filesystem::path m_imguiSettingsPath;
     std::filesystem::path m_persistentFilePath;
     nlohmann::json m_persistentState;
     static char const* const IMGUI_FILE;
