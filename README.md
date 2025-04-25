@@ -31,22 +31,7 @@ cmake --preset conan-default
 cmake --build --preset conan-release
 cmake --install build --config Release --prefix=<install_path>
 ```
-Like with the library build this should install the editor in the given `install_path` folder.
-
-#### Visual Studio
-First install the dependencies using conan.
-```
-conan install . --build=missing -s build_type=Debug [--profile <profile>]
-```
-Then open up the solution file in project/vs and build as normal.
-
-#### VSCode
-Using the CMake tools extension in VSCode makes this very similar to the Visual Studio procedure.
-First install the dependencies using conan.
-```
-conan install . --build=missing -s build_type=Debug [--profile <profile>]
-```
-Then open up the workspace file in project/vscode. The CMake extension should pick up the project and allow you to configure/build. If you wish to debug you will have to setup your own launch configuration.
+This should install the editor in the given `install_path` folder.
 
 ### Using the editor
 TODO
