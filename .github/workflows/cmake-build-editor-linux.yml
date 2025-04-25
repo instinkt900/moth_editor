@@ -41,7 +41,7 @@ jobs:
         source ./build/Release/generators/conanbuild.sh
 
     - name: Configure CMake for release
-      run: cmake --preset conan-${{ matrix.build_type | lower }}
+      run: cmake --preset conan-${{ matrix.build_type == "Debug" && "debug" || "release" }}
 
     - name: Build ${{ matrix.build_type }}
-      run: cmake --build --preset conan-${{ matrix.build_type | lower }} -j
+      run: cmake --build --preset conan-${{ matrix.build_type == "Debug" && "debug" || "release" }} -j
