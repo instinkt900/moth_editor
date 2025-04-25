@@ -1,0 +1,44 @@
+name: Build Editor Linux
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-editor-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Install GTK
+      run: sudo apt-get update; sudo apt-get install libgtk-3-dev
+
+    - name: Get Conan
+      uses: turtlebrowser/get-conan@v1.0
+
+    - name: Conan setup and install dependencies
+      run: |
+        conan profile detect --force
+        conan config install conan
+        conan remote add artifactory http://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
+        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
+        conan install . --build=missing --profile linux_profile
+        conan install . --build=missing --profile linux_profile -s build_type=Debug
+        conan upload "*" -r=artifactory -c
+        source ./build/Release/generators/conanbuild.sh
+
+    - name: Configure CMake for release
+      run:  cmake --preset conan-release
+
+    - name: Build Release
+      run: cmake --build --preset conan-release -j
+
+    - name: Configure CMake Debug
+      run:  cmake --preset conan-debug
+
+    - name: Build Debug
+      run: cmake --build --preset conan-debug -j
+      
