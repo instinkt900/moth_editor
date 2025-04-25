@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 
-add_subdirectory(../external/nativefiledialog nativefiledialog)
+add_subdirectory(external/nativefiledialog nativefiledialog)
 
 set(SOURCES ${SOURCES}
 	src/editor/actions/add_action.cpp

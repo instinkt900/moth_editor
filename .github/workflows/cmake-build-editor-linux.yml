@@ -9,7 +9,7 @@ jobs:
   build-editor-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         submodules: recursive
 
@@ -22,22 +22,21 @@ jobs:
     - name: Conan setup and install dependencies
       run: |
         conan profile detect --force
-        conan config install conan
         conan remote add artifactory http://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan install . --build=missing --profile linux_profile
-        conan install . --build=missing --profile linux_profile -s build_type=Debug
+        conan install . --build=missing --profile conan/profiles/linux_profile
+        conan install . --build=missing --profile conan/profiles/linux_profile -s build_type=Debug
         conan upload "*" -r=artifactory -c
         source ./build/Release/generators/conanbuild.sh
 
     - name: Configure CMake for release
-      run:  cmake --preset conan-release
+      run: cmake --preset conan-release
 
     - name: Build Release
       run: cmake --build --preset conan-release -j
 
     - name: Configure CMake Debug
-      run:  cmake --preset conan-debug
+      run: cmake --preset conan-debug
 
     - name: Build Debug
       run: cmake --build --preset conan-debug -j
