@@ -16,11 +16,11 @@ jobs:
 
     - name: Get Conan
       uses: turtlebrowser/get-conan@v1.0
-      
+
     - name: Conan setup and install dependencies
       run: |
         conan profile detect --force
-        conan remote add artifactory http://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
+        conan remote add artifactory https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
         conan install . --build=missing --profile conan/profiles/windows_profile
         conan install . --build=missing --profile conan/profiles/windows_profile -s build_type=Debug
