@@ -18,10 +18,11 @@
 class BoundsWidget;
 class IEditorAction;
 class EditorPanel;
+class EditorApplication;
 
 class EditorLayer : public moth_ui::Layer {
 public:
-    EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics);
+    EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics, EditorApplication* app);
     virtual ~EditorLayer() = default;
 
     canyon::graphics::IGraphics& GetGraphics() const { return m_graphics; }
@@ -125,6 +126,7 @@ public:
     moth_ui::Context& GetContext() const { return m_context; }
 
 private:
+    EditorApplication* m_app = nullptr;
     moth_ui::Context& m_context;
     canyon::graphics::IGraphics& m_graphics;
 
