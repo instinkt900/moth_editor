@@ -1,0 +1,48 @@
+name: Build Example Linux
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-example-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [Release, Debug]
+    steps:
+    - name: Cache Conan
+      uses: actions/cache@v3
+      with:
+        path: ~/.conan/data
+        key: ${{ runner.os }}-conan-${{ hashFiles('conan.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-conan-
+
+    - uses: actions/checkout@v3
+      with:
+        sparse-checkout: |
+          conan
+          example
+
+    - name: Get Conan
+      uses: turtlebrowser/get-conan@v1.0
+
+    - name: Conan setup and install dependencies
+      working-directory: example
+      run: |
+        conan profile detect --force
+        conan remote add artifactory https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
+        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
+        conan install . --build=missing --profile ../conan/profiles/linux_profile -s build_type=${{ matrix.build_type }}
+        conan upload "*" -r=artifactory -c
+        source ./build/${{ matrix.build_type }}/generators/conanbuild.sh
+
+    - name: Configure CMake for release
+      working-directory: example
+      run: cmake --preset conan-${{ matrix.build_type == 'Debug' && 'debug' || 'release' }}
+
+    - name: Build ${{ matrix.build_type }}
+      working-directory: example
+      run: cmake --build --preset conan-${{ matrix.build_type == 'Debug' && 'debug' || 'release' }} -j
