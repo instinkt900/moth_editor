@@ -1,0 +1,25 @@
+{
+  "fonts": {
+    "28 Days Later": "fonts/28 Days Later.ttf",
+    "BlackManta": "fonts/HalloweenSaleFontBundleNew/Black Manta Regular.ttf",
+    "BloodScratch": "fonts/HalloweenSaleFontBundleNew/Blood Scratch.ttf",
+    "Daniel Davis": "fonts/Daniel Davis.ttf",
+    "Darktown Vintage": "fonts/Darktown Vintage.ttf",
+    "Game of Squids": "fonts/Game Of Squids.ttf",
+    "GorillaBeerBase": "fonts/Gorillabeer-Gorillabeerbase.ttf",
+    "GorillaBeerStyle": "fonts/Gorillabeer-Gorillabeerstyle.ttf",
+    "Heavier": "fonts/HalloweenSaleFontBundleNew/Heavier.ttf",
+    "HoneyBee": "fonts/HoneyBee-Regular.ttf",
+    "JoyMaker": "fonts/JoyMaker-Regular.ttf",
+    "Munstar": "fonts/Munstar-Regular.ttf",
+    "Pilot Command": "fonts/pilotcommand.ttf",
+    "RealtimeGamer": "fonts/HalloweenSaleFontBundleNew/RealtimeGamerRegular.ttf",
+    "Retropus": "fonts/The-Retropus.ttf",
+    "RetropusClean": "fonts/TheRetropusClean.ttf",
+    "SouthAustralia": "fonts/SouthAustralia-Regular.ttf",
+    "Southern Aire": "fonts/SouthernAire_Personal_Use_Only.ttf",
+    "SpookyFlames": "fonts/HalloweenSaleFontBundleNew/Spooky Flames.ttf",
+    "SpookyHalloween": "fonts/HalloweenSaleFontBundleNew/Spooky Halloween.ttf",
+    "TheQueen": "fonts/TheQueen-Regular.ttf"
+  }
+}

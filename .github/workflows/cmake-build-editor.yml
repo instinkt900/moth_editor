@@ -1,0 +1,35 @@
+name: Build Editor
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-editor:
+    runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || 'ubuntu-latest' }}
+    strategy:
+      matrix:
+        os: [windows, linux]
+        build_type: [Release, Debug]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install GTK
+      if: ${{ matrix.os == 'linux' }}
+      run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
+
+    - name: Setup Conan
+      uses: conan-io/setup-conan@v1
+      with:
+        cache_packages: true
+
+    - name: Build package and upload
+      run: |
+        conan remote add artifactory https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
+        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
+        conan create . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=${{ matrix.build_type }}
+        conan upload moth_ui_editor --confirm --remote artifactory
