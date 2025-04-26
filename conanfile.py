@@ -1,11 +1,12 @@
 from conan import ConanFile
-from conan.tools.cmake import cmake_layout
+from conan.tools.cmake import cmake_layout, CMake
 
 class MothUIEditor(ConanFile):
     name = "moth_ui_editor"
     version = "0.1"
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
+    exports_sources = "CMakeLists.txt", "src/*", "external/nativefiledialog/*"
 
     def requirements(self):
         self.requires("canyon/0.2.0")
@@ -16,3 +17,11 @@ class MothUIEditor(ConanFile):
     def layout(self):
         cmake_layout(self)
 
+    def build(self):
+        cmake = CMake(self)
+        cmake.configure()
+        cmake.build()
+
+    def package(self):
+        cmake = CMake(self)
+        cmake.install()
