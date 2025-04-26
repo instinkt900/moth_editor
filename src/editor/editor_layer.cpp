@@ -26,15 +26,16 @@
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/group.h"
 #include "moth_ui/event_dispatch.h"
-
 #include "moth_ui/context.h"
+#include "canyon/platform/window.h"
 
 #include "texture_packer.h"
 
 #include <nfd.h>
 
-EditorLayer::EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics)
-    : m_context(context)
+EditorLayer::EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics, EditorApplication* app)
+    : m_app(app)
+    , m_context(context)
     , m_graphics(graphics) {
     LoadConfig();
 
@@ -72,11 +73,46 @@ void EditorLayer::Update(uint32_t ticks) {
     }
 
     auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath.string(), IsWorkPending() ? " *" : "");
-    // g_App->SetWindowTitle(windowTitle);
+    m_app->GetWindow()->SetWindowTitle(windowTitle);
 }
 
 void EditorLayer::Draw() {
     m_rootDockId = ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
+
+    auto root = ImGui::DockBuilderGetNode(m_rootDockId);
+    if (!root->IsSplitNode()) {
+        auto dockTop = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Up, 0.1f, nullptr, &m_rootDockId);
+        auto dockBottom = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Down, 0.2f, nullptr, &m_rootDockId);
+        auto dockLeft = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Left, 0.1f, nullptr, &m_rootDockId);
+        auto dockRight = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Right, 0.1f, nullptr, &m_rootDockId);
+
+        ImGuiID dockTopLeft, dockTopRight;
+        ImGui::DockBuilderSplitNode(dockTop, ImGuiDir_Left, 0.5f, &dockTopLeft, &dockTopRight);
+
+        ImGui::DockBuilderGetNode(dockTopLeft)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
+        ImGui::DockBuilderGetNode(dockTopRight)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
+        ImGui::DockBuilderGetNode(dockLeft)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
+        ImGui::DockBuilderGetNode(dockRight)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
+        ImGui::DockBuilderGetNode(dockBottom)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
+        auto rootDock = ImGui::DockBuilderGetNode(m_rootDockId);
+        rootDock->SetLocalFlags(rootDock->LocalFlags | ImGuiDockNodeFlags_HiddenTabBar);
+
+        auto panelCanvasProperties = GetEditorPanel<EditorPanelCanvasProperties>();
+        auto panelAssets = GetEditorPanel<EditorPanelAssetList>();
+        auto panelProperties = GetEditorPanel<EditorPanelProperties>();
+        auto panelElements = GetEditorPanel<EditorPanelElements>();
+        auto panelAnimation = GetEditorPanel<EditorPanelAnimation>();
+        auto panelFonts = GetEditorPanel<EditorPanelFonts>();
+
+        ImGui::DockBuilderDockWindow(panelCanvasProperties->GetTitle().c_str(), dockTopLeft);
+        ImGui::DockBuilderDockWindow(panelElements->GetTitle().c_str(), dockTopRight);
+        ImGui::DockBuilderDockWindow(panelProperties->GetTitle().c_str(), dockLeft);
+        ImGui::DockBuilderDockWindow(panelAssets->GetTitle().c_str(), dockRight);
+        ImGui::DockBuilderDockWindow(panelFonts->GetTitle().c_str(), dockRight);
+        ImGui::DockBuilderDockWindow(panelAnimation->GetTitle().c_str(), dockBottom);
+
+        ImGui::DockBuilderFinish(m_rootDockId);
+    }
 
     if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", m_lastErrorMsg.c_str());
@@ -748,13 +784,13 @@ void EditorLayer::Shutdown() {
 }
 
 void EditorLayer::SaveConfig() {
-    auto& j = g_App->GetPersistentState();
+    auto& j = m_app->GetPersistentState();
     j["editor_config"] = m_config;
     j["font_project"] = m_context.GetFontFactory().GetCurrentProjectPath();
 }
 
 void EditorLayer::LoadConfig() {
-    auto& j = g_App->GetPersistentState();
+    auto& j = m_app->GetPersistentState();
     if (!j.is_null()) {
         m_config = j.value("editor_config", m_config);
 

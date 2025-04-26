@@ -21,5 +21,3 @@ private:
     static char const* const IMGUI_FILE;
     static char const* const PERSISTENCE_FILE;
 };
-
-extern EditorApplication* g_App;
