@@ -2,7 +2,9 @@
 
 #include "moth_ui/ui_fwd.h"
 #include "moth_ui/utils/vector.h"
-#include <canyon/graphics/iimage.h>
+#include "canyon/graphics/iimage.h"
+
+#include <string>
 
 namespace imgui_ext {
     bool InputString(char const* label, std::string* str);

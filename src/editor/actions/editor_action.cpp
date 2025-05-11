@@ -1,6 +1,6 @@
 #include "common.h"
 #include "editor_action.h"
-#include "moth_ui/node.h"
+#include "moth_ui/nodes/node.h"
 #include "../editor_layer.h"
 
 //std::unique_ptr<IEditorAction> MakeVisibilityAction(std::shared_ptr<moth_ui::Node> node, bool visible) {

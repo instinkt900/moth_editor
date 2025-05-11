@@ -1,7 +1,7 @@
 #include "common.h"
 #include "change_index_action.h"
 #include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/group.h"
+#include "moth_ui/nodes/group.h"
 
 ChangeIndexAction::ChangeIndexAction(std::shared_ptr<moth_ui::Node> node, int oldIndex, int newIndex)
     : m_node(node)

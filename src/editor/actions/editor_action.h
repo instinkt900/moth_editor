@@ -1,5 +1,11 @@
 #pragma once
 
+#include <imgui.h>
+#include <functional>
+#include <memory>
+
+#include <moth_ui/ui_fwd.h>
+
 class IEditorAction {
 public:
     virtual ~IEditorAction() = default;

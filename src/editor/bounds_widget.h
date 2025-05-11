@@ -1,7 +1,8 @@
 #pragma once
 
-#include "moth_ui/event_listener.h"
+#include "moth_ui/events/event_listener.h"
 #include "moth_ui/events/event_mouse.h"
+#include "moth_ui/utils/rect.h"
 
 class EditorPanelCanvas;
 class BoundsHandle;

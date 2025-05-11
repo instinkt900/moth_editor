@@ -1,6 +1,6 @@
 #include "common.h"
 #include "bounds_handle.h"
-#include "moth_ui/event_dispatch.h"
+#include "moth_ui/events/event_dispatch.h"
 #include "bounds_widget.h"
 #include "panels/editor_panel_canvas.h"
 

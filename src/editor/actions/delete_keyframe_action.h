@@ -2,7 +2,7 @@
 
 #include "editor_action.h"
 #include "moth_ui/ui_fwd.h"
-#include "moth_ui/animation_track.h"
+#include "moth_ui/animation/animation_track.h"
 
 class DeleteKeyframeAction : public IEditorAction {
 public:

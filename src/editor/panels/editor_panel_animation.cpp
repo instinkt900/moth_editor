@@ -15,7 +15,7 @@
 #include "../actions/delete_event_action.h"
 #include "../actions/modify_event_action.h"
 #include "moth_ui/layout/layout.h"
-#include "moth_ui/group.h"
+#include "moth_ui/nodes/group.h"
 #include "moth_ui/layout/layout_entity_group.h"
 
 #undef min
@@ -818,7 +818,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         float const trackStartOffsetX = subTrackBounds.Min.x + rowDimensions.trackOffset;
         float const trackStartOffsetY = subTrackBounds.Min.y;
 
-        for (auto& keyframe : track->m_keyframes) {
+        for (auto& keyframe : track->Keyframes()) {
             bool selected = IsKeyframeSelected(childEntity, target, keyframe->m_frame);
 
             int const frameNumber = (m_mouseDragging && selected) ? GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame)->mutableFrame : keyframe->m_frame;

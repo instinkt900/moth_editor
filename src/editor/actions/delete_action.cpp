@@ -1,7 +1,7 @@
 #include "common.h"
 #include "delete_action.h"
 #include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/group.h"
+#include "moth_ui/nodes/group.h"
 
 DeleteAction::DeleteAction(std::shared_ptr<moth_ui::Node> deletedNode, std::shared_ptr<moth_ui::Group> parentNode)
     : m_deletedNode(deletedNode)

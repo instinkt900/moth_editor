@@ -12,10 +12,10 @@
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout.h"
-#include "moth_ui/node_rect.h"
-#include "moth_ui/node_image.h"
-#include "moth_ui/node_text.h"
-#include "moth_ui/group.h"
+#include "moth_ui/nodes/node_rect.h"
+#include "moth_ui/nodes/node_image.h"
+#include "moth_ui/nodes/node_text.h"
+#include "moth_ui/nodes/group.h"
 #include "moth_ui/context.h"
 
 #include <nfd.h>

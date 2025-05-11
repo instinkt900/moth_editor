@@ -1,6 +1,7 @@
 #include "common.h"
 #include "modify_keyframe_action.h"
 #include "moth_ui/layout/layout_entity.h"
+#include "moth_ui/animation/keyframe.h"
 
 ModifyKeyframeAction::ModifyKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity,
                                            moth_ui::AnimationTrack::Target target,

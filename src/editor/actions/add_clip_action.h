@@ -2,7 +2,7 @@
 
 #include "editor_action.h"
 #include "moth_ui/ui_fwd.h"
-#include "moth_ui/animation_clip.h"
+#include "moth_ui/animation/animation_clip.h"
 
 class AddClipAction : public IEditorAction {
 public:

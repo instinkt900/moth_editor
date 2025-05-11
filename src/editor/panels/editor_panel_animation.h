@@ -1,9 +1,13 @@
 #pragma once
 
 #include "editor_panel.h"
-#include "moth_ui/animation_track.h"
-#include "moth_ui/animation_clip.h"
+#include "moth_ui/animation/animation_track.h"
+#include "moth_ui/animation/animation_clip.h"
+#include "moth_ui/animation/animation_event.h"
 #include "imgui_internal.h"
+
+#include <optional>
+#include <variant>
 
 // highly adapted from ImSequencer
 // https://github.com/CedricGuillemet/ImGuizmo
