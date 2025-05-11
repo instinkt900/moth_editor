@@ -2,7 +2,9 @@
 
 #include "editor_action.h"
 #include "moth_ui/ui_fwd.h"
-#include "moth_ui/animation_track.h"
+#include "moth_ui/animation/animation_event.h"
+
+#include <optional>
 
 class ModifyEventAction : public IEditorAction {
 public:

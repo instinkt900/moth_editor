@@ -2,8 +2,12 @@
 
 #include "imgui_ext.h"
 #include "moth_ui/layout/layout_rect.h"
-#include "moth_ui/animation_track.h"
-#include "imgui_ext.h"
+#include "moth_ui/animation/keyframe.h"
+#include "moth_ui/utils/color.h"
+
+#include <fmt/format.h>
+#include <imgui.h>
+#include <magic_enum.hpp>
 
 namespace imgui_ext {
     inline void Inspect(char const* name, bool& value) {

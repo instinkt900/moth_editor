@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <string>
+
 class ConfirmPrompt {
 public:
     void SetTitle(std::string const& title);

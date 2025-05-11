@@ -1,12 +1,17 @@
 #include "common.h"
 #include "anchor_bounds_handle.h"
-#include "moth_ui/node.h"
-#include "moth_ui/group.h"
-#include "moth_ui/utils/math_utils.h"
+#include "moth_ui/nodes/node.h"
+#include "moth_ui/nodes/group.h"
 #include "bounds_widget.h"
 #include "editor_layer.h"
 #include "moth_ui/utils/interp.h"
 #include "panels/editor_panel_canvas.h"
+#include "moth_ui/nodes/group.h"
+
+template <typename T, typename U>
+inline T lerp(T const& a, T const& b, U const& factor) {
+    return a + (b - a) * factor;
+}
 
 AnchorBoundsHandle::AnchorBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor)
     : BoundsHandle(widget, anchor) {

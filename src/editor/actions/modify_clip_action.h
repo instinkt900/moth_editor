@@ -1,7 +1,7 @@
 #pragma once
 
 #include "editor_action.h"
-#include "moth_ui/animation_clip.h"
+#include "moth_ui/animation/animation_clip.h"
 
 class ModifyClipAction : public IEditorAction {
 public:

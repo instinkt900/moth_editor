@@ -24,9 +24,10 @@
 #include "editor/actions/editor_action.h"
 
 #include "moth_ui/layout/layout.h"
-#include "moth_ui/group.h"
-#include "moth_ui/event_dispatch.h"
+#include "moth_ui/nodes/group.h"
+#include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/context.h"
+#include "moth_ui/animation/keyframe.h"
 #include "canyon/platform/window.h"
 
 #include "texture_packer.h"

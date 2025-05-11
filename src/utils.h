@@ -1,8 +1,8 @@
 #pragma once
 
-#include "moth_ui/text_alignment.h"
+#include "moth_ui/graphics/text_alignment.h"
 #include "moth_ui/utils/color.h"
-#include "moth_ui/blend_mode.h"
+#include "moth_ui/graphics/blend_mode.h"
 
 // returns a rect with the coordinates of b within a
 inline moth_ui::IntRect MergeRects(moth_ui::IntRect const& a, moth_ui::IntRect const& b) {

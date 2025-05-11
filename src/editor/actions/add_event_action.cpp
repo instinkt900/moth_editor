@@ -1,6 +1,7 @@
 #include "common.h"
 #include "add_event_action.h"
 #include "moth_ui/layout/layout_entity_group.h"
+#include "moth_ui/animation/animation_event.h"
 
 AddEventAction::AddEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, int frame, std::string const& name)
     : m_group(group)

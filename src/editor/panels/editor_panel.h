@@ -1,6 +1,9 @@
 #pragma once
 
-#include "moth_ui/event_listener.h"
+#include "moth_ui/events/event_listener.h"
+
+#include <string>
+#include <cstdint>
 
 class EditorLayer;
 

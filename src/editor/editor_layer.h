@@ -13,7 +13,9 @@
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_key.h"
 
-#include <canyon/events/event_window.h>
+#include "canyon/events/event_window.h"
+
+#include <set>
 
 class BoundsWidget;
 class IEditorAction;

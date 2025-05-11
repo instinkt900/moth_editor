@@ -2,7 +2,7 @@
 #include "imgui_ext.h"
 #include "imgui_internal.h"
 #include "moth_ui/utils/vector.h"
-#include "moth_ui/iimage.h"
+#include "moth_ui/graphics/iimage.h"
 
 namespace imgui_ext {
     using namespace moth_ui;

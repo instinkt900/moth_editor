@@ -7,7 +7,7 @@
 #include "moth_ui/layout/layout_entity_clip.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout.h"
-#include "moth_ui/group.h"
+#include "moth_ui/nodes/group.h"
 #include "../element_utils.h"
 
 #include <nfd.h>

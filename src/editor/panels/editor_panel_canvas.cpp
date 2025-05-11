@@ -1,7 +1,7 @@
 #include "common.h"
 #include "editor_panel_canvas.h"
 #include "editor/editor_layer.h"
-#include "moth_ui/group.h"
+#include "moth_ui/nodes/group.h"
 #include "editor/bounds_widget.h"
 #include "moth_ui/events/event_mouse.h"
 #include "imgui_internal.h"
@@ -12,7 +12,7 @@
 #include "../actions/composite_action.h"
 #include "imgui_internal.h"
 #include "editor_application.h"
-#include "moth_ui/itarget.h"
+#include "moth_ui/graphics/itarget.h"
 #include "canyon/graphics/moth_ui/utils.h"
 
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "moth_ui/event_listener.h"
+#include "moth_ui/events/event_listener.h"
 #include "moth_ui/events/event_mouse.h"
 
 class BoundsWidget;
