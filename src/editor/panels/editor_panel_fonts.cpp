@@ -18,6 +18,7 @@ void EditorPanelFonts::DrawContents() {
     if (ImGui::Button("Load List", buttonSize)) {
         auto const currentPath = std::filesystem::current_path().string();
         nfdchar_t* outPath = NULL;
+
         nfdresult_t result = NFD_OpenDialog("json", currentPath.c_str(), &outPath);
 
         if (result == NFD_OKAY) {

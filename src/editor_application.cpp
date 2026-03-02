@@ -2,7 +2,6 @@
 #include "editor_application.h"
 #include "editor/editor_layer.h"
 #include <canyon/platform/window.h>
-#include <canyon/utils/vector_serialization.h>
 
 char const* const EditorApplication::IMGUI_FILE = "imgui.ini";
 char const* const EditorApplication::PERSISTENCE_FILE = "editor.json";

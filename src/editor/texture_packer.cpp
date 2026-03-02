@@ -198,12 +198,12 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
 
             // graphics.SetBlendMode(image, backend::EBlendMode::None);
             // graphics.SetColorMod(image, moth_ui::BasicColors::White);
-            m_graphics.DrawImage(*img->GetImage(), destRect, nullptr);
+            m_graphics.DrawImage(*img->GetImage(), destRect, nullptr, 0);
 
             nlohmann::json details;
             auto const relativePath = std::filesystem::relative(imagePath, outputPath);
             details["path"] = relativePath.string();
-            details["rect"] = ToMothUI(destRect);
+            details["rect"] = destRect;
             packDetails.push_back(details);
         }
     }
