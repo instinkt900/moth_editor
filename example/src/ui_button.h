@@ -1,6 +1,6 @@
 #pragma once
 
-#include "moth_ui/widget.h"
+#include "moth_ui/nodes/widget.h"
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_animation.h"
 
