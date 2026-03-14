@@ -6,8 +6,11 @@
 #include "moth_ui/animation/animation_event.h"
 #include "imgui_internal.h"
 
+#include <memory>
 #include <optional>
 #include <variant>
+
+class IEditorAction;
 
 // highly adapted from ImSequencer
 // https://github.com/CedricGuillemet/ImGuizmo
@@ -146,11 +149,11 @@ private:
 
     ImVec2 m_hScrollFactors;                // 0 - 1 factors of each edge of the horizontal scroll bar. x = left side, y = right side
     bool m_hScrollGrabbedBar = false;       // currently dragging the scrollbar around
-    bool m_hScrollGrabbedRight = false;     // currently draggin the right edge of the horizontal scroll bar
-    bool m_hScrollGrabbedLeft = false;      // currently draggin the left edge of the horizontal scroll bar
+    bool m_hScrollGrabbedRight = false;     // currently dragging the right edge of the horizontal scroll bar
+    bool m_hScrollGrabbedLeft = false;      // currently dragging the left edge of the horizontal scroll bar
 
     float const m_rowHeight = 20;                       // height of each track row in pixels
-    float const m_labelColumnWidth = 200;               // witch of the label column in pixels on the left side
+    float const m_labelColumnWidth = 200;               // width of the label column in pixels on the left side
     float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
     float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
 
@@ -161,7 +164,7 @@ private:
     int m_clipDragHandle = kClipHandleNone; // section of the clip we're dragging
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
     bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
-    bool m_grabbedCurrentFrame = false;     // draging the current frame indicator
+    bool m_grabbedCurrentFrame = false;     // dragging the current frame indicator
     bool m_mouseInScrollArea = false;       // true when the mouse is within the scrolling tracks area
 
     int m_clickedChildIdx = -1;
@@ -176,8 +179,6 @@ private:
     static inline char const* const KeyframePopupName = "keyframe_popup";
     static inline char const* const ClipPopupName = "clip_popup";
     static inline char const* const EventPopupName = "event_popup";
-
-    std::vector<bool> m_childExpanded;
 
     struct TrackMetadata {
         std::weak_ptr<moth_ui::Node> ptr;
@@ -198,8 +199,9 @@ private:
     int m_rowCounter = 0;
 
     nlohmann::json* m_persistentLayoutConfig = nullptr;
-    
-    ImVec2 TrackspaceToPanel(ImVec2 const& trackPos);
+
+    void CommitDragActions();
+    void PerformOrCompositeAction(std::vector<std::unique_ptr<IEditorAction>> actions);
 
     bool m_boxSelectStarted = false;
     bool m_boxSelecting = false;
