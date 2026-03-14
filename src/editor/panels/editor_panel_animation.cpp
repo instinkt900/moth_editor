@@ -467,9 +467,11 @@ bool EditorPanelAnimation::DrawClipPopup() {
     }
 
     if (m_pendingClipEdit.has_value()) {
-        if (m_pendingClipEdit.value().HasChanged()) {
-            auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
-            auto action = std::make_unique<ModifyClipAction>(groupEntity, *m_pendingClipEdit.value().reference, m_pendingClipEdit.value().mutableValue);
+        auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
+        auto const& clips = groupEntity->m_clips;
+        bool const stillExists = std::any_of(clips.begin(), clips.end(), [&](auto const& c) { return c.get() == m_pendingClipEdit->reference; });
+        if (stillExists && m_pendingClipEdit->HasChanged()) {
+            auto action = std::make_unique<ModifyClipAction>(groupEntity, *m_pendingClipEdit->reference, m_pendingClipEdit->mutableValue);
             m_editorLayer.PerformEditAction(std::move(action));
         }
         m_pendingClipEdit.reset();
@@ -626,9 +628,11 @@ bool EditorPanelAnimation::DrawEventPopup() {
     }
 
     if (m_pendingEventEdit.has_value()) {
-        if (m_pendingEventEdit.value().HasChanged()) {
-            auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
-            auto action = std::make_unique<ModifyEventAction>(groupEntity, *m_pendingEventEdit.value().reference, m_pendingEventEdit.value().mutableValue);
+        auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
+        auto const& events = groupEntity->m_events;
+        bool const stillExists = std::any_of(events.begin(), events.end(), [&](auto const& e) { return e.get() == m_pendingEventEdit->reference; });
+        if (stillExists && m_pendingEventEdit->HasChanged()) {
+            auto action = std::make_unique<ModifyEventAction>(groupEntity, *m_pendingEventEdit->reference, m_pendingEventEdit->mutableValue);
             m_editorLayer.PerformEditAction(std::move(action));
         }
         m_pendingEventEdit.reset();
