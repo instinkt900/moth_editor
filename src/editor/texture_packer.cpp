@@ -208,11 +208,12 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
         }
     }
 
+    m_graphics.SetTarget(nullptr);
+
     // save packed image
     auto const imagePackName = fmt::format("packed_{}.png", num);
-    m_graphics.DrawToPNG(outputPath / imagePackName);
+    m_graphics.DrawToPNG(*outputTexture->GetImage(), outputPath / imagePackName);
 
-    m_graphics.SetTarget(nullptr);
 
     // save description
     auto const packDetailsName = fmt::format("packed_{}.json", num);
