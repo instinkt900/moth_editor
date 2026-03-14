@@ -1145,12 +1145,13 @@ void EditorPanelAnimation::DrawWidget() {
     m_scrollingPanelBounds.Max = ImGui::GetItemRectMax();
 
     // clicking on blank track area will clear the selection.
-    // clickable objects will reset this value if they are interacted with.
+    // clickable objects will set m_clickConsumed = true if they handle the click.
     ImRect trackAreaBounds;
     trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y };
     trackAreaBounds.Max = m_scrollingPanelBounds.Max;
-    
-    m_clickConsumed = !(trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left));
+
+    bool const leftClickInTrackArea = trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+    m_clickConsumed = !leftClickInTrackArea;
 
     m_drawList = ImGui::GetWindowDrawList();
 

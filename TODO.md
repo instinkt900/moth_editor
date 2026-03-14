@@ -72,7 +72,7 @@ enum { kHandleLeft = 1, kHandleRight = 2, kHandleCenter = 3 };
 
 ---
 
-#### #6 — Click consumption flag is inverted and order-dependent
+#### #6 — Click consumption flag is inverted and order-dependent ✓ FIXED
 **Location:** `editor_panel_animation.cpp:1140` and `1197`
 
 `m_clickConsumed` is set to `true` when the mouse is *outside* the track area or the button
