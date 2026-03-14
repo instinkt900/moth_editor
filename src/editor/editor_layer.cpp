@@ -270,7 +270,6 @@ void EditorLayer::RedoEditAction() {
 void EditorLayer::ClearEditActions() {
     m_editActions.clear();
     m_actionIndex = -1;
-    m_actionIndex = -1;
     m_lastSaveActionIndex = -1;
 }
 
