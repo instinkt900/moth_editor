@@ -5,6 +5,19 @@
 #include <memory>
 
 #include <moth_ui/ui_fwd.h>
+#include <canyon/utils/moth_ui_format.h>
+#include <spdlog/spdlog.h>
+
+template <>
+struct fmt::formatter<std::filesystem::path> {
+    constexpr auto parse(fmt::format_parse_context& ctx) {
+        return ctx.begin();
+    }
+
+    auto format(std::filesystem::path const& t, fmt::format_context& ctx) const {
+        return fmt::format_to(ctx.out(), "Path({})", t.string());
+    }
+};
 
 class IEditorAction {
 public:
