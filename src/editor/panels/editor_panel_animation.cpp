@@ -525,7 +525,8 @@ void EditorPanelAnimation::DrawClipRow() {
                         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                             m_mouseDragging = true;
                             m_mouseDragStartX = io.MousePos.x;
-                            m_clipDragHandle = j + 1;
+                            static constexpr int kHandleForRect[3] = { kClipHandleLeft, kClipHandleRight, kClipHandleCenter };
+                            m_clipDragHandle = kHandleForRect[j];
                             break;
                         }
                     }
@@ -1233,18 +1234,18 @@ void EditorPanelAnimation::UpdateMouseDragging() {
                     if (m_selections.size() == 1) {
                         int& l = clipContext->mutableValue.m_startFrame;
                         int& r = clipContext->mutableValue.m_endFrame;
-                        if (m_clipDragHandle & 1)
+                        if (m_clipDragHandle & kClipHandleLeft)
                             l = clipContext->clip->m_startFrame + frameDelta;
-                        if (m_clipDragHandle & 2)
+                        if (m_clipDragHandle & kClipHandleRight)
                             r = clipContext->clip->m_endFrame + frameDelta;
                         if (l < 0) {
-                            if (m_clipDragHandle & 2)
+                            if (m_clipDragHandle & kClipHandleRight)
                                 r -= l;
                             l = 0;
                         }
-                        if (m_clipDragHandle & 1 && l > r)
+                        if (m_clipDragHandle & kClipHandleLeft && l > r)
                             l = r;
-                        if (m_clipDragHandle & 2 && r < l)
+                        if (m_clipDragHandle & kClipHandleRight && r < l)
                             r = l;
                     } else {
                         clipContext->mutableValue.m_startFrame = clipContext->clip->m_startFrame + frameDelta;

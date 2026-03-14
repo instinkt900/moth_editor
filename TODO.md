@@ -39,19 +39,6 @@ divergence (see #9).
 
 ---
 
-#### #3 — `FrameCount()` off-by-one
-**Location:** `moth_ui/include/moth_ui/animation/animation_clip.h:21`
-
-Clips are treated as inclusive on both ends — the panel renders them with `m_endFrame + 1`
-(line 471). But `FrameCount()` returns `m_endFrame - m_startFrame`, which is one less than
-the actual frame count. A clip spanning frames 10–15 displays as 6 frames wide but
-`FrameCount()` returns 5. Any playback code consuming `FrameCount()` will stop one frame early.
-
-**Fix:** Either change `FrameCount()` to return `m_endFrame - m_startFrame + 1`, or change the
-clip semantics to be exclusive on the end (remove the `+ 1` in the panel render and audit all
-uses). Pick one and apply consistently.
-
----
 
 #### #4 — Use-after-free risk with pending popup edits
 **Location:** `editor_panel_animation.cpp:432–439` (clips) and `584–591` (events)
@@ -69,7 +56,7 @@ committing the edit.
 
 ### MEDIUM
 
-#### #5 — Clip drag handle bit encoding is accidentally correct but fragile
+#### #5 — Clip drag handle bit encoding is accidentally correct but fragile ✓ FIXED
 **Location:** `editor_panel_animation.cpp:486–489` (rect array) and `522` (handle assignment)
 
 The three drag handle rects are indexed 0/1/2. Adding 1 gives `m_clipDragHandle` values of

@@ -154,9 +154,11 @@ private:
     float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
     float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
 
+    enum ClipDragHandle { kClipHandleNone = 0, kClipHandleLeft = 1, kClipHandleRight = 2, kClipHandleCenter = kClipHandleLeft | kClipHandleRight };
+
     bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
     float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
-    int m_clipDragHandle = -1;              // section of the clip we're dragging. left/center/right
+    int m_clipDragHandle = kClipHandleNone; // section of the clip we're dragging
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
     bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
     bool m_grabbedCurrentFrame = false;     // draging the current frame indicator
