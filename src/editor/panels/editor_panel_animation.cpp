@@ -351,7 +351,7 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
     float const frameCount = static_cast<float>(ImMax(m_maxFrame - m_minFrame, 1));
     if (m_grabbedCurrentFrame) {
         if (frameCount) {
-            m_currentFrame = static_cast<int>((io.MousePos.x - trackBounds.Min.x + -trackOffset) / m_framePixelWidth);
+            m_currentFrame = MousePosToFrame(io.MousePos.x, trackBounds.Min.x);
             if (m_currentFrame < m_minFrame)
                 m_currentFrame = m_minFrame;
             if (m_currentFrame >= m_maxFrame)
@@ -462,8 +462,7 @@ void EditorPanelAnimation::DrawClipRow() {
     // draw clips
     auto& animationClips = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->m_clips;
     for (auto&& clip : animationClips) {
-        bool const selected = IsClipSelected(clip.get());
-        unsigned int const slotColor = selected ? 0xFF00CCAA : 0xFF13BDF3;
+        bool selected = IsClipSelected(clip.get());
 
         auto& clipValues = (m_mouseDragging && selected) ? GetSelectedClipContext(clip.get())->mutableValue : *clip;
 
@@ -471,6 +470,13 @@ void EditorPanelAnimation::DrawClipRow() {
         float const clipEndOffset = (clipValues.m_endFrame + 1) * m_framePixelWidth;
         ImVec2 const clipBoundsMin{ trackStartOffsetX + clipStartOffset, trackStartOffsetY + 2.0f };
         ImVec2 const clipBoundsMax{ trackStartOffsetX + clipEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+
+        if (m_boxSelecting && ImRect{ clipBoundsMin, clipBoundsMax }.Overlaps(m_selectBox)) {
+            m_pendingClipBoxSelections.push_back(clip.get());
+            selected = true;
+        }
+
+        unsigned int const slotColor = selected ? 0xFF00CCAA : 0xFF13BDF3;
         m_drawList->AddRectFilled(clipBoundsMin, clipBoundsMax, slotColor, 2.0f);
 
         if (io.KeyAlt) {
@@ -536,7 +542,7 @@ void EditorPanelAnimation::DrawClipRow() {
 
     // detect popup click
     if (m_mouseInScrollArea && rowDimensions.trackBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
+        m_clickedFrame = MousePosToFrame(io.MousePos.x, rowDimensions.trackBounds.Min.x);
         ImGui::OpenPopup("clip_popup");
     }
 }
@@ -615,8 +621,7 @@ void EditorPanelAnimation::DrawEventsRow() {
     // draw events
     auto& animationEvents = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->m_events;
     for (auto& event : animationEvents) {
-        bool const selected = IsEventSelected(event.get());
-        unsigned int const slotColor = selected ? eventColorSelected : eventColor;
+        bool selected = IsEventSelected(event.get());
 
         auto& eventValues = (m_mouseDragging && selected) ? GetSelectedEventContext(event.get())->mutableValue : *event;
 
@@ -625,6 +630,13 @@ void EditorPanelAnimation::DrawEventsRow() {
         ImVec2 const eventBoundsMin{ trackStartOffsetX + eventStartOffset, trackStartOffsetY + 2.0f };
         ImVec2 const eventBoundsMax{ trackStartOffsetX + eventEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
         ImRect const eventBounds{ eventBoundsMin, eventBoundsMax };
+
+        if (m_boxSelecting && eventBounds.Overlaps(m_selectBox)) {
+            m_pendingEventBoxSelections.push_back(event.get());
+            selected = true;
+        }
+
+        unsigned int const slotColor = selected ? eventColorSelected : eventColor;
         m_drawList->AddRectFilled(eventBoundsMin, eventBoundsMax, slotColor, 2.0f);
 
         // tooltip to display the event name
@@ -667,7 +679,7 @@ void EditorPanelAnimation::DrawEventsRow() {
     // if we right clicked on this track we pop up a context dialog
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         if (m_mouseInScrollArea && rowDimensions.trackBounds.Contains(io.MousePos)) {
-            m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + -rowDimensions.trackOffset) / m_framePixelWidth);
+            m_clickedFrame = MousePosToFrame(io.MousePos.x, rowDimensions.trackBounds.Min.x);
             ImGui::OpenPopup(EventPopupName);
         }
     }
@@ -876,7 +888,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                     if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                         m_clickedChildIdx = childIndex;
                         m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
-                        m_clickedFrame = static_cast<int>((io.MousePos.x - subTrackBounds.Min.x + rowDimensions.trackOffset) / m_framePixelWidth);
+                        m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
                         ImGui::OpenPopup(KeyframePopupName);
                     }
                 }
@@ -1142,6 +1154,8 @@ void EditorPanelAnimation::DrawWidget() {
     m_drawList = ImGui::GetWindowDrawList();
 
     m_pendingBoxSelections.clear();
+    m_pendingClipBoxSelections.clear();
+    m_pendingEventBoxSelections.clear();
 
     DrawClipRow();
     DrawEventsRow();
@@ -1176,6 +1190,12 @@ void EditorPanelAnimation::DrawWidget() {
         // commit selections
         for (auto& pendingSelection : m_pendingBoxSelections) {
             SelectKeyframe(pendingSelection.entity, pendingSelection.target, pendingSelection.mutableFrame);
+        }
+        for (auto* clip : m_pendingClipBoxSelections) {
+            SelectClip(clip);
+        }
+        for (auto* event : m_pendingEventBoxSelections) {
+            SelectEvent(event);
         }
     }
 

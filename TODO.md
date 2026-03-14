@@ -23,22 +23,19 @@ m_pendingBoxSelections.push_back(KeyframeContext{ childEntity, target, keyframe-
 
 ### HIGH
 
-#### #2 — Wrong frame calculated for event right-click when scrolled
-**Location:** `editor_panel_animation.cpp:670` (compare with keyframe equivalent at line 879)
+#### #2 — Wrong frame calculated for keyframe right-click when scrolled ✓ FIXED
+**Location:** `editor_panel_animation.cpp:879`
 
-The keyframe path computes the clicked frame as:
-```cpp
-(io.MousePos.x - subTrackBounds.Min.x + rowDimensions.trackOffset) / m_framePixelWidth
-```
-The event path uses `+ -rowDimensions.trackOffset` (sign flipped). Since `trackOffset` is
-already negative (it undoes `m_minFrame`), the event version double-inverts it. Right-clicking
-to add an event on a scrolled timeline creates it at the wrong frame.
+`trackOffset` is `-m_minFrame * m_framePixelWidth` — always negative when scrolled. The
+correct inverse formula to recover a frame from mouse position is `+ -trackOffset`. Every
+other usage (current frame click line 354, clips line 539, events line 670) uses
+`+ -trackOffset` correctly. The keyframe right-click path used `+ trackOffset` (wrong sign),
+causing the added keyframe to land at the wrong frame whenever the timeline was scrolled or
+zoomed.
 
-**Fix:** Change the event path to use the same sign convention as the keyframe path:
-```cpp
-m_clickedFrame = static_cast<int>((io.MousePos.x - rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset) / m_framePixelWidth);
-```
-Consider extracting a shared `MousePosToFrame()` helper to prevent future divergence (see #9).
+**Fix applied:** Changed line 879 to use `+ -rowDimensions.trackOffset` to match all other
+call sites. Consider extracting a shared `MousePosToFrame()` helper to prevent future
+divergence (see #9).
 
 ---
 
@@ -132,19 +129,10 @@ lookup to match.
 
 ---
 
-#### #9 — Frame-from-mouse-position calculation duplicated 4+ times
-**Location:** `editor_panel_animation.cpp:322–327, 539, 670, 879`
+#### #9 — Frame-from-mouse-position calculation duplicated 4+ times ✓ FIXED
 
-The same expression for converting a mouse X position to a frame number appears at least four
-times with minor variations. The sign-flip bug in #2 exists partly because of this duplication.
-
-**Fix:** Extract a helper:
-```cpp
-int MousePosToFrame(float mouseX, RowDimensions const& row) const {
-    return static_cast<int>((mouseX - row.trackBounds.Min.x + row.trackOffset) / m_framePixelWidth);
-}
-```
-Replace all call sites with the helper.
+Extracted `MousePosToFrame(float mouseX, float trackMinX)` to the header. All four call
+sites (lines 354, 539, 670, 879) now use the helper.
 
 ---
 

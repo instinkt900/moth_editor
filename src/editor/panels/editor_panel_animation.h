@@ -81,6 +81,8 @@ private:
     using ElementContext = std::variant<ClipContext, EventContext, KeyframeContext>;
     std::vector<ElementContext> m_selections;
     std::vector<KeyframeContext> m_pendingBoxSelections;
+    std::vector<moth_ui::AnimationClip*> m_pendingClipBoxSelections;
+    std::vector<moth_ui::AnimationEvent*> m_pendingEventBoxSelections;
 
     void ClearSelections();
     void DeleteSelections();
@@ -164,6 +166,10 @@ private:
     moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
 
     bool IsAnyPopupOpen() const;
+
+    int MousePosToFrame(float mouseX, float trackMinX) const {
+        return static_cast<int>((mouseX - trackMinX) / m_framePixelWidth) + m_minFrame;
+    }
 
     static inline char const* const KeyframePopupName = "keyframe_popup";
     static inline char const* const ClipPopupName = "clip_popup";
