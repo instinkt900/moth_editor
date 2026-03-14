@@ -23,6 +23,37 @@
 
 using namespace moth_ui;
 
+namespace {
+    // Row backgrounds
+    static constexpr ImU32 kColorRowOdd              = 0xFF3A3636;
+    static constexpr ImU32 kColorRowEven             = 0xFF413D3D;
+    static constexpr ImU32 kColorRowSpecial          = 0xFF3D3837; // clips and events rows
+
+    // Text
+    static constexpr ImU32 kColorTextPrimary         = 0xFFFFFFFF;
+    static constexpr ImU32 kColorTextSecondary       = 0xFFBBBBBB; // frame numbers
+
+    // Frame ruler
+    static constexpr ImU32 kColorRulerTick           = 0xFF606060;
+
+    // Clips
+    static constexpr ImU32 kColorClip                = 0xFF13BDF3;
+    static constexpr ImU32 kColorClipSelected        = 0xFF00CCAA;
+
+    // Events and keyframes (shared colours)
+    static constexpr ImU32 kColorElement             = 0xFFc4c4c4;
+    static constexpr ImU32 kColorElementSelected     = 0xFFFFa2a2;
+
+    // Scrollbar
+    static constexpr ImU32 kColorScrollBarBg         = 0xFF505050;
+    static constexpr ImU32 kColorScrollBarBgHover    = 0xFF606060;
+    static constexpr ImU32 kColorScrollBarHandle     = 0xFF666666;
+    static constexpr ImU32 kColorScrollBarHandleHover = 0xFFAAAAAA;
+
+    // Box selection outline
+    static constexpr ImU32 kColorSelectBox           = 0xFF00FFFF;
+}
+
 EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Animation", visible, true) {
 }
@@ -260,7 +291,7 @@ EditorPanelAnimation::RowDimensions EditorPanelAnimation::AddRow(char const* lab
     ImVec2 const rowMin = m_scrollingPanelBounds.Min + ImVec2{ 0.0f, m_rowHeight * m_rowCounter };
     ImVec2 const rowMax = rowMin + ImVec2{ m_scrollingPanelBounds.GetWidth(), m_rowHeight };
     ImRect const rowBounds{ rowMin, rowMax };
-    ImU32 const rowColor = rowOptions.colorOverride.has_value() ? rowOptions.colorOverride.value() : (((m_rowCounter % 2) == 0) ? 0xFF3A3636 : 0xFF413D3D);
+    ImU32 const rowColor = rowOptions.colorOverride.has_value() ? rowOptions.colorOverride.value() : (((m_rowCounter % 2) == 0) ? kColorRowOdd : kColorRowEven);
 
     resultDimensions.rowBounds = rowBounds;
 
@@ -285,7 +316,7 @@ EditorPanelAnimation::RowDimensions EditorPanelAnimation::AddRow(char const* lab
         ImVec2 const labelMax{ rowMin.x + m_labelColumnWidth, rowMax.y };
         ImRect const labelBounds{ labelMin, labelMax };
         ImVec2 const textPos = labelMin + ImVec2(rowOptions.indented ? 50.0f : 3.0f, 0.0f);
-        m_drawList->AddText(textPos, 0xFFFFFFFF, label);
+        m_drawList->AddText(textPos, kColorTextPrimary, label);
         cursorPos += labelBounds.GetSize().x;
         resultDimensions.labelBounds = labelBounds;
     }
@@ -337,13 +368,13 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
         if (px >= trackMin.x && px <= trackMax.x) {
             ImVec2 const start{ px, trackMin.y + tickYOffset };
             ImVec2 const end{ px, trackMax.y - 1 };
-            drawList->AddLine(start, end, 0xFF606060, 1);
+            drawList->AddLine(start, end, kColorRulerTick, 1);
 
             // frame numbers
             if (majorTick) {
                 static char tmps[32];
                 ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", i);
-                drawList->AddText(ImVec2(px + 3.f, trackMin.y), 0xFFBBBBBB, tmps);
+                drawList->AddText(ImVec2(px + 3.f, trackMin.y), kColorTextSecondary, tmps);
             }
         }
     }
@@ -448,7 +479,7 @@ bool EditorPanelAnimation::DrawClipPopup() {
 }
 
 void EditorPanelAnimation::DrawClipRow() {
-    RowDimensions const rowDimensions = AddRow("Clips", RowOptions().ColorOverride(0xFF3D3837));
+    RowDimensions const rowDimensions = AddRow("Clips", RowOptions().ColorOverride(kColorRowSpecial));
 
     ImGuiIO const& io = ImGui::GetIO();
 
@@ -482,7 +513,7 @@ void EditorPanelAnimation::DrawClipRow() {
             selected = true;
         }
 
-        unsigned int const slotColor = selected ? 0xFF00CCAA : 0xFF13BDF3;
+        unsigned int const slotColor = selected ? kColorClipSelected : kColorClip;
         m_drawList->AddRectFilled(clipBoundsMin, clipBoundsMax, slotColor, 2.0f);
 
         if (io.KeyAlt) {
@@ -501,7 +532,7 @@ void EditorPanelAnimation::DrawClipRow() {
             ImRect{ clipBoundsMin, clipBoundsMax }
         };
 
-        unsigned int const quadColor[] = { 0xFFFFFFFF, 0xFFFFFFFF, slotColor };
+        unsigned int const quadColor[] = { kColorTextPrimary, kColorTextPrimary, slotColor };
         if (!m_mouseDragging && m_scrollingPanelBounds.Contains(io.MousePos)) {
             for (int i = 2; i >= 0; --i) {
                 ImRect const& rc = rects[i];
@@ -542,7 +573,7 @@ void EditorPanelAnimation::DrawClipRow() {
 
         ImVec2 const tsize = ImGui::CalcTextSize(clip->m_name.c_str());
         ImVec2 const tpos(clipBoundsMin.x + (clipBoundsMax.x - clipBoundsMin.x - tsize.x) / 2, clipBoundsMin.y + (clipBoundsMax.y - clipBoundsMin.y - tsize.y) / 2);
-        m_drawList->AddText(tpos, 0xFFFFFFFF, clip->m_name.c_str());
+        m_drawList->AddText(tpos, kColorTextPrimary, clip->m_name.c_str());
     }
 
     m_drawList->PopClipRect();
@@ -608,10 +639,7 @@ bool EditorPanelAnimation::DrawEventPopup() {
 
 void EditorPanelAnimation::DrawEventsRow() {
     ImGuiIO const& io = ImGui::GetIO();
-    RowDimensions const rowDimensions = AddRow("Events", RowOptions().ColorOverride(0xFF3D3837));
-
-    ImU32 const eventColor = 0xFFc4c4c4;
-    ImU32 const eventColorSelected = 0xFFFFa2a2;
+    RowDimensions const rowDimensions = AddRow("Events", RowOptions().ColorOverride(kColorRowSpecial));
 
     bool const popupShown = DrawEventPopup();
 
@@ -643,7 +671,7 @@ void EditorPanelAnimation::DrawEventsRow() {
             selected = true;
         }
 
-        unsigned int const slotColor = selected ? eventColorSelected : eventColor;
+        unsigned int const slotColor = selected ? kColorElementSelected : kColorElement;
         m_drawList->AddRectFilled(eventBoundsMin, eventBoundsMax, slotColor, 2.0f);
 
         // tooltip to display the event name
@@ -821,8 +849,6 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         }
     }
 
-    ImU32 const keyframeColor = 0xFFc4c4c4;
-    ImU32 const keyframeColorSelected = 0xFFFFa2a2;
 
     for (auto& [target, track] : childTracks) {
         ImRect subTrackBounds = rowDimensions.trackBounds;
@@ -855,7 +881,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                 }
             }
 
-            unsigned int const slotColor = selected ? keyframeColorSelected : keyframeColor;
+            unsigned int const slotColor = selected ? kColorElementSelected : kColorElement;
             m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
 
             if (io.KeyAlt) {
@@ -949,9 +975,9 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     bool const mouseInRightHandle = barHandleRight.Contains(io.MousePos);
 
     // draw the scroll bar and its handles
-    m_drawList->AddRectFilled(scrollBarMin, scrollBarMax, (mouseInScrollBar || m_hScrollGrabbedBar) ? 0xFF606060 : 0xFF505050, 6);
-    m_drawList->AddRectFilled(barHandleLeft.Min, barHandleLeft.Max, (mouseInLeftHandle || m_hScrollGrabbedLeft) ? 0xFFAAAAAA : 0xFF666666, 6);
-    m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (mouseInRightHandle || m_hScrollGrabbedRight) ? 0xFFAAAAAA : 0xFF666666, 6);
+    m_drawList->AddRectFilled(scrollBarMin, scrollBarMax, (mouseInScrollBar || m_hScrollGrabbedBar) ? kColorScrollBarBgHover : kColorScrollBarBg, 6);
+    m_drawList->AddRectFilled(barHandleLeft.Min, barHandleLeft.Max, (mouseInLeftHandle || m_hScrollGrabbedLeft) ? kColorScrollBarHandleHover : kColorScrollBarHandle, 6);
+    m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (mouseInRightHandle || m_hScrollGrabbedRight) ? kColorScrollBarHandleHover : kColorScrollBarHandle, 6);
 
     if (m_hScrollGrabbedRight) {
         // moving the max scroll handle
@@ -1040,7 +1066,7 @@ void EditorPanelAnimation::DrawCursor() {
         m_drawList->AddRectFilled(m_cursorRect.Min, m_cursorRect.Max, 0xA02A2AFF, 0.0f);
         char tmps[512];
         ImFormatString(tmps, IM_ARRAYSIZE(tmps), "%d", m_currentFrame);
-        m_drawList->AddText(ImVec2(m_cursorRect.Min.x + 3.0f, m_cursorRect.Min.y), 0xFFFFFFFF, tmps);
+        m_drawList->AddText(ImVec2(m_cursorRect.Min.x + 3.0f, m_cursorRect.Min.y), kColorTextPrimary, tmps);
     }
 }
 
@@ -1188,7 +1214,7 @@ void EditorPanelAnimation::DrawWidget() {
             }
 
             if (m_boxSelecting) {
-                m_drawList->AddRect(m_selectBox.Min, m_selectBox.Max, 0xFF00FFFF);
+                m_drawList->AddRect(m_selectBox.Min, m_selectBox.Max, kColorSelectBox);
             }
         }
     } else {
