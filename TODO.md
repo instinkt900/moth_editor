@@ -6,26 +6,6 @@
 
 ### MEDIUM
 
-#### #3 — Null dereference in BoundsWidget::OnMouseUp when selection is cleared mid-drag
-**Location:** `bounds_widget.cpp:125,142`
-
-`OnMouseDown` sets `m_anchorTLPressed` / `m_anchorFillPressed` without checking `m_node`.
-`OnMouseUp` checks `IsInRect(...) && m_anchorTLPressed` before calling
-`m_node->GetLayoutRect()` and `m_node->GetParent()->GetScreenRect()` — but if
-`SetSelection(nullptr)` was called between the down and up events (e.g. the canvas
-deselected on a different code path), `m_node` will be null and the dereference crashes.
-
-**STR:**
-1. Click one of the anchor preset buttons in the bounds widget.
-2. While holding the mouse button, trigger a selection clear (e.g. click on empty canvas
-   area through keyboard shortcut or programmatic deselect).
-3. Release the mouse — crash.
-
-**Fix:** Add an early return at the top of `OnMouseUp` (and `OnMouseDown`):
-```cpp
-if (!m_node) return false;
-```
-
 #### #4 — ChangeValueAction holds a raw reference — dangling if owner is destroyed
 **Location:** `editor_action.h:49`
 
