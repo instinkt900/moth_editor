@@ -2,6 +2,11 @@ name: Upload Package
 
 on:
   workflow_dispatch:
+    inputs:
+      force_release:
+        description: 'Create a GitHub Release even if the version has not changed'
+        type: boolean
+        default: false
   push:
     branches: [ master ]
 
@@ -9,8 +14,29 @@ permissions:
   contents: write
 
 jobs:
-  build-and-upload:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version.txt changed
+        id: check
+        run: |
+          if [[ "${{ github.event.inputs.force_release }}" == "true" ]]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif git diff HEAD^ HEAD --name-only 2>/dev/null | grep -q "^version.txt$"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  conan-upload:
     if: github.repository == 'instinkt900/moth_editor'
+    needs: check-version
     runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || 'ubuntu-latest' }}
     strategy:
       matrix:
@@ -37,8 +63,32 @@ jobs:
         conan create . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
         conan upload moth_ui_editor --confirm --remote artifactory
 
-    - name: Install dependencies for binary build
+  build-release:
+    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true'
+    needs: check-version
+    runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || 'ubuntu-latest' }}
+    strategy:
+      matrix:
+        os: [windows, linux]
+
+    steps:
+    - name: Install system dependencies (Linux)
+      if: matrix.os == 'linux'
+      run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Setup Conan
+      uses: conan-io/setup-conan@v1
+      with:
+        cache_packages: true
+
+    - name: Install dependencies
       run: |
+        conan remote add artifactory https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
+        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
         conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
 
     - name: Configure and build
@@ -58,14 +108,12 @@ jobs:
 
     - name: Archive binaries (Linux)
       if: matrix.os == 'linux'
-      run: |
-        tar czf moth_editor-${{ steps.version.outputs.version }}-linux.tar.gz -C staging .
+      run: tar czf moth_editor-${{ steps.version.outputs.version }}-linux.tar.gz -C staging .
 
     - name: Archive binaries (Windows)
       if: matrix.os == 'windows'
       shell: pwsh
-      run: |
-        Compress-Archive -Path staging\* -DestinationPath moth_editor-${{ steps.version.outputs.version }}-windows.zip
+      run: Compress-Archive -Path staging\* -DestinationPath moth_editor-${{ steps.version.outputs.version }}-windows.zip
 
     - name: Upload archive as workflow artifact
       uses: actions/upload-artifact@v4
@@ -75,8 +123,8 @@ jobs:
         retention-days: 1
 
   tag-and-release:
-    if: github.repository == 'instinkt900/moth_editor'
-    needs: build-and-upload
+    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true'
+    needs: [check-version, build-release]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
