@@ -104,7 +104,7 @@ check like `width > 5 && height > 5`) to match typical drag-detection heuristics
 
 ---
 
-#### #8 — Inconsistent selection lookup patterns
+#### #8 — Inconsistent selection lookup patterns ✓ FIXED
 **Location:** `editor_panel_animation.cpp:150–157` (clip lookup) vs `225–236` (keyframe lookup)
 
 Clip selection uses a hand-written `for` loop; keyframe selection uses `ranges::find_if`.

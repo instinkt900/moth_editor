@@ -132,13 +132,14 @@ void EditorPanelAnimation::SelectClip(moth_ui::AnimationClip* clip) {
 }
 
 void EditorPanelAnimation::DeselectClip(moth_ui::AnimationClip* clip) {
-    for (auto it = std::begin(m_selections); it != std::end(m_selections); ++it) {
-        if (auto clipSelection = std::get_if<ClipContext>(&(*it))) {
-            if (clipSelection->clip == clip) {
-                m_selections.erase(it);
-                break;
-            }
+    auto const it = ranges::find_if(m_selections, [&](auto const& context) {
+        if (auto clipContext = std::get_if<ClipContext>(&context)) {
+            return clipContext->clip == clip;
         }
+        return false;
+    });
+    if (it != std::end(m_selections)) {
+        m_selections.erase(it);
     }
 }
 
@@ -147,12 +148,14 @@ bool EditorPanelAnimation::IsClipSelected(moth_ui::AnimationClip* clip) {
 }
 
 ClipContext* EditorPanelAnimation::GetSelectedClipContext(moth_ui::AnimationClip* clip) {
-    for (auto& selection : m_selections) {
-        if (auto clipSelection = std::get_if<ClipContext>(&selection)) {
-            if (clipSelection->clip == clip) {
-                return clipSelection;
-            }
+    auto const it = ranges::find_if(m_selections, [&](auto const& context) {
+        if (auto clipContext = std::get_if<ClipContext>(&context)) {
+            return clipContext->clip == clip;
         }
+        return false;
+    });
+    if (it != std::end(m_selections)) {
+        return std::get_if<ClipContext>(&(*it));
     }
     return nullptr;
 }
@@ -167,13 +170,14 @@ void EditorPanelAnimation::SelectEvent(moth_ui::AnimationEvent* event) {
 }
 
 void EditorPanelAnimation::DeselectEvent(moth_ui::AnimationEvent* event) {
-    for (auto it = std::begin(m_selections); it != std::end(m_selections); ++it) {
-        if (auto eventSelection = std::get_if<EventContext>(&(*it))) {
-            if (eventSelection->event == event) {
-                m_selections.erase(it);
-                break;
-            }
+    auto const it = ranges::find_if(m_selections, [&](auto const& context) {
+        if (auto eventContext = std::get_if<EventContext>(&context)) {
+            return eventContext->event == event;
         }
+        return false;
+    });
+    if (it != std::end(m_selections)) {
+        m_selections.erase(it);
     }
 }
 
@@ -182,12 +186,14 @@ bool EditorPanelAnimation::IsEventSelected(moth_ui::AnimationEvent* event) {
 }
 
 EventContext* EditorPanelAnimation::GetSelectedEventContext(moth_ui::AnimationEvent* event) {
-    for (auto& selection : m_selections) {
-        if (auto eventSelection = std::get_if<EventContext>(&selection)) {
-            if (eventSelection->event == event) {
-                return eventSelection;
-            }
+    auto const it = ranges::find_if(m_selections, [&](auto const& context) {
+        if (auto eventContext = std::get_if<EventContext>(&context)) {
+            return eventContext->event == event;
         }
+        return false;
+    });
+    if (it != std::end(m_selections)) {
+        return std::get_if<EventContext>(&(*it));
     }
     return nullptr;
 }
