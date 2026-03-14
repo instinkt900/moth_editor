@@ -60,7 +60,7 @@ find_package(Freetype REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-target_include_directories(${PROJECT_NAME} PRIVATE src ${FREETYPE_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE src external/stb ${FREETYPE_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} canyon::canyon)
 target_link_libraries(${PROJECT_NAME} nativefiledialog)
 

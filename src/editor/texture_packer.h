@@ -1,7 +1,7 @@
 #pragma once
 
 #include "moth_ui/context.h"
-#include "canyon/graphics/stb_rect_pack.h"
+#include "stb_rect_pack.h"
 #include "canyon/graphics/igraphics.h"
 #include <canyon/graphics/moth_ui/moth_image.h>
 #include <moth_ui/layout/layout.h>

@@ -6,7 +6,7 @@ class MothUIEditor(ConanFile):
     name = "moth_ui_editor"
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
-    exports_sources = "CMakeLists.txt", "version.txt", "src/*", "external/nativefiledialog/*"
+    exports_sources = "CMakeLists.txt", "version.txt", "src/*", "external/nativefiledialog/*", "external/stb/*"
 
     def set_version(self):
         self.version = load(self, "version.txt").strip()
