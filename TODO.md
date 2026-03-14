@@ -4,33 +4,6 @@
 
 ---
 
-### HIGH
-
-#### #1 — Unchecked iterator dereference in ModifyClipAction / ModifyEventAction
-**Location:** `modify_clip_action.cpp:22,37`, `modify_event_action.cpp:19,38`
-
-`ranges::find_if` is called to locate a clip/event by value, but the returned iterator is
-immediately dereferenced without checking whether the search succeeded (i.e. whether
-`it == ranges::end(...)`). If the clip or event is not found (e.g. the undo stack is replayed
-after external data mutation), this dereferences end-iterator, which is undefined behaviour
-and typically a crash.
-
-**STR:**
-1. Open a layout with clips/events.
-2. Modify a clip (creates a `ModifyClipAction` that records old + new values by value).
-3. Externally modify the clip's fields so they no longer match the stored `m_initialValues`
-   or `m_finalValues` (rare, but possible via another action or reload).
-4. Trigger Undo — `find_if` returns `end()`, crash on dereference.
-
-**Fix:** Guard each dereference with an end-check:
-```cpp
-if (it != ranges::end(m_group->m_clips)) {
-    *it->get() = m_finalValues;
-}
-```
-
----
-
 ### MEDIUM
 
 #### #2 — Entity tree diverges from node tree after undoing a reorder
