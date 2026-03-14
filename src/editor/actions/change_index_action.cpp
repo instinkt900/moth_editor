@@ -37,7 +37,7 @@ void ChangeIndexAction::Undo() {
     // need to alter the layout entity trees too
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
     auto& parentEntityChildren = parentLayoutEntity->m_children;
-    auto oldEntity = parentEntityChildren[m_oldIndex];
+    auto oldEntity = parentEntityChildren[m_newIndex];
     parentEntityChildren.erase(std::next(std::begin(parentEntityChildren), m_newIndex));
     parentEntityChildren.insert(std::next(std::begin(parentEntityChildren), m_oldIndex), oldEntity);
 }
