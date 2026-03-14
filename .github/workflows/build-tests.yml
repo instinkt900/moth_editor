@@ -29,7 +29,7 @@ jobs:
 
     - name: Add private artifactory
       run: |
-        conan remote add artifactory https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
+        conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }}
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
 
     - name: Build editor
