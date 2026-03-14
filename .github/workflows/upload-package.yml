@@ -5,6 +5,9 @@ on:
   push:
     branches: [ master ]
 
+permissions:
+  contents: write
+
 jobs:
   build-and-upload:
     if: github.repository == 'instinkt900/moth_editor'
@@ -14,8 +17,8 @@ jobs:
         os: [windows, linux]
 
     steps:
-    - name: Install GTK
-      if: ${{ matrix.os == 'linux' }}
+    - name: Install system dependencies (Linux)
+      if: matrix.os == 'linux'
       run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
 
     - uses: actions/checkout@v4
@@ -27,30 +30,78 @@ jobs:
       with:
         cache_packages: true
 
-    - name: Build package and upload
+    - name: Build Conan package and upload to Artifactory
       run: |
         conan remote add artifactory https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
         conan create . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
         conan upload moth_ui_editor --confirm --remote artifactory
 
-  tag-package:
+    - name: Install dependencies for binary build
+      run: |
+        conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
+
+    - name: Configure and build
+      run: |
+        cmake -B build/release \
+          -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
+          -DCMAKE_BUILD_TYPE=Release
+        cmake --build build/release --config Release
+
+    - name: Install to staging directory
+      run: cmake --install build/release --config Release --prefix staging
+
+    - name: Read version
+      id: version
+      shell: bash
+      run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
+
+    - name: Archive binaries (Linux)
+      if: matrix.os == 'linux'
+      run: |
+        tar czf moth_editor-${{ steps.version.outputs.version }}-linux.tar.gz -C staging .
+
+    - name: Archive binaries (Windows)
+      if: matrix.os == 'windows'
+      shell: pwsh
+      run: |
+        Compress-Archive -Path staging\* -DestinationPath moth_editor-${{ steps.version.outputs.version }}-windows.zip
+
+    - name: Upload archive as workflow artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: moth_editor-${{ matrix.os }}
+        path: moth_editor-${{ steps.version.outputs.version }}-*
+        retention-days: 1
+
+  tag-and-release:
     if: github.repository == 'instinkt900/moth_editor'
     needs: build-and-upload
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Conan
-        uses: conan-io/setup-conan@v1
+      - name: Read version
+        id: version
+        run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
 
-      - name: Fetch package version
-        id: get-version
-        run: |
-          echo "version=$(conan inspect . -f json | jq -r .version)" >> $GITHUB_OUTPUT
-
-      - uses: rickstaa/action-create-tag@v1
+      - name: Create version tag
+        uses: rickstaa/action-create-tag@v1
         with:
-          tag: ${{ steps.get-version.outputs.version }}
+          tag: ${{ steps.version.outputs.version }}
           tag_exists_error: false
           force_push_tag: true
+
+      - name: Download all archives
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: release-assets
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: "moth_editor ${{ steps.version.outputs.version }}"
+          files: release-assets/*
+          generate_release_notes: true
