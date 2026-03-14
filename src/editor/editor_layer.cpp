@@ -164,7 +164,7 @@ void EditorLayer::DrawMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
-                m_layerStack->BroadcastEvent(canyon::EventRequestQuit{});
+                m_layerStack->FireEvent(canyon::EventRequestQuit{});
             }
             ImGui::EndMenu();
         }
@@ -781,7 +781,7 @@ void EditorLayer::Shutdown() {
         panel->OnShutdown();
     }
     SaveConfig();
-    m_layerStack->BroadcastEvent(canyon::EventQuit());
+    m_layerStack->FireEvent(canyon::EventQuit());
 }
 
 void EditorLayer::SaveConfig() {

@@ -88,6 +88,6 @@ bool ExampleLayer::OnAnimationStopped(moth_ui::EventAnimationStopped const& even
 }
 
 bool ExampleLayer::OnRequestQuitEvent(canyon::EventRequestQuit const& event) {
-    m_layerStack->BroadcastEvent(canyon::EventQuit());
+    m_layerStack->FireEvent(canyon::EventQuit());
     return true;
 }

@@ -9,7 +9,7 @@ class MothUIEditor(ConanFile):
     exports_sources = "CMakeLists.txt", "src/*", "external/nativefiledialog/*"
 
     def requirements(self):
-        self.requires("canyon/[>=0.2.0]")
+        self.requires("canyon/0.4.0")
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.27.0]")
