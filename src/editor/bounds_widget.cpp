@@ -109,7 +109,11 @@ void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
 }
 
 bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
-    if (!m_node) return false;
+    if (!m_node) {
+        m_anchorTLPressed = false;
+        m_anchorFillPressed = false;
+        return false;
+    }
     if (IsInRect(event.GetPosition(), m_anchorButtonTL)) {
         m_anchorTLPressed = true;
         return true;
@@ -121,7 +125,11 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
 }
 
 bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
-    if (!m_node) return false;
+    if (!m_node) {
+        m_anchorTLPressed = false;
+        m_anchorFillPressed = false;
+        return false;
+    }
     if (IsInRect(event.GetPosition(), m_anchorButtonTL) && m_anchorTLPressed) {
         m_canvasPanel.GetEditorLayer().BeginEditBounds();
         auto& rect = m_node->GetLayoutRect();
