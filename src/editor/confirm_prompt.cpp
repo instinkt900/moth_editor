@@ -40,7 +40,13 @@ void ConfirmPrompt::Open() {
 void ConfirmPrompt::Draw() {
     if (ImGui::BeginPopupModal(m_title.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", m_message.c_str());
-        ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
+        float const padding = ImGui::GetStyle().FramePadding.x * 2.0f;
+        float buttonWidth = ImGui::CalcTextSize(m_positiveText.c_str()).x + padding;
+        buttonWidth = std::max(buttonWidth, ImGui::CalcTextSize(m_negativeText.c_str()).x + padding);
+        if (!m_cancelText.empty()) {
+            buttonWidth = std::max(buttonWidth, ImGui::CalcTextSize(m_cancelText.c_str()).x + padding);
+        }
+        ImVec2 const button_size(buttonWidth, 0.0f);
         if (ImGui::Button(m_positiveText.c_str(), button_size)) {
             if (m_positiveAction) {
                 m_positiveAction();
