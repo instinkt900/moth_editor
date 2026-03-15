@@ -170,6 +170,13 @@ private:
     int m_clickedChildIdx = -1;
     moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
 
+    // Label drag-to-reorder state
+    int m_labelDragSourceIdx = -1;  // actual child index being dragged (-1 = none)
+    int m_labelDragTargetIdx = -1;  // actual child index drop target (per-frame)
+    float m_labelDropLineY = 0.0f;  // Y position of drop indicator line
+    bool m_labelDragging = false;   // true once drag threshold is crossed
+    bool m_labelDropAtBottom = false; // true when target came from the "below all rows" fallback
+
     bool IsAnyPopupOpen() const;
 
     int MousePosToFrame(float mouseX, float trackMinX) const {

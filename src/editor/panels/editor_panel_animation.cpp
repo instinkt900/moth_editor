@@ -13,6 +13,7 @@
 #include "../actions/add_event_action.h"
 #include "../actions/delete_event_action.h"
 #include "../actions/modify_event_action.h"
+#include "../actions/change_index_action.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/layout/layout_entity_group.h"
@@ -886,8 +887,9 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
     }
     SetExpanded(child, expanded);
 
-    // Click on label to select the entity in the editor.
+    // Click on label to select the entity in the editor (also starts a potential drag).
     if (m_mouseInScrollArea && rowDimensions.labelBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        m_labelDragSourceIdx = childIndex;
         if (!io.KeyCtrl) {
             m_editorLayer.ClearSelection();
         }
@@ -984,9 +986,72 @@ void EditorPanelAnimation::DrawTrackRows() {
         m_clickConsumed = true;
     }
 
+    ImGuiIO const& io = ImGui::GetIO();
     auto const& children = m_group->GetChildren();
-    for (int childIndex = static_cast<int>(children.size()) - 1; childIndex >= 0; --childIndex) {
+    int const childCount = static_cast<int>(children.size());
+
+    // Reset per-frame drop target.
+    m_labelDragTargetIdx = -1;
+    m_labelDropLineY = 0.0f;
+    m_labelDropAtBottom = false;
+
+    bool const isDragging = m_labelDragging;
+
+    for (int childIndex = childCount - 1; childIndex >= 0; --childIndex) {
+        // Snapshot row top Y before AddRow increments m_rowCounter.
+        float const mainRowTopY = m_scrollingPanelBounds.Min.y + m_rowHeight * m_rowCounter;
+        float const mainRowMidY = mainRowTopY + m_rowHeight * 0.5f;
+
+        // First row whose midpoint is below the mouse becomes the drop target.
+        if (isDragging && m_labelDragTargetIdx == -1 && io.MousePos.y < mainRowMidY) {
+            m_labelDragTargetIdx = childIndex;
+            m_labelDropLineY = mainRowTopY;
+        }
+
         DrawChildTrack(childIndex, children[childIndex]);
+    }
+
+    // Mouse is below all rows — drop at the bottom.
+    if (isDragging && m_labelDragTargetIdx == -1) {
+        m_labelDragTargetIdx = 0;
+        m_labelDropAtBottom = true;
+        m_labelDropLineY = m_scrollingPanelBounds.Min.y + m_rowHeight * m_rowCounter;
+    }
+
+    // When dragging DOWN (srcActual > targetActual), removing the source first shifts
+    // the remaining actual indices up by one, so the final insert position needs +1.
+    // The bottom-fallback is exempt: the item really does land at index 0 (absolute bottom).
+    auto const computeNewIndex = [&]() -> int {
+        if (!m_labelDropAtBottom && m_labelDragSourceIdx > m_labelDragTargetIdx) {
+            return m_labelDragTargetIdx + 1;
+        }
+        return m_labelDragTargetIdx;
+    };
+
+    // Draw drop indicator line across the label column (only when it would cause movement).
+    if (isDragging && m_labelDragTargetIdx >= 0 && computeNewIndex() != m_labelDragSourceIdx) {
+        float const x0 = m_scrollingPanelBounds.Min.x;
+        float const x1 = m_scrollingPanelBounds.Min.x + m_labelColumnWidth;
+        m_drawList->AddLine({ x0, m_labelDropLineY }, { x1, m_labelDropLineY }, kColorClipSelected, 2.0f);
+    }
+
+    // Update drag state and commit on release.
+    if (m_labelDragSourceIdx >= 0) {
+        if (!m_labelDragging && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f)) {
+            m_labelDragging = true;
+        }
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+            if (m_labelDragging && m_labelDragTargetIdx >= 0) {
+                int const newIndex = computeNewIndex();
+                if (newIndex != m_labelDragSourceIdx) {
+                    auto node = children[m_labelDragSourceIdx];
+                    auto action = std::make_unique<ChangeIndexAction>(node, m_labelDragSourceIdx, newIndex);
+                    m_editorLayer.PerformEditAction(std::move(action));
+                }
+            }
+            m_labelDragSourceIdx = -1;
+            m_labelDragging = false;
+        }
     }
 }
 
