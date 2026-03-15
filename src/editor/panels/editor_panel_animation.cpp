@@ -984,10 +984,9 @@ void EditorPanelAnimation::DrawTrackRows() {
         m_clickConsumed = true;
     }
 
-    int childIndex = 0;
-    for (auto& child : m_group->GetChildren()) {
-        DrawChildTrack(childIndex, child);
-        ++childIndex;
+    auto const& children = m_group->GetChildren();
+    for (int childIndex = static_cast<int>(children.size()) - 1; childIndex >= 0; --childIndex) {
+        DrawChildTrack(childIndex, children[childIndex]);
     }
 }
 
