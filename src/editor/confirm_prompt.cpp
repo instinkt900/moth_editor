@@ -25,6 +25,14 @@ void ConfirmPrompt::SetNegativeAction(std::function<void()> const& action) {
     m_negativeAction = action;
 }
 
+void ConfirmPrompt::SetCancelText(std::string const& text) {
+    m_cancelText = text;
+}
+
+void ConfirmPrompt::SetCancelAction(std::function<void()> const& action) {
+    m_cancelAction = action;
+}
+
 void ConfirmPrompt::Open() {
     m_pendingOpen = true;
 }
@@ -45,6 +53,15 @@ void ConfirmPrompt::Draw() {
                 m_negativeAction();
             }
             ImGui::CloseCurrentPopup();
+        }
+        if (!m_cancelText.empty()) {
+            ImGui::SameLine();
+            if (ImGui::Button(m_cancelText.c_str(), button_size)) {
+                if (m_cancelAction) {
+                    m_cancelAction();
+                }
+                ImGui::CloseCurrentPopup();
+            }
         }
         ImGui::EndPopup();
     }

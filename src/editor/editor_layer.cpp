@@ -275,10 +275,11 @@ void EditorLayer::ClearEditActions() {
 
 void EditorLayer::NewLayout(bool discard) {
     if (!discard && IsWorkPending()) {
-        m_confirmPrompt.SetTitle("Save?");
-        m_confirmPrompt.SetMessage("You have unsaved work? Save?");
-        m_confirmPrompt.SetPositiveText("Save");
-        m_confirmPrompt.SetNegativeText("Discard");
+        m_confirmPrompt.SetTitle("Unsaved Changes");
+        m_confirmPrompt.SetMessage("You have unsaved changes. What would you like to do?");
+        m_confirmPrompt.SetPositiveText("Save and New");
+        m_confirmPrompt.SetNegativeText("Discard and New");
+        m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this]() {
             SaveLayout(m_currentLayoutPath.c_str());
             NewLayout();
@@ -286,6 +287,7 @@ void EditorLayer::NewLayout(bool discard) {
         m_confirmPrompt.SetNegativeAction([this]() {
             NewLayout(true);
         });
+        m_confirmPrompt.SetCancelAction(nullptr);
         m_confirmPrompt.Open();
     } else {
         m_rootLayout = std::make_shared<moth_ui::Layout>();
@@ -304,10 +306,11 @@ void EditorLayer::NewLayout(bool discard) {
 
 void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
     if (!discard && IsWorkPending()) {
-        m_confirmPrompt.SetTitle("Save?");
-        m_confirmPrompt.SetMessage("You have unsaved work? Save?");
-        m_confirmPrompt.SetPositiveText("Save");
-        m_confirmPrompt.SetNegativeText("Discard");
+        m_confirmPrompt.SetTitle("Unsaved Changes");
+        m_confirmPrompt.SetMessage("You have unsaved changes. What would you like to do?");
+        m_confirmPrompt.SetPositiveText("Save and Load");
+        m_confirmPrompt.SetNegativeText("Discard and Load");
+        m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this, path]() {
             SaveLayout(m_currentLayoutPath);
             LoadLayout(path);
@@ -315,6 +318,7 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
         m_confirmPrompt.SetNegativeAction([this, path]() {
             LoadLayout(path, true);
         });
+        m_confirmPrompt.SetCancelAction(nullptr);
         m_confirmPrompt.Open();
     } else {
         std::shared_ptr<moth_ui::Layout> newLayout;
@@ -569,15 +573,19 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
 
 bool EditorLayer::OnRequestQuitEvent(canyon::EventRequestQuit const& event) {
     if (IsWorkPending()) {
-        m_confirmPrompt.SetTitle("Exit?");
-        m_confirmPrompt.SetMessage("You have unsaved work? Exit?");
-        m_confirmPrompt.SetPositiveText("Exit");
-        m_confirmPrompt.SetNegativeText("Cancel");
+        m_confirmPrompt.SetTitle("Unsaved Changes");
+        m_confirmPrompt.SetMessage("You have unsaved changes. What would you like to do?");
+        m_confirmPrompt.SetPositiveText("Save and Exit");
+        m_confirmPrompt.SetNegativeText("Discard and Exit");
+        m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this]() {
+            SaveLayout(m_currentLayoutPath);
             Shutdown();
         });
-        m_confirmPrompt.SetNegativeAction([]() {
+        m_confirmPrompt.SetNegativeAction([this]() {
+            Shutdown();
         });
+        m_confirmPrompt.SetCancelAction(nullptr);
         m_confirmPrompt.Open();
     } else {
         Shutdown();
