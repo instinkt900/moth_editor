@@ -218,10 +218,12 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    imgui_ext::Image(node->GetImage(), 200, 200);
-
     if (node->GetImage()) {
         using namespace moth_ui;
+
+        auto const dims = node->GetImage()->GetDimensions();
+        float const scale = std::min(200.0f / dims.x, 200.0f / dims.y);
+        imgui_ext::Image(node->GetImage(), static_cast<int>(dims.x * scale), static_cast<int>(dims.y * scale));
 
         FloatVec2 const previewImageMin{ ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y };
         FloatVec2 const previewImageMax{ ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y };
