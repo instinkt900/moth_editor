@@ -1095,7 +1095,7 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
             m_hScrollGrabbedRight = false;
         } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
             float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
-            m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + delta, 0.0f, 1.0f);
+            m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + delta, m_hScrollFactors.x, 1.0f);
             m_maxFrame = static_cast<int>(m_totalFrames * m_hScrollFactors.y);
         }
     } else if (m_hScrollGrabbedLeft) {
@@ -1103,7 +1103,7 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
             m_hScrollGrabbedLeft = false;
         } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
             float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
-            m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + delta, 0.0f, 1.0f);
+            m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + delta, 0.0f, m_hScrollFactors.y);
             m_minFrame = static_cast<int>(m_totalFrames * m_hScrollFactors.x);
         }
     } else if (m_hScrollGrabbedBar) {
@@ -1140,7 +1140,7 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     }
 
     // +1 so that the max frame is visible within the track area.
-    m_framePixelWidth = scrollTrackBounds.GetWidth() / (m_maxFrame - m_minFrame + 1);
+    m_framePixelWidth = scrollTrackBounds.GetWidth() / static_cast<float>(std::max(1, m_maxFrame - m_minFrame + 1));
 }
 
 // ---------------------------------------------------------------------------
