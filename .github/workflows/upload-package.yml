@@ -21,14 +21,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Check if version.txt changed
         id: check
         run: |
           if [[ "${{ github.event.inputs.force_release }}" == "true" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
-          elif git diff HEAD^ HEAD --name-only 2>/dev/null | grep -q "^version.txt$"; then
+          elif [[ -z "${{ github.event.before }}" ]]; then
+            # workflow_dispatch: no push range available, fall back to last-commit diff
+            if git diff HEAD^ HEAD --name-only 2>/dev/null | grep -q "^version.txt$"; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+            fi
+          elif [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
+            # Initial push to branch — no previous commit to diff against, treat as changed
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif git diff "${{ github.event.before }}..${{ github.sha }}" --name-only 2>/dev/null | grep -q "^version.txt$"; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
