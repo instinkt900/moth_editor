@@ -1090,21 +1090,23 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     m_drawList->AddRectFilled(barHandleLeft.Min, barHandleLeft.Max, (mouseInLeftHandle || m_hScrollGrabbedLeft) ? kColorScrollBarHandleHover : kColorScrollBarHandle, 6);
     m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (mouseInRightHandle || m_hScrollGrabbedRight) ? kColorScrollBarHandleHover : kColorScrollBarHandle, 6);
 
-    if (m_hScrollGrabbedRight) {
-        if (!io.MouseDown[ImGuiMouseButton_Left]) {
-            m_hScrollGrabbedRight = false;
-        } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-            float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
-            m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + delta, m_hScrollFactors.x, 1.0f);
-            m_maxFrame = std::max(m_minFrame, static_cast<int>(m_totalFrames * m_hScrollFactors.y));
-        }
-    } else if (m_hScrollGrabbedLeft) {
+    float const separationFactor = 3 * handleWidth / scrollTrackBounds.GetWidth();
+
+    if (m_hScrollGrabbedLeft) {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedLeft = false;
         } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
             float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
-            m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + delta, 0.0f, m_hScrollFactors.y);
+            m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + delta, 0.0f, m_hScrollFactors.y - separationFactor);
             m_minFrame = std::min(m_maxFrame, static_cast<int>(m_totalFrames * m_hScrollFactors.x));
+        }
+    } else if (m_hScrollGrabbedRight) {
+        if (!io.MouseDown[ImGuiMouseButton_Left]) {
+            m_hScrollGrabbedRight = false;
+        } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
+            float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
+            m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + delta, m_hScrollFactors.x + separationFactor, 1.0f);
+            m_maxFrame = std::max(m_minFrame, static_cast<int>(m_totalFrames * m_hScrollFactors.y));
         }
     } else if (m_hScrollGrabbedBar) {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {

@@ -10,7 +10,6 @@
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout.h"
 #include "../actions/composite_action.h"
-#include "imgui_internal.h"
 #include "editor_application.h"
 #include "moth_ui/graphics/itarget.h"
 #include "canyon/graphics/moth_ui/utils.h"
