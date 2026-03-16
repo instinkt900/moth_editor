@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
-## [Unreleased]
+## [0.1.0] - 2026-03-16
 ### Bug Fixes
 - Fixing conan deps issue. conan2 continues to fail me. i need a new package manager
 - Fixing the usual conan bullshit
@@ -12,6 +12,20 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Fixing linux workflow
 - Update example app includes and conan dep to build against canyon 0.3.0
 - Update canyon dependency to 0.4.0 and adapt to API changes
+- Vendor stb_rect_pack.h directly instead of relying on canyon internals
+- Update TexturePacker to match new DrawToPNG signature
+- Extract MousePosToFrame helper, fix keyframe right-click offset, and extend box selection to clips and events
+- Guard pending popup edits against use-after-free
+- Remove duplicate m_actionIndex assignment in ClearEditActions
+- Guard ModifyClipAction and ModifyEventAction against end-iterator dereference
+- Correct entity tree index in ChangeIndexAction::Undo
+- Guard BoundsWidget mouse handlers against null m_node
+- Enum/combo properties never committed their selected value
+- Guard filesystem::relative with error_code in properties panel
+- Guard image preview against zero dimensions in properties panel
+- Skip enum selectable update when value is unchanged
+- Several defensive fixes across editor
+- Fixing upload action
 
 ### Changes
 - Initial commit of moth_ui separated from previous project
@@ -213,12 +227,30 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Updating the docs a bit
 - Adding clangd support. Fixing conan config so moth_ui links properly
 - Updates for canyon
+- Add [skip ci] to CHANGELOG commit to prevent re-triggering upload-lib
+- Fix image preview aspect ratio and merge duplicate GetImage blocks
+- Show image path relative to layout file in properties panel
+- Add drag-to-reorder on animation panel node labels
+- Improve unsaved-changes prompts with three-button dialogs
+- Size confirm prompt buttons to fit their text content
+- Fix tag glob pattern in release workflow
+- Fix version.txt change detection to cover full push range
+- Clear anchor press state on null-node early returns in BoundsWidget
+- Fix scrollbar handle crossing and framePixelWidth zero-division
+- Fix scrollbar handle crossing due to float-to-int rounding
+- Fix scrollbar handle separation factor and tighten cliff.toml
+- Prevent negative frames when dragging multi-selection items
+- Guard MousePosToFrame against zero m_framePixelWidth
+
+### Documentation
+- Revamp README with features, updated badges, and build instructions
 
 ### Features
 - Adding initial docked layout when imgui.ini doesnt exist.
 - Moved the example from moth_ui into this repo.
 - Add binary archive upload and GitHub Release creation to CI
 - Only create GitHub Release when version.txt changes
+- Draw animation track rows in reverse child order
 
 ### Miscellaneous
 - Adding actions for building the editor
@@ -244,8 +276,16 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Adapt to updated canyon API and switch platform backend to SDL
 - Add version.txt and read version from file in conan and cmake
 - Move Artifactory URL to repository secret
+- Add git-cliff changelog automation
+- Updating example layout with proper 9slice setup
 
 ### Refactoring
 - Updating editor to use canyon as a backend.
+- Replace implicit clip drag handle arithmetic with named constants
+- Clarify m_clickConsumed initialisation by extracting named condition
+- Standardise selection lookups to use ranges::find_if
+- Extract hardcoded colour literals to named constants
+- Simplify and clarify animation panel
+- Replace local moth_ui fmt formatters with canyon/utils/moth_ui_format.h
 
 
