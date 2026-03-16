@@ -1427,13 +1427,24 @@ void EditorPanelAnimation::UpdateMouseDragging() {
                     if (m_clipDragHandle & kClipHandleRight && r < l)
                         r = l;
                 } else {
-                    clipCtx->mutableValue.m_startFrame = clipCtx->clip->m_startFrame + frameDelta;
-                    clipCtx->mutableValue.m_endFrame = clipCtx->clip->m_endFrame + frameDelta;
+                    int start = clipCtx->clip->m_startFrame + frameDelta;
+                    int end = clipCtx->clip->m_endFrame + frameDelta;
+                    if (start < 0) {
+                        int const shift = -start;
+                        start += shift;
+                        end += shift;
+                    }
+                    clipCtx->mutableValue.m_startFrame = start;
+                    clipCtx->mutableValue.m_endFrame = end;
                 }
             } else if (auto eventCtx = std::get_if<EventContext>(&context)) {
-                eventCtx->mutableValue.m_frame = eventCtx->event->m_frame + frameDelta;
+                int frame = eventCtx->event->m_frame + frameDelta;
+                if (frame < 0) frame = 0;
+                eventCtx->mutableValue.m_frame = frame;
             } else if (auto kfCtx = std::get_if<KeyframeContext>(&context)) {
-                kfCtx->mutableFrame = kfCtx->current->m_frame + frameDelta;
+                int frame = kfCtx->current->m_frame + frameDelta;
+                if (frame < 0) frame = 0;
+                kfCtx->mutableFrame = frame;
             }
         }
     }
