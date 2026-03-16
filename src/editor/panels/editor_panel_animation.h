@@ -180,6 +180,7 @@ private:
     bool IsAnyPopupOpen() const;
 
     int MousePosToFrame(float mouseX, float trackMinX) const {
+        if (m_framePixelWidth <= 0.0f) return m_minFrame;
         return static_cast<int>((mouseX - trackMinX) / m_framePixelWidth) + m_minFrame;
     }
 
