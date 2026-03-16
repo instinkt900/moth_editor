@@ -211,7 +211,7 @@ InputContext<T> InputElement(char const* label, InputBuffer<T> valueBuffer) {
             auto const currentEnumValue = magic_enum::enum_value<T>(i);
             bool selected = currentEnumValue == *valueBuffer.Buffer;
             std::string const currentValueStr(magic_enum::enum_name(currentEnumValue));
-            if (ImGui::Selectable(currentValueStr.c_str(), selected)) {
+            if (ImGui::Selectable(currentValueStr.c_str(), selected) && currentEnumValue != *valueBuffer.Buffer) {
                 *valueBuffer.Buffer = currentEnumValue;
                 changed = true;
                 focused = true;
