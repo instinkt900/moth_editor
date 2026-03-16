@@ -220,7 +220,9 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
 
     auto const& layoutPath = m_editorLayer.GetCurrentLayoutPath();
     auto const imageBase = layoutPath.empty() ? std::filesystem::current_path() : layoutPath.parent_path();
-    auto imagePath = std::filesystem::relative(entity->m_imagePath, imageBase).string();
+    std::error_code ec;
+    auto rel = std::filesystem::relative(entity->m_imagePath, imageBase, ec);
+    std::string imagePath = ec ? entity->m_imagePath.string() : rel.string();
     ImGui::InputText("Image Path", imagePath.data(), imagePath.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
     if (node->GetImage()) {
