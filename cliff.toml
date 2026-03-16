@@ -27,7 +27,7 @@ footer = ""
 [git]
 # Parse conventional commits (feat:, fix:, etc.) but don't discard the rest
 conventional_commits = true
-filter_unconventional = true
+filter_unconventional = false
 split_commits = false
 
 commit_preprocessors = [
@@ -51,7 +51,7 @@ commit_parsers = [
     { message = "^chore", group = "Miscellaneous" },
     { message = "^revert", group = "Reverts" },
     # Catch-all: plain-english commits without a conventional prefix
-    # { message = ".*", group = "Changes" },
+    { message = ".*", group = "Changes" },
 ]
 
 filter_commits = false

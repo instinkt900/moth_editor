@@ -579,8 +579,15 @@ bool EditorLayer::OnRequestQuitEvent(canyon::EventRequestQuit const& event) {
         m_confirmPrompt.SetNegativeText("Discard and Exit");
         m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this]() {
-            SaveLayout(m_currentLayoutPath);
-            Shutdown();
+            if (m_currentLayoutPath.empty()) {
+                MenuFuncSaveLayoutAs();
+                if (!m_currentLayoutPath.empty()) {
+                    Shutdown();
+                }
+            } else {
+                SaveLayout(m_currentLayoutPath);
+                Shutdown();
+            }
         });
         m_confirmPrompt.SetNegativeAction([this]() {
             Shutdown();
