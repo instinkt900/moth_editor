@@ -211,9 +211,10 @@ InputContext<T> InputElement(char const* label, InputBuffer<T> valueBuffer) {
             auto const currentEnumValue = magic_enum::enum_value<T>(i);
             bool selected = currentEnumValue == *valueBuffer.Buffer;
             std::string const currentValueStr(magic_enum::enum_name(currentEnumValue));
-            if (ImGui::Selectable(currentValueStr.c_str(), selected)) {
+            if (ImGui::Selectable(currentValueStr.c_str(), selected) && currentEnumValue != *valueBuffer.Buffer) {
                 *valueBuffer.Buffer = currentEnumValue;
                 changed = true;
+                focused = true;
             }
         }
         ImGui::EndCombo();
@@ -226,7 +227,8 @@ InputContext<T> InputElement(char const* label, InputBuffer<T> valueBuffer) {
 template <class SourceType>
 InputContext<SourceType> TypeInput(char const* label, SourceType value) {
     auto valueBuffer = GetBufferForValue(value);
-    return InputElement(label, valueBuffer);
+    auto inputCtx = InputElement(label, valueBuffer);
+    return inputCtx;
 }
 
 template <class SourceType>
@@ -253,7 +255,17 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
         }
     }
     if (commitAction && inputContext.Focused) {
-        if constexpr (std::is_same_v<T, char const*>) {
+        if constexpr (std::is_enum_v<T>) {
+            // Enum combos are instant-commit: selection completes in one frame so
+            // Focused and Changed arrive together. The focus-tracking path would
+            // capture the already-mutated value as originalValue and never see a
+            // delta. Instead, commit immediately using the pre-mutation value
+            // (current) and the newly selected value.
+            if (inputContext.Changed) {
+                CommitEditContext();
+                commitAction(current, *inputContext.ValueBuffer.Buffer);
+            }
+        } else if constexpr (std::is_same_v<T, char const*>) {
             OnInputFocus<T>(label, inputContext.ValueBuffer.Buffer, commitAction);
         } else {
             OnInputFocus(label, *inputContext.ValueBuffer.Buffer, commitAction);

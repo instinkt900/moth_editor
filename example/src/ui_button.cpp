@@ -1,6 +1,6 @@
 #include "ui_button.h"
 
-#include "moth_ui/event_dispatch.h"
+#include "moth_ui/events/event_dispatch.h"
 
 UIButton::UIButton(moth_ui::Context& context, std::shared_ptr<moth_ui::LayoutEntityGroup> entity)
     : Widget<UIButton>(context, entity) {}

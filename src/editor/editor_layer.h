@@ -72,6 +72,7 @@ public:
 
     std::shared_ptr<moth_ui::Group> GetRoot() const { return m_root; }
     std::shared_ptr<moth_ui::Layout> GetCurrentLayout() { return m_rootLayout; }
+    std::filesystem::path const& GetCurrentLayoutPath() const { return m_currentLayoutPath; }
 
     template <typename T, typename... Args>
     T* AddEditorPanel(Args&&... args) {

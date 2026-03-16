@@ -109,6 +109,11 @@ void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
 }
 
 bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
+    if (!m_node) {
+        m_anchorTLPressed = false;
+        m_anchorFillPressed = false;
+        return false;
+    }
     if (IsInRect(event.GetPosition(), m_anchorButtonTL)) {
         m_anchorTLPressed = true;
         return true;
@@ -116,11 +121,22 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
         m_anchorFillPressed = true;
         return true;
     }
+    m_anchorTLPressed = false;
+    m_anchorFillPressed = false;
     return false;
 }
 
 bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
+    if (!m_node) {
+        m_anchorTLPressed = false;
+        m_anchorFillPressed = false;
+        return false;
+    }
     if (IsInRect(event.GetPosition(), m_anchorButtonTL) && m_anchorTLPressed) {
+        if (!m_node->GetParent()) {
+            m_anchorTLPressed = false;
+            return false;
+        }
         m_canvasPanel.GetEditorLayer().BeginEditBounds();
         auto& rect = m_node->GetLayoutRect();
         auto const& screenRect = m_node->GetScreenRect();
@@ -138,6 +154,10 @@ bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
         m_anchorTLPressed = false;
         return true;
     } else if (IsInRect(event.GetPosition(), m_anchorButtonFill) && m_anchorFillPressed) {
+        if (!m_node->GetParent()) {
+            m_anchorFillPressed = false;
+            return false;
+        }
         m_canvasPanel.GetEditorLayer().BeginEditBounds();
         auto& rect = m_node->GetLayoutRect();
         auto const& screenRect = m_node->GetScreenRect();
@@ -155,5 +175,7 @@ bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
         m_anchorFillPressed = false;
         return true;
     }
+    m_anchorTLPressed = false;
+    m_anchorFillPressed = false;
     return false;
 }

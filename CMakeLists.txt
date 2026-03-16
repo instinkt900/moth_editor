@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(moth_editor VERSION 1.0 DESCRIPTION "An editor for Moth UI data")
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" MOTH_EDITOR_VERSION)
+string(STRIP "${MOTH_EDITOR_VERSION}" MOTH_EDITOR_VERSION)
+
+project(moth_editor VERSION ${MOTH_EDITOR_VERSION} DESCRIPTION "An editor for Moth UI data")
 
 message("Building with CMake version: ${CMAKE_VERSION}")
 
@@ -53,12 +56,13 @@ set(SOURCES ${SOURCES}
 )
 
 find_package(canyon REQUIRED)
+find_package(Freetype REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-target_include_directories(${PROJECT_NAME} PRIVATE src)
-target_link_libraries(${PROJECT_NAME} nativefiledialog)
+target_include_directories(${PROJECT_NAME} PRIVATE src external/stb ${FREETYPE_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} canyon::canyon)
+target_link_libraries(${PROJECT_NAME} nativefiledialog)
 
 if (MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")

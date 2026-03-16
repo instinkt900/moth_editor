@@ -19,8 +19,9 @@ void ModifyClipAction::Do() {
         // clang-format on
     });
     
-    moth_ui::AnimationClip* targetClip = it->get();
-    *targetClip = m_finalValues;
+    if (it != ranges::end(m_group->m_clips)) {
+        *it->get() = m_finalValues;
+    }
 }
 
 void ModifyClipAction::Undo() {
@@ -28,14 +29,15 @@ void ModifyClipAction::Undo() {
         // clang-format off
         return clip->m_startFrame == m_finalValues.m_startFrame
             && clip->m_endFrame == m_finalValues.m_endFrame
-            && clip->m_name == m_finalValues.m_name 
+            && clip->m_name == m_finalValues.m_name
             && clip->m_loopType == m_finalValues.m_loopType
             && clip->m_fps == m_finalValues.m_fps;
         // clang-format on
     });
 
-    moth_ui::AnimationClip* targetClip = it->get();
-    *targetClip = m_initialValues;
+    if (it != ranges::end(m_group->m_clips)) {
+        *it->get() = m_initialValues;
+    }
 }
 
 void ModifyClipAction::OnImGui() {

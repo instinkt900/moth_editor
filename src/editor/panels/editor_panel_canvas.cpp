@@ -10,7 +10,6 @@
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout.h"
 #include "../actions/composite_action.h"
-#include "imgui_internal.h"
 #include "editor_application.h"
 #include "moth_ui/graphics/itarget.h"
 #include "canyon/graphics/moth_ui/utils.h"
@@ -94,23 +93,23 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
 
     // clear the window
     {
-        graphics.SetColor(canyon::FromMothUI(m_editorLayer.GetConfig().CanvasBackgroundColor));
+        graphics.SetColor(m_editorLayer.GetConfig().CanvasBackgroundColor);
         graphics.Clear();
     }
 
     // clear the canvas area
     {
-        graphics.SetColor(canyon::FromMothUI(m_editorLayer.GetConfig().CanvasColor));
+        graphics.SetColor(m_editorLayer.GetConfig().CanvasColor);
         moth_ui::IntRect canvasRect;
         canvasRect.topLeft = { 0, 0 };
         canvasRect.bottomRight = canvasSize;
         auto const rect = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect);
-        graphics.DrawFillRectF(canyon::FromMothUI(rect));
+        graphics.DrawFillRectF(rect);
     }
 
     // grid lines
     {
-        graphics.SetBlendMode(canyon::FromMothUI(moth_ui::BlendMode::Alpha));
+        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
         auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
         auto const& gridMajorFactor = m_editorLayer.GetConfig().CanvasGridMajorFactor;
         if (gridSpacing > 0) {
@@ -121,11 +120,11 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
                 auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
                 auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
                 if ((i % gridMajorFactor) == 0) {
-                    graphics.SetColor(canyon::FromMothUI(m_editorLayer.GetConfig().CanvasGridColorMajor));
+                    graphics.SetColor(m_editorLayer.GetConfig().CanvasGridColorMajor);
                 } else {
-                    graphics.SetColor(canyon::FromMothUI(m_editorLayer.GetConfig().CanvasGridColorMinor));
+                    graphics.SetColor(m_editorLayer.GetConfig().CanvasGridColorMinor);
                 }
-                graphics.DrawLineF(canyon::FromMothUI(p0Scaled), canyon::FromMothUI(p1Scaled));
+                graphics.DrawLineF(p0Scaled, p1Scaled);
             }
             i = 1;
             for (int y = gridSpacing; y < canvasSize.y; y += gridSpacing, ++i) {
@@ -134,24 +133,24 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
                 auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
                 auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
                 if ((i % gridMajorFactor) == 0) {
-                    graphics.SetColor(canyon::FromMothUI(m_editorLayer.GetConfig().CanvasGridColorMajor));
+                    graphics.SetColor(m_editorLayer.GetConfig().CanvasGridColorMajor);
                 } else {
-                    graphics.SetColor(canyon::FromMothUI(m_editorLayer.GetConfig().CanvasGridColorMinor));
+                    graphics.SetColor(m_editorLayer.GetConfig().CanvasGridColorMinor);
                 }
-                graphics.DrawLineF(canyon::FromMothUI(p0Scaled), canyon::FromMothUI(p1Scaled));
+                graphics.DrawLineF(p0Scaled, p1Scaled);
             }
         }
     }
 
     // outline the canvas
     {
-        graphics.SetBlendMode(canyon::FromMothUI(moth_ui::BlendMode::Alpha));
-        graphics.SetColor(canyon::FromMothUI(m_editorLayer.GetConfig().CanvasOutlineColor));
+        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
+        graphics.SetColor(m_editorLayer.GetConfig().CanvasOutlineColor);
         moth_ui::IntRect canvasRect;
         canvasRect.topLeft = { 0, 0 };
         canvasRect.bottomRight = canvasSize;
         auto const rect = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect);
-        graphics.DrawRectF(canyon::FromMothUI(rect));
+        graphics.DrawRectF(rect);
     }
 
     // setup scaling and draw the layout
@@ -162,7 +161,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
         auto const newRenderOffsetX = static_cast<int>(m_canvasOffset.x / scaleFactor);
         auto const newRenderOffsetY = static_cast<int>(m_canvasOffset.y / scaleFactor);
 
-        graphics.SetBlendMode(canyon::FromMothUI(moth_ui::BlendMode::Replace));
+        graphics.SetBlendMode(moth_ui::BlendMode::Replace);
         graphics.SetLogicalSize(canyon::IntVec2{ newRenderWidth, newRenderHeight });
         {
 

@@ -4,8 +4,8 @@
 #include <canyon/platform/sdl/sdl_platform.h>
 
 int main(int argc, char** argv) {
-    auto platform = std::make_unique<canyon::platform::glfw::Platform>();
-    // auto platform = std::make_unique<canyon::platform::sdl::Platform>();
+    // auto platform = std::make_unique<canyon::platform::glfw::Platform>();
+    auto platform = std::make_unique<canyon::platform::sdl::Platform>();
     platform->Startup();
     EditorApplication app(*platform);
     app.Init();

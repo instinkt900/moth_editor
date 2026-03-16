@@ -1,7 +1,9 @@
 #pragma once
 
 #include "moth_ui/layers/layer.h"
+#include "moth_ui/layers/layer_stack.h"
 #include "moth_ui/events/event_animation.h"
+#include "moth_ui/utils/vector.h"
 #include "canyon/events/event_window.h"
 
 #include <filesystem>

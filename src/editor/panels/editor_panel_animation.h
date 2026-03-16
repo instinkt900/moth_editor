@@ -6,8 +6,11 @@
 #include "moth_ui/animation/animation_event.h"
 #include "imgui_internal.h"
 
+#include <memory>
 #include <optional>
 #include <variant>
+
+class IEditorAction;
 
 // highly adapted from ImSequencer
 // https://github.com/CedricGuillemet/ImGuizmo
@@ -81,6 +84,8 @@ private:
     using ElementContext = std::variant<ClipContext, EventContext, KeyframeContext>;
     std::vector<ElementContext> m_selections;
     std::vector<KeyframeContext> m_pendingBoxSelections;
+    std::vector<moth_ui::AnimationClip*> m_pendingClipBoxSelections;
+    std::vector<moth_ui::AnimationEvent*> m_pendingEventBoxSelections;
 
     void ClearSelections();
     void DeleteSelections();
@@ -144,32 +149,44 @@ private:
 
     ImVec2 m_hScrollFactors;                // 0 - 1 factors of each edge of the horizontal scroll bar. x = left side, y = right side
     bool m_hScrollGrabbedBar = false;       // currently dragging the scrollbar around
-    bool m_hScrollGrabbedRight = false;     // currently draggin the right edge of the horizontal scroll bar
-    bool m_hScrollGrabbedLeft = false;      // currently draggin the left edge of the horizontal scroll bar
+    bool m_hScrollGrabbedRight = false;     // currently dragging the right edge of the horizontal scroll bar
+    bool m_hScrollGrabbedLeft = false;      // currently dragging the left edge of the horizontal scroll bar
 
     float const m_rowHeight = 20;                       // height of each track row in pixels
-    float const m_labelColumnWidth = 200;               // witch of the label column in pixels on the left side
+    float const m_labelColumnWidth = 200;               // width of the label column in pixels on the left side
     float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
     float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
 
+    enum ClipDragHandle { kClipHandleNone = 0, kClipHandleLeft = 1, kClipHandleRight = 2, kClipHandleCenter = kClipHandleLeft | kClipHandleRight };
+
     bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
     float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
-    int m_clipDragHandle = -1;              // section of the clip we're dragging. left/center/right
+    int m_clipDragHandle = kClipHandleNone; // section of the clip we're dragging
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
     bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
-    bool m_grabbedCurrentFrame = false;     // draging the current frame indicator
+    bool m_grabbedCurrentFrame = false;     // dragging the current frame indicator
     bool m_mouseInScrollArea = false;       // true when the mouse is within the scrolling tracks area
 
     int m_clickedChildIdx = -1;
     moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
 
+    // Label drag-to-reorder state
+    int m_labelDragSourceIdx = -1;  // actual child index being dragged (-1 = none)
+    int m_labelDragTargetIdx = -1;  // actual child index drop target (per-frame)
+    float m_labelDropLineY = 0.0f;  // Y position of drop indicator line
+    bool m_labelDragging = false;   // true once drag threshold is crossed
+    bool m_labelDropAtBottom = false; // true when target came from the "below all rows" fallback
+
     bool IsAnyPopupOpen() const;
+
+    int MousePosToFrame(float mouseX, float trackMinX) const {
+        if (m_framePixelWidth <= 0.0f) return m_minFrame;
+        return static_cast<int>((mouseX - trackMinX) / m_framePixelWidth) + m_minFrame;
+    }
 
     static inline char const* const KeyframePopupName = "keyframe_popup";
     static inline char const* const ClipPopupName = "clip_popup";
     static inline char const* const EventPopupName = "event_popup";
-
-    std::vector<bool> m_childExpanded;
 
     struct TrackMetadata {
         std::weak_ptr<moth_ui::Node> ptr;
@@ -190,8 +207,9 @@ private:
     int m_rowCounter = 0;
 
     nlohmann::json* m_persistentLayoutConfig = nullptr;
-    
-    ImVec2 TrackspaceToPanel(ImVec2 const& trackPos);
+
+    void CommitDragActions();
+    void PerformOrCompositeAction(std::vector<std::unique_ptr<IEditorAction>> actions);
 
     bool m_boxSelectStarted = false;
     bool m_boxSelecting = false;

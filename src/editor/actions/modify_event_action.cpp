@@ -16,6 +16,9 @@ void ModifyEventAction::Do() {
         return event->m_frame == m_initialValues.m_frame;
     });
 
+    if (it == ranges::end(m_group->m_events)) {
+        return;
+    }
     moth_ui::AnimationEvent* targetEvent = it->get();
 
     if (m_initialValues.m_frame != m_finalValues.m_frame) {
@@ -35,6 +38,9 @@ void ModifyEventAction::Undo() {
     auto const it = ranges::find_if(m_group->m_events, [&](auto const& event) {
         return event->m_frame == m_finalValues.m_frame;
     });
+    if (it == ranges::end(m_group->m_events)) {
+        return;
+    }
     moth_ui::AnimationEvent* targetEvent = it->get();
     *targetEvent = m_initialValues;
 

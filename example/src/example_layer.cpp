@@ -1,8 +1,8 @@
 #include "example_layer.h"
 
-#include "moth_ui/event_dispatch.h"
+#include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/node_factory.h"
-#include "moth_ui/group.h"
+#include "moth_ui/nodes/group.h"
 #include "ui_button.h"
 #include "canyon/events/event_window.h"
 
@@ -88,6 +88,6 @@ bool ExampleLayer::OnAnimationStopped(moth_ui::EventAnimationStopped const& even
 }
 
 bool ExampleLayer::OnRequestQuitEvent(canyon::EventRequestQuit const& event) {
-    m_layerStack->BroadcastEvent(canyon::EventQuit());
+    m_layerStack->FireEvent(canyon::EventQuit());
     return true;
 }

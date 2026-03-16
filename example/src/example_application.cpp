@@ -1,6 +1,6 @@
 #include "example_application.h"
 #include "example_layer.h"
-#include "canyon/utils/vector_serialization.h"
+#include "canyon/utils/vector.h"
 #include "canyon/platform/window.h"
 
 #include <fstream>

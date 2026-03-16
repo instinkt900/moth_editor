@@ -218,41 +218,54 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    imgui_ext::Image(node->GetImage(), 200, 200);
+    auto const& layoutPath = m_editorLayer.GetCurrentLayoutPath();
+    auto const imageBase = layoutPath.empty() ? std::filesystem::current_path() : layoutPath.parent_path();
+    std::error_code ec;
+    auto rel = std::filesystem::relative(entity->m_imagePath, imageBase, ec);
+    std::string imagePath = ec ? entity->m_imagePath.string() : rel.string();
+    ImGui::InputText("Image Path", imagePath.data(), imagePath.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
     if (node->GetImage()) {
         using namespace moth_ui;
 
-        FloatVec2 const previewImageMin{ ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y };
-        FloatVec2 const previewImageMax{ ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y };
-        FloatVec2 const previewImageSize = previewImageMax - previewImageMin;
-        FloatVec2 const sourceImageDimensions = static_cast<FloatVec2>(node->GetImage()->GetDimensions());
-        FloatVec2 const imageToPreviewFactor = previewImageSize / sourceImageDimensions;
-        FloatRect const sourceRect = static_cast<FloatRect>(node->GetSourceRect());
+        auto const dims = node->GetImage()->GetDimensions();
+        if (dims.x > 0 && dims.y > 0) {
+            float const scale = std::min(200.0f / dims.x, 200.0f / dims.y);
+            imgui_ext::Image(node->GetImage(), std::max(1, static_cast<int>(dims.x * scale)), std::max(1, static_cast<int>(dims.y * scale)));
 
-        auto const ImageToPreview = [&](FloatVec2 const& srcVec) -> FloatVec2 {
-            return srcVec * imageToPreviewFactor;
-        };
+            FloatVec2 const previewImageMin{ ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y };
+            FloatVec2 const previewImageMax{ ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y };
+            FloatVec2 const previewImageSize = previewImageMax - previewImageMin;
+            FloatVec2 const sourceImageDimensions = static_cast<FloatVec2>(node->GetImage()->GetDimensions());
+            FloatVec2 const imageToPreviewFactor = previewImageSize / sourceImageDimensions;
+            FloatRect const sourceRect = static_cast<FloatRect>(node->GetSourceRect());
 
-        FloatVec2 const srcMin = previewImageMin + ImageToPreview(sourceRect.topLeft);
-        FloatVec2 const srcMax = previewImageMin + ImageToPreview(sourceRect.bottomRight);
+            auto const ImageToPreview = [&](FloatVec2 const& srcVec) -> FloatVec2 {
+                return srcVec * imageToPreviewFactor;
+            };
 
-        auto drawList = ImGui::GetWindowDrawList();
+            FloatVec2 const srcMin = previewImageMin + ImageToPreview(sourceRect.topLeft);
+            FloatVec2 const srcMax = previewImageMin + ImageToPreview(sourceRect.bottomRight);
 
-        // source rect preview
-        auto const rectColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewSourceRectColor);
-        drawList->AddRect(ImVec2{ srcMin.x, srcMin.y }, ImVec2{ srcMax.x, srcMax.y }, rectColor);
+            auto drawList = ImGui::GetWindowDrawList();
 
-        // 9 slice preview
-        auto const sliceColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewImageSliceColor);
-        if (node->GetImageScaleType() == moth_ui::ImageScaleType::NineSlice) {
-            FloatVec2 const slice1 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[1]));
-            FloatVec2 const slice2 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[2]));
+            // source rect preview
+            auto const rectColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewSourceRectColor);
+            drawList->AddRect(ImVec2{ srcMin.x, srcMin.y }, ImVec2{ srcMax.x, srcMax.y }, rectColor);
 
-            drawList->AddLine(ImVec2{ slice1.x, srcMin.y }, ImVec2{ slice1.x, srcMax.y }, sliceColor);
-            drawList->AddLine(ImVec2{ slice2.x, srcMin.y }, ImVec2{ slice2.x, srcMax.y }, sliceColor);
-            drawList->AddLine(ImVec2{ srcMin.x, slice1.y }, ImVec2{ srcMax.x, slice1.y }, sliceColor);
-            drawList->AddLine(ImVec2{ srcMin.x, slice2.y }, ImVec2{ srcMax.x, slice2.y }, sliceColor);
+            // 9 slice preview
+            auto const sliceColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewImageSliceColor);
+            if (node->GetImageScaleType() == moth_ui::ImageScaleType::NineSlice) {
+                FloatVec2 const slice1 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[1]));
+                FloatVec2 const slice2 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[2]));
+
+                drawList->AddLine(ImVec2{ slice1.x, srcMin.y }, ImVec2{ slice1.x, srcMax.y }, sliceColor);
+                drawList->AddLine(ImVec2{ slice2.x, srcMin.y }, ImVec2{ slice2.x, srcMax.y }, sliceColor);
+                drawList->AddLine(ImVec2{ srcMin.x, slice1.y }, ImVec2{ srcMax.x, slice1.y }, sliceColor);
+                drawList->AddLine(ImVec2{ srcMin.x, slice2.y }, ImVec2{ srcMax.x, slice2.y }, sliceColor);
+            }
+        } else {
+            ImGui::TextUnformatted("(invalid image dimensions)");
         }
     }
 
