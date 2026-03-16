@@ -99,13 +99,13 @@ jobs:
       run: |
         conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }}
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
+        conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release --output-folder build/release
 
     - name: Configure and build
       shell: bash
       run: |
         cmake -B build/release \
-          -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
+          -DCMAKE_TOOLCHAIN_FILE=build/release/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=Release
         cmake --build build/release --config Release
 
