@@ -102,6 +102,7 @@ jobs:
         conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
 
     - name: Configure and build
+      shell: bash
       run: |
         cmake -B build/release \
           -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
