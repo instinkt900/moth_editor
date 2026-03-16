@@ -76,10 +76,19 @@ jobs:
   build-release:
     if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true'
     needs: check-version
-    runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.runs_on }}
     strategy:
       matrix:
         os: [windows, linux]
+        include:
+          - os: windows
+            runs_on: windows-latest
+            configure_preset: conan-default
+            build_path: build
+          - os: linux
+            runs_on: ubuntu-latest
+            configure_preset: conan-release
+            build_path: build/Release
 
     steps:
     - name: Install system dependencies (Linux)
@@ -102,14 +111,13 @@ jobs:
         conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
 
     - name: Configure and build
+      shell: bash
       run: |
-        cmake -B build/release \
-          -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
-          -DCMAKE_BUILD_TYPE=Release
-        cmake --build build/release --config Release
+        cmake --preset ${{ matrix.configure_preset }}
+        cmake --build --preset conan-release --config Release
 
     - name: Install to staging directory
-      run: cmake --install build/release --config Release --prefix staging
+      run: cmake --install ${{ matrix.build_path }} --config Release --prefix staging
 
     - name: Read version
       id: version
@@ -138,10 +146,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: master
 
       - name: Read version
         id: version
         run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Create version tag
         uses: rickstaa/action-create-tag@v1
@@ -149,6 +165,31 @@ jobs:
           tag: ${{ steps.version.outputs.version }}
           tag_exists_error: false
           force_push_tag: true
+
+      - name: Generate CHANGELOG.md
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Commit CHANGELOG.md to master
+        run: |
+          git add CHANGELOG.md
+          git diff --cached --quiet || git commit -m "chore(release): update CHANGELOG.md for ${{ steps.version.outputs.version }} [skip ci]"
+          git push origin master
+
+      - name: Generate release notes (current version only)
+        id: release-notes
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose --current --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+          GITHUB_REPO: ${{ github.repository }}
 
       - name: Download all archives
         uses: actions/download-artifact@v4
@@ -161,5 +202,5 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: "moth_editor ${{ steps.version.outputs.version }}"
+          body_path: RELEASE_NOTES.md
           files: release-assets/*
-          generate_release_notes: true
