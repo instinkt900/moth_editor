@@ -1,6 +1,6 @@
 #pragma once
 
-#include "moth_ui/ui_fwd.h"
+#include "moth_ui/moth_ui_fwd.h"
 #include "moth_ui/utils/vector.h"
 #include "canyon/graphics/iimage.h"
 

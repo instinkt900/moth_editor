@@ -12,7 +12,7 @@ class MothUIEditor(ConanFile):
         self.version = load(self, "version.txt").strip()
 
     def requirements(self):
-        self.requires("canyon/0.4.0")
+        self.requires("canyon/0.5.0")
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.27.0]")
