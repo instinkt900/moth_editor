@@ -16,22 +16,23 @@ void ChangeIndexAction::Do() {
     if (m_node == nullptr) { return; }
     auto* parentNode = m_node->GetParent();
     if (parentNode == nullptr) { return; }
+    if (m_oldIndex < 0 || m_newIndex < 0) { return; }
 
-    // update the node tree
     auto& parentChildren = parentNode->GetChildren();
-    if (m_oldIndex < 0 || static_cast<size_t>(m_oldIndex) >= parentChildren.size()) { return; }
-    if (m_newIndex < 0 || static_cast<size_t>(m_newIndex) >= parentChildren.size()) { return; }
-    parentChildren.erase(std::next(std::begin(parentChildren), m_oldIndex));
-    parentChildren.insert(std::next(std::begin(parentChildren), m_newIndex), m_node);
+    if (static_cast<size_t>(m_oldIndex) >= parentChildren.size()) { return; }
+    if (static_cast<size_t>(m_newIndex) >= parentChildren.size()) { return; }
 
-    // need to alter the layout entity trees too
     if (parentNode->GetLayoutEntity() == nullptr) { return; }
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
     auto& parentEntityChildren = parentLayoutEntity->m_children;
     if (static_cast<size_t>(m_oldIndex) >= parentEntityChildren.size()) { return; }
-    auto oldEntity = parentEntityChildren[m_oldIndex];
-    parentEntityChildren.erase(std::next(std::begin(parentEntityChildren), m_oldIndex));
     if (static_cast<size_t>(m_newIndex) > parentEntityChildren.size()) { return; }
+
+    // all preconditions met — mutate both trees
+    auto oldEntity = parentEntityChildren[m_oldIndex];
+    parentChildren.erase(std::next(std::begin(parentChildren), m_oldIndex));
+    parentChildren.insert(std::next(std::begin(parentChildren), m_newIndex), m_node);
+    parentEntityChildren.erase(std::next(std::begin(parentEntityChildren), m_oldIndex));
     parentEntityChildren.insert(std::next(std::begin(parentEntityChildren), m_newIndex), oldEntity);
 }
 
@@ -39,22 +40,23 @@ void ChangeIndexAction::Undo() {
     if (m_node == nullptr) { return; }
     auto* parentNode = m_node->GetParent();
     if (parentNode == nullptr) { return; }
+    if (m_oldIndex < 0 || m_newIndex < 0) { return; }
 
-    // update the node tree
     auto& parentChildren = parentNode->GetChildren();
-    if (m_newIndex < 0 || static_cast<size_t>(m_newIndex) >= parentChildren.size()) { return; }
-    if (m_oldIndex < 0 || static_cast<size_t>(m_oldIndex) >= parentChildren.size()) { return; }
-    parentChildren.erase(std::next(std::begin(parentChildren), m_newIndex));
-    parentChildren.insert(std::next(std::begin(parentChildren), m_oldIndex), m_node);
+    if (static_cast<size_t>(m_newIndex) >= parentChildren.size()) { return; }
+    if (static_cast<size_t>(m_oldIndex) >= parentChildren.size()) { return; }
 
-    // need to alter the layout entity trees too
     if (parentNode->GetLayoutEntity() == nullptr) { return; }
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
     auto& parentEntityChildren = parentLayoutEntity->m_children;
     if (static_cast<size_t>(m_newIndex) >= parentEntityChildren.size()) { return; }
-    auto oldEntity = parentEntityChildren[m_newIndex];
-    parentEntityChildren.erase(std::next(std::begin(parentEntityChildren), m_newIndex));
     if (static_cast<size_t>(m_oldIndex) > parentEntityChildren.size()) { return; }
+
+    // all preconditions met — mutate both trees
+    auto oldEntity = parentEntityChildren[m_newIndex];
+    parentChildren.erase(std::next(std::begin(parentChildren), m_newIndex));
+    parentChildren.insert(std::next(std::begin(parentChildren), m_oldIndex), m_node);
+    parentEntityChildren.erase(std::next(std::begin(parentEntityChildren), m_newIndex));
     parentEntityChildren.insert(std::next(std::begin(parentEntityChildren), m_oldIndex), oldEntity);
 }
 

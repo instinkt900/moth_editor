@@ -76,7 +76,7 @@ void EditorPanelFonts::DrawContents() {
     }
     ImGui::PopID();
 
-    if (m_selectedIndex >= 0) {
+    if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(fontNames.size())) {
         ImGui::Text("Absolute path:");
         std::string path = m_editorLayer.GetContext().GetFontFactory().GetFontPath(fontNames[m_selectedIndex]).string();
         ImGui::TextWrapped("%s", path.c_str());
