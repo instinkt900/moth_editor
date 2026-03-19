@@ -173,6 +173,16 @@ jobs:
           tag_exists_error: false
           force_push_tag: true
 
+      - name: Generate release notes (current version only)
+        id: release-notes
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose --current --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+          GITHUB_REPO: ${{ github.repository }}
+
       - name: Generate CHANGELOG.md
         uses: orhun/git-cliff-action@v4
         with:
@@ -187,16 +197,6 @@ jobs:
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "chore(release): update CHANGELOG.md for ${{ steps.version.outputs.version }} [skip ci]"
           git push origin master
-
-      - name: Generate release notes (current version only)
-        id: release-notes
-        uses: orhun/git-cliff-action@v4
-        with:
-          config: cliff.toml
-          args: --verbose --current --strip header
-        env:
-          OUTPUT: RELEASE_NOTES.md
-          GITHUB_REPO: ${{ github.repository }}
 
       - name: Download all archives
         uses: actions/download-artifact@v4
