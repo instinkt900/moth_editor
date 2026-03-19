@@ -62,6 +62,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 target_include_directories(${PROJECT_NAME} PRIVATE src external/stb)
 target_link_libraries(${PROJECT_NAME} canyon::canyon)
 target_link_libraries(${PROJECT_NAME} nativefiledialog)
+target_precompile_headers(${PROJECT_NAME} PRIVATE src/common.h)
 
 if(MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
