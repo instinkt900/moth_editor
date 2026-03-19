@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [0.2.0] - 2026-03-19
+### Bug Fixes
+- Resolve clang-tidy findings in action files
+- Resolve remaining clang-tidy findings
+- Resolve all clang-tidy warnings across moth_editor sources
+- Address review findings — safety guards, robustness, nitpicks
+- Guard against null/OOB in change_index, move_keyframe, animation, fonts
+- Validate all preconditions before mutating trees in change_index, fix fonts OOB
+
+### Changes
+- Align workflows, build config, and README with canyon/moth_ui structure
+- Correct capitalization of project name in README
+
+### Features
+- Enable precompiled headers for common.h
+
+### Miscellaneous
+- Bump canyon to 0.5.0 and replace deprecated ui_fwd.h includes
+- Bumping canyon dependency version
+- Bump version to 0.2.0
+
 ## [0.1.0] - 2026-03-16
 ### Bug Fixes
 - Fixing conan deps issue. conan2 continues to fail me. i need a new package manager
