@@ -44,7 +44,7 @@ void ContentList::Refresh() {
         }
 
         try {
-            for (auto& entry : std::filesystem::directory_iterator(currentPath)) {
+            for (auto const& entry : std::filesystem::directory_iterator(currentPath)) {
                 if (m_displayFilterAction && !m_displayFilterAction(entry.path())) {
                     continue;
                 }
@@ -65,11 +65,11 @@ void ContentList::Refresh() {
     std::sort(std::begin(m_currentList), std::end(m_currentList), [](auto const& a, auto const& b) {
         if (a.m_type == b.m_type) {
             return a.m_displayName < b.m_displayName;
-        } else if (a.m_type == ListEntryType::Directory) {
-            return true;
-        } else {
-            return false;
         }
+        if (a.m_type == ListEntryType::Directory) {
+            return true;
+        }
+        return false;
     });
 }
 
@@ -88,7 +88,8 @@ void ContentList::Draw() {
                     if (entryInfo.m_type == ListEntryType::Directory) {
                         SetPath(entryInfo.m_path);
                         break;
-                    } else if (m_doubleClickAction) {
+                    }
+                    if (m_doubleClickAction) {
                         m_doubleClickAction(entryInfo.m_path);
                     }
                 }

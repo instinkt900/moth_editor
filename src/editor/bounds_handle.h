@@ -6,30 +6,30 @@
 class BoundsWidget;
 
 struct BoundsHandleAnchor {
-    int Top = 0;
-    int Left = 0;
-    int Bottom = 0;
-    int Right = 0;
+    bool Top = false;
+    bool Left = false;
+    bool Bottom = false;
+    bool Right = false;
 };
 
 class BoundsHandle : public moth_ui::EventListener {
 public:
     BoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor);
-    virtual ~BoundsHandle();
+    ~BoundsHandle() override;
 
     virtual void SetTarget(moth_ui::Node* node);
 
-    virtual bool OnEvent(moth_ui::Event const& event) override;
+    bool OnEvent(moth_ui::Event const& event) override;
     virtual void Draw() = 0;
 
-    static BoundsHandleAnchor constexpr TopLeft{ 1, 1, 0, 0 };
-    static BoundsHandleAnchor constexpr TopRight{ 1, 0, 0, 1 };
-    static BoundsHandleAnchor constexpr BottomLeft{ 0, 1, 1, 0 };
-    static BoundsHandleAnchor constexpr BottomRight{ 0, 0, 1, 1 };
-    static BoundsHandleAnchor constexpr Top{ 1, 0, 0, 0 };
-    static BoundsHandleAnchor constexpr Left{ 0, 1, 0, 0 };
-    static BoundsHandleAnchor constexpr Bottom{ 0, 0, 1, 0 };
-    static BoundsHandleAnchor constexpr Right{ 0, 0, 0, 1 };
+    static BoundsHandleAnchor constexpr TopLeft{ true, true, false, false };
+    static BoundsHandleAnchor constexpr TopRight{ true, false, false, true };
+    static BoundsHandleAnchor constexpr BottomLeft{ false, true, true, false };
+    static BoundsHandleAnchor constexpr BottomRight{ false, false, true, true };
+    static BoundsHandleAnchor constexpr Top{ true, false, false, false };
+    static BoundsHandleAnchor constexpr Left{ false, true, false, false };
+    static BoundsHandleAnchor constexpr Bottom{ false, false, true, false };
+    static BoundsHandleAnchor constexpr Right{ false, false, false, true };
 
 protected:
     BoundsWidget& m_widget;

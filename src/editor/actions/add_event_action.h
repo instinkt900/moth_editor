@@ -1,13 +1,13 @@
 #pragma once
 
 #include "editor_action.h"
-#include "moth_ui/ui_fwd.h"
+#include "moth_ui/moth_ui_fwd.h"
 #include "moth_ui/animation/animation_track.h"
 
 class AddEventAction : public IEditorAction {
 public:
     AddEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, int frame, std::string const& name);
-    virtual ~AddEventAction();
+    ~AddEventAction() override;
 
     void Do() override;
     void Undo() override;

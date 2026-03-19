@@ -7,7 +7,7 @@
 class EditorPanelConfig : public EditorPanel {
 public:
     EditorPanelConfig(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelConfig() = default;
+    ~EditorPanelConfig() override = default;
 
 private:
     EditorConfig& m_config;

@@ -59,13 +59,13 @@ namespace imgui_ext {
     }
 
     void Image(canyon::graphics::IImage const* image, int width, int height) {
-        if (image) {
+        if (image != nullptr) {
             image->ImGui({ width, height });
         }
     }
 
     void Image(moth_ui::IImage const* image, int width, int height) {
-        if (image) {
+        if (image != nullptr) {
             image->ImGui({ width, height });
         }
     }

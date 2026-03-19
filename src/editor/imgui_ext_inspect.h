@@ -120,7 +120,7 @@ namespace imgui_ext {
     }
 
     inline void Inspect(char const* label, moth_ui::Color& color) {
-        ImGui::ColorEdit4(label, reinterpret_cast<float*>(&color));
+        ImGui::ColorEdit4(label, color.data);
     }
 
     inline void Inspect(char const* label, moth_ui::Keyframe& keyframe) {

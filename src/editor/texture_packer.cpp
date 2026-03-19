@@ -96,7 +96,7 @@ void TexturePacker::CollectLayouts(std::filesystem::path const& path, std::vecto
 void TexturePacker::CollectImages(moth_ui::Layout const& layout, std::vector<ImageDetails>& images) {
     for (auto&& childEntity : layout.m_children) {
         if (childEntity->GetType() == moth_ui::LayoutEntityType::Image) {
-            auto& imageEntity = static_cast<moth_ui::LayoutEntityImage&>(*childEntity);
+            auto& imageEntity = dynamic_cast<moth_ui::LayoutEntityImage&>(*childEntity);
             auto imagePath = layout.GetLoadedPath() / imageEntity.m_imagePath;
             // dont add duplicates
             if (std::end(images) == ranges::find_if(images, [&](auto const& detail) { return detail.path == imagePath; })) {
@@ -139,7 +139,7 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
 
     struct PackTest {
         moth_ui::IntVec2 m_dimensions;
-        float m_ratio;
+        float m_ratio = 0.0f;
     };
 
     int const minDimX = NextPowerOf2(minPack.x);
@@ -168,9 +168,9 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
         stbrp_context stbContext;
         stbrp_init_target(&stbContext, testDim.m_dimensions.x, testDim.m_dimensions.y, nodes.data(), static_cast<int>(nodes.size()));
         auto const allPacked = stbrp_pack_rects(&stbContext, rects.data(), static_cast<int>(rects.size()));
-        if (allPacked) {
+        if (allPacked != 0) {
             float testArea = static_cast<float>(testDim.m_dimensions.x * testDim.m_dimensions.y);
-            testDim.m_ratio = totalArea / testArea;
+            testDim.m_ratio = static_cast<float>(totalArea) / testArea;
         }
     }
 
@@ -188,7 +188,7 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
     m_graphics.SetColor(canyon::graphics::BasicColors::White);
     nlohmann::json packDetails;
     for (auto&& rect : rects) {
-        if (rect.was_packed) {
+        if (rect.was_packed != 0) {
             auto const imagePath = images[rect.id].path;
             std::shared_ptr<moth_ui::IImage> image = m_context.GetImageFactory().GetImage(images[rect.id].path);
             auto img = std::dynamic_pointer_cast<canyon::graphics::MothImage>(image);
@@ -225,7 +225,7 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
     }
 
     // remove packed rects
-    rects.erase(ranges::remove_if(rects, [](auto const& r) { return r.was_packed; }), std::end(rects));
+    rects.erase(ranges::remove_if(rects, [](auto const& r) { return r.was_packed != 0; }), std::end(rects));
 
     m_outputTexture = outputTexture;
     m_textureWidth = width;

@@ -10,11 +10,11 @@
 
 template <>
 struct fmt::formatter<std::filesystem::path> {
-    constexpr auto parse(fmt::format_parse_context& ctx) {
+    static constexpr auto parse(fmt::format_parse_context& ctx) {
         return ctx.begin();
     }
 
-    auto format(std::filesystem::path const& t, fmt::format_context& ctx) const {
+    static auto format(std::filesystem::path const& t, fmt::format_context& ctx) {
         return fmt::format_to(ctx.out(), "Path({})", t.string());
     }
 };

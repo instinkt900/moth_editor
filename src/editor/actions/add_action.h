@@ -5,7 +5,7 @@
 class AddAction : public IEditorAction {
 public:
     AddAction(std::shared_ptr<moth_ui::Node> newNode, std::shared_ptr<moth_ui::Group> parentNode);
-    virtual ~AddAction();
+    ~AddAction() override;
 
     void Do() override;
     void Undo() override;

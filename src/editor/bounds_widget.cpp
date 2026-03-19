@@ -55,17 +55,17 @@ void BoundsWidget::EndEdit() {
 }
 
 void BoundsWidget::Draw() {
-    if (m_node && m_node->IsVisible() && m_node->GetParent()) {
-        auto const drawList = ImGui::GetWindowDrawList();
+    if (m_node != nullptr && m_node->IsVisible() && m_node->GetParent() != nullptr) {
+        auto* const drawList = ImGui::GetWindowDrawList();
         auto const rect = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(m_node->GetScreenRect());
 
-        m_anchorButtonTL.topLeft.x = rect.topLeft.x - (m_anchorButtonSize / 2);
-        m_anchorButtonTL.topLeft.y = rect.topLeft.y - (m_anchorButtonSize * 2);
-        m_anchorButtonTL.bottomRight.x = m_anchorButtonTL.topLeft.x + m_anchorButtonSize;
-        m_anchorButtonTL.bottomRight.y = m_anchorButtonTL.topLeft.y + m_anchorButtonSize;
+        m_anchorButtonTL.topLeft.x = rect.topLeft.x - static_cast<float>(m_anchorButtonSize / 2);
+        m_anchorButtonTL.topLeft.y = rect.topLeft.y - static_cast<float>(m_anchorButtonSize * 2);
+        m_anchorButtonTL.bottomRight.x = m_anchorButtonTL.topLeft.x + static_cast<float>(m_anchorButtonSize);
+        m_anchorButtonTL.bottomRight.y = m_anchorButtonTL.topLeft.y + static_cast<float>(m_anchorButtonSize);
 
         m_anchorButtonFill = m_anchorButtonTL;
-        m_anchorButtonFill += moth_ui::FloatVec2{ m_anchorButtonSize + m_anchorButtonSpacing, 0 };
+        m_anchorButtonFill += moth_ui::FloatVec2{ static_cast<float>(m_anchorButtonSize + m_anchorButtonSpacing), 0 };
 
         // 9 slice indicators
         auto const sliceColor = moth_ui::ToABGR(m_canvasPanel.GetEditorLayer().GetConfig().SelectionSliceColor);
@@ -109,7 +109,7 @@ void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
 }
 
 bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
-    if (!m_node) {
+    if (m_node == nullptr) {
         m_anchorTLPressed = false;
         m_anchorFillPressed = false;
         return false;
@@ -117,7 +117,8 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
     if (IsInRect(event.GetPosition(), m_anchorButtonTL)) {
         m_anchorTLPressed = true;
         return true;
-    } else if (IsInRect(event.GetPosition(), m_anchorButtonFill)) {
+    }
+    if (IsInRect(event.GetPosition(), m_anchorButtonFill)) {
         m_anchorFillPressed = true;
         return true;
     }
@@ -127,13 +128,13 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
 }
 
 bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
-    if (!m_node) {
+    if (m_node == nullptr) {
         m_anchorTLPressed = false;
         m_anchorFillPressed = false;
         return false;
     }
     if (IsInRect(event.GetPosition(), m_anchorButtonTL) && m_anchorTLPressed) {
-        if (!m_node->GetParent()) {
+        if (m_node->GetParent() == nullptr) {
             m_anchorTLPressed = false;
             return false;
         }
@@ -153,8 +154,9 @@ bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
         m_node->RecalculateBounds();
         m_anchorTLPressed = false;
         return true;
-    } else if (IsInRect(event.GetPosition(), m_anchorButtonFill) && m_anchorFillPressed) {
-        if (!m_node->GetParent()) {
+    }
+    if (IsInRect(event.GetPosition(), m_anchorButtonFill) && m_anchorFillPressed) {
+        if (m_node->GetParent() == nullptr) {
             m_anchorFillPressed = false;
             return false;
         }

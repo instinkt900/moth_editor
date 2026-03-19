@@ -35,7 +35,7 @@ struct KeyframeContext {
 class EditorPanelAnimation : public EditorPanel {
 public:
     EditorPanelAnimation(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelAnimation() = default;
+    ~EditorPanelAnimation() override = default;
 
     void OnNewLayout() override;
     void OnLayoutLoaded() override;
@@ -78,7 +78,7 @@ private:
         ImRect buttonBounds;
         ImRect labelBounds;
         ImRect trackBounds;
-        float trackOffset;
+        float trackOffset = 0.0f;
     };
 
     using ElementContext = std::variant<ClipContext, EventContext, KeyframeContext>;
@@ -139,7 +139,7 @@ private:
 
     void DrawWidget();
     char const* GetChildLabel(int index) const;
-    char const* GetTrackLabel(moth_ui::AnimationTrack::Target target) const;
+    static char const* GetTrackLabel(moth_ui::AnimationTrack::Target target);
 
     int m_minFrame = 0;             // first visible frame
     int m_maxFrame = 100;           // last visible frame
@@ -177,10 +177,10 @@ private:
     bool m_labelDragging = false;   // true once drag threshold is crossed
     bool m_labelDropAtBottom = false; // true when target came from the "below all rows" fallback
 
-    bool IsAnyPopupOpen() const;
+    static bool IsAnyPopupOpen();
 
     int MousePosToFrame(float mouseX, float trackMinX) const {
-        if (m_framePixelWidth <= 0.0f) return m_minFrame;
+        if (m_framePixelWidth <= 0.0f) { return m_minFrame; }
         return static_cast<int>((mouseX - trackMinX) / m_framePixelWidth) + m_minFrame;
     }
 

@@ -5,7 +5,7 @@
 class DeleteAction : public IEditorAction {
 public:
     DeleteAction(std::shared_ptr<moth_ui::Node> deletedNode, std::shared_ptr<moth_ui::Group> parentNode);
-    virtual ~DeleteAction();
+    ~DeleteAction() override;
 
     void Do() override;
     void Undo() override;
@@ -15,5 +15,5 @@ public:
 protected:
     std::shared_ptr<moth_ui::Node> m_deletedNode;
     std::shared_ptr<moth_ui::Group> m_parentNode;
-    size_t m_originalIndex;
+    size_t m_originalIndex = 0;
 };

@@ -7,7 +7,7 @@ class EditorPanelCanvas;
 class EditorPanelCanvasProperties : public EditorPanel {
 public:
     EditorPanelCanvasProperties(EditorLayer& editorLayer, bool visible, EditorPanelCanvas& canvasPanel);
-    virtual ~EditorPanelCanvasProperties() = default;
+    ~EditorPanelCanvasProperties() override = default;
 
 private:
     EditorPanelCanvas& m_canvasPanel;

@@ -20,7 +20,7 @@ void ModifyClipAction::Do() {
     });
     
     if (it != ranges::end(m_group->m_clips)) {
-        *it->get() = m_finalValues;
+        **it =m_finalValues;
     }
 }
 
@@ -36,7 +36,7 @@ void ModifyClipAction::Undo() {
     });
 
     if (it != ranges::end(m_group->m_clips)) {
-        *it->get() = m_initialValues;
+        **it =m_initialValues;
     }
 }
 

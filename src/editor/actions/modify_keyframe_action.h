@@ -1,7 +1,7 @@
 #pragma once
 
 #include "editor_action.h"
-#include "moth_ui/ui_fwd.h"
+#include "moth_ui/moth_ui_fwd.h"
 #include "moth_ui/animation/animation_track.h"
 #include "moth_ui/utils/interp.h"
 
@@ -14,7 +14,7 @@ public:
         moth_ui::KeyframeValue newValue,
         moth_ui::InterpType oldInterp,
         moth_ui::InterpType newInterp);
-    virtual ~ModifyKeyframeAction();
+    ~ModifyKeyframeAction() override;
 
     void Do() override;
     void Undo() override;

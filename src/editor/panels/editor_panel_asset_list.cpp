@@ -6,7 +6,7 @@
 static std::string DragDropString;
 
 namespace {
-    static std::vector<std::string> const s_supportedExtensions{
+    std::vector<std::string> const s_supportedExtensions{
         ".jpg",
         ".jpeg",
         ".png"
@@ -50,7 +50,8 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
     m_contentList.SetDisplayFilter([](std::filesystem::path const& path) {
         if (std::filesystem::is_directory(path)) {
             return true;
-        } else if (!path.has_extension() || !IsSupportedExtension(path.extension().string())) {
+        }
+        if (!path.has_extension() || !IsSupportedExtension(path.extension().string())) {
             return false;
         }
         return true;

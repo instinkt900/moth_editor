@@ -55,10 +55,10 @@ void EditorPanelFonts::DrawContents() {
     }
     ImGui::SameLine();
     if (ImGui::Button("Remove Font", buttonSize)) {
-        if (m_selectedIndex >= 0) {
-
-            m_editorLayer.GetContext().GetFontFactory().RemoveFont(fontNames[m_selectedIndex].c_str());
+        if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(fontNames.size())) {
+            m_editorLayer.GetContext().GetFontFactory().RemoveFont(fontNames[m_selectedIndex]);
             fontNames = m_editorLayer.GetContext().GetFontFactory().GetFontNameList();
+            m_selectedIndex = std::min(m_selectedIndex, static_cast<int>(fontNames.size()) - 1);
         }
     }
     ImGui::Columns(1);
@@ -76,9 +76,9 @@ void EditorPanelFonts::DrawContents() {
     }
     ImGui::PopID();
 
-    if (m_selectedIndex >= 0) {
+    if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(fontNames.size())) {
         ImGui::Text("Absolute path:");
-        std::string path = m_editorLayer.GetContext().GetFontFactory().GetFontPath(fontNames[m_selectedIndex].c_str()).string();
+        std::string path = m_editorLayer.GetContext().GetFontFactory().GetFontPath(fontNames[m_selectedIndex]).string();
         ImGui::TextWrapped("%s", path.c_str());
     }
 

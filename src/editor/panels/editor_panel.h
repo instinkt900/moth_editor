@@ -23,7 +23,7 @@ enum class EditorPanelType {
 class EditorPanel : public moth_ui::EventListener {
 public:
     EditorPanel(EditorLayer& editorLayer, std::string const& title, bool visible, bool exposed);
-    virtual ~EditorPanel() = default;
+    ~EditorPanel() override = default;
 
     std::string const& GetTitle() const { return m_title; }
     bool IsExposed() const { return m_exposed; }
@@ -35,7 +35,7 @@ public:
 
     virtual void Refresh() {}
 
-    virtual bool OnEvent(moth_ui::Event const& event) { return false; }
+    bool OnEvent(moth_ui::Event const& event) override { return false; }
     virtual void Update(uint32_t ticks) {}
     void Draw();
 

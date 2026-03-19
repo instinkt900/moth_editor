@@ -6,7 +6,7 @@
 class ModifyClipAction : public IEditorAction {
 public:
     ModifyClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationClip const& oldValues, moth_ui::AnimationClip const& newValues);
-    virtual ~ModifyClipAction() = default;
+    ~ModifyClipAction() override = default;
 
     void Do() override;
     void Undo() override;

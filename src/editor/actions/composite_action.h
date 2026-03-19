@@ -5,7 +5,7 @@
 class CompositeAction : public IEditorAction {
 public:
     CompositeAction();
-    virtual ~CompositeAction();
+    ~CompositeAction() override;
 
     auto& GetActions() { return m_actions; }
 

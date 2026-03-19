@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.27)
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" MOTH_EDITOR_VERSION)
 string(STRIP "${MOTH_EDITOR_VERSION}" MOTH_EDITOR_VERSION)
@@ -10,7 +10,7 @@ message("Building with CMake version: ${CMAKE_VERSION}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
-set(CMAKE_EXPORT_COMPILE_COMMANDS on)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(external/nativefiledialog nativefiledialog)
 
@@ -56,20 +56,30 @@ set(SOURCES ${SOURCES}
 )
 
 find_package(canyon REQUIRED)
-find_package(Freetype REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-target_include_directories(${PROJECT_NAME} PRIVATE src external/stb ${FREETYPE_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE src external/stb)
 target_link_libraries(${PROJECT_NAME} canyon::canyon)
 target_link_libraries(${PROJECT_NAME} nativefiledialog)
+target_precompile_headers(${PROJECT_NAME} PRIVATE src/common.h)
 
-if (MSVC)
+if(MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")
 	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "/W3 /WX")
 	target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 else()
 	set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-Wall -Werror")
+endif()
+
+option(DISABLE_CLANG_TIDY "Disable clang-tidy even in Debug/CI builds" OFF)
+if(NOT DISABLE_CLANG_TIDY AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEFINED ENV{CI}))
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+    if(CLANG_TIDY_EXE)
+        set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--extra-arg=-Wno-ignored-gch")
+    else()
+        message(STATUS "clang-tidy not found, skipping")
+    endif()
 endif()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)

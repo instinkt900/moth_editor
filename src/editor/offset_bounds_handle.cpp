@@ -14,17 +14,20 @@ OffsetBoundsHandle::~OffsetBoundsHandle() {
 }
 
 void OffsetBoundsHandle::Draw() {
-    if (!m_target) {
+    if (m_target == nullptr) {
         return;
     }
 
     auto const bounds = static_cast<moth_ui::FloatRect>(m_target->GetScreenRect());
     auto const dimensions = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
 
-    moth_ui::FloatVec2 const anchor{
-        m_anchor.Left ? 0.0f : (m_anchor.Right ? 1.0f : 0.5f),
-        m_anchor.Top ? 0.0f : (m_anchor.Bottom ? 1.0f : 0.5f)
-    };
+    float anchorX = 0.5f;
+    if (m_anchor.Left) { anchorX = 0.0f; }
+    else if (m_anchor.Right) { anchorX = 1.0f; }
+    float anchorY = 0.5f;
+    if (m_anchor.Top) { anchorY = 0.0f; }
+    else if (m_anchor.Bottom) { anchorY = 1.0f; }
+    moth_ui::FloatVec2 const anchor{ anchorX, anchorY };
 
     m_position = bounds.topLeft + dimensions * anchor;
 
@@ -32,7 +35,7 @@ void OffsetBoundsHandle::Draw() {
     auto const halfHandleSize = handleSize / 2.0f;
 
     auto& canvasPanel = m_widget.GetCanvasPanel();
-    auto const drawList = ImGui::GetWindowDrawList();
+    auto* const drawList = ImGui::GetWindowDrawList();
     auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
     auto const color = moth_ui::ToABGR(canvasPanel.GetEditorLayer().GetConfig().SelectionColor);
     drawList->AddRectFilled(ImVec2{ drawPosition.x - halfHandleSize.x, drawPosition.y - halfHandleSize.y }, ImVec2{ drawPosition.x + halfHandleSize.x, drawPosition.y + halfHandleSize.y }, color);
@@ -50,7 +53,7 @@ bool OffsetBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
 }
 
 void OffsetBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
-    auto const parent = m_target->GetParent();
+    auto* const parent = m_target->GetParent();
     auto const& parentRect = parent->GetScreenRect();
 
     auto const parentOffset = static_cast<moth_ui::FloatVec2>(parentRect.topLeft);

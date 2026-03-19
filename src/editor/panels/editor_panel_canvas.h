@@ -8,7 +8,7 @@ class BoundsWidget;
 class EditorPanelCanvas : public EditorPanel {
 public:
     EditorPanelCanvas(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelCanvas() = default;
+    ~EditorPanelCanvas() override = default;
 
     void OnShutdown() override;
 
@@ -42,7 +42,7 @@ public:
                 auto const windowOffset = static_cast<moth_ui::FloatVec2>(m_canvasWindowPos);
                 return point - windowOffset - moth_ui::FloatVec2{ tl.x, tl.y };
             } else if constexpr (InSpace == CoordSpace::WorldSpace) {
-                float const scaleFactor = m_canvasZoom / 100.0f;
+                float const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
                 return point * scaleFactor;
             } else if constexpr (InSpace == CoordSpace::CanvasSpace) {
                 auto const worldSpace = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace>(point);
@@ -53,10 +53,10 @@ public:
                 auto const windowSpace = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WindowSpace>(point);
                 return ConvertSpace<CoordSpace::WindowSpace, CoordSpace::WorldSpace>(windowSpace);
             } else if constexpr (InSpace == CoordSpace::WindowSpace) {
-                float const scaleFactor = m_canvasZoom / 100.0f;
+                float const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
                 return point / scaleFactor;
             } else if constexpr (InSpace == CoordSpace::CanvasSpace) {
-                float const scaleFactor = m_canvasZoom / 100.0f;
+                float const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
                 auto const scaledCanvasSize = static_cast<moth_ui::FloatVec2>(m_editorLayer.GetConfig().CanvasSize) * scaleFactor;
                 auto const displaySize = static_cast<moth_ui::FloatVec2>(m_canvasWindowSize);
                 auto const scaledCanvasOffset = m_canvasOffset + (displaySize - scaledCanvasSize) / 2.0f;
@@ -71,7 +71,7 @@ public:
                 auto const worldSpace = ConvertSpace<CoordSpace::WindowSpace, CoordSpace::WorldSpace>(point);
                 return ConvertSpace<CoordSpace::WorldSpace, CoordSpace::CanvasSpace>(worldSpace);
             } else if constexpr (InSpace == CoordSpace::WorldSpace) {
-                float const scaleFactor = m_canvasZoom / 100.0f;
+                float const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
                 auto const scaledCanvasSize = static_cast<moth_ui::FloatVec2>(m_editorLayer.GetConfig().CanvasSize) * scaleFactor;
                 auto const displaySize = static_cast<moth_ui::FloatVec2>(m_canvasWindowSize);
                 auto const scaledCanvasOffset = m_canvasOffset + (displaySize - scaledCanvasSize) / 2.0f;

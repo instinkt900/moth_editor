@@ -5,7 +5,7 @@
 class ChangeIndexAction : public IEditorAction {
 public:
     ChangeIndexAction(std::shared_ptr<moth_ui::Node> node, int oldIndex, int newIndex);
-    virtual ~ChangeIndexAction();
+    ~ChangeIndexAction() override;
 
     void Do() override;
     void Undo() override;

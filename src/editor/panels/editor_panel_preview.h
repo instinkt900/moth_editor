@@ -11,7 +11,7 @@
 class EditorPanelPreview : public EditorPanel {
 public:
     EditorPanelPreview(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelPreview() = default;
+    ~EditorPanelPreview() override = default;
 
     bool OnEvent(moth_ui::Event const& event) override;
     void Update(uint32_t ticks) override;

@@ -7,7 +7,7 @@
 class EditorPanelFonts : public EditorPanel {
 public:
     EditorPanelFonts(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelFonts() = default;
+    ~EditorPanelFonts() override = default;
 
 private:
     void DrawContents() override;

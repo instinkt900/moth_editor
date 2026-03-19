@@ -6,6 +6,7 @@ class PropertyEditContextBase {
 public:
     PropertyEditContextBase(ImGuiID id)
         : m_id(id) {}
+    virtual ~PropertyEditContextBase() = default;
     ImGuiID GetID() const { return m_id; }
     virtual void Commit() = 0;
 
@@ -21,12 +22,13 @@ public:
         , m_pendingValue(originalValue)
         , m_commitAction(commitAction) {
     }
+    ~PropertyEditContext() override = default;
 
     void UpdateValue(T const& value) {
         m_pendingValue = value;
     }
 
-    virtual void Commit() override {
+    void Commit() override {
         if (m_originalValue != m_pendingValue) {
             m_commitAction(m_originalValue, m_pendingValue);
         }
@@ -47,12 +49,13 @@ public:
         , m_pendingValue(originalValue)
         , m_commitAction(commitAction) {
     }
+    ~PropertyEditContext() override = default;
 
     void UpdateValue(char const* const& value) {
         m_pendingValue = value;
     }
 
-    virtual void Commit() override {
+    void Commit() override {
         if (m_originalValue != m_pendingValue) {
             m_commitAction(m_originalValue.c_str(), m_pendingValue.c_str());
         }
@@ -292,7 +295,7 @@ bool PropertiesInputList(char const* label, T const& itemList, std::string const
 
 inline bool PropertiesInput(char const* label, char const* text, int lines, std::function<void(char const*)> const& changeAction, std::function<void(char const*, char const*)> const& commitAction) {
     auto valueBuffer = GetBufferForValue(text);
-    bool const changed = ImGui::InputTextMultiline(label, valueBuffer.Buffer, valueBuffer.Size - 1, ImVec2{ 0, lines * ImGui::GetFontSize() });
+    bool const changed = ImGui::InputTextMultiline(label, valueBuffer.Buffer, valueBuffer.Size - 1, ImVec2{ 0, static_cast<float>(std::max(1, lines)) * ImGui::GetFontSize() });
     bool const focused = ImGui::IsItemFocused();
 
     if (changeAction && changed) {

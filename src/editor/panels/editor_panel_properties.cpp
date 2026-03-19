@@ -32,7 +32,7 @@ void EditorPanelProperties::OnLayoutLoaded() {
 }
 
 bool EditorPanelProperties::BeginPanel() {
-    auto& selection = m_editorLayer.GetSelection();
+    const auto& selection = m_editorLayer.GetSelection();
     if (selection.empty()) {
         m_currentSelection = m_editorLayer.GetRoot();
     } else {
@@ -103,7 +103,7 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         [&](char const* changedValue) {
             node->SetId(changedValue);
         },
-        [=](char const* oldValue, char const* newValue) {
+        [this, node, entity](char const* oldValue, char const* newValue) {
             auto action = MakeChangeValueAction(entity->m_id, std::string(oldValue), std::string(newValue), [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -130,7 +130,7 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
             node->GetLayoutRect() = changedValue;
             node->RecalculateBounds();
         },
-        [=](moth_ui::LayoutRect oldValue, moth_ui::LayoutRect newValue) {
+        [this](moth_ui::LayoutRect oldValue, moth_ui::LayoutRect newValue) {
             m_editorLayer.EndEditBounds();
         });
 
@@ -140,7 +140,7 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
             m_editorLayer.BeginEditColor(node);
             node->SetColor(changedValue);
         },
-        [=](moth_ui::Color oldValue, moth_ui::Color newValue) {
+        [this](moth_ui::Color oldValue, moth_ui::Color newValue) {
             m_editorLayer.EndEditColor();
         });
 
@@ -180,7 +180,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             entity->m_imageScale = changedValue;
             node->ReloadEntity();
         },
-        [=](float oldValue, float newValue) {
+        [this, node, entity](float oldValue, float newValue) {
             auto action = MakeChangeValueAction(entity->m_imageScale, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -191,7 +191,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             entity->m_sourceRect = newValue;
             node->ReloadEntity();
         },
-        [=](auto oldValue, auto newValue) {
+        [this, node, entity](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_sourceRect, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -202,7 +202,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             entity->m_targetBorders = newValue;
             node->ReloadEntity();
         },
-        [=](auto oldValue, auto newValue) {
+        [this, node, entity](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_targetBorders, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -213,7 +213,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             entity->m_sourceBorders = newValue;
             node->ReloadEntity();
         },
-        [=](auto oldValue, auto newValue) {
+        [this, node, entity](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_sourceBorders, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -225,13 +225,13 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
     std::string imagePath = ec ? entity->m_imagePath.string() : rel.string();
     ImGui::InputText("Image Path", imagePath.data(), imagePath.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
-    if (node->GetImage()) {
+    if (node->GetImage() != nullptr) {
         using namespace moth_ui;
 
         auto const dims = node->GetImage()->GetDimensions();
         if (dims.x > 0 && dims.y > 0) {
-            float const scale = std::min(200.0f / dims.x, 200.0f / dims.y);
-            imgui_ext::Image(node->GetImage(), std::max(1, static_cast<int>(dims.x * scale)), std::max(1, static_cast<int>(dims.y * scale)));
+            float const scale = std::min(200.0f / static_cast<float>(dims.x), 200.0f / static_cast<float>(dims.y));
+            imgui_ext::Image(node->GetImage(), std::max(1, static_cast<int>(static_cast<float>(dims.x) * scale)), std::max(1, static_cast<int>(static_cast<float>(dims.y) * scale)));
 
             FloatVec2 const previewImageMin{ ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y };
             FloatVec2 const previewImageMax{ ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y };
@@ -247,7 +247,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             FloatVec2 const srcMin = previewImageMin + ImageToPreview(sourceRect.topLeft);
             FloatVec2 const srcMax = previewImageMin + ImageToPreview(sourceRect.bottomRight);
 
-            auto drawList = ImGui::GetWindowDrawList();
+            auto* drawList = ImGui::GetWindowDrawList();
 
             // source rect preview
             auto const rectColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewSourceRectColor);
@@ -294,7 +294,7 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
             entity->m_fontSize = changedValue;
             node->ReloadEntity();
         },
-        [=](int oldValue, int newValue) {
+        [this, node, entity](int oldValue, int newValue) {
             auto action = MakeChangeValueAction(entity->m_fontSize, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -335,7 +335,7 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
             entity->m_dropShadowOffset = changedValue;
             node->ReloadEntity();
         },
-        [=](auto oldValue, auto newValue) {
+        [this, node, entity](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_dropShadowOffset, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -346,7 +346,7 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
             entity->m_dropShadowColor = changedValue;
             node->ReloadEntity();
         },
-        [=](auto oldValue, auto newValue) {
+        [this, node, entity](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_dropShadowColor, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -356,7 +356,7 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
         [&](char const* changedValue) {
             node->SetText(changedValue);
         },
-        [=](std::string oldValue, std::string newValue) {
+        [this, node, entity](std::string oldValue, std::string newValue) {
             auto action = MakeChangeValueAction(entity->m_text, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
@@ -410,7 +410,7 @@ void EditorPanelProperties::DrawLayoutProperties(std::shared_ptr<moth_ui::Group>
         [&](std::string changedValue) {
             entity->m_class = changedValue;
         },
-        [=](std::string oldValue, std::string newValue) {
+        [this, entity](std::string oldValue, std::string newValue) {
             auto action = MakeChangeValueAction(entity->m_class, oldValue, newValue, nullptr);
             m_editorLayer.PerformEditAction(std::move(action));
         });
