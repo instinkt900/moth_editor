@@ -16,6 +16,9 @@ Checks: >
   -cppcoreguidelines-pro-type-vararg,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-macro-to-enum,
-  -cppcoreguidelines-special-member-functions
+  -cppcoreguidelines-special-member-functions,
+  -readability-function-cognitive-complexity,
+  -cppcoreguidelines-avoid-non-const-global-variables,
+  -cppcoreguidelines-interfaces-global-init
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/moth_editor/src/.*'

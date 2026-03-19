@@ -7,7 +7,7 @@
 class EditorPanelAssetList : public EditorPanel {
 public:
     EditorPanelAssetList(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelAssetList() = default;
+    ~EditorPanelAssetList() override = default;
 
     void OnLayoutLoaded() override { Refresh(); }
     void Refresh() override;

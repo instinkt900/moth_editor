@@ -25,7 +25,7 @@ class EditorApplication;
 class EditorLayer : public moth_ui::Layer {
 public:
     EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics, EditorApplication* app);
-    virtual ~EditorLayer() = default;
+    ~EditorLayer() override = default;
 
     canyon::graphics::IGraphics& GetGraphics() const { return m_graphics; }
 
@@ -135,7 +135,7 @@ private:
 
     EditorConfig m_config;
 
-    ImGuiID m_rootDockId;
+    ImGuiID m_rootDockId = 0;
 
     std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
 

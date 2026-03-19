@@ -7,7 +7,7 @@ class EditorApplication : public canyon::platform::Application
 {
 public:
     EditorApplication(canyon::platform::IPlatform& platform);
-    virtual ~EditorApplication();
+    ~EditorApplication() override;
 
 
     nlohmann::json& GetPersistentState() { return m_persistentState; }

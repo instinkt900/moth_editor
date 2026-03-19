@@ -38,13 +38,13 @@ void EditorPanelCanvas::DrawContents() {
     UpdateDisplayTexture(windowRegionSize);
     imgui_ext::Image(m_displayTexture->GetImage(), windowRegionSize.x, windowRegionSize.y);
 
-    auto const drawList = ImGui::GetWindowDrawList();
+    auto* const drawList = ImGui::GetWindowDrawList();
 
     // draw selected item rects
     {
         auto const& selection = m_editorLayer.GetSelection();
         for (auto&& node : selection) {
-            if (node->IsVisible() && node->GetParent()) {
+            if (node->IsVisible() && node->GetParent() != nullptr) {
                 auto const rect = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::AppSpace, float>(node->GetScreenRect());
                 drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y }, 0xFFFF00FF);
             }
@@ -76,15 +76,15 @@ void EditorPanelCanvas::DrawContents() {
     UpdateInput();
 }
 
-void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize) {
+void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize) {
     auto& graphics = m_editorLayer.GetGraphics();
 
-    if (!m_displayTexture || m_canvasWindowSize != windowSize) {
-        m_displayTexture = graphics.CreateTarget(windowSize.x, windowSize.y);
+    if (!m_displayTexture || m_canvasWindowSize != displaySize) {
+        m_displayTexture = graphics.CreateTarget(displaySize.x, displaySize.y);
     }
 
     m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(ImGui::GetWindowPos().x), static_cast<int>(ImGui::GetWindowPos().y) };
-    m_canvasWindowSize = windowSize;
+    m_canvasWindowSize = displaySize;
 
     // auto const oldRenderTarget = graphics.GetTarget();
     graphics.SetTarget(m_displayTexture.get());
@@ -155,11 +155,11 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& windowSize)
 
     // setup scaling and draw the layout
     {
-        auto const scaleFactor = m_canvasZoom / 100.0f;
-        auto const newRenderWidth = static_cast<int>(windowSize.x / scaleFactor);
-        auto const newRenderHeight = static_cast<int>(windowSize.y / scaleFactor);
-        auto const newRenderOffsetX = static_cast<int>(m_canvasOffset.x / scaleFactor);
-        auto const newRenderOffsetY = static_cast<int>(m_canvasOffset.y / scaleFactor);
+        auto const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
+        auto const newRenderWidth = static_cast<int>(static_cast<float>(displaySize.x) / scaleFactor);
+        auto const newRenderHeight = static_cast<int>(static_cast<float>(displaySize.y) / scaleFactor);
+        auto const newRenderOffsetX = static_cast<int>(static_cast<float>(m_canvasOffset.x) / scaleFactor);
+        auto const newRenderOffsetY = static_cast<int>(static_cast<float>(m_canvasOffset.y) / scaleFactor);
 
         graphics.SetBlendMode(moth_ui::BlendMode::Replace);
         graphics.SetLogicalSize(canyon::IntVec2{ newRenderWidth, newRenderHeight });
@@ -191,7 +191,7 @@ void EditorPanelCanvas::EndPanel() {
         auto const mousePos = moth_ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
         auto const canvasPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::CanvasSpace, int>(mousePos);
 
-        if (auto const payload = ImGui::AcceptDragDropPayload("layout_path", 0)) {
+        if (auto const* const payload = ImGui::AcceptDragDropPayload("layout_path", 0)) {
             std::string* layoutPath = static_cast<std::string*>(payload->Data);
             std::shared_ptr<moth_ui::Layout> newLayout;
             auto loadResult = moth_ui::Layout::Load(layoutPath->c_str(), &newLayout);
@@ -203,7 +203,7 @@ void EditorPanelCanvas::EndPanel() {
                 bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
                 AddEntityWithBounds<moth_ui::LayoutEntityRef>(m_editorLayer, bounds, *newLayout);
             }
-        } else if (auto const payload = ImGui::AcceptDragDropPayload("image_path", 0)) {
+        } else if (auto const* const payload = ImGui::AcceptDragDropPayload("image_path", 0)) {
             std::string* layoutPath = static_cast<std::string*>(payload->Data);
             moth_ui::LayoutRect bounds;
             bounds.anchor.topLeft = { 0, 0 };
@@ -222,12 +222,11 @@ moth_ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth_ui::IntVec2 const& original)
     auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
     if (gridSpacing > 0) {
         float const s = static_cast<float>(gridSpacing);
-        int const x = static_cast<int>(std::round(original.x / s) * s);
-        int const y = static_cast<int>(std::round(original.y / s) * s);
+        int const x = static_cast<int>(std::round(static_cast<float>(original.x) / s) * s);
+        int const y = static_cast<int>(std::round(static_cast<float>(original.y) / s) * s);
         return { x, y };
-    } else {
-        return original;
     }
+    return original;
 }
 
 void EditorPanelCanvas::ResetView() {
@@ -378,7 +377,7 @@ void EditorPanelCanvas::UpdateInput() {
     auto const mousePos = moth_ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
 
     if (ImGui::IsWindowHovered()) {
-        float const scaleFactor = m_canvasZoom / 100.0f;
+        float const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
 
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
             if (!m_draggingCanvas) {

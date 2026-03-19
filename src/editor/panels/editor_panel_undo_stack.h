@@ -5,7 +5,7 @@
 class EditorPanelUndoStack : public EditorPanel {
 public:
     EditorPanelUndoStack(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelUndoStack() = default;
+    ~EditorPanelUndoStack() override = default;
 
 private:
     void DrawContents() override;

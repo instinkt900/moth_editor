@@ -7,8 +7,8 @@
 #include "imgui_internal.h"
 
 namespace {
-    static int constexpr s_maxZoom = 800;
-    static int constexpr s_minZoom = 30;
+    int constexpr s_maxZoom = 800;
+    int constexpr s_minZoom = 30;
 }
 
 EditorPanelCanvasProperties::EditorPanelCanvasProperties(EditorLayer& editorLayer, bool visible, EditorPanelCanvas& canvasPanel)

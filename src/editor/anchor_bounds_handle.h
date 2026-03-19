@@ -5,7 +5,7 @@
 class AnchorBoundsHandle : public BoundsHandle {
 public:
     AnchorBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor);
-    virtual ~AnchorBoundsHandle();
+    ~AnchorBoundsHandle() override;
 
     void Draw() override;
 

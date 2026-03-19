@@ -41,7 +41,7 @@ EditorLayer::EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics&
     LoadConfig();
 
     AddEditorPanel<EditorPanelConfig>(*this, false);
-    auto const canvasPanel = AddEditorPanel<EditorPanelCanvas>(*this, true);
+    auto* const canvasPanel = AddEditorPanel<EditorPanelCanvas>(*this, true);
     AddEditorPanel<EditorPanelCanvasProperties>(*this, true, *canvasPanel);
     AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
@@ -80,14 +80,15 @@ void EditorLayer::Update(uint32_t ticks) {
 void EditorLayer::Draw() {
     m_rootDockId = ImGui::DockSpaceOverViewport(nullptr, ImGuiDockNodeFlags_PassthruCentralNode);
 
-    auto root = ImGui::DockBuilderGetNode(m_rootDockId);
+    auto* root = ImGui::DockBuilderGetNode(m_rootDockId);
     if (!root->IsSplitNode()) {
         auto dockTop = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Up, 0.1f, nullptr, &m_rootDockId);
         auto dockBottom = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Down, 0.2f, nullptr, &m_rootDockId);
         auto dockLeft = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Left, 0.1f, nullptr, &m_rootDockId);
         auto dockRight = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Right, 0.1f, nullptr, &m_rootDockId);
 
-        ImGuiID dockTopLeft, dockTopRight;
+        ImGuiID dockTopLeft = 0;
+        ImGuiID dockTopRight = 0;
         ImGui::DockBuilderSplitNode(dockTop, ImGuiDir_Left, 0.5f, &dockTopLeft, &dockTopRight);
 
         ImGui::DockBuilderGetNode(dockTopLeft)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
@@ -95,15 +96,15 @@ void EditorLayer::Draw() {
         ImGui::DockBuilderGetNode(dockLeft)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
         ImGui::DockBuilderGetNode(dockRight)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
         ImGui::DockBuilderGetNode(dockBottom)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
-        auto rootDock = ImGui::DockBuilderGetNode(m_rootDockId);
+        auto* rootDock = ImGui::DockBuilderGetNode(m_rootDockId);
         rootDock->SetLocalFlags(rootDock->LocalFlags | ImGuiDockNodeFlags_HiddenTabBar);
 
-        auto panelCanvasProperties = GetEditorPanel<EditorPanelCanvasProperties>();
-        auto panelAssets = GetEditorPanel<EditorPanelAssetList>();
-        auto panelProperties = GetEditorPanel<EditorPanelProperties>();
-        auto panelElements = GetEditorPanel<EditorPanelElements>();
-        auto panelAnimation = GetEditorPanel<EditorPanelAnimation>();
-        auto panelFonts = GetEditorPanel<EditorPanelFonts>();
+        auto* panelCanvasProperties = GetEditorPanel<EditorPanelCanvasProperties>();
+        auto* panelAssets = GetEditorPanel<EditorPanelAssetList>();
+        auto* panelProperties = GetEditorPanel<EditorPanelProperties>();
+        auto* panelElements = GetEditorPanel<EditorPanelElements>();
+        auto* panelAnimation = GetEditorPanel<EditorPanelAnimation>();
+        auto* panelFonts = GetEditorPanel<EditorPanelFonts>();
 
         ImGui::DockBuilderDockWindow(panelCanvasProperties->GetTitle().c_str(), dockTopLeft);
         ImGui::DockBuilderDockWindow(panelElements->GetTitle().c_str(), dockTopRight);
@@ -360,11 +361,11 @@ void EditorLayer::MoveSelectionUp() {
 
     // might need to do this more carefully since the order we do this matters
     for (auto&& node : m_selection) {
-        if (!node || !node->GetParent()) {
+        if (node == nullptr || node->GetParent() == nullptr) {
             continue;
         }
 
-        auto parent = node->GetParent();
+        auto* parent = node->GetParent();
         auto& children = parent->GetChildren();
         auto const it = ranges::find_if(children, [&](auto const& child) { return child == node; });
         auto const oldIndex = static_cast<int>(it - std::begin(children));
@@ -389,11 +390,11 @@ void EditorLayer::MoveSelectionDown() {
 
     // might need to do this more carefully since the order we do this matters
     for (auto&& node : m_selection) {
-        if (!node || !node->GetParent()) {
+        if (node == nullptr || node->GetParent() == nullptr) {
             continue;
         }
 
-        auto parent = node->GetParent();
+        auto* parent = node->GetParent();
         auto& children = parent->GetChildren();
         auto const it = ranges::find_if(children, [&](auto const& child) { return child == node; });
         auto const oldIndex = static_cast<int>(it - std::begin(children));
@@ -635,7 +636,7 @@ bool EditorLayer::IsLocked(std::shared_ptr<moth_ui::Node> node) const {
 }
 
 void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
-    if (node) {
+    if (node != nullptr) {
         if (m_editBoundsContext.empty()) {
             auto context = std::make_unique<EditBoundsContext>();
             context->node = node;
@@ -674,7 +675,7 @@ void EditorLayer::EndEditBounds() {
 
         auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
             auto& track = tracks.at(target);
-            if (auto keyframePtr = track->GetKeyframe(frameNo)) {
+            if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
                 // keyframe exists
                 auto const oldValue = keyframePtr->m_value;
                 keyframePtr->m_value = value;
@@ -724,7 +725,7 @@ void EditorLayer::EndEditBounds() {
 }
 
 void EditorLayer::BeginEditColor(std::shared_ptr<moth_ui::Node> node) {
-    if (!m_editColorContext && node) {
+    if (m_editColorContext == nullptr && node != nullptr) {
         m_editColorContext = std::make_unique<EditColorContext>();
         m_editColorContext->node = node;
         m_editColorContext->entity = node->GetLayoutEntity();
@@ -735,7 +736,7 @@ void EditorLayer::BeginEditColor(std::shared_ptr<moth_ui::Node> node) {
 }
 
 void EditorLayer::EndEditColor() {
-    if (!m_editColorContext) {
+    if (m_editColorContext == nullptr) {
         return;
     }
     auto entity = m_editColorContext->entity;
@@ -745,7 +746,7 @@ void EditorLayer::EndEditColor() {
 
     auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
         auto& track = tracks.at(target);
-        if (auto keyframePtr = track->GetKeyframe(frameNo)) {
+        if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
             // keyframe exists
             auto const oldValue = keyframePtr->m_value;
             keyframePtr->m_value = value;

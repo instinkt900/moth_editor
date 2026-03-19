@@ -5,7 +5,7 @@
 class OffsetBoundsHandle : public BoundsHandle {
 public:
     OffsetBoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor);
-    virtual ~OffsetBoundsHandle();
+    ~OffsetBoundsHandle() override;
 
     void Draw() override;
 

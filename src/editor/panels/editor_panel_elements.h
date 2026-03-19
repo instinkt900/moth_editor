@@ -5,7 +5,7 @@
 class EditorPanelElements : public EditorPanel {
 public:
     EditorPanelElements(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelElements() = default;
+    ~EditorPanelElements() override = default;
 
 private:
     void DrawContents() override;

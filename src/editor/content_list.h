@@ -25,7 +25,7 @@ private:
     };
 
     struct ListEntry {
-        ListEntryType m_type;
+        ListEntryType m_type = ListEntryType::Directory;
         std::filesystem::path m_path;
         std::string m_displayName;
     };

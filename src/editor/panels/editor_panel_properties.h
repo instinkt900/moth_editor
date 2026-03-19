@@ -6,7 +6,7 @@
 class EditorPanelProperties : public EditorPanel {
 public:
     EditorPanelProperties(EditorLayer& editorLayer, bool visible);
-    virtual ~EditorPanelProperties() = default;
+    ~EditorPanelProperties() override = default;
 
     void OnLayoutLoaded() override;
 
