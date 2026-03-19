@@ -4,7 +4,7 @@
 [![Release](https://github.com/instinkt900/moth_editor/actions/workflows/upload-package.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/upload-package.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A visual layout and animation editor for [moth_ui](https://github.com/instinkt900/moth_ui). Provides a Flash-like authoring environment for building UI layouts and keyframe animations, targeting the moth_ui runtime.
+A visual layout and animation editor for [moth_ui](https://github.com/instinkt900/moth_ui). Design UI layouts and keyframe animations in a Flash-like authoring environment, then load them directly into your moth_ui application at runtime.
 
 ![Editor Screenshot](https://github.com/instinkt900/moth_ui/assets/35185578/a8779a2b-978e-450a-b80a-b0dad4f06306)
 
@@ -12,37 +12,28 @@ A visual layout and animation editor for [moth_ui](https://github.com/instinkt90
 
 ## Table of Contents
 
-- [Overview](#overview)
+- [Features](#features)
   - [AI Disclosure](#ai-disclosure)
-- [Architecture](#architecture)
-  - [Panels](#panels)
-  - [Undo / Redo](#undo--redo)
-  - [Persistent state](#persistent-state)
-- [Dependencies](#dependencies)
 - [Building](#building)
   - [Prerequisites](#prerequisites)
   - [Linux](#linux)
   - [Windows](#windows)
-- [Installing / Publishing](#installing--publishing)
 - [Related Projects](#related-projects)
 - [License](#license)
 
 ---
 
-## Overview
+## Features
 
-moth_editor provides:
+**Layout editing** — place and arrange UI elements on a canvas with mouse-driven move and resize controls. Elements can be anchored to parent edges or corners so layouts adapt cleanly across different resolutions without manual adjustment.
 
-- **Canvas editor** — drag, resize, and arrange UI nodes visually
-- **Anchor system** — pin elements to parent edges or corners for multi-resolution layouts
-- **Animation timeline** — add keyframes per property, define named clips, and set loop behaviour
-- **Animation events** — place frame-triggered events on the timeline for runtime callbacks
-- **Preview panel** — play back animations inside the editor at runtime speed
-- **Properties panel** — inspect and edit node properties numerically
-- **Layers panel** — manage node hierarchy, visibility, and lock state
-- **Asset list** — browse and assign images and fonts from the project directory
-- **Texture packer** — pack referenced images into atlases for optimised runtime loading
-- **Undo / redo** — full action history with per-action inspection panel
+**Keyframe animation** — animate any property over time using a timeline editor. Keyframes can be added, moved, and deleted per property, and multiple named clips can be defined within a single layout for things like idle, hover, and transition states.
+
+**Animation events** — attach named events to specific frames on the timeline. These fire as callbacks in the running application, making it easy to synchronise sound, logic, or state changes to an animation without hard-coding timings.
+
+**Live preview** — play back animations inside the editor at runtime speed to see exactly how they will look in the application before exporting.
+
+**Texture packing** — pack all images referenced by a layout into texture atlases in one step, reducing draw calls and load times in the runtime application.
 
 ### AI Disclosure
 
@@ -50,44 +41,9 @@ AI agents (primarily Claude) are used as tools in this project for tasks such as
 
 ---
 
-## Architecture
-
-### Panels
-
-The editor is composed of ImGui panels located in `src/editor/panels/`:
-
-- `EditorPanelCanvas` — viewport for selecting, moving, and resizing nodes
-- `EditorPanelAnimation` — keyframe timeline with clip and event management
-- `EditorPanelPreview` — live animation playback at runtime speed
-- `EditorPanelProperties` — numeric editing of the selected node's properties
-- `EditorPanelElements` — node hierarchy with visibility and lock controls
-- `EditorPanelAssetList` — image and font browser for the project directory
-- `EditorPanelFonts` — font size management
-- `EditorPanelConfig` — canvas and animation global settings
-- `EditorPanelUndoStack` — per-action undo history inspector
-
-### Undo / Redo
-
-All mutations go through `IEditorAction` subclasses in `src/editor/actions/`. Each action implements `Do()` and `Undo()`. Related mutations within a single user gesture are aggregated into a `CompositeAction` so that a single undo step reverses the whole gesture.
-
-### Persistent state
-
-- `editor.json` — window geometry, panel layout, canvas colors, and animation settings
-- `imgui.ini` — Dear ImGui docking and window positions
-
----
-
-## Dependencies
-
-| Dependency | Source | Notes |
-|---|---|---|
-| canyon ≥ 0.5.0 | Conan | Graphics and application framework |
-| nativefiledialog | Conan | Native file picker dialogs |
-| GTK3 | System (Linux) | Required by nativefiledialog on Linux |
-
----
-
 ## Building
+
+Pre-built binaries for Windows and Linux are attached to each [GitHub Release](https://github.com/instinkt900/moth_editor/releases) if you'd rather not build from source.
 
 ### Prerequisites
 
@@ -123,8 +79,6 @@ cmake --preset conan-release
 cmake --build --preset conan-release
 ```
 
-For a Debug build replace `Release` / `conan-release` with `Debug` / `conan-debug`.
-
 ### Windows
 
 ```bash
@@ -132,18 +86,6 @@ conan install . --profile conan/profiles/windows_profile --build=missing -s buil
 cmake --preset conan-default
 cmake --build --preset conan-release
 ```
-
----
-
-## Installing / Publishing
-
-To install the editor binary and assets locally:
-
-```bash
-cmake --install build --config Release --prefix=<install_path>
-```
-
-Pre-built binaries for Windows and Linux are attached to each [GitHub Release](https://github.com/instinkt900/moth_editor/releases). Releases are created automatically when `version.txt` is updated on master.
 
 ---
 
