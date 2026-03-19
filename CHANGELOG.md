@@ -15,6 +15,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 ### Changes
 - Align workflows, build config, and README with canyon/moth_ui structure
 - Correct capitalization of project name in README
+- Generate release notes before CHANGELOG commit to fix git-cliff --current
 
 ### Features
 - Enable precompiled headers for common.h
