@@ -14,7 +14,7 @@ ChangeIndexAction::~ChangeIndexAction() {
 
 void ChangeIndexAction::Do() {
     // update the node tree
-    auto parentNode = m_node->GetParent();
+    auto* parentNode = m_node->GetParent();
     auto& parentChildren = parentNode->GetChildren();
     parentChildren.erase(std::next(std::begin(parentChildren), m_oldIndex));
     parentChildren.insert(std::next(std::begin(parentChildren), m_newIndex), m_node);
@@ -29,7 +29,7 @@ void ChangeIndexAction::Do() {
 
 void ChangeIndexAction::Undo() {
     // update the node tree
-    auto parentNode = m_node->GetParent();
+    auto* parentNode = m_node->GetParent();
     auto& parentChildren = parentNode->GetChildren();
     parentChildren.erase(std::next(std::begin(parentChildren), m_newIndex));
     parentChildren.insert(std::next(std::begin(parentChildren), m_oldIndex), m_node);

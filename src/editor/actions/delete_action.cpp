@@ -5,7 +5,8 @@
 
 DeleteAction::DeleteAction(std::shared_ptr<moth_ui::Node> deletedNode, std::shared_ptr<moth_ui::Group> parentNode)
     : m_deletedNode(deletedNode)
-    , m_parentNode(parentNode) {
+    , m_parentNode(parentNode)
+    , m_originalIndex(0) {
 }
 
 DeleteAction::~DeleteAction() {
@@ -30,7 +31,7 @@ void DeleteAction::Undo() {
     // need to merge the layout entity trees too
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_deletedNode->GetLayoutEntity();
-    auto insertIt = std::begin(parentLayoutEntity->m_children) + m_originalIndex;
+    auto insertIt = std::begin(parentLayoutEntity->m_children) + static_cast<std::ptrdiff_t>(m_originalIndex);
     parentLayoutEntity->m_children.insert(insertIt, layoutEntity);
     layoutEntity->m_parent = parentLayoutEntity.get();
 
