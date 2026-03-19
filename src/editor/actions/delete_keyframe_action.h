@@ -7,7 +7,7 @@
 class DeleteKeyframeAction : public IEditorAction {
 public:
     DeleteKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue oldValue);
-    virtual ~DeleteKeyframeAction();
+    ~DeleteKeyframeAction() override;
 
     void Do() override;
     void Undo() override;

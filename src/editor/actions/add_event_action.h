@@ -7,7 +7,7 @@
 class AddEventAction : public IEditorAction {
 public:
     AddEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, int frame, std::string const& name);
-    virtual ~AddEventAction();
+    ~AddEventAction() override;
 
     void Do() override;
     void Undo() override;

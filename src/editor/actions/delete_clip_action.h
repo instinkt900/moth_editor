@@ -7,7 +7,7 @@
 class DeleteClipAction : public IEditorAction {
 public:
     DeleteClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> entity, moth_ui::AnimationClip clip);
-    virtual ~DeleteClipAction();
+    ~DeleteClipAction() override;
 
     void Do() override;
     void Undo() override;

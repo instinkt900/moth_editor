@@ -9,7 +9,7 @@
 class ModifyEventAction : public IEditorAction {
 public:
     ModifyEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationEvent const& oldValues, moth_ui::AnimationEvent const& newValues);
-    virtual ~ModifyEventAction();
+    ~ModifyEventAction() override;
 
     void Do() override;
     void Undo() override;

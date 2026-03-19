@@ -14,7 +14,7 @@ public:
         moth_ui::KeyframeValue newValue,
         moth_ui::InterpType oldInterp,
         moth_ui::InterpType newInterp);
-    virtual ~ModifyKeyframeAction();
+    ~ModifyKeyframeAction() override;
 
     void Do() override;
     void Undo() override;

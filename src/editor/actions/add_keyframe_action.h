@@ -8,7 +8,7 @@
 class AddKeyframeAction : public IEditorAction {
 public:
     AddKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue value, moth_ui::InterpType interp);
-    virtual ~AddKeyframeAction();
+    ~AddKeyframeAction() override;
 
     void Do() override;
     void Undo() override;

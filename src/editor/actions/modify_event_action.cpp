@@ -26,7 +26,7 @@ void ModifyEventAction::Do() {
             return event->m_frame == m_finalValues.m_frame;
         });
         if (std::end(m_group->m_events) != replaceIt) {
-            m_replacedEvent = *(replaceIt->get());
+            m_replacedEvent = **replaceIt;
             m_group->m_events.erase(replaceIt);
         }
     }

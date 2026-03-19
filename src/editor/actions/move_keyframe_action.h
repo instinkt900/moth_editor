@@ -10,7 +10,7 @@
 class MoveKeyframeAction : public IEditorAction {
 public:
     MoveKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int initialFrame, int finalFrame);
-    virtual ~MoveKeyframeAction();
+    ~MoveKeyframeAction() override;
 
     void Do() override;
     void Undo() override;

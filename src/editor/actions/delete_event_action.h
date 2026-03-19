@@ -7,7 +7,7 @@
 class DeleteEventAction : public IEditorAction {
 public:
     DeleteEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationEvent const& event);
-    virtual ~DeleteEventAction();
+    ~DeleteEventAction() override;
 
     void Do() override;
     void Undo() override;

@@ -5,8 +5,7 @@
 
 DeleteAction::DeleteAction(std::shared_ptr<moth_ui::Node> deletedNode, std::shared_ptr<moth_ui::Group> parentNode)
     : m_deletedNode(deletedNode)
-    , m_parentNode(parentNode)
-    , m_originalIndex(0) {
+    , m_parentNode(parentNode) {
 }
 
 DeleteAction::~DeleteAction() {

@@ -7,7 +7,7 @@
 class AddClipAction : public IEditorAction {
 public:
     AddClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> entity, moth_ui::AnimationClip clip);
-    virtual ~AddClipAction();
+    ~AddClipAction() override;
 
     void Do() override;
     void Undo() override;
