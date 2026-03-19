@@ -33,7 +33,7 @@ void MoveKeyframeAction::Undo() {
     if (keyframe == nullptr) { return; }
     keyframe->m_frame = m_initialFrame;
     if (m_replacedKeyframe.has_value()) {
-        auto replacedKeyframe = track->GetOrCreateKeyframe(m_finalFrame);
+        auto& replacedKeyframe = track->GetOrCreateKeyframe(m_finalFrame);
         replacedKeyframe = m_replacedKeyframe.value();
     }
     track->SortKeyframes();

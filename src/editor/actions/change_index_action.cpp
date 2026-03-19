@@ -25,11 +25,13 @@ void ChangeIndexAction::Do() {
     parentChildren.insert(std::next(std::begin(parentChildren), m_newIndex), m_node);
 
     // need to alter the layout entity trees too
+    if (parentNode->GetLayoutEntity() == nullptr) { return; }
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
     auto& parentEntityChildren = parentLayoutEntity->m_children;
     if (static_cast<size_t>(m_oldIndex) >= parentEntityChildren.size()) { return; }
     auto oldEntity = parentEntityChildren[m_oldIndex];
     parentEntityChildren.erase(std::next(std::begin(parentEntityChildren), m_oldIndex));
+    if (static_cast<size_t>(m_newIndex) > parentEntityChildren.size()) { return; }
     parentEntityChildren.insert(std::next(std::begin(parentEntityChildren), m_newIndex), oldEntity);
 }
 
@@ -46,11 +48,13 @@ void ChangeIndexAction::Undo() {
     parentChildren.insert(std::next(std::begin(parentChildren), m_oldIndex), m_node);
 
     // need to alter the layout entity trees too
+    if (parentNode->GetLayoutEntity() == nullptr) { return; }
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
     auto& parentEntityChildren = parentLayoutEntity->m_children;
     if (static_cast<size_t>(m_newIndex) >= parentEntityChildren.size()) { return; }
     auto oldEntity = parentEntityChildren[m_newIndex];
     parentEntityChildren.erase(std::next(std::begin(parentEntityChildren), m_newIndex));
+    if (static_cast<size_t>(m_oldIndex) > parentEntityChildren.size()) { return; }
     parentEntityChildren.insert(std::next(std::begin(parentEntityChildren), m_oldIndex), oldEntity);
 }
 

@@ -1193,17 +1193,20 @@ void EditorPanelAnimation::DrawFrameRangeSettings() {
     ImGui::InputInt("Current Frame ", &m_currentFrame);
     ImGui::SameLine();
     if (ImGui::InputInt("Min Frame", &m_minFrame)) {
-        m_hScrollFactors.x = static_cast<float>(m_minFrame) / static_cast<float>(m_totalFrames);
+        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
+        m_hScrollFactors.x = static_cast<float>(m_minFrame) / totalFramesF;
     }
     ImGui::SameLine();
 
     if (ImGui::InputInt("Max Frame", &m_maxFrame)) {
-        m_hScrollFactors.y = static_cast<float>(m_maxFrame) / static_cast<float>(m_totalFrames);
+        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
+        m_hScrollFactors.y = static_cast<float>(m_maxFrame) / totalFramesF;
     }
     ImGui::SameLine();
     if (ImGui::InputInt("Total Frames", &m_totalFrames)) {
-        m_hScrollFactors.x = static_cast<float>(m_minFrame) / static_cast<float>(m_totalFrames);
-        m_hScrollFactors.y = static_cast<float>(m_maxFrame) / static_cast<float>(m_totalFrames);
+        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
+        m_hScrollFactors.x = static_cast<float>(m_minFrame) / totalFramesF;
+        m_hScrollFactors.y = static_cast<float>(m_maxFrame) / totalFramesF;
     }
     ImGui::PopItemWidth();
 }
