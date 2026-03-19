@@ -2,38 +2,81 @@ name: Build Tests
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ master ]
+    paths:
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - 'conanfile.py'
+      - 'conan/**'
+      - 'version.txt'
   pull_request:
     branches: [ master ]
+    paths:
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - 'conanfile.py'
+      - 'conan/**'
+      - 'version.txt'
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || 'ubuntu-latest' }}
+  build-test:
+    runs-on: ${{ matrix.runs_on }}
     strategy:
       matrix:
-        os: [windows, linux]
-        build_type: [Release, Debug]
+        include:
+          - os: windows
+            build_type: Release
+            runs_on: windows-latest
+            configure_preset: conan-default
+            build_preset: conan-release
+          - os: windows
+            build_type: Debug
+            runs_on: windows-latest
+            configure_preset: conan-default
+            build_preset: conan-debug
+          - os: linux
+            build_type: Release
+            runs_on: ubuntu-latest
+            configure_preset: conan-release
+            build_preset: conan-release
+          - os: linux
+            build_type: Debug
+            runs_on: ubuntu-latest
+            configure_preset: conan-debug
+            build_preset: conan-debug
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Install GTK
-      if: ${{ matrix.os == 'linux' }}
+    - name: Install GTK (Linux)
+      if: matrix.os == 'linux'
       run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
 
     - name: Setup Conan
       uses: conan-io/setup-conan@v1
       with:
         cache_packages: true
+        version: 2.15.1
+
+    - name: Test conan version
+      run: conan --version
 
     - name: Add private artifactory
       run: |
-        conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }}
+        conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
 
-    - name: Build editor
-      run: conan create . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=${{ matrix.build_type }}
+    - name: Install dependencies
+      run: conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=${{ matrix.build_type }}
+
+    - name: Configure and build
+      shell: bash
+      run: |
+        cmake --preset ${{ matrix.configure_preset }}
+        cmake --build --preset ${{ matrix.build_preset }} --config ${{ matrix.build_type }}
 
     - name: Build example
       working-directory: example
