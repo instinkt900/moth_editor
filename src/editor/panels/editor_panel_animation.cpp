@@ -105,7 +105,8 @@ void EditorPanelAnimation::OnLayoutLoaded() {
     }
     m_editorLayer.SetSelectedFrame(m_currentFrame);
 
-    m_hScrollFactors = { static_cast<float>(m_minFrame) / static_cast<float>(m_totalFrames), static_cast<float>(m_maxFrame) / static_cast<float>(m_totalFrames) };
+    float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
+    m_hScrollFactors = { static_cast<float>(m_minFrame) / totalFramesF, static_cast<float>(m_maxFrame) / totalFramesF };
     m_trackMetadata.clear();
 }
 
@@ -1100,13 +1101,15 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     m_drawList->AddRectFilled(barHandleLeft.Min, barHandleLeft.Max, (mouseInLeftHandle || m_hScrollGrabbedLeft) ? kColorScrollBarHandleHover : kColorScrollBarHandle, 6);
     m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (mouseInRightHandle || m_hScrollGrabbedRight) ? kColorScrollBarHandleHover : kColorScrollBarHandle, 6);
 
-    float const separationFactor = 3.0f * handleWidth / scrollTrackBounds.GetWidth();
+    float const trackWidth = scrollTrackBounds.GetWidth();
+    if (trackWidth <= 0.0f) { return; }
+    float const separationFactor = 3.0f * handleWidth / trackWidth;
 
     if (m_hScrollGrabbedLeft) {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedLeft = false;
         } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-            float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
+            float const delta = io.MouseDelta.x / trackWidth;
             m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + delta, 0.0f, m_hScrollFactors.y - separationFactor);
             m_minFrame = std::min(m_maxFrame, static_cast<int>(static_cast<float>(m_totalFrames) * m_hScrollFactors.x));
         }
@@ -1114,7 +1117,7 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedRight = false;
         } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-            float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
+            float const delta = io.MouseDelta.x / trackWidth;
             m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + delta, m_hScrollFactors.x + separationFactor, 1.0f);
             m_maxFrame = std::max(m_minFrame, static_cast<int>(static_cast<float>(m_totalFrames) * m_hScrollFactors.y));
         }
@@ -1122,7 +1125,7 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedBar = false;
         } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-            float const delta = io.MouseDelta.x / scrollTrackBounds.GetWidth();
+            float const delta = io.MouseDelta.x / trackWidth;
             ImVec2 const newScrollFactors = m_hScrollFactors + ImVec2{ delta, delta };
             if (newScrollFactors.x < 0.0f) {
                 float const clampedMove = m_hScrollFactors.x;

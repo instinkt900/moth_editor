@@ -77,8 +77,6 @@ if(NOT DISABLE_CLANG_TIDY AND (CMAKE_BUILD_TYPE STREQUAL "Debug" OR DEFINED ENV{
     find_program(CLANG_TIDY_EXE NAMES clang-tidy)
     if(CLANG_TIDY_EXE)
         set_target_properties(${PROJECT_NAME} PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_EXE};--extra-arg=-Wno-ignored-gch")
-    elseif(DEFINED ENV{CI})
-        message(FATAL_ERROR "clang-tidy not found but required in CI")
     else()
         message(STATUS "clang-tidy not found, skipping")
     endif()

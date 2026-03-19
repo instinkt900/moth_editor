@@ -14,8 +14,10 @@ MoveKeyframeAction::~MoveKeyframeAction() {
 }
 
 void MoveKeyframeAction::Do() {
+    if (m_initialFrame == m_finalFrame) { return; }
     auto& track = m_entity->m_tracks.at(m_target);
     auto* keyframe = track->GetKeyframe(m_initialFrame);
+    if (keyframe == nullptr) { return; }
     if (auto* replacedKeyframe = track->GetKeyframe(m_finalFrame)) {
         m_replacedKeyframe = *replacedKeyframe;
         track->DeleteKeyframe(m_finalFrame);
@@ -25,8 +27,10 @@ void MoveKeyframeAction::Do() {
 }
 
 void MoveKeyframeAction::Undo() {
+    if (m_initialFrame == m_finalFrame) { return; }
     auto& track = m_entity->m_tracks.at(m_target);
     auto* keyframe = track->GetKeyframe(m_finalFrame);
+    if (keyframe == nullptr) { return; }
     keyframe->m_frame = m_initialFrame;
     if (m_replacedKeyframe.has_value()) {
         auto replacedKeyframe = track->GetOrCreateKeyframe(m_finalFrame);

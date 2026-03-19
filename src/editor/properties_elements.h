@@ -295,7 +295,7 @@ bool PropertiesInputList(char const* label, T const& itemList, std::string const
 
 inline bool PropertiesInput(char const* label, char const* text, int lines, std::function<void(char const*)> const& changeAction, std::function<void(char const*, char const*)> const& commitAction) {
     auto valueBuffer = GetBufferForValue(text);
-    bool const changed = ImGui::InputTextMultiline(label, valueBuffer.Buffer, valueBuffer.Size - 1, ImVec2{ 0, static_cast<float>(lines) * ImGui::GetFontSize() });
+    bool const changed = ImGui::InputTextMultiline(label, valueBuffer.Buffer, valueBuffer.Size - 1, ImVec2{ 0, static_cast<float>(std::max(1, lines)) * ImGui::GetFontSize() });
     bool const focused = ImGui::IsItemFocused();
 
     if (changeAction && changed) {

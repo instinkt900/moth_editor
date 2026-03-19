@@ -225,7 +225,7 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
     }
 
     // remove packed rects
-    rects.erase(ranges::remove_if(rects, [](auto const& r) { return r.was_packed; }), std::end(rects));
+    rects.erase(ranges::remove_if(rects, [](auto const& r) { return r.was_packed != 0; }), std::end(rects));
 
     m_outputTexture = outputTexture;
     m_textureWidth = width;

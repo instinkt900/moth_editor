@@ -59,6 +59,7 @@ void EditorPanelFonts::DrawContents() {
 
             m_editorLayer.GetContext().GetFontFactory().RemoveFont(fontNames[m_selectedIndex]);
             fontNames = m_editorLayer.GetContext().GetFontFactory().GetFontNameList();
+            m_selectedIndex = std::min(m_selectedIndex, static_cast<int>(fontNames.size()) - 1);
         }
     }
     ImGui::Columns(1);
