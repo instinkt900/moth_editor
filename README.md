@@ -1,4 +1,4 @@
-# moth_editor
+# Moth Editor
 
 [![Build Tests](https://github.com/instinkt900/moth_editor/actions/workflows/build-tests.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/build-tests.yml)
 [![Release](https://github.com/instinkt900/moth_editor/actions/workflows/upload-package.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/upload-package.yml)
