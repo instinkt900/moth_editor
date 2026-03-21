@@ -89,13 +89,13 @@ jobs:
         os: [windows, linux]
         include:
           - os: windows
+            build_type: Release
             runs_on: windows-latest
             configure_preset: conan-default
-            build_path: build
           - os: linux
+            build_type: Release
             runs_on: ubuntu-latest
             configure_preset: conan-release
-            build_path: build/Release
 
     steps:
     - uses: actions/checkout@v4
@@ -120,7 +120,12 @@ jobs:
         cmake --build --preset conan-release --config Release
 
     - name: Install to staging directory
-      run: cmake --install ${{ matrix.build_path }} --config Release --prefix staging
+      if: matrix.os == 'linux'
+      run: cmake --install build/${{ matrix.build_type }} --config ${{ matrix.build_type }} --prefix staging
+
+    - name: Install to staging directory
+      if: matrix.os == 'windows'
+      run: cmake --install build --config ${{ matrix.build_type }} --prefix staging
 
     - name: Read version
       id: version
