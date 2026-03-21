@@ -167,8 +167,8 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
 
             if (auto const root = m_editorLayer.GetRoot()) {
                 moth_ui::IntRect const guideRect = moth_ui::MakeRect(
-                    newRenderOffsetX + (newRenderWidth - canvasSize.x) / 2,
-                    newRenderOffsetY + (newRenderHeight - canvasSize.y) / 2,
+                    newRenderOffsetX + ((newRenderWidth - canvasSize.x) / 2),
+                    newRenderOffsetY + ((newRenderHeight - canvasSize.y) / 2),
                     canvasSize.x,
                     canvasSize.y);
                 root->SetScreenRect(guideRect);
