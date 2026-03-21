@@ -72,4 +72,4 @@ jobs:
 
     - name: Build example
       working-directory: example
-      run: conan create . -s compiler.cppstd=18 -s build_type=${{ matrix.build_type }} --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
+      run: conan create . -s compiler.cppstd=17 -s build_type=${{ matrix.build_type }} --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
