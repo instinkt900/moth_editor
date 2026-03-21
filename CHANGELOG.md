@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [0.3.0] - 2026-03-21
+### Bug Fixes
+- Initialise atlases as empty JSON array instead of null
+
+### Changes
+- Updating ci to be more simplified
+- Fixing action typo
+- Fixing up upload action
+- Fixing more upload actions
+
+### Documentation
+- Rewrite README to focus on user-facing features
+- Updating docs to reflect removed profiles
+
+### Features
+- Updating texture packing to the new format
+
+### Miscellaneous
+- Bumped version to 0.3.0
+
 ## [0.2.0] - 2026-03-19
 ### Bug Fixes
 - Resolve clang-tidy findings in action files
