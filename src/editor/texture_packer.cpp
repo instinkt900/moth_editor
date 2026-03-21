@@ -262,7 +262,7 @@ void TexturePacker::Pack(std::filesystem::path const& inputPath, std::filesystem
 
             std::vector<stbrp_node> stbNodes(maxWidth * 2);
 
-            nlohmann::json atlases;
+            nlohmann::json atlases = nlohmann::json::array();
             int numPacks = 0;
             while (!stbRects.empty()) {
                 auto const imagePngPath = outputPath / fmt::format("packed_{}.png", numPacks);
