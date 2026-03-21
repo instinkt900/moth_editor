@@ -61,8 +61,6 @@ python3 -m venv .venv
 pip install conan
 ```
 
-Conan profiles for both platforms are provided in `conan/profiles/`.
-
 ### Linux
 
 GTK3 must come from the system package manager (required by nativefiledialog):
@@ -74,7 +72,7 @@ sudo apt install libgtk-3-dev
 SDL2, GLFW, FreeType, and HarfBuzz are pulled in transitively via canyon and also require system packages — see the [canyon README](https://github.com/instinkt900/canyon#linux) for the full list.
 
 ```bash
-conan install . --profile conan/profiles/linux_profile --build=missing -s build_type=Release
+conan install . -s compiler.cppstd=17 -s build_type=Release --build=missing
 cmake --preset conan-release
 cmake --build --preset conan-release
 ```
@@ -82,7 +80,7 @@ cmake --build --preset conan-release
 ### Windows
 
 ```bash
-conan install . --profile conan/profiles/windows_profile --build=missing -s build_type=Release
+conan install . -s compiler.cppstd=17 -s build_type=Release --build=missing
 cmake --preset conan-default
 cmake --build --preset conan-release
 ```

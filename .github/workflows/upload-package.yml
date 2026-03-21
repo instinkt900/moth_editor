@@ -60,13 +60,14 @@ jobs:
         os: [windows, linux]
 
     steps:
-    - name: Install system dependencies (Linux)
-      if: matrix.os == 'linux'
-      run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
-
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+
+    - name: Read version
+      id: version
+      shell: bash
+      run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
 
     - name: Setup Conan
       uses: conan-io/setup-conan@v1
@@ -77,8 +78,8 @@ jobs:
       run: |
         conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan create . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
-        conan upload moth_ui_editor --confirm --remote artifactory
+        conan create . -s compiler.cppstd=17 -s build_type=Release --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
+        conan upload "moth_ui_editor/${{ steps.version.outputs.version }}:*" --confirm --remote artifactory
 
   build-release:
     if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true'
@@ -89,19 +90,15 @@ jobs:
         os: [windows, linux]
         include:
           - os: windows
+            build_type: Release
             runs_on: windows-latest
             configure_preset: conan-default
-            build_path: build
           - os: linux
+            build_type: Release
             runs_on: ubuntu-latest
             configure_preset: conan-release
-            build_path: build/Release
 
     steps:
-    - name: Install system dependencies (Linux)
-      if: matrix.os == 'linux'
-      run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev
-
     - uses: actions/checkout@v4
       with:
         submodules: recursive
@@ -115,7 +112,7 @@ jobs:
       run: |
         conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan install . --profile conan/profiles/${{ matrix.os }}_profile --build=missing -s build_type=Release
+        conan install . -s compiler.cppstd=17 -s build_type=${{ matrix.build_type }} --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
 
     - name: Configure and build
       shell: bash
@@ -124,7 +121,12 @@ jobs:
         cmake --build --preset conan-release --config Release
 
     - name: Install to staging directory
-      run: cmake --install ${{ matrix.build_path }} --config Release --prefix staging
+      if: matrix.os == 'linux'
+      run: cmake --install build/${{ matrix.build_type }} --config ${{ matrix.build_type }} --prefix staging
+
+    - name: Install to staging directory
+      if: matrix.os == 'windows'
+      run: cmake --install build --config ${{ matrix.build_type }} --prefix staging
 
     - name: Read version
       id: version
