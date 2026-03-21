@@ -1,5 +1,7 @@
 #include "common.h"
 #include "editor_panel_animation.h"
+
+#include <algorithm>
 #include "../editor_layer.h"
 #include "../utils.h"
 #include "../actions/composite_action.h"
@@ -25,33 +27,33 @@ using namespace moth_ui;
 
 namespace {
     // Row backgrounds
-    constexpr ImU32 kColorRowOdd              = 0xFF3A3636;
-    constexpr ImU32 kColorRowEven             = 0xFF413D3D;
-    constexpr ImU32 kColorRowSpecial          = 0xFF3D3837; // clips and events rows
+    constexpr ImU32 kColorRowOdd = 0xFF3A3636;
+    constexpr ImU32 kColorRowEven = 0xFF413D3D;
+    constexpr ImU32 kColorRowSpecial = 0xFF3D3837; // clips and events rows
 
     // Text
-    constexpr ImU32 kColorTextPrimary         = 0xFFFFFFFF;
-    constexpr ImU32 kColorTextSecondary       = 0xFFBBBBBB; // frame numbers
+    constexpr ImU32 kColorTextPrimary = 0xFFFFFFFF;
+    constexpr ImU32 kColorTextSecondary = 0xFFBBBBBB; // frame numbers
 
     // Frame ruler
-    constexpr ImU32 kColorRulerTick           = 0xFF606060;
+    constexpr ImU32 kColorRulerTick = 0xFF606060;
 
     // Clips
-    constexpr ImU32 kColorClip                = 0xFF13BDF3;
-    constexpr ImU32 kColorClipSelected        = 0xFF00CCAA;
+    constexpr ImU32 kColorClip = 0xFF13BDF3;
+    constexpr ImU32 kColorClipSelected = 0xFF00CCAA;
 
     // Events and keyframes (shared colours)
-    constexpr ImU32 kColorElement             = 0xFFc4c4c4;
-    constexpr ImU32 kColorElementSelected     = 0xFFFFa2a2;
+    constexpr ImU32 kColorElement = 0xFFc4c4c4;
+    constexpr ImU32 kColorElementSelected = 0xFFFFa2a2;
 
     // Scrollbar
-    constexpr ImU32 kColorScrollBarBg         = 0xFF505050;
-    constexpr ImU32 kColorScrollBarBgHover    = 0xFF606060;
-    constexpr ImU32 kColorScrollBarHandle     = 0xFF666666;
+    constexpr ImU32 kColorScrollBarBg = 0xFF505050;
+    constexpr ImU32 kColorScrollBarBgHover = 0xFF606060;
+    constexpr ImU32 kColorScrollBarHandle = 0xFF666666;
     constexpr ImU32 kColorScrollBarHandleHover = 0xFFAAAAAA;
 
     // Box selection outline
-    constexpr ImU32 kColorSelectBox           = 0xFF00FFFF;
+    constexpr ImU32 kColorSelectBox = 0xFF00FFFF;
 
     // Draws a ghost of the element at its original position when Alt-dragging to duplicate.
     void DrawOriginalPositionGhost(ImDrawList* drawList, float trackStartOffsetX, float trackStartOffsetY,
@@ -410,10 +412,13 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
     for (int i = m_minFrame; i <= m_maxFrame; ++i) {
         bool const majorTick = ((i % majorFrameStep) == 0) || (i == m_maxFrame || i == m_minFrame);
         bool const minorTick = (minorFrameStep > 0) && ((i % minorFrameStep) == 0);
-        float const px = trackMin.x + static_cast<float>(i) * m_framePixelWidth + trackOffset;
+        float const px = trackMin.x + (static_cast<float>(i) * m_framePixelWidth) + trackOffset;
         float tickYOffset = 14.0f;
-        if (majorTick) { tickYOffset = 4.0f; }
-        else if (minorTick) { tickYOffset = 10.0f; }
+        if (majorTick) {
+            tickYOffset = 4.0f;
+        } else if (minorTick) {
+            tickYOffset = 10.0f;
+        }
 
         if (px >= trackMin.x && px <= trackMax.x) {
             ImVec2 const start{ px, trackMin.y + tickYOffset };
@@ -444,7 +449,7 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
     }
 
     // Calculate cursor rect (drawn later so it renders on top of tracks).
-    float const cursorLeft = trackBounds.Min.x + static_cast<float>(m_currentFrame - m_minFrame) * m_framePixelWidth;
+    float const cursorLeft = trackBounds.Min.x + (static_cast<float>(m_currentFrame - m_minFrame) * m_framePixelWidth);
     m_cursorRect.Min = { cursorLeft, trackBounds.Min.y };
     m_cursorRect.Max = { cursorLeft + m_framePixelWidth + 1.0f, trackBounds.Min.y + canvasSize.y - m_horizontalScrollbarHeight };
 }
@@ -622,7 +627,7 @@ void EditorPanelAnimation::DrawClipRow() {
         }
 
         ImVec2 const textSize = ImGui::CalcTextSize(clip->m_name.c_str());
-        ImVec2 const textPos(clipBoundsMin.x + (clipBoundsMax.x - clipBoundsMin.x - textSize.x) / 2, clipBoundsMin.y + (clipBoundsMax.y - clipBoundsMin.y - textSize.y) / 2);
+        ImVec2 const textPos(clipBoundsMin.x + ((clipBoundsMax.x - clipBoundsMin.x - textSize.x) / 2), clipBoundsMin.y + ((clipBoundsMax.y - clipBoundsMin.y - textSize.y) / 2));
         m_drawList->AddText(textPos, kColorTextPrimary, clip->m_name.c_str());
     }
 
@@ -929,7 +934,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             auto* const kfCtxDrag = (m_mouseDragging && selected) ? GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame) : nullptr;
             int const frameNumber = (kfCtxDrag != nullptr) ? kfCtxDrag->mutableFrame : keyframe->m_frame;
 
-            float const frameStartOffset = static_cast<float>(frameNumber) * m_framePixelWidth + 1.0f;
+            float const frameStartOffset = (static_cast<float>(frameNumber) * m_framePixelWidth) + 1.0f;
             float const frameEndOffset = static_cast<float>(frameNumber + 1) * m_framePixelWidth;
             ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2.0f };
             ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
@@ -945,7 +950,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
             // Alt-drag duplicates: show the original keyframe in place.
             if (io.KeyAlt) {
-                float const origStartOffset = static_cast<float>(keyframe->m_frame) * m_framePixelWidth + 1.0f;
+                float const origStartOffset = (static_cast<float>(keyframe->m_frame) * m_framePixelWidth) + 1.0f;
                 float const origEndOffset = static_cast<float>(keyframe->m_frame + 1) * m_framePixelWidth;
                 ImVec2 const origMin{ trackStartOffsetX + origStartOffset, trackStartOffsetY + 2.0f };
                 ImVec2 const origMax{ trackStartOffsetX + origEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
@@ -1010,8 +1015,8 @@ void EditorPanelAnimation::DrawTrackRows() {
 
     for (int childIndex = childCount - 1; childIndex >= 0; --childIndex) {
         // Snapshot row top Y before AddRow increments m_rowCounter.
-        float const mainRowTopY = m_scrollingPanelBounds.Min.y + m_rowHeight * static_cast<float>(m_rowCounter);
-        float const mainRowMidY = mainRowTopY + m_rowHeight * 0.5f;
+        float const mainRowTopY = m_scrollingPanelBounds.Min.y + (m_rowHeight * static_cast<float>(m_rowCounter));
+        float const mainRowMidY = mainRowTopY + (m_rowHeight * 0.5f);
 
         // First row whose midpoint is below the mouse becomes the drop target.
         if (isDragging && m_labelDragTargetIdx == -1 && io.MousePos.y < mainRowMidY) {
@@ -1084,8 +1089,8 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     ImRect const scrollTrackBounds{ scrollTrackMin, scrollTrackMax };
 
     // Scroll handle (the draggable bar within the track).
-    ImVec2 const scrollBarMin = { scrollTrackBounds.Min.x + scrollTrackBounds.GetWidth() * m_hScrollFactors.x, elementBounds.Min.y };
-    ImVec2 const scrollBarMax = { scrollTrackBounds.Min.x + scrollTrackBounds.GetWidth() * m_hScrollFactors.y, elementBounds.Max.y - 2 };
+    ImVec2 const scrollBarMin = { scrollTrackBounds.Min.x + (scrollTrackBounds.GetWidth() * m_hScrollFactors.x), elementBounds.Min.y };
+    ImVec2 const scrollBarMax = { scrollTrackBounds.Min.x + (scrollTrackBounds.GetWidth() * m_hScrollFactors.y), elementBounds.Max.y - 2 };
     ImRect const scrollBarBounds{ scrollBarMin, scrollBarMax };
 
     // Resize handles on left and right edges of the scroll handle.
@@ -1102,7 +1107,9 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     m_drawList->AddRectFilled(barHandleRight.Min, barHandleRight.Max, (mouseInRightHandle || m_hScrollGrabbedRight) ? kColorScrollBarHandleHover : kColorScrollBarHandle, 6);
 
     float const trackWidth = scrollTrackBounds.GetWidth();
-    if (trackWidth <= 0.0f) { return; }
+    if (trackWidth <= 0.0f) {
+        return;
+    }
     float const separationFactor = 3.0f * handleWidth / trackWidth;
 
     if (m_hScrollGrabbedLeft) {
@@ -1221,8 +1228,11 @@ void EditorPanelAnimation::ScrollWhenDraggingOnVoid(const ImVec2& delta, ImGuiMo
     ImGuiID id = window->GetID("##scrolldraggingoverlay");
     ImGui::KeepAliveID(id);
     ImGuiButtonFlags button_flags = ImGuiButtonFlags_MouseButtonMiddle;
-    if (mouse_button == 0) { button_flags = ImGuiButtonFlags_MouseButtonLeft; }
-    else if (mouse_button == 1) { button_flags = ImGuiButtonFlags_MouseButtonRight; }
+    if (mouse_button == 0) {
+        button_flags = ImGuiButtonFlags_MouseButtonLeft;
+    } else if (mouse_button == 1) {
+        button_flags = ImGuiButtonFlags_MouseButtonRight;
+    }
 
     static float xDeltaAcc = 0;
     if (g.HoveredId == 0) {
@@ -1461,11 +1471,11 @@ void EditorPanelAnimation::UpdateMouseDragging() {
                 }
             } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
                 int frame = eventCtx->event->m_frame + frameDelta;
-                if (frame < 0) { frame = 0; }
+                frame = std::max(frame, 0);
                 eventCtx->mutableValue.m_frame = frame;
             } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
                 int frame = kfCtx->current->m_frame + frameDelta;
-                if (frame < 0) { frame = 0; }
+                frame = std::max(frame, 0);
                 kfCtx->mutableFrame = frame;
             }
         }

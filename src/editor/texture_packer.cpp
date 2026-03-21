@@ -164,6 +164,11 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
         curWidth *= 2;
     }
 
+    // total area exceeds max atlas size — use the largest available to pack as many as possible
+    if (testDimensions.empty()) {
+        return { maxDimX, maxDimY };
+    }
+
     for (auto&& testDim : testDimensions) {
         stbrp_context stbContext;
         stbrp_init_target(&stbContext, testDim.m_dimensions.x, testDim.m_dimensions.y, nodes.data(), static_cast<int>(nodes.size()));
@@ -175,10 +180,16 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
     }
 
     std::sort(std::begin(testDimensions), std::end(testDimensions), [](auto const& a, auto const& b) { return b.m_ratio < a.m_ratio; });
+
+    // no single dimension fit all rects — use the largest to pack as many as possible
+    if (std::begin(testDimensions)->m_ratio == 0.0f) {
+        return { maxDimX, maxDimY };
+    }
+
     return std::begin(testDimensions)->m_dimensions;
 }
 
-void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
+nlohmann::json TexturePacker::CommitPack(std::filesystem::path const& imagePngPath, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
     std::shared_ptr<canyon::graphics::ITarget> outputTexture = m_graphics.CreateTarget(width, height);
 
     m_graphics.SetTarget(outputTexture.get());
@@ -186,50 +197,37 @@ void TexturePacker::CommitPack(int num, std::filesystem::path const& outputPath,
     m_graphics.Clear();
 
     m_graphics.SetColor(canyon::graphics::BasicColors::White);
-    nlohmann::json packDetails;
+    nlohmann::json atlasImages;
     for (auto&& rect : rects) {
         if (rect.was_packed != 0) {
             auto const imagePath = images[rect.id].path;
             std::shared_ptr<moth_ui::IImage> image = m_context.GetImageFactory().GetImage(images[rect.id].path);
             auto img = std::dynamic_pointer_cast<canyon::graphics::MothImage>(image);
-            auto canyonImage = img->GetImage();
 
             canyon::IntRect destRect = canyon::MakeRect(rect.x, rect.y, rect.w, rect.h);
-
-            // graphics.SetBlendMode(image, backend::EBlendMode::None);
-            // graphics.SetColorMod(image, moth_ui::BasicColors::White);
             m_graphics.DrawImage(*img->GetImage(), destRect, nullptr, 0);
 
             nlohmann::json details;
             auto const relativePath = std::filesystem::relative(imagePath, outputPath);
             details["path"] = relativePath.string();
             details["rect"] = destRect;
-            packDetails.push_back(details);
+            atlasImages.push_back(details);
         }
     }
 
     m_graphics.SetTarget(nullptr);
+    m_graphics.DrawToPNG(*outputTexture->GetImage(), imagePngPath);
 
-    // save packed image
-    auto const imagePackName = fmt::format("packed_{}.png", num);
-    m_graphics.DrawToPNG(*outputTexture->GetImage(), outputPath / imagePackName);
-
-
-    // save description
-    auto const packDetailsName = fmt::format("packed_{}.json", num);
-    std::ofstream ofile(outputPath / packDetailsName);
-    if (ofile.is_open()) {
-        nlohmann::json detailsRoot;
-        detailsRoot["images"] = packDetails;
-        ofile << detailsRoot;
-    }
-
-    // remove packed rects
     rects.erase(ranges::remove_if(rects, [](auto const& r) { return r.was_packed != 0; }), std::end(rects));
 
     m_outputTexture = outputTexture;
     m_textureWidth = width;
     m_textureHeight = height;
+
+    nlohmann::json atlasEntry;
+    atlasEntry["atlas"] = std::filesystem::relative(imagePngPath, outputPath).string();
+    atlasEntry["images"] = atlasImages;
+    return atlasEntry;
 }
 
 void TexturePacker::Pack(std::filesystem::path const& inputPath, std::filesystem::path const& outputPath, int minWidth, int minHeight, int maxWidth, int maxHeight) {
@@ -264,14 +262,26 @@ void TexturePacker::Pack(std::filesystem::path const& inputPath, std::filesystem
 
             std::vector<stbrp_node> stbNodes(maxWidth * 2);
 
-            // keep creating packs until we run out of images.
+            nlohmann::json atlases;
             int numPacks = 0;
-            auto const& packDim = FindOptimalDimensions(stbNodes, stbRects, { minWidth, minHeight }, { maxWidth, maxHeight });
+            while (!stbRects.empty()) {
+                auto const imagePngPath = outputPath / fmt::format("packed_{}.png", numPacks);
+                auto const packDim = FindOptimalDimensions(stbNodes, stbRects, { minWidth, minHeight }, { maxWidth, maxHeight });
 
-            stbrp_context stbContext;
-            stbrp_init_target(&stbContext, packDim.x, packDim.y, stbNodes.data(), static_cast<int>(stbNodes.size()));
-            stbrp_pack_rects(&stbContext, stbRects.data(), static_cast<int>(stbRects.size()));
-            CommitPack(numPacks, outputPath, packDim.x, packDim.y, stbRects, images);
+                stbrp_context stbContext;
+                stbrp_init_target(&stbContext, packDim.x, packDim.y, stbNodes.data(), static_cast<int>(stbNodes.size()));
+                stbrp_pack_rects(&stbContext, stbRects.data(), static_cast<int>(stbRects.size()));
+                atlases.push_back(CommitPack(imagePngPath, outputPath, packDim.x, packDim.y, stbRects, images));
+                ++numPacks;
+            }
+
+            auto const packDetailsPath = outputPath / "packed.json";
+            std::ofstream ofile(packDetailsPath);
+            if (ofile.is_open()) {
+                nlohmann::json root;
+                root["atlases"] = atlases;
+                ofile << root;
+            }
         }
     }
 }

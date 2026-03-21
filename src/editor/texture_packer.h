@@ -5,6 +5,7 @@
 #include "canyon/graphics/igraphics.h"
 #include <canyon/graphics/moth_ui/moth_image.h>
 #include <moth_ui/layout/layout.h>
+#include <nlohmann/json.hpp>
 
 class TexturePacker {
 public:
@@ -30,7 +31,7 @@ private:
     };
 
     void Pack(std::filesystem::path const& inputPath, std::filesystem::path const& outputPath, int minWidth, int minHeight, int maxWidth, int maxHeight);
-    void CommitPack(int num, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images);
+    nlohmann::json CommitPack(std::filesystem::path const& imagePngPath, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images);
     void CollectLayouts(std::filesystem::path const& path, std::vector<std::shared_ptr<moth_ui::Layout>>& layouts);
     void CollectImages(moth_ui::Layout const& layout, std::vector<ImageDetails>& images);
     static moth_ui::IntVec2 FindOptimalDimensions(std::vector<stbrp_node>& nodes, std::vector<stbrp_rect>& rects, moth_ui::IntVec2 const& minPack, moth_ui::IntVec2 const& maxPack);
