@@ -4,7 +4,7 @@ from conan.tools.files import load
 from conan.tools.system.package_manager import Apt
 
 class MothUIEditor(ConanFile):
-    name = "moth_ui_editor"
+    name = "moth_editor"
 
     license = "MIT"
     url = "https://github.com/instinkt900/moth_editor"

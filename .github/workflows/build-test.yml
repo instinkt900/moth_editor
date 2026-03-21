@@ -1,4 +1,4 @@
-name: Build Tests
+name: Build and Test
 
 on:
   workflow_dispatch:
@@ -8,7 +8,6 @@ on:
       - 'src/**'
       - 'CMakeLists.txt'
       - 'conanfile.py'
-      - 'conan/**'
       - 'version.txt'
   pull_request:
     branches: [ master ]
@@ -16,7 +15,6 @@ on:
       - 'src/**'
       - 'CMakeLists.txt'
       - 'conanfile.py'
-      - 'conan/**'
       - 'version.txt'
 
 jobs:
@@ -26,25 +24,11 @@ jobs:
       matrix:
         include:
           - os: windows
-            build_type: Release
             runs_on: windows-latest
             configure_preset: conan-default
-            build_preset: conan-release
-          - os: windows
-            build_type: Debug
-            runs_on: windows-latest
-            configure_preset: conan-default
-            build_preset: conan-debug
           - os: linux
-            build_type: Release
             runs_on: ubuntu-latest
             configure_preset: conan-release
-            build_preset: conan-release
-          - os: linux
-            build_type: Debug
-            runs_on: ubuntu-latest
-            configure_preset: conan-debug
-            build_preset: conan-debug
 
     steps:
     - uses: actions/checkout@v4
@@ -61,15 +45,14 @@ jobs:
         conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
 
-    - name: Install dependencies
-      run: conan install . -s compiler.cppstd=17 -s build_type=${{ matrix.build_type }} --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
-
     - name: Configure and build
       shell: bash
       run: |
+        conan install . -s compiler.cppstd=17 -s build_type=Release --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
         cmake --preset ${{ matrix.configure_preset }}
-        cmake --build --preset ${{ matrix.build_preset }} --config ${{ matrix.build_type }}
+        cmake --build --preset conan-release --config Release
 
     - name: Build example
+      shell: bash
       working-directory: example
-      run: conan create . -s compiler.cppstd=17 -s build_type=${{ matrix.build_type }} --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
+      run: conan create . -s compiler.cppstd=17 -s build_type=Release --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true

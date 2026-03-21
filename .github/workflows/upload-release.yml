@@ -3,8 +3,12 @@ name: Upload Package
 on:
   workflow_dispatch:
     inputs:
-      force_release:
-        description: 'Create a GitHub Release even if the version has not changed'
+      force:
+        description: 'Run even if version has not changed.'
+        type: boolean
+        default: false
+      test:
+        description: 'Test run. Will not create release or tags.'
         type: boolean
         default: false
   push:
@@ -13,9 +17,7 @@ on:
       - 'src/**'
       - 'CMakeLists.txt'
       - 'conanfile.py'
-      - 'conan/**'
       - 'version.txt'
-      - '.github/workflows/**'
 
 permissions:
   contents: write
@@ -25,6 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.check.outputs.changed }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,7 +36,7 @@ jobs:
       - name: Check if version.txt changed
         id: check
         run: |
-          if [[ "${{ github.event.inputs.force_release }}" == "true" ]]; then
+          if [[ "${{ github.event.inputs.force }}" == "true" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           elif [[ -z "${{ github.event.before }}" ]]; then
             # workflow_dispatch: no push range available, fall back to last-commit diff
@@ -51,35 +54,39 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
+
   conan-upload:
     if: github.repository == 'instinkt900/moth_editor'
     needs: check-version
-    runs-on: ${{ matrix.os == 'windows' && 'windows-latest' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.runs_on }}
     strategy:
       matrix:
-        os: [windows, linux]
+        include:
+          - os: windows
+            runs_on: windows-latest
+          - os: linux
+            runs_on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    - name: Read version
-      id: version
-      shell: bash
-      run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
-
     - name: Setup Conan
       uses: conan-io/setup-conan@v1
       with:
         cache_packages: true
 
-    - name: Build Conan package and upload to Artifactory
+    - name: Build package and upload
       run: |
         conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
         conan create . -s compiler.cppstd=17 -s build_type=Release --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
-        conan upload "moth_ui_editor/${{ steps.version.outputs.version }}:*" --confirm --remote artifactory
+        conan upload "moth_editor/${{ needs.check-version.outputs.version }}:*" --confirm --remote artifactory
 
   build-release:
     if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true'
@@ -87,16 +94,27 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     strategy:
       matrix:
-        os: [windows, linux]
         include:
           - os: windows
             build_type: Release
             runs_on: windows-latest
             configure_preset: conan-default
+            build_preset: conan-release
+          - os: windows
+            build_type: Debug
+            runs_on: windows-latest
+            configure_preset: conan-default
+            build_preset: conan-debug
           - os: linux
             build_type: Release
             runs_on: ubuntu-latest
             configure_preset: conan-release
+            build_preset: conan-release
+          - os: linux
+            build_type: Debug
+            runs_on: ubuntu-latest
+            configure_preset: conan-debug
+            build_preset: conan-debug
 
     steps:
     - uses: actions/checkout@v4
@@ -108,17 +126,17 @@ jobs:
       with:
         cache_packages: true
 
-    - name: Install dependencies
+    - name: Add remotes
       run: |
         conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan install . -s compiler.cppstd=17 -s build_type=${{ matrix.build_type }} --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
 
     - name: Configure and build
       shell: bash
       run: |
+        conan install . -s compiler.cppstd=17 -s build_type=${{ matrix.build_type }} --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
         cmake --preset ${{ matrix.configure_preset }}
-        cmake --build --preset conan-release --config Release
+        cmake --build --preset ${{ matrix.build_preset }} --config ${{ matrix.build_type }}
 
     - name: Install to staging directory
       if: matrix.os == 'linux'
@@ -128,29 +146,28 @@ jobs:
       if: matrix.os == 'windows'
       run: cmake --install build --config ${{ matrix.build_type }} --prefix staging
 
-    - name: Read version
-      id: version
-      shell: bash
-      run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
-
     - name: Archive binaries (Linux)
       if: matrix.os == 'linux'
-      run: tar czf moth_editor-${{ steps.version.outputs.version }}-linux.tar.gz -C staging .
+      run: |
+        mv staging moth_editor-${{ needs.check-version.outputs.version }}
+        tar czf moth_editor-${{ needs.check-version.outputs.version }}-linux-${{ matrix.build_type }}.tar.gz moth_editor-${{ needs.check-version.outputs.version }}
 
     - name: Archive binaries (Windows)
       if: matrix.os == 'windows'
       shell: pwsh
-      run: Compress-Archive -Path staging\* -DestinationPath moth_editor-${{ steps.version.outputs.version }}-windows.zip
+      run: |
+        Rename-Item staging moth_editor-${{ needs.check-version.outputs.version }}
+        Compress-Archive -Path moth_editor-${{ needs.check-version.outputs.version }} -DestinationPath moth_editor-${{ needs.check-version.outputs.version }}-windows-${{ matrix.build_type }}.zip
 
     - name: Upload archive as workflow artifact
       uses: actions/upload-artifact@v4
       with:
-        name: moth_editor-${{ matrix.os }}
-        path: moth_editor-${{ steps.version.outputs.version }}-*
+        name: moth_editor-${{ matrix.os }}-${{ matrix.build_type }}
+        path: moth_editor-${{ needs.check-version.outputs.version }}-*
         retention-days: 1
 
   tag-and-release:
-    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true'
+    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true' && github.event.inputs.test != 'true'
     needs: [check-version, build-release]
     runs-on: ubuntu-latest
     steps:
@@ -158,10 +175,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: master
-
-      - name: Read version
-        id: version
-        run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
 
       - name: Configure git
         run: |
@@ -171,9 +184,18 @@ jobs:
       - name: Create version tag
         uses: rickstaa/action-create-tag@v1
         with:
-          tag: ${{ steps.version.outputs.version }}
+          tag: ${{ needs.check-version.outputs.version }}
           tag_exists_error: false
           force_push_tag: true
+
+      - name: Generate CHANGELOG.md
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose
+        env:
+          OUTPUT: CHANGELOG.md
+          GITHUB_REPO: ${{ github.repository }}
 
       - name: Generate release notes (current version only)
         id: release-notes
@@ -185,19 +207,12 @@ jobs:
           OUTPUT: RELEASE_NOTES.md
           GITHUB_REPO: ${{ github.repository }}
 
-      - name: Generate CHANGELOG.md
-        uses: orhun/git-cliff-action@v4
-        with:
-          config: cliff.toml
-          args: --verbose
-        env:
-          OUTPUT: CHANGELOG.md
-          GITHUB_REPO: ${{ github.repository }}
-
       - name: Commit CHANGELOG.md to master
         run: |
           git add CHANGELOG.md
-          git diff --cached --quiet || git commit -m "chore(release): update CHANGELOG.md for ${{ steps.version.outputs.version }} [skip ci]"
+          git diff --cached --quiet || git commit -m "chore(release): update CHANGELOG.md for ${{ needs.check-version.outputs.version }} [skip ci]"
+          git fetch origin master
+          git rebase origin/master || { echo "Rebase failed; aborting to avoid overwriting remote history"; git rebase --abort; exit 1; }
           git push origin master
 
       - name: Download all archives
@@ -209,7 +224,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: "moth_editor ${{ steps.version.outputs.version }}"
+          tag_name: ${{ needs.check-version.outputs.version }}
+          name: "moth_editor ${{ needs.check-version.outputs.version }}"
           body_path: RELEASE_NOTES.md
           files: release-assets/*
