@@ -1,7 +1,7 @@
 # Moth Editor
 
-[![Build Tests](https://github.com/instinkt900/moth_editor/actions/workflows/build-tests.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/build-tests.yml)
-[![Release](https://github.com/instinkt900/moth_editor/actions/workflows/upload-package.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/upload-package.yml)
+[![Build Tests](https://github.com/instinkt900/moth_editor/actions/workflows/build-test.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/build-test.yml)
+[![Release](https://github.com/instinkt900/moth_editor/actions/workflows/upload-release.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/upload-release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A visual layout and animation editor for [moth_ui](https://github.com/instinkt900/moth_ui). Design UI layouts and keyframe animations in a Flash-like authoring environment, then load them directly into your moth_ui application at runtime.
