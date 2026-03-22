@@ -188,6 +188,9 @@ jobs:
           tag_exists_error: false
           force_push_tag: true
 
+      - name: Fetch tags
+        run: git fetch --tags
+
       - name: Generate CHANGELOG.md
         uses: orhun/git-cliff-action@v4
         with:
