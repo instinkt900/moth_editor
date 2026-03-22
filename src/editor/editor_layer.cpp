@@ -55,7 +55,7 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
         panel->Refresh();
     }
 
-    m_texturePacker = std::make_unique<TexturePacker>(m_context, m_graphics);
+    m_texturePacker = std::make_unique<TexturePacker>();
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {

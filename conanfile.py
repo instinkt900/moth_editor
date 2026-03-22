@@ -12,13 +12,14 @@ class MothUIEditor(ConanFile):
 
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
-    exports_sources = "CMakeLists.txt", "version.txt", "src/*", "external/nativefiledialog/*", "external/stb/*"
+    exports_sources = "CMakeLists.txt", "version.txt", "src/*", "external/nativefiledialog/*"
 
     def set_version(self):
         self.version = load(self, "version.txt").strip()
 
     def requirements(self):
         self.requires("moth_graphics/0.7.0")
+        self.requires("moth_packer/0.2.0")
 
     def system_requirements(self):
         if self.settings.os == "Linux":

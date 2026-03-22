@@ -13,6 +13,7 @@
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_key.h"
 
+#include "moth_graphics/graphics/igraphics.h"
 #include "moth_graphics/events/event_window.h"
 
 #include <set>
