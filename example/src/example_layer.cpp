@@ -4,7 +4,7 @@
 #include "moth_ui/node_factory.h"
 #include "moth_ui/nodes/group.h"
 #include "ui_button.h"
-#include "canyon/events/event_window.h"
+#include "moth_graphics/events/event_window.h"
 
 ExampleLayer::ExampleLayer(moth_ui::Context& context, std::filesystem::path const& layoutPath)
     : m_context(context) {
@@ -87,7 +87,7 @@ bool ExampleLayer::OnAnimationStopped(moth_ui::EventAnimationStopped const& even
     return false;
 }
 
-bool ExampleLayer::OnRequestQuitEvent(canyon::EventRequestQuit const& event) {
-    m_layerStack->FireEvent(canyon::EventQuit());
+bool ExampleLayer::OnRequestQuitEvent(moth_graphics::EventRequestQuit const& event) {
+    m_layerStack->FireEvent(moth_graphics::EventQuit());
     return true;
 }

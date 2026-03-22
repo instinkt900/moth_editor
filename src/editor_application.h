@@ -1,12 +1,12 @@
 #pragma once
 
-#include "canyon/platform/application.h"
+#include "moth_graphics/platform/application.h"
 #include <nlohmann/json.hpp>
 
-class EditorApplication : public canyon::platform::Application
+class EditorApplication : public moth_graphics::platform::Application
 {
 public:
-    EditorApplication(canyon::platform::IPlatform& platform);
+    EditorApplication(moth_graphics::platform::IPlatform& platform);
     ~EditorApplication() override;
 
 

@@ -1,12 +1,12 @@
 #include "common.h"
 #include "editor_application.h"
 #include "editor/editor_layer.h"
-#include <canyon/platform/window.h>
+#include <moth_graphics/platform/window.h>
 
 char const* const EditorApplication::IMGUI_FILE = "imgui.ini";
 char const* const EditorApplication::PERSISTENCE_FILE = "editor.json";
 
-EditorApplication::EditorApplication(canyon::platform::IPlatform& platform)
+EditorApplication::EditorApplication(moth_graphics::platform::IPlatform& platform)
     : Application(platform, "Moth UI Tool", 1920, 1080) {
     m_imguiSettingsPath = (std::filesystem::current_path() / IMGUI_FILE).string();
     m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;

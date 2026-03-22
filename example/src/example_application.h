@@ -1,12 +1,12 @@
 #pragma once
 
-#include "canyon/platform/application.h"
+#include "moth_graphics/platform/application.h"
 #include <nlohmann/json.hpp>
 
-class ExampleApplication : public canyon::platform::Application
+class ExampleApplication : public moth_graphics::platform::Application
 {
 public:
-    explicit ExampleApplication(canyon::platform::IPlatform& platform);
+    explicit ExampleApplication(moth_graphics::platform::IPlatform& platform);
     virtual ~ExampleApplication();
 
     nlohmann::json& GetPersistentState() { return m_persistentState; }
@@ -17,7 +17,7 @@ private:
     std::filesystem::path m_imguiSettingsPath;
     std::filesystem::path m_persistentFilePath;
     nlohmann::json m_persistentState;
-    canyon::IntVec2 m_windowPos;
+    moth_graphics::IntVec2 m_windowPos;
     int m_windowWidth;
     int m_windowHeight;
     bool m_windowMaximized;

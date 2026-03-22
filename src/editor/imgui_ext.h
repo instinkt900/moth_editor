@@ -2,7 +2,7 @@
 
 #include "moth_ui/moth_ui_fwd.h"
 #include "moth_ui/utils/vector.h"
-#include "canyon/graphics/iimage.h"
+#include "moth_graphics/graphics/iimage.h"
 
 #include <string>
 
@@ -13,6 +13,6 @@ namespace imgui_ext {
     void InputIntVec2(char const* label, moth_ui::IntVec2* vec);
     void InputFloatVec2(char const* label, moth_ui::FloatVec2* vec);
 
-    void Image(canyon::graphics::IImage const* image, int width, int height);
+    void Image(moth_graphics::graphics::IImage const* image, int width, int height);
     void Image(moth_ui::IImage const* image, int width, int height);
 }

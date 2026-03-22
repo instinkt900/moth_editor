@@ -1,7 +1,7 @@
 #include "example_application.h"
 #include "example_layer.h"
-#include "canyon/utils/vector.h"
-#include "canyon/platform/window.h"
+#include "moth_graphics/utils/vector.h"
+#include "moth_graphics/platform/window.h"
 
 #include <fstream>
 
@@ -9,8 +9,8 @@ char const* const ExampleApplication::IMGUI_FILE = "imgui.ini";
 char const* const ExampleApplication::PERSISTENCE_FILE = "example.json";
 ExampleApplication* g_App;
 
-ExampleApplication::ExampleApplication(canyon::platform::IPlatform& platform)
-    : canyon::platform::Application(platform, "Example", 640, 480) {
+ExampleApplication::ExampleApplication(moth_graphics::platform::IPlatform& platform)
+    : moth_graphics::platform::Application(platform, "Example", 640, 480) {
     m_imguiSettingsPath = (std::filesystem::current_path() / IMGUI_FILE).string();
     m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
     std::ifstream persistenceFile(m_persistentFilePath.string());

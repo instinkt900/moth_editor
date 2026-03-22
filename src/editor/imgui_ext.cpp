@@ -58,7 +58,7 @@ namespace imgui_ext {
         ImGui::Text("%s", label);
     }
 
-    void Image(canyon::graphics::IImage const* image, int width, int height) {
+    void Image(moth_graphics::graphics::IImage const* image, int width, int height) {
         if (image != nullptr) {
             image->ImGui({ width, height });
         }

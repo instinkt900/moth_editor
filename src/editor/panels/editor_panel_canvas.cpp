@@ -12,7 +12,7 @@
 #include "../actions/composite_action.h"
 #include "editor_application.h"
 #include "moth_ui/graphics/itarget.h"
-#include "canyon/graphics/moth_ui/utils.h"
+#include "moth_graphics/graphics/moth_ui/utils.h"
 
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
@@ -162,7 +162,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
         auto const newRenderOffsetY = static_cast<int>(static_cast<float>(m_canvasOffset.y) / scaleFactor);
 
         graphics.SetBlendMode(moth_ui::BlendMode::Replace);
-        graphics.SetLogicalSize(canyon::IntVec2{ newRenderWidth, newRenderHeight });
+        graphics.SetLogicalSize(moth_graphics::IntVec2{ newRenderWidth, newRenderHeight });
         {
 
             if (auto const root = m_editorLayer.GetRoot()) {
@@ -175,7 +175,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
                 root->Draw();
             }
         }
-        graphics.SetLogicalSize(canyon::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
+        graphics.SetLogicalSize(moth_graphics::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
     }
 
     graphics.SetTarget(nullptr);

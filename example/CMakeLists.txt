@@ -19,11 +19,11 @@ set(SOURCES ${SOURCES}
 	src/ui_button.cpp
 )
 
-find_package(canyon REQUIRED)
+find_package(moth_graphics REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE src)
-target_link_libraries(${PROJECT_NAME} canyon::canyon)
+target_link_libraries(${PROJECT_NAME} moth_graphics::moth_graphics)
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 if (MSVC)
 	set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/ignore:4099")

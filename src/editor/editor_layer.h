@@ -13,7 +13,7 @@
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_key.h"
 
-#include "canyon/events/event_window.h"
+#include "moth_graphics/events/event_window.h"
 
 #include <set>
 
@@ -24,10 +24,10 @@ class EditorApplication;
 
 class EditorLayer : public moth_ui::Layer {
 public:
-    EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics, EditorApplication* app);
+    EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app);
     ~EditorLayer() override = default;
 
-    canyon::graphics::IGraphics& GetGraphics() const { return m_graphics; }
+    moth_graphics::graphics::IGraphics& GetGraphics() const { return m_graphics; }
 
     bool OnEvent(moth_ui::Event const& event) override;
 
@@ -131,7 +131,7 @@ public:
 private:
     EditorApplication* m_app = nullptr;
     moth_ui::Context& m_context;
-    canyon::graphics::IGraphics& m_graphics;
+    moth_graphics::graphics::IGraphics& m_graphics;
 
     EditorConfig m_config;
 
@@ -195,7 +195,7 @@ private:
     void ResetCanvas();
 
     bool OnKey(moth_ui::EventKey const& event);
-    bool OnRequestQuitEvent(canyon::EventRequestQuit const& event);
+    bool OnRequestQuitEvent(moth_graphics::EventRequestQuit const& event);
 
     void Shutdown();
     void SaveConfig();

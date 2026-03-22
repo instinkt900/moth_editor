@@ -28,13 +28,13 @@
 #include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/context.h"
 #include "moth_ui/animation/keyframe.h"
-#include "canyon/platform/window.h"
+#include "moth_graphics/platform/window.h"
 
 #include "texture_packer.h"
 
 #include <nfd.h>
 
-EditorLayer::EditorLayer(moth_ui::Context& context, canyon::graphics::IGraphics& graphics, EditorApplication* app)
+EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app)
     : m_app(app)
     , m_context(context)
     , m_graphics(graphics) {
@@ -165,7 +165,7 @@ void EditorLayer::DrawMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
-                m_layerStack->FireEvent(canyon::EventRequestQuit{});
+                m_layerStack->FireEvent(moth_graphics::EventRequestQuit{});
             }
             ImGui::EndMenu();
         }
@@ -572,7 +572,7 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     return false;
 }
 
-bool EditorLayer::OnRequestQuitEvent(canyon::EventRequestQuit const& event) {
+bool EditorLayer::OnRequestQuitEvent(moth_graphics::EventRequestQuit const& event) {
     if (IsWorkPending()) {
         m_confirmPrompt.SetTitle("Unsaved Changes");
         m_confirmPrompt.SetMessage("You have unsaved changes. What would you like to do?");
@@ -796,7 +796,7 @@ void EditorLayer::Shutdown() {
         panel->OnShutdown();
     }
     SaveConfig();
-    m_layerStack->FireEvent(canyon::EventQuit());
+    m_layerStack->FireEvent(moth_graphics::EventQuit());
 }
 
 void EditorLayer::SaveConfig() {

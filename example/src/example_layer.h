@@ -4,7 +4,7 @@
 #include "moth_ui/layers/layer_stack.h"
 #include "moth_ui/events/event_animation.h"
 #include "moth_ui/utils/vector.h"
-#include "canyon/events/event_window.h"
+#include "moth_graphics/events/event_window.h"
 
 #include <filesystem>
 
@@ -30,5 +30,5 @@ protected:
 
     bool OnUIEvent(moth_ui::Event const& event);
     bool OnAnimationStopped(moth_ui::EventAnimationStopped const& event);
-    bool OnRequestQuitEvent(canyon::EventRequestQuit const& event);
+    bool OnRequestQuitEvent(moth_graphics::EventRequestQuit const& event);
 };

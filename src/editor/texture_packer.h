@@ -2,14 +2,14 @@
 
 #include "moth_ui/context.h"
 #include "stb_rect_pack.h"
-#include "canyon/graphics/igraphics.h"
-#include <canyon/graphics/moth_ui/moth_image.h>
+#include "moth_graphics/graphics/igraphics.h"
+#include <moth_graphics/graphics/moth_ui/moth_image.h>
 #include <moth_ui/layout/layout.h>
 #include <nlohmann/json.hpp>
 
 class TexturePacker {
 public:
-    TexturePacker(moth_ui::Context& context, canyon::graphics::IGraphics& graphics);
+    TexturePacker(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics);
     ~TexturePacker();
 
     void Open() {
@@ -19,9 +19,9 @@ public:
 
 private:
     moth_ui::Context& m_context;
-    canyon::graphics::IGraphics& m_graphics;
+    moth_graphics::graphics::IGraphics& m_graphics;
     bool m_open = false;
-    std::shared_ptr<canyon::graphics::ITarget> m_outputTexture;
+    std::shared_ptr<moth_graphics::graphics::ITarget> m_outputTexture;
     int m_textureWidth = 0;
     int m_textureHeight = 0;
 

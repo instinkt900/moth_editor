@@ -1,8 +1,8 @@
 #pragma once
 
 #include "editor_panel.h"
-#include "canyon/graphics/itarget.h"
-#include <canyon/graphics/moth_ui/moth_image.h>
+#include "moth_graphics/graphics/itarget.h"
+#include <moth_graphics/graphics/moth_ui/moth_image.h>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -24,7 +24,7 @@ private:
     std::vector<std::string> m_clipNames;
     std::string m_selectedClip;
 
-    std::shared_ptr<canyon::graphics::ITarget> m_renderSurface;
+    std::shared_ptr<moth_graphics::graphics::ITarget> m_renderSurface;
     moth_ui::IntVec2 m_currentSurfaceSize;
 
     void SetLayout(std::shared_ptr<moth_ui::Layout> layout);

@@ -4,8 +4,8 @@
 #include "moth_ui/context.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/layout/layout_entity_image.h"
-#include "canyon/graphics/moth_ui/moth_image.h"
-#include "canyon/graphics/moth_ui/utils.h"
+#include "moth_graphics/graphics/moth_ui/moth_image.h"
+#include "moth_graphics/graphics/moth_ui/utils.h"
 
 #include <nfd.h>
 
@@ -21,7 +21,7 @@ namespace {
     int s_maxHeight = 1024;
 }
 
-TexturePacker::TexturePacker(moth_ui::Context& context, canyon::graphics::IGraphics& graphics)
+TexturePacker::TexturePacker(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics)
     : m_context(context)
     , m_graphics(graphics) {
 }
@@ -190,21 +190,21 @@ moth_ui::IntVec2 TexturePacker::FindOptimalDimensions(std::vector<stbrp_node>& n
 }
 
 nlohmann::json TexturePacker::CommitPack(std::filesystem::path const& imagePngPath, std::filesystem::path const& outputPath, int width, int height, std::vector<stbrp_rect>& rects, std::vector<ImageDetails> const& images) {
-    std::shared_ptr<canyon::graphics::ITarget> outputTexture = m_graphics.CreateTarget(width, height);
+    std::shared_ptr<moth_graphics::graphics::ITarget> outputTexture = m_graphics.CreateTarget(width, height);
 
     m_graphics.SetTarget(outputTexture.get());
-    m_graphics.SetColor(canyon::graphics::BasicColors::Black);
+    m_graphics.SetColor(moth_graphics::graphics::BasicColors::Black);
     m_graphics.Clear();
 
-    m_graphics.SetColor(canyon::graphics::BasicColors::White);
+    m_graphics.SetColor(moth_graphics::graphics::BasicColors::White);
     nlohmann::json atlasImages;
     for (auto&& rect : rects) {
         if (rect.was_packed != 0) {
             auto const imagePath = images[rect.id].path;
             std::shared_ptr<moth_ui::IImage> image = m_context.GetImageFactory().GetImage(images[rect.id].path);
-            auto img = std::dynamic_pointer_cast<canyon::graphics::MothImage>(image);
+            auto img = std::dynamic_pointer_cast<moth_graphics::graphics::MothImage>(image);
 
-            canyon::IntRect destRect = canyon::MakeRect(rect.x, rect.y, rect.w, rect.h);
+            moth_graphics::IntRect destRect = moth_graphics::MakeRect(rect.x, rect.y, rect.w, rect.h);
             m_graphics.DrawImage(*img->GetImage(), destRect, nullptr, 0);
 
             nlohmann::json details;
