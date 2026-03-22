@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [0.3.2] - 2026-03-22
+### Bug Fixes
+- Fetch tags after creation so git-cliff --current finds the tag
+- Force-refresh tags on fetch to avoid stale refs on retry
+
+### Changes
+- Update version.txt
+
+### Miscellaneous
+- Updating versions
+
+### Refactoring
+- Replace internal TexturePacker with moth_packer library
+
 ## [0.3.1] - 2026-03-22
 ### Bug Fixes
 - Lint issues
