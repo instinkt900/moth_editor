@@ -55,12 +55,12 @@ set(SOURCES ${SOURCES}
 	src/main.cpp
 )
 
-find_package(canyon REQUIRED)
+find_package(moth_graphics REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 target_include_directories(${PROJECT_NAME} PRIVATE src external/stb)
-target_link_libraries(${PROJECT_NAME} canyon::canyon)
+target_link_libraries(${PROJECT_NAME} moth_graphics::moth_graphics)
 target_link_libraries(${PROJECT_NAME} nativefiledialog)
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/common.h)
 
