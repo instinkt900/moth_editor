@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [0.3.1] - 2026-03-22
+### Bug Fixes
+- Lint issues
+
+### Changes
+- Overhaul workflows and rename conan package
+- Update badge links in README.md
+- Use repository variable for ARTIFACTORY_URL
+- Bump version from 0.3.0 to 0.3.1
+
+### Documentation
+- Add full ecosystem table to Related Projects
+
+### Refactoring
+- Update canyon dependency to moth_graphics
+- Update canyon:: namespace to moth_graphics::
+
 ## [0.3.0] - 2026-03-21
 ### Bug Fixes
 - Initialise atlases as empty JSON array instead of null
