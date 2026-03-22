@@ -83,7 +83,7 @@ jobs:
 
     - name: Build package and upload
       run: |
-        conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
+        conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
         conan create . -s compiler.cppstd=17 -s build_type=Release --build=missing -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=true
         conan upload "moth_editor/${{ needs.check-version.outputs.version }}:*" --confirm --remote artifactory
@@ -128,7 +128,7 @@ jobs:
 
     - name: Add remotes
       run: |
-        conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
+        conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
 
     - name: Configure and build

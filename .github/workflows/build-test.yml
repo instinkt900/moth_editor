@@ -42,7 +42,7 @@ jobs:
 
     - name: Add private artifactory
       run: |
-        conan remote add artifactory ${{ secrets.ARTIFACTORY_URL }} --force
+        conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
 
     - name: Configure and build
