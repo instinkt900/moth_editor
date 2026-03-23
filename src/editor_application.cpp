@@ -2,6 +2,7 @@
 #include "editor_application.h"
 #include "editor/editor_layer.h"
 #include <moth_graphics/platform/window.h>
+#include <moth_graphics/graphics/surface_context.h>
 
 char const* const EditorApplication::IMGUI_FILE = "imgui.ini";
 char const* const EditorApplication::PERSISTENCE_FILE = "editor.json";
@@ -51,6 +52,27 @@ EditorApplication::~EditorApplication() {
 }
 
 void EditorApplication::PostCreateWindow() {
+    {
+        constexpr int kSize = 64;
+        constexpr int kTile = 8;
+        std::vector<uint8_t> pixels(static_cast<std::size_t>(kSize * kSize * 4));
+        for (int row = 0; row < kSize; ++row) {
+            for (int col = 0; col < kSize; ++col) {
+                bool const isLight = ((row / kTile) + (col / kTile)) % 2 == 0;
+                std::size_t const idx = static_cast<std::size_t>((row * kSize + col) * 4);
+                pixels[idx + 0] = isLight ? uint8_t{ 0xFF } : uint8_t{ 0x33 }; // R
+                pixels[idx + 1] = isLight ? uint8_t{ 0x00 } : uint8_t{ 0x33 }; // G
+                pixels[idx + 2] = isLight ? uint8_t{ 0xFF } : uint8_t{ 0x33 }; // B
+                pixels[idx + 3] = uint8_t{ 0xFF };                              // A
+            }
+        }
+        auto& assetContext = m_window->GetSurfaceContext().GetAssetContext();
+        if (auto texture = assetContext.TextureFromPixels(kSize, kSize, pixels.data())) {
+            texture->SetFilter(moth_graphics::graphics::TextureFilter::Nearest, moth_graphics::graphics::TextureFilter::Nearest);
+            m_window->GetImageFactory().SetFallbackImage(std::shared_ptr<moth_graphics::graphics::ITexture>(std::move(texture)));
+        }
+    }
+
     if (m_persistentState.contains("current_path")) {
         std::string const currentPath = m_persistentState["current_path"];
         try {
