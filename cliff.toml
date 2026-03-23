@@ -14,7 +14,7 @@ body = """
 ## [Unreleased]
 {% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}\
-### {{ group }}
+### {{ group | split(pat=". ") | last }}
 {% for commit in commits %}\
 - {% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message | split(pat="\n") | first | upper_first | trim }}
 {% endfor %}
@@ -42,16 +42,18 @@ commit_parsers = [
     { message = "^[Mm]erge", skip = true },
     # Skip the automated changelog update commits
     { message = "^chore\\(release\\)", skip = true },
-    { message = "^feat", group = "Features" },
-    { message = "^fix", group = "Bug Fixes" },
-    { message = "^refactor", group = "Refactoring" },
-    { message = "^perf", group = "Performance" },
-    { message = "^doc", group = "Documentation" },
-    { message = "^test", group = "Testing" },
-    { message = "^chore", group = "Miscellaneous" },
-    { message = "^revert", group = "Reverts" },
+    # Skip CI commits
+    { message = "^ci", skip = true },
+    { message = "^feat", group = "1. Features" },
+    { message = "^fix", group = "2. Bug Fixes" },
+    { message = "^refactor", group = "3. Refactoring" },
+    { message = "^perf", group = "4. Performance" },
+    { message = "^doc", group = "5. Documentation" },
+    { message = "^test", group = "6. Testing" },
+    { message = "^chore", group = "7. Miscellaneous" },
+    { message = "^revert", group = "8. Reverts" },
     # Catch-all: plain-english commits without a conventional prefix
-    { message = ".*", group = "Changes" },
+    { message = ".*", group = "9. Changes" },
 ]
 
 filter_commits = false
