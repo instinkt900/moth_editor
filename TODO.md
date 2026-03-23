@@ -2,20 +2,6 @@
 
 ## 1.0.0
 
-### Missing asset warnings
-When a layout is loaded and a referenced image or font cannot be found, the editor silently renders nothing. There should be a clear indication — ideally a visual placeholder on the canvas and a warning in the asset list or a dedicated panel — so the user knows something is wrong and what file is missing.
-
-**Effort:** Small–medium. The load path already returns error codes; the work is surfacing those errors in the UI and deciding on a placeholder rendering strategy.
-
----
-
-### Recent files menu
-The File menu has no recent files list. The app already saves and restores the last working directory via `editor.json`, so the infrastructure for persistence is there. A list of the last 5–10 opened layout paths stored in `editor.json` and shown under File → Recent would cover this.
-
-**Effort:** Small. Mostly UI wiring and a small addition to the persistence state.
-
----
-
 ### Canvas rotation handle
 Rotation can be set numerically in the properties panel but there is no drag handle on the bounds widget. For a visual editor this is a notable gap. A circular arc handle (or a handle above the selection box, like most design tools) that maps mouse drag angle to the entity's rotation property would be the expected interaction.
 

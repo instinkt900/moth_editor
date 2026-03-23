@@ -157,6 +157,14 @@ void EditorLayer::DrawMainMenu() {
             if (ImGui::MenuItem("Open Layout", "Ctrl+O")) {
                 MenuFuncOpenLayout();
             }
+            if (ImGui::BeginMenu("Open Recent", !m_recentFiles.empty())) {
+                for (auto const& recentPath : m_recentFiles) {
+                    if (ImGui::MenuItem(recentPath.string().c_str())) {
+                        LoadLayout(recentPath);
+                    }
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::MenuItem("Save Layout", "Ctrl+S", nullptr, !m_currentLayoutPath.empty())) {
                 MenuFuncSaveLayout();
             }
@@ -332,6 +340,7 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
             ClearEditActions();
             m_lockedNodes.clear();
             Rebuild();
+            AddRecentFile(path);
             for (auto&& [panelId, panel] : m_panels) {
                 panel->OnLayoutLoaded();
             }
@@ -349,6 +358,7 @@ void EditorLayer::SaveLayout(std::filesystem::path const& path) {
     if (m_rootLayout->Save(path)) {
         m_lastSaveActionIndex = m_actionIndex;
         m_currentLayoutPath = path;
+        AddRecentFile(path);
     }
 }
 
@@ -799,10 +809,24 @@ void EditorLayer::Shutdown() {
     m_layerStack->FireEvent(moth_graphics::EventQuit());
 }
 
+void EditorLayer::AddRecentFile(std::filesystem::path const& path) {
+    auto const absPath = std::filesystem::absolute(path);
+    m_recentFiles.erase(std::remove(m_recentFiles.begin(), m_recentFiles.end(), absPath), m_recentFiles.end());
+    m_recentFiles.insert(m_recentFiles.begin(), absPath);
+    if (static_cast<int>(m_recentFiles.size()) > MaxRecentFiles) {
+        m_recentFiles.resize(MaxRecentFiles);
+    }
+}
+
 void EditorLayer::SaveConfig() {
     auto& j = m_app->GetPersistentState();
     j["editor_config"] = m_config;
     j["font_project"] = m_context.GetFontFactory().GetCurrentProjectPath();
+    auto recentArray = nlohmann::json::array();
+    for (auto const& p : m_recentFiles) {
+        recentArray.push_back(p.string());
+    }
+    j["recent_files"] = recentArray;
 }
 
 void EditorLayer::LoadConfig() {
@@ -813,6 +837,12 @@ void EditorLayer::LoadConfig() {
         std::filesystem::path fontProjectPath = j.value("font_project", "");
         if (!fontProjectPath.empty()) {
             m_context.GetFontFactory().LoadProject(fontProjectPath);
+        }
+
+        if (j.contains("recent_files")) {
+            for (auto const& entry : j["recent_files"]) {
+                m_recentFiles.push_back(std::filesystem::path(entry.get<std::string>()));
+            }
         }
     }
 }
