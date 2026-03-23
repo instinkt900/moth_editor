@@ -39,17 +39,6 @@ The editor has no auto-save. Any unsaved work is lost if the application crashes
 
 ## 1.x
 
-### Standalone texture packer CLI
-The texture packing logic in `src/editor/texture_packer.cpp` is self-contained — it recursively collects layouts, gathers image references, runs stb_rect_pack to find optimal atlas dimensions, renders images into a target, and writes out PNG + JSON descriptor files. It currently requires the full editor to run.
-
-Extracting this into a standalone CLI tool would allow texture packing to be run as a build step without launching the editor — useful for pipelines, CI, and artists who just need to repack assets. The tool would take an input layouts directory, an output directory, and min/max atlas dimensions as arguments, and produce the same packed PNG + JSON output the editor currently generates.
-
-The main work is separating the packing logic from the ImGui/graphics context. The renderer is currently used to composite images into the atlas target; this could be replaced with a CPU-side compositing pass using stb_image and stb_image_write directly, removing the canyon/graphics dependency entirely and making the tool much lighter.
-
-**Effort:** Medium. The algorithm is already written. The main work is the CPU compositing path to drop the graphics backend dependency, setting up a new CMake target, and wiring up CLI argument parsing (a simple argc/argv loop or a small library like CLI11).
-
----
-
 ### Easing curve editor
 Currently only discrete interpolation types are selectable per keyframe (e.g. linear, step). A bezier easing curve editor — inline in the animation panel or as a popup when editing a keyframe — would give much finer control over animation feel. This is a significant UI addition.
 
