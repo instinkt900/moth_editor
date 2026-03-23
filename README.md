@@ -61,26 +61,30 @@ python3 -m venv .venv
 pip install conan
 ```
 
+**C++17 is required.** A `.conan/profile` is provided that sets `compiler.cppstd=17` and configures Conan to install system packages automatically (`tools.system.package_manager:mode=install`). This profile is used in CI and can be used directly or as a reference when building locally.
+
 ### Linux
 
-GTK3 must come from the system package manager (required by nativefiledialog):
+Several system packages are required on Linux. GTK3 is needed by nativefiledialog; SDL2, GLFW, FreeType, and HarfBuzz are pulled in transitively via moth_graphics (see the [moth_graphics README](https://github.com/instinkt900/moth_graphics#linux) for background on why these must come from the system).
+
+Using `.conan/profile`, Conan will install these automatically via `apt`:
 
 ```bash
-sudo apt install libgtk-3-dev
-```
-
-SDL2, GLFW, FreeType, and HarfBuzz are pulled in transitively via canyon and also require system packages — see the [canyon README](https://github.com/instinkt900/canyon#linux) for the full list.
-
-```bash
-conan install . -s compiler.cppstd=17 -s build_type=Release --build=missing
+conan install . -pr .conan/profile -s build_type=Release --build=missing
 cmake --preset conan-release
 cmake --build --preset conan-release
+```
+
+If you'd rather install them yourself first:
+
+```bash
+sudo apt install libgtk-3-dev libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libglfw3-dev libfreetype-dev libharfbuzz-dev
 ```
 
 ### Windows
 
 ```bash
-conan install . -s compiler.cppstd=17 -s build_type=Release --build=missing
+conan install . -pr .conan/profile -s build_type=Release --build=missing
 cmake --preset conan-default
 cmake --build --preset conan-release
 ```
