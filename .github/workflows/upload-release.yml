@@ -19,6 +19,7 @@ on:
       - 'conanfile.py'
       - 'version.txt'
       - '.conan/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: write
