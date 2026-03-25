@@ -38,6 +38,7 @@ set(SOURCES ${SOURCES}
 	src/editor/editor_layer.cpp
 	src/editor/imgui_ext.cpp
 	src/editor/offset_bounds_handle.cpp
+	src/editor/pivot_bounds_handle.cpp
 	src/editor/panels/editor_panel.cpp
 	src/editor/panels/editor_panel_animation.cpp
 	src/editor/panels/editor_panel_asset_list.cpp

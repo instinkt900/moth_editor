@@ -2,6 +2,7 @@
 #include "bounds_widget.h"
 #include "anchor_bounds_handle.h"
 #include "offset_bounds_handle.h"
+#include "pivot_bounds_handle.h"
 #include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/nodes/node_image.h"
@@ -30,6 +31,8 @@ BoundsWidget::BoundsWidget(EditorPanelCanvas& canvasPanel)
     m_handles[13] = std::make_unique<OffsetBoundsHandle>(*this, BoundsHandle::Left);
     m_handles[14] = std::make_unique<OffsetBoundsHandle>(*this, BoundsHandle::Right);
     m_handles[15] = std::make_unique<OffsetBoundsHandle>(*this, BoundsHandle::Bottom);
+
+    m_pivotHandle = std::make_unique<PivotBoundsHandle>(*this);
 }
 
 BoundsWidget::~BoundsWidget() {
@@ -39,6 +42,7 @@ bool BoundsWidget::OnEvent(moth_ui::Event const& event) {
     moth_ui::EventDispatch dispatch(event);
     dispatch.Dispatch(this, &BoundsWidget::OnMouseDown);
     dispatch.Dispatch(this, &BoundsWidget::OnMouseUp);
+    dispatch.Dispatch(m_pivotHandle.get());
     for (auto&& handle : m_handles) {
         dispatch.Dispatch(handle.get());
     }
@@ -98,6 +102,7 @@ void BoundsWidget::Draw() {
         for (auto& handle : m_handles) {
             handle->Draw();
         }
+        m_pivotHandle->Draw();
     }
 }
 
@@ -106,6 +111,7 @@ void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
     for (auto&& handle : m_handles) {
         handle->SetTarget(m_node.get());
     }
+    m_pivotHandle->SetTarget(m_node.get());
 }
 
 bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
