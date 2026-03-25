@@ -126,6 +126,8 @@ bool RotationBoundsHandle::OnMouseUp(moth_ui::EventMouseUp const& event) {
     }
     if (m_holding) {
         m_widget.GetCanvasPanel().GetEditorLayer().EndEditRotation();
+        m_holding = false;
+        return true;
     }
     m_holding = false;
     return false;
@@ -139,6 +141,7 @@ bool RotationBoundsHandle::OnMouseMove(moth_ui::EventMouseMove const& event) {
         auto& canvasPanel = m_widget.GetCanvasPanel();
         auto const worldPos = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::AppSpace, EditorPanelCanvas::CoordSpace::WorldSpace, int>(event.GetPosition());
         UpdatePosition(worldPos);
+        return true;
     }
     return false;
 }
