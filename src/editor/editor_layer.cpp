@@ -885,7 +885,7 @@ void EditorLayer::LoadConfig() {
 
         if (j.contains("recent_files")) {
             for (auto const& entry : j["recent_files"]) {
-                m_recentFiles.push_back(std::filesystem::path(entry.get<std::string>()));
+                AddRecentFile(std::filesystem::path(entry.get<std::string>()));
             }
         }
     }
