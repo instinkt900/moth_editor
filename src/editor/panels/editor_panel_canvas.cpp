@@ -317,7 +317,7 @@ void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
             // next see if we clicked on an existing selection
             auto const selection = m_editorLayer.GetSelection();
             for (auto&& node : selection) {
-                if (node->IsInBounds(worldPosition)) {
+                if (IsInNodeBounds(*node, static_cast<moth_ui::FloatVec2>(worldPosition))) {
                     // clicked on an existing selection
                     clickedSelection = true;
                     break;
