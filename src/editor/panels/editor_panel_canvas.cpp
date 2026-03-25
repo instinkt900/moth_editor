@@ -264,7 +264,11 @@ void EditorPanelCanvas::EndPanel() {
 }
 
 moth_ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth_ui::IntVec2 const& original) {
-    auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
+    auto const& config = m_editorLayer.GetConfig();
+    if (!config.SnapToGrid) {
+        return original;
+    }
+    auto const& gridSpacing = config.CanvasGridSpacing;
     if (gridSpacing > 0) {
         float const s = static_cast<float>(gridSpacing);
         int const x = static_cast<int>(std::round(static_cast<float>(original.x) / s) * s);

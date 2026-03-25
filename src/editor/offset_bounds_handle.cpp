@@ -49,7 +49,7 @@ bool OffsetBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
 }
 
 void OffsetBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
-    auto const currentPos = static_cast<moth_ui::FloatVec2>(position);
+    auto const currentPos = static_cast<moth_ui::FloatVec2>(m_widget.GetCanvasPanel().SnapToGrid(position));
 
     // Capture start position and pivot world pos for the first update of each drag.
     if (!m_dragActive) {

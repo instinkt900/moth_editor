@@ -190,6 +190,11 @@ void EditorLayer::DrawMainMenu() {
             if (ImGui::MenuItem("Delete", "Del", nullptr, !m_copiedEntities.empty())) {
                 DeleteEntity();
             }
+            ImGui::Separator();
+            ImGui::Checkbox("Snap to Grid", &m_config.SnapToGrid);
+            ImGui::Checkbox("Snap to Angle", &m_config.SnapToAngle);
+            ImGui::SetNextItemWidth(80.0f);
+            ImGui::InputFloat("Snap Angle", &m_config.SnapAngle, 0.0f, 0.0f, "%.1f");
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {

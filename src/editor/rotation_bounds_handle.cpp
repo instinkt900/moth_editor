@@ -84,7 +84,11 @@ void RotationBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     auto const dy = mousePos.y - pivotWorld.y;
     float const currentAngle = std::atan2(dy, dx);
     float const deltaAngle = currentAngle - m_startAngle;
-    float const newRotation = m_originalRotation + (deltaAngle * moth_ui::kRadToDeg);
+    float newRotation = m_originalRotation + (deltaAngle * moth_ui::kRadToDeg);
+    auto const& config = m_widget.GetCanvasPanel().GetEditorLayer().GetConfig();
+    if (config.SnapToAngle && config.SnapAngle > 0.0f) {
+        newRotation = std::round(newRotation / config.SnapAngle) * config.SnapAngle;
+    }
     m_target->SetRotation(newRotation);
 }
 

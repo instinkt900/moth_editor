@@ -2,11 +2,6 @@
 
 ## 1.0.0
 
-### Canvas rotation handle
-Rotation can be set numerically in the properties panel but there is no drag handle on the bounds widget. For a visual editor this is a notable gap. A circular arc handle (or a handle above the selection box, like most design tools) that maps mouse drag angle to the entity's rotation property would be the expected interaction.
-
-**Effort:** Medium. The bounds widget already has a well-defined handle system (`BoundsHandle` base class, anchor/offset handle subclasses). A rotation handle subclass needs to be added, along with the drag-to-angle maths and a corresponding undoable action.
-
 ---
 
 ### Animation event parameters
