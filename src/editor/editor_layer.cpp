@@ -657,6 +657,7 @@ void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
             context->node = node;
             context->entity = node->GetLayoutEntity();
             context->originalRect = node->GetLayoutRect();
+            context->originalPivot = context->entity ? context->entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
             m_editBoundsContext.push_back(std::move(context));
         } else {
             assert((*m_editBoundsContext.begin())->entity == node->GetLayoutEntity());
@@ -668,6 +669,7 @@ void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
                 context->node = selectedNode;
                 context->entity = selectedNode->GetLayoutEntity();
                 context->originalRect = selectedNode->GetLayoutRect();
+                context->originalPivot = context->entity ? context->entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
                 m_editBoundsContext.push_back(std::move(context));
             }
         } else {
@@ -729,6 +731,30 @@ void EditorLayer::EndEditBounds() {
         }
         if (rectDelta.offset.bottomRight.y != 0) {
             SetTrackValue(moth_ui::AnimationTrack::Target::BottomOffset, newRect.offset.bottomRight.y);
+        }
+    }
+
+    for (auto&& context : m_editBoundsContext) {
+        if (!context->entity) {
+            continue;
+        }
+        auto const finalPivot = context->entity->m_pivot;
+        if (finalPivot != context->originalPivot) {
+            auto node = context->node;
+            auto entity = context->entity;
+            auto const originalPivot = context->originalPivot;
+            editAction->GetActions().push_back(std::make_unique<BasicAction>(
+                [entity, node, finalPivot]() {
+                    entity->m_pivot = finalPivot;
+                    node->SetPivot(finalPivot);
+                    node->RecalculateBounds();
+                },
+                [entity, node, originalPivot]() {
+                    entity->m_pivot = originalPivot;
+                    node->SetPivot(originalPivot);
+                    node->RecalculateBounds();
+                }
+            ));
         }
     }
 

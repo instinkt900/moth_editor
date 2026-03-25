@@ -156,6 +156,7 @@ private:
         std::shared_ptr<moth_ui::Node> node;
         std::shared_ptr<moth_ui::LayoutEntity> entity;
         moth_ui::LayoutRect originalRect;
+        moth_ui::FloatVec2 originalPivot;
     };
 
     struct EditColorContext {
