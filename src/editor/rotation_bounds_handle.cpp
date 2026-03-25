@@ -83,7 +83,11 @@ void RotationBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     auto const dx = mousePos.x - pivotWorld.x;
     auto const dy = mousePos.y - pivotWorld.y;
     float const currentAngle = std::atan2(dy, dx);
-    float const deltaAngle = currentAngle - m_startAngle;
+    float deltaAngle = currentAngle - m_startAngle;
+    // Normalise into (-π, π] to avoid a ±2π jump when crossing the atan2 seam.
+    constexpr float kPi = 3.14159265358979f;
+    while (deltaAngle >  kPi) { deltaAngle -= 2.0f * kPi; }
+    while (deltaAngle < -kPi) { deltaAngle += 2.0f * kPi; }
     float newRotation = m_originalRotation + (deltaAngle * moth_ui::kRadToDeg);
     auto const& config = m_widget.GetCanvasPanel().GetEditorLayer().GetConfig();
     if (config.SnapToAngle && config.SnapAngle > 0.0f) {
