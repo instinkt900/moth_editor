@@ -14,7 +14,7 @@ public:
 private:
     static constexpr float m_radius = 6.0f;
 
-    moth_ui::FloatVec2 m_originalPivot;
+    moth_ui::FloatVec2 m_originalPivot{ 0.5f, 0.5f };
     moth_ui::FloatRect m_originalOffset; ///< Layout rect offset at drag start
 
     bool IsInBounds(moth_ui::IntVec2 const& pos) const override;
