@@ -4,8 +4,9 @@
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/utils/rect.h"
 
+#include "bounds_handle.h"
+
 class EditorPanelCanvas;
-class BoundsHandle;
 class PivotBoundsHandle;
 class RotationBoundsHandle;
 
@@ -24,6 +25,11 @@ public:
     std::shared_ptr<moth_ui::Node> GetSelection() const { return m_node; }
 
     moth_ui::IntVec2 SnapToGrid(moth_ui::IntVec2 const& original);
+
+    // Returns worldPos rotated around the current node's pivot
+    moth_ui::FloatVec2 GetRotatedWorldPos(moth_ui::FloatVec2 const& worldPos) const;
+    // Returns the world-space position of an anchor point on the node's screen rect, rotated
+    moth_ui::FloatVec2 GetNodeAnchorWorldPos(BoundsHandleAnchor const& anchor) const;
 
     EditorPanelCanvas& GetCanvasPanel() const { return m_canvasPanel; }
 

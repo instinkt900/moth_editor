@@ -7,9 +7,14 @@
 #include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/nodes/node_image.h"
+#include "moth_ui/nodes/node.h"
+#include "moth_ui/layout/layout_entity.h"
 #include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/utils/transform.h"
 #include "editor_layer.h"
 #include "panels/editor_panel_canvas.h"
+
+#include <cmath>
 
 BoundsWidget::BoundsWidget(EditorPanelCanvas& canvasPanel)
     : m_canvasPanel(canvasPanel) {
@@ -67,6 +72,38 @@ void BoundsWidget::EndEdit() {
     m_canvasPanel.GetEditorLayer().EndEditBounds();
 }
 
+moth_ui::FloatVec2 BoundsWidget::GetRotatedWorldPos(moth_ui::FloatVec2 const& worldPos) const {
+    if (m_node == nullptr) {
+        return worldPos;
+    }
+    auto const bounds = static_cast<moth_ui::FloatRect>(m_node->GetScreenRect());
+    auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+    auto const entity = m_node->GetLayoutEntity();
+    auto const pivot = entity ? entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
+    auto const pivotWorld = bounds.topLeft + dims * pivot;
+    float const rotation = m_node->GetRotation() * moth_ui::kDegToRad;
+    float const c = std::cos(rotation);
+    float const s = std::sin(rotation);
+    auto const offset = worldPos - pivotWorld;
+    return pivotWorld + moth_ui::FloatVec2{ (c * offset.x) - (s * offset.y), (s * offset.x) + (c * offset.y) };
+}
+
+moth_ui::FloatVec2 BoundsWidget::GetNodeAnchorWorldPos(BoundsHandleAnchor const& anchor) const {
+    if (m_node == nullptr) {
+        return {};
+    }
+    auto const bounds = static_cast<moth_ui::FloatRect>(m_node->GetScreenRect());
+    auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+    float anchorX = 0.5f;
+    if (anchor.Left) { anchorX = 0.0f; }
+    else if (anchor.Right) { anchorX = 1.0f; }
+    float anchorY = 0.5f;
+    if (anchor.Top) { anchorY = 0.0f; }
+    else if (anchor.Bottom) { anchorY = 1.0f; }
+    auto const unrotatedPos = bounds.topLeft + dims * moth_ui::FloatVec2{ anchorX, anchorY };
+    return GetRotatedWorldPos(unrotatedPos);
+}
+
 void BoundsWidget::Draw() {
     if (m_node != nullptr && m_node->IsVisible() && m_node->GetParent() != nullptr) {
         auto* const drawList = ImGui::GetWindowDrawList();
@@ -97,9 +134,24 @@ void BoundsWidget::Draw() {
             }
         }
 
-        // overall bounds
+        // overall bounds (rotated)
         auto const boundsColor = m_canvasPanel.GetEditorLayer().GetConfig().SelectionColor;
-        drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y },  moth_ui::ToABGR(boundsColor));
+        auto const abgrBoundsColor = moth_ui::ToABGR(boundsColor);
+        {
+            auto const& sr = m_node->GetScreenRect();
+            auto const srf = static_cast<moth_ui::FloatRect>(sr);
+            std::array<moth_ui::FloatVec2, 4> const worldCorners = {
+                GetRotatedWorldPos(srf.topLeft),
+                GetRotatedWorldPos({ srf.bottomRight.x, srf.topLeft.y }),
+                GetRotatedWorldPos(srf.bottomRight),
+                GetRotatedWorldPos({ srf.topLeft.x, srf.bottomRight.y })
+            };
+            for (int i = 0; i < 4; ++i) {
+                auto const a = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(worldCorners[i]);
+                auto const b = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(worldCorners[(i + 1) % 4]);
+                drawList->AddLine(ImVec2{ a.x, a.y }, ImVec2{ b.x, b.y }, abgrBoundsColor);
+            }
+        }
 
         // anchor preset buttons
         auto const buttonColor = moth_ui::Color{ boundsColor.r, boundsColor.g, boundsColor.b, 0.5f };

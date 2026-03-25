@@ -39,9 +39,6 @@ void RotationBoundsHandle::Draw() {
         return;
     }
 
-    auto const bounds = static_cast<moth_ui::FloatRect>(m_target->GetScreenRect());
-    auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
-
     float anchorX = 0.5f;
     if (m_anchor.Left) { anchorX = 0.0f; }
     else if (m_anchor.Right) { anchorX = 1.0f; }
@@ -49,11 +46,19 @@ void RotationBoundsHandle::Draw() {
     if (m_anchor.Top) { anchorY = 0.0f; }
     else if (m_anchor.Bottom) { anchorY = 1.0f; }
 
-    float const dirX = (anchorX == 0.0f) ? -1.0f : 1.0f;
-    float const dirY = (anchorY == 0.0f) ? -1.0f : 1.0f;
+    float const localDirX = (anchorX == 0.0f) ? -1.0f : 1.0f;
+    float const localDirY = (anchorY == 0.0f) ? -1.0f : 1.0f;
 
-    moth_ui::FloatVec2 const cornerWorld = bounds.topLeft + dims * moth_ui::FloatVec2{ anchorX, anchorY };
-    m_position = cornerWorld + moth_ui::FloatVec2{ dirX * m_offset, dirY * m_offset };
+    float const rotation = m_target->GetRotation() * moth_ui::kDegToRad;
+    float const c = std::cos(rotation);
+    float const s = std::sin(rotation);
+    moth_ui::FloatVec2 const rotatedDir = {
+        (c * localDirX) - (s * localDirY),
+        (s * localDirX) + (c * localDirY)
+    };
+
+    moth_ui::FloatVec2 const cornerWorld = m_widget.GetNodeAnchorWorldPos(m_anchor);
+    m_position = cornerWorld + rotatedDir * m_offset;
 
     auto& canvasPanel = m_widget.GetCanvasPanel();
     auto* const drawList = ImGui::GetWindowDrawList();

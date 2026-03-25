@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bounds_handle.h"
+#include "moth_ui/utils/rect.h"
 
 class PivotBoundsHandle : public BoundsHandle {
 public:
@@ -14,6 +15,7 @@ private:
     static constexpr float m_radius = 6.0f;
 
     moth_ui::FloatVec2 m_originalPivot;
+    moth_ui::FloatRect m_originalOffset; ///< Layout rect offset at drag start
 
     bool IsInBounds(moth_ui::IntVec2 const& pos) const override;
     void UpdatePosition(moth_ui::IntVec2 const& position) override;
