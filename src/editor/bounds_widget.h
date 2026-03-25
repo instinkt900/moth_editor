@@ -7,6 +7,7 @@
 class EditorPanelCanvas;
 class BoundsHandle;
 class PivotBoundsHandle;
+class RotationBoundsHandle;
 
 class BoundsWidget : public moth_ui::EventListener {
 public:
@@ -30,6 +31,7 @@ private:
     EditorPanelCanvas& m_canvasPanel;
     std::shared_ptr<moth_ui::Node> m_node;
     std::array<std::unique_ptr<BoundsHandle>, 16> m_handles;
+    std::array<std::unique_ptr<RotationBoundsHandle>, 4> m_rotationHandles;
     std::unique_ptr<PivotBoundsHandle> m_pivotHandle;
 
     int m_anchorButtonSize = 12;

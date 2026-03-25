@@ -3,6 +3,7 @@
 #include "anchor_bounds_handle.h"
 #include "offset_bounds_handle.h"
 #include "pivot_bounds_handle.h"
+#include "rotation_bounds_handle.h"
 #include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/nodes/node_image.h"
@@ -32,6 +33,11 @@ BoundsWidget::BoundsWidget(EditorPanelCanvas& canvasPanel)
     m_handles[14] = std::make_unique<OffsetBoundsHandle>(*this, BoundsHandle::Right);
     m_handles[15] = std::make_unique<OffsetBoundsHandle>(*this, BoundsHandle::Bottom);
 
+    m_rotationHandles[0] = std::make_unique<RotationBoundsHandle>(*this, BoundsHandle::TopLeft);
+    m_rotationHandles[1] = std::make_unique<RotationBoundsHandle>(*this, BoundsHandle::TopRight);
+    m_rotationHandles[2] = std::make_unique<RotationBoundsHandle>(*this, BoundsHandle::BottomLeft);
+    m_rotationHandles[3] = std::make_unique<RotationBoundsHandle>(*this, BoundsHandle::BottomRight);
+
     m_pivotHandle = std::make_unique<PivotBoundsHandle>(*this);
 }
 
@@ -43,6 +49,9 @@ bool BoundsWidget::OnEvent(moth_ui::Event const& event) {
     dispatch.Dispatch(this, &BoundsWidget::OnMouseDown);
     dispatch.Dispatch(this, &BoundsWidget::OnMouseUp);
     dispatch.Dispatch(m_pivotHandle.get());
+    for (auto&& handle : m_rotationHandles) {
+        dispatch.Dispatch(handle.get());
+    }
     for (auto&& handle : m_handles) {
         dispatch.Dispatch(handle.get());
     }
@@ -102,6 +111,9 @@ void BoundsWidget::Draw() {
         for (auto& handle : m_handles) {
             handle->Draw();
         }
+        for (auto& handle : m_rotationHandles) {
+            handle->Draw();
+        }
         m_pivotHandle->Draw();
     }
 }
@@ -109,6 +121,9 @@ void BoundsWidget::Draw() {
 void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
     m_node = node;
     for (auto&& handle : m_handles) {
+        handle->SetTarget(m_node.get());
+    }
+    for (auto&& handle : m_rotationHandles) {
         handle->SetTarget(m_node.get());
     }
     m_pivotHandle->SetTarget(m_node.get());
