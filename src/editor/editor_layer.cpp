@@ -360,7 +360,7 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
 }
 
 void EditorLayer::SaveLayout(std::filesystem::path const& path) {
-    if (m_rootLayout->Save(path)) {
+    if (m_rootLayout->Save(path, moth_ui::Layout::SaveOptions{ .pretty = true })) {
         m_lastSaveActionIndex = m_actionIndex;
         m_currentLayoutPath = path;
         AddRecentFile(path);
