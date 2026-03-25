@@ -145,6 +145,12 @@ inline InputContext<moth_ui::IntVec2> InputElement(char const* label, InputBuffe
     return { changed, focused, valueBuffer };
 }
 
+inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuffer<moth_ui::FloatVec2> valueBuffer) {
+    bool changed = ImGui::InputFloat2(label, valueBuffer.Buffer->data, "%.3f");
+    bool focused = ImGui::IsItemFocused();
+    return { changed, focused, valueBuffer };
+}
+
 inline InputContext<moth_ui::Color> InputElement(char const* label, InputBuffer<moth_ui::Color> valueBuffer) {
     bool changed = ImGui::ColorEdit4(label, valueBuffer.Buffer->data, 0);
     bool focused = ImGui::IsItemFocused();

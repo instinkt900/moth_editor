@@ -62,6 +62,9 @@ public:
     void BeginEditColor(std::shared_ptr<moth_ui::Node> node);
     void EndEditColor();
 
+    void BeginEditRotation(std::shared_ptr<moth_ui::Node> node);
+    void EndEditRotation();
+
     void PerformEditAction(std::unique_ptr<IEditorAction>&& editAction);
     void AddEditAction(std::unique_ptr<IEditorAction>&& editAction);
     int GetEditActionPos() const { return m_actionIndex; }
@@ -161,8 +164,15 @@ private:
         moth_ui::Color originalColor;
     };
 
+    struct EditRotationContext {
+        std::shared_ptr<moth_ui::Node> node;
+        std::shared_ptr<moth_ui::LayoutEntity> entity;
+        float originalRotation = 0.0f;
+    };
+
     std::vector<std::unique_ptr<EditBoundsContext>> m_editBoundsContext;
     std::unique_ptr<EditColorContext> m_editColorContext;
+    std::unique_ptr<EditRotationContext> m_editRotationContext;
     std::vector<std::unique_ptr<IEditorAction>> m_editActions;
     int m_actionIndex = -1;
     int m_lastSaveActionIndex = -1;

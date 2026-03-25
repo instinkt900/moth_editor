@@ -144,6 +144,25 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
             m_editorLayer.EndEditColor();
         });
 
+    PropertiesInput<float>(
+        "Rotation", node->GetRotation(),
+        [&](float changedValue) {
+            m_editorLayer.BeginEditRotation(node);
+            node->SetRotation(changedValue);
+        },
+        [this](float oldValue, float newValue) {
+            m_editorLayer.EndEditRotation();
+        });
+
+    PropertiesInput<moth_ui::FloatVec2>(
+        "Pivot", entity->m_pivot, {},
+        [this, node, entity](moth_ui::FloatVec2 oldValue, moth_ui::FloatVec2 newValue) {
+            auto action = MakeChangeValueAction(entity->m_pivot, oldValue, newValue, [node]() {
+                node->ReloadEntity();
+            });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
     PropertiesInput<moth_ui::BlendMode>(
         "Blend Mode", node->GetBlendMode(), {},
         [&](auto oldValue, auto newValue) {

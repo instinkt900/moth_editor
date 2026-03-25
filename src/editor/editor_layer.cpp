@@ -796,6 +796,45 @@ void EditorLayer::EndEditColor() {
     m_editColorContext.reset();
 }
 
+void EditorLayer::BeginEditRotation(std::shared_ptr<moth_ui::Node> node) {
+    if (m_editRotationContext == nullptr && node != nullptr) {
+        m_editRotationContext = std::make_unique<EditRotationContext>();
+        m_editRotationContext->node = node;
+        m_editRotationContext->entity = node->GetLayoutEntity();
+        m_editRotationContext->originalRotation = node->GetRotation();
+    } else {
+        assert(m_editRotationContext->entity == node->GetLayoutEntity());
+    }
+}
+
+void EditorLayer::EndEditRotation() {
+    if (m_editRotationContext == nullptr) {
+        return;
+    }
+    auto entity = m_editRotationContext->entity;
+    auto& tracks = entity->m_tracks;
+    int const frameNo = m_selectedFrame;
+    float const newRotation = m_editRotationContext->node->GetRotation();
+    float const delta = newRotation - m_editRotationContext->originalRotation;
+
+    if (delta != 0.0f) {
+        auto& track = tracks.at(moth_ui::AnimationTrack::Target::Rotation);
+        std::unique_ptr<IEditorAction> editAction;
+        if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
+            auto const oldValue = keyframePtr->m_value;
+            keyframePtr->m_value = newRotation;
+            editAction = std::make_unique<ModifyKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, oldValue, newRotation, keyframePtr->m_interpType, keyframePtr->m_interpType);
+        } else {
+            auto& keyframe = track->GetOrCreateKeyframe(frameNo);
+            keyframe.m_value = newRotation;
+            editAction = std::make_unique<AddKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, newRotation, moth_ui::InterpType::Linear);
+        }
+        AddEditAction(std::move(editAction));
+    }
+
+    m_editRotationContext.reset();
+}
+
 void EditorLayer::ShowError(std::string const& message) {
     m_lastErrorMsg = message;
     m_errorPending = true;
