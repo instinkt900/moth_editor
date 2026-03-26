@@ -3,58 +3,83 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [0.4.0] - 2026-03-26
+### Features
+- Set checkerboard fallback image in editor on startup
+- Add recent files menu to File menu
+- Add rotation and pivot properties to the node properties panel
+- Add pivot canvas handle to bounds widget
+- Add rotation canvas handles to bounds widget
+- Make bounds widget rotation-aware
+- Add snap-to-grid and snap-to-angle settings
+- Save layouts with pretty-printed JSON
+
+### Bug Fixes
+- Use ../.conan/profile in example subdirectory
+- Use AddRecentFile when loading recent files from config
+- Include pivot in bounds edit undo record
+- Use rotation-aware hit test for already-selected node click
+- Initialise m_originalPivot to a safe default in PivotBoundsHandle
+- Normalise rotation delta angle to avoid ±2π seam jump
+- Consume mouse event stream during active rotation gesture
+- Replace designated initialiser with C++17-compatible field assignment
+- Iterate recent_files in reverse when loading config to preserve order
+
+### Miscellaneous
+- Updating todo since the packer tool is done
+- Bumping version of moth_graphics dep
+- Bumping moth_packer dep
+
+### Changes
+- Bump version from 0.3.2 to 0.4.0
+
 ## [0.3.2] - 2026-03-22
 ### Bug Fixes
 - Fetch tags after creation so git-cliff --current finds the tag
 - Force-refresh tags on fetch to avoid stale refs on retry
 
-### Changes
-- Update version.txt
+### Refactoring
+- Replace internal TexturePacker with moth_packer library
 
 ### Miscellaneous
 - Updating versions
 
-### Refactoring
-- Replace internal TexturePacker with moth_packer library
+### Changes
+- Update version.txt
 
 ## [0.3.1] - 2026-03-22
 ### Bug Fixes
 - Lint issues
 
-### Changes
-- Overhaul workflows and rename conan package
-- Update badge links in README.md
-- Use repository variable for ARTIFACTORY_URL
-- Bump version from 0.3.0 to 0.3.1
-
-### Documentation
-- Add full ecosystem table to Related Projects
-
 ### Refactoring
 - Update canyon dependency to moth_graphics
 - Update canyon:: namespace to moth_graphics::
 
-## [0.3.0] - 2026-03-21
-### Bug Fixes
-- Initialise atlases as empty JSON array instead of null
+### Documentation
+- Add full ecosystem table to Related Projects
 
 ### Changes
-- Updating ci to be more simplified
-- Fixing action typo
-- Fixing up upload action
-- Fixing more upload actions
+- Update badge links in README.md
+- Bump version from 0.3.0 to 0.3.1
+
+## [0.3.0] - 2026-03-21
+### Features
+- Updating texture packing to the new format
+
+### Bug Fixes
+- Initialise atlases as empty JSON array instead of null
 
 ### Documentation
 - Rewrite README to focus on user-facing features
 - Updating docs to reflect removed profiles
 
-### Features
-- Updating texture packing to the new format
-
 ### Miscellaneous
 - Bumped version to 0.3.0
 
 ## [0.2.0] - 2026-03-19
+### Features
+- Enable precompiled headers for common.h
+
 ### Bug Fixes
 - Resolve clang-tidy findings in action files
 - Resolve remaining clang-tidy findings
@@ -63,20 +88,22 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Guard against null/OOB in change_index, move_keyframe, animation, fonts
 - Validate all preconditions before mutating trees in change_index, fix fonts OOB
 
-### Changes
-- Align workflows, build config, and README with canyon/moth_ui structure
-- Correct capitalization of project name in README
-- Generate release notes before CHANGELOG commit to fix git-cliff --current
-
-### Features
-- Enable precompiled headers for common.h
-
 ### Miscellaneous
 - Bump canyon to 0.5.0 and replace deprecated ui_fwd.h includes
 - Bumping canyon dependency version
 - Bump version to 0.2.0
 
+### Changes
+- Correct capitalization of project name in README
+
 ## [0.1.0] - 2026-03-16
+### Features
+- Adding initial docked layout when imgui.ini doesnt exist.
+- Moved the example from moth_ui into this repo.
+- Add binary archive upload and GitHub Release creation to CI
+- Only create GitHub Release when version.txt changes
+- Draw animation track rows in reverse child order
+
 ### Bug Fixes
 - Fixing conan deps issue. conan2 continues to fail me. i need a new package manager
 - Fixing the usual conan bullshit
@@ -99,6 +126,45 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Skip enum selectable update when value is unchanged
 - Several defensive fixes across editor
 - Fixing upload action
+
+### Refactoring
+- Updating editor to use canyon as a backend.
+- Replace implicit clip drag handle arithmetic with named constants
+- Clarify m_clickConsumed initialisation by extracting named condition
+- Standardise selection lookups to use ranges::find_if
+- Extract hardcoded colour literals to named constants
+- Simplify and clarify animation panel
+- Replace local moth_ui fmt formatters with canyon/utils/moth_ui_format.h
+
+### Documentation
+- Revamp README with features, updated badges, and build instructions
+
+### Miscellaneous
+- Adding actions for building the editor
+- Adding nativefiledialog external submodule
+- Updating CMake and CI build with correct paths.
+- Small updates to workflows.
+- Updating build action to utilize a matrix
+- Still trying to fix github actions
+- Still fixing
+- Almost there
+- Updating both actions to utilize a matrix
+- Testing if specific package configs are still needed.
+- Removing unneeded windows define for example project.
+- Updating build action to use official conan action.
+- Adding private artifactory to before create step.
+- Updated package upload name to match the built package name
+- Added back libgtk-dev install step for linux.
+- Updating example build to use conan action and matricies
+- Updating the actions to be inline with other moth packages.
+- Updating for the changes to moth and canyon
+- Removing debug build from upload action
+- This will work
+- Adapt to updated canyon API and switch platform backend to SDL
+- Add version.txt and read version from file in conan and cmake
+- Move Artifactory URL to repository secret
+- Add git-cliff changelog automation
+- Updating example layout with proper 9slice setup
 
 ### Changes
 - Initial commit of moth_ui separated from previous project
@@ -300,7 +366,6 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Updating the docs a bit
 - Adding clangd support. Fixing conan config so moth_ui links properly
 - Updates for canyon
-- Add [skip ci] to CHANGELOG commit to prevent re-triggering upload-lib
 - Fix image preview aspect ratio and merge duplicate GetImage blocks
 - Show image path relative to layout file in properties panel
 - Add drag-to-reorder on animation panel node labels
@@ -314,51 +379,5 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Fix scrollbar handle separation factor and tighten cliff.toml
 - Prevent negative frames when dragging multi-selection items
 - Guard MousePosToFrame against zero m_framePixelWidth
-
-### Documentation
-- Revamp README with features, updated badges, and build instructions
-
-### Features
-- Adding initial docked layout when imgui.ini doesnt exist.
-- Moved the example from moth_ui into this repo.
-- Add binary archive upload and GitHub Release creation to CI
-- Only create GitHub Release when version.txt changes
-- Draw animation track rows in reverse child order
-
-### Miscellaneous
-- Adding actions for building the editor
-- Adding nativefiledialog external submodule
-- Updating CMake and CI build with correct paths.
-- Small updates to workflows.
-- Updating build action to utilize a matrix
-- Still trying to fix github actions
-- Still fixing
-- Almost there
-- Updating both actions to utilize a matrix
-- Testing if specific package configs are still needed.
-- Removing unneeded windows define for example project.
-- Updating build action to use official conan action.
-- Adding private artifactory to before create step.
-- Updated package upload name to match the built package name
-- Added back libgtk-dev install step for linux.
-- Updating example build to use conan action and matricies
-- Updating the actions to be inline with other moth packages.
-- Updating for the changes to moth and canyon
-- Removing debug build from upload action
-- This will work
-- Adapt to updated canyon API and switch platform backend to SDL
-- Add version.txt and read version from file in conan and cmake
-- Move Artifactory URL to repository secret
-- Add git-cliff changelog automation
-- Updating example layout with proper 9slice setup
-
-### Refactoring
-- Updating editor to use canyon as a backend.
-- Replace implicit clip drag handle arithmetic with named constants
-- Clarify m_clickConsumed initialisation by extracting named condition
-- Standardise selection lookups to use ranges::find_if
-- Extract hardcoded colour literals to named constants
-- Simplify and clarify animation panel
-- Replace local moth_ui fmt formatters with canyon/utils/moth_ui_format.h
 
 
