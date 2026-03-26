@@ -2,6 +2,8 @@
 #include "editor_panel_canvas.h"
 #include "editor/editor_layer.h"
 #include "moth_ui/nodes/group.h"
+#include "moth_ui/nodes/node.h"
+#include "moth_ui/layout/layout_entity.h"
 #include "editor/bounds_widget.h"
 #include "moth_ui/events/event_mouse.h"
 #include "imgui_internal.h"
@@ -13,6 +15,37 @@
 #include "editor_application.h"
 #include "moth_ui/graphics/itarget.h"
 #include "moth_graphics/graphics/moth_ui/utils.h"
+#include "moth_ui/utils/transform.h"
+
+#include <cmath>
+
+namespace {
+    // Rotate point around the node's pivot point (in world/screen space)
+    moth_ui::FloatVec2 RotateAroundPivot(moth_ui::FloatVec2 const& point, moth_ui::FloatVec2 const& pivot, float angleDeg) {
+        float const rad = angleDeg * moth_ui::kDegToRad;
+        float const c = std::cos(rad);
+        float const s = std::sin(rad);
+        auto const offset = point - pivot;
+        return pivot + moth_ui::FloatVec2{ (c * offset.x) - (s * offset.y), (s * offset.x) + (c * offset.y) };
+    }
+
+    moth_ui::FloatVec2 GetNodePivotWorld(moth_ui::Node const& node) {
+        auto const bounds = static_cast<moth_ui::FloatRect>(node.GetScreenRect());
+        auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+        auto const entity = node.GetLayoutEntity();
+        auto const pivot = entity ? entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
+        return bounds.topLeft + dims * pivot;
+    }
+
+    // Returns true if worldPoint lies within the (possibly rotated) node bounds
+    bool IsInNodeBounds(moth_ui::Node const& node, moth_ui::FloatVec2 const& worldPoint) {
+        auto const pivotWorld = GetNodePivotWorld(node);
+        // Rotate the point backward to unrotated space
+        auto const unrotatedPoint = RotateAroundPivot(worldPoint, pivotWorld, -node.GetRotation());
+        auto const screenRect = node.GetScreenRect();
+        return moth_ui::IsInRect(static_cast<moth_ui::IntVec2>(unrotatedPoint), screenRect);
+    }
+}
 
 EditorPanelCanvas::EditorPanelCanvas(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Canvas", visible, false)
@@ -40,13 +73,25 @@ void EditorPanelCanvas::DrawContents() {
 
     auto* const drawList = ImGui::GetWindowDrawList();
 
-    // draw selected item rects
+    // draw selected item rects (rotated)
     {
         auto const& selection = m_editorLayer.GetSelection();
         for (auto&& node : selection) {
             if (node->IsVisible() && node->GetParent() != nullptr) {
-                auto const rect = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::AppSpace, float>(node->GetScreenRect());
-                drawList->AddRect(ImVec2{ rect.topLeft.x, rect.topLeft.y }, ImVec2{ rect.bottomRight.x, rect.bottomRight.y }, 0xFFFF00FF);
+                auto const srf = static_cast<moth_ui::FloatRect>(node->GetScreenRect());
+                auto const pivotWorld = GetNodePivotWorld(*node);
+                float const rot = node->GetRotation();
+                std::array<moth_ui::FloatVec2, 4> const worldCorners = {
+                    RotateAroundPivot(srf.topLeft, pivotWorld, rot),
+                    RotateAroundPivot({ srf.bottomRight.x, srf.topLeft.y }, pivotWorld, rot),
+                    RotateAroundPivot(srf.bottomRight, pivotWorld, rot),
+                    RotateAroundPivot({ srf.topLeft.x, srf.bottomRight.y }, pivotWorld, rot)
+                };
+                for (int i = 0; i < 4; ++i) {
+                    auto const a = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::AppSpace>(worldCorners[i]);
+                    auto const b = ConvertSpace<CoordSpace::WorldSpace, CoordSpace::AppSpace>(worldCorners[(i + 1) % 4]);
+                    drawList->AddLine(ImVec2{ a.x, a.y }, ImVec2{ b.x, b.y }, 0xFFFF00FF);
+                }
             }
         }
     }
@@ -219,7 +264,11 @@ void EditorPanelCanvas::EndPanel() {
 }
 
 moth_ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth_ui::IntVec2 const& original) {
-    auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
+    auto const& config = m_editorLayer.GetConfig();
+    if (!config.SnapToGrid) {
+        return original;
+    }
+    auto const& gridSpacing = config.CanvasGridSpacing;
     if (gridSpacing > 0) {
         float const s = static_cast<float>(gridSpacing);
         int const x = static_cast<int>(std::round(static_cast<float>(original.x) / s) * s);
@@ -268,7 +317,7 @@ void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
             // next see if we clicked on an existing selection
             auto const selection = m_editorLayer.GetSelection();
             for (auto&& node : selection) {
-                if (node->IsInBounds(worldPosition)) {
+                if (IsInNodeBounds(*node, static_cast<moth_ui::FloatVec2>(worldPosition))) {
                     // clicked on an existing selection
                     clickedSelection = true;
                     break;
@@ -344,11 +393,11 @@ void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
 
 std::shared_ptr<moth_ui::Node> EditorPanelCanvas::GetAtPoint(moth_ui::IntVec2 const& selectionPoint) {
     auto const& children = m_editorLayer.GetRoot()->GetChildren();
+    auto const worldPoint = static_cast<moth_ui::FloatVec2>(selectionPoint);
     for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
         auto const& child = *it;
         if (child->IsVisible() && !m_editorLayer.IsLocked(child)) {
-            auto const& screenRect = child->GetScreenRect();
-            if (moth_ui::IsInRect(selectionPoint, screenRect)) {
+            if (IsInNodeBounds(*child, worldPoint)) {
                 return child;
             }
         }

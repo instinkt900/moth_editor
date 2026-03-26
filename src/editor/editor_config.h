@@ -22,6 +22,10 @@ struct EditorConfig {
     int MaxAnimationFrame = 100;
     int TotalAnimationFrames = 300;
     int CurrentAnimationFrame = 0;
+
+    bool SnapToGrid = false;
+    bool SnapToAngle = false;
+    float SnapAngle = 15.0f;
 };
 
 inline void to_json(nlohmann::json& j, EditorConfig const& config) {
@@ -41,6 +45,9 @@ inline void to_json(nlohmann::json& j, EditorConfig const& config) {
     j["MaxAnimationFrame"] = config.MaxAnimationFrame;
     j["TotalAnimationFrames"] = config.TotalAnimationFrames;
     j["CurrentAnimationFrame"] = config.CurrentAnimationFrame;
+    j["SnapToGrid"] = config.SnapToGrid;
+    j["SnapToAngle"] = config.SnapToAngle;
+    j["SnapAngle"] = config.SnapAngle;
 }
 
 inline void from_json(nlohmann::json j, EditorConfig& config) {
@@ -60,5 +67,7 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.MaxAnimationFrame = j.value("MaxAnimationFrame", config.MaxAnimationFrame);
     config.TotalAnimationFrames = j.value("TotalAnimationFrames", config.TotalAnimationFrames);
     config.CurrentAnimationFrame = j.value("CurrentAnimationFrame", config.CurrentAnimationFrame);
-
+    config.SnapToGrid = j.value("SnapToGrid", config.SnapToGrid);
+    config.SnapToAngle = j.value("SnapToAngle", config.SnapToAngle);
+    config.SnapAngle = j.value("SnapAngle", config.SnapAngle);
 }

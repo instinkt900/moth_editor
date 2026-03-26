@@ -157,6 +157,14 @@ void EditorLayer::DrawMainMenu() {
             if (ImGui::MenuItem("Open Layout", "Ctrl+O")) {
                 MenuFuncOpenLayout();
             }
+            if (ImGui::BeginMenu("Open Recent", !m_recentFiles.empty())) {
+                for (auto const& recentPath : m_recentFiles) {
+                    if (ImGui::MenuItem(recentPath.string().c_str())) {
+                        LoadLayout(recentPath);
+                    }
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::MenuItem("Save Layout", "Ctrl+S", nullptr, !m_currentLayoutPath.empty())) {
                 MenuFuncSaveLayout();
             }
@@ -182,6 +190,11 @@ void EditorLayer::DrawMainMenu() {
             if (ImGui::MenuItem("Delete", "Del", nullptr, !m_copiedEntities.empty())) {
                 DeleteEntity();
             }
+            ImGui::Separator();
+            ImGui::Checkbox("Snap to Grid", &m_config.SnapToGrid);
+            ImGui::Checkbox("Snap to Angle", &m_config.SnapToAngle);
+            ImGui::SetNextItemWidth(80.0f);
+            ImGui::InputFloat("Snap Angle", &m_config.SnapAngle, 0.0f, 0.0f, "%.1f");
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
@@ -332,6 +345,7 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
             ClearEditActions();
             m_lockedNodes.clear();
             Rebuild();
+            AddRecentFile(path);
             for (auto&& [panelId, panel] : m_panels) {
                 panel->OnLayoutLoaded();
             }
@@ -346,9 +360,12 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
 }
 
 void EditorLayer::SaveLayout(std::filesystem::path const& path) {
-    if (m_rootLayout->Save(path)) {
+    moth_ui::Layout::SaveOptions saveOptions;
+    saveOptions.pretty = true;
+    if (m_rootLayout->Save(path, saveOptions)) {
         m_lastSaveActionIndex = m_actionIndex;
         m_currentLayoutPath = path;
+        AddRecentFile(path);
     }
 }
 
@@ -642,6 +659,7 @@ void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
             context->node = node;
             context->entity = node->GetLayoutEntity();
             context->originalRect = node->GetLayoutRect();
+            context->originalPivot = context->entity ? context->entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
             m_editBoundsContext.push_back(std::move(context));
         } else {
             assert((*m_editBoundsContext.begin())->entity == node->GetLayoutEntity());
@@ -653,6 +671,7 @@ void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
                 context->node = selectedNode;
                 context->entity = selectedNode->GetLayoutEntity();
                 context->originalRect = selectedNode->GetLayoutRect();
+                context->originalPivot = context->entity ? context->entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
                 m_editBoundsContext.push_back(std::move(context));
             }
         } else {
@@ -714,6 +733,30 @@ void EditorLayer::EndEditBounds() {
         }
         if (rectDelta.offset.bottomRight.y != 0) {
             SetTrackValue(moth_ui::AnimationTrack::Target::BottomOffset, newRect.offset.bottomRight.y);
+        }
+    }
+
+    for (auto&& context : m_editBoundsContext) {
+        if (!context->entity) {
+            continue;
+        }
+        auto const finalPivot = context->entity->m_pivot;
+        if (finalPivot != context->originalPivot) {
+            auto node = context->node;
+            auto entity = context->entity;
+            auto const originalPivot = context->originalPivot;
+            editAction->GetActions().push_back(std::make_unique<BasicAction>(
+                [entity, node, finalPivot]() {
+                    entity->m_pivot = finalPivot;
+                    node->SetPivot(finalPivot);
+                    node->RecalculateBounds();
+                },
+                [entity, node, originalPivot]() {
+                    entity->m_pivot = originalPivot;
+                    node->SetPivot(originalPivot);
+                    node->RecalculateBounds();
+                }
+            ));
         }
     }
 
@@ -786,6 +829,45 @@ void EditorLayer::EndEditColor() {
     m_editColorContext.reset();
 }
 
+void EditorLayer::BeginEditRotation(std::shared_ptr<moth_ui::Node> node) {
+    if (m_editRotationContext == nullptr && node != nullptr) {
+        m_editRotationContext = std::make_unique<EditRotationContext>();
+        m_editRotationContext->node = node;
+        m_editRotationContext->entity = node->GetLayoutEntity();
+        m_editRotationContext->originalRotation = node->GetRotation();
+    } else {
+        assert(m_editRotationContext->entity == node->GetLayoutEntity());
+    }
+}
+
+void EditorLayer::EndEditRotation() {
+    if (m_editRotationContext == nullptr) {
+        return;
+    }
+    auto entity = m_editRotationContext->entity;
+    auto& tracks = entity->m_tracks;
+    int const frameNo = m_selectedFrame;
+    float const newRotation = m_editRotationContext->node->GetRotation();
+    float const delta = newRotation - m_editRotationContext->originalRotation;
+
+    if (delta != 0.0f) {
+        auto& track = tracks.at(moth_ui::AnimationTrack::Target::Rotation);
+        std::unique_ptr<IEditorAction> editAction;
+        if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
+            auto const oldValue = keyframePtr->m_value;
+            keyframePtr->m_value = newRotation;
+            editAction = std::make_unique<ModifyKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, oldValue, newRotation, keyframePtr->m_interpType, keyframePtr->m_interpType);
+        } else {
+            auto& keyframe = track->GetOrCreateKeyframe(frameNo);
+            keyframe.m_value = newRotation;
+            editAction = std::make_unique<AddKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, newRotation, moth_ui::InterpType::Linear);
+        }
+        AddEditAction(std::move(editAction));
+    }
+
+    m_editRotationContext.reset();
+}
+
 void EditorLayer::ShowError(std::string const& message) {
     m_lastErrorMsg = message;
     m_errorPending = true;
@@ -799,10 +881,24 @@ void EditorLayer::Shutdown() {
     m_layerStack->FireEvent(moth_graphics::EventQuit());
 }
 
+void EditorLayer::AddRecentFile(std::filesystem::path const& path) {
+    auto const absPath = std::filesystem::absolute(path);
+    m_recentFiles.erase(std::remove(m_recentFiles.begin(), m_recentFiles.end(), absPath), m_recentFiles.end());
+    m_recentFiles.insert(m_recentFiles.begin(), absPath);
+    if (static_cast<int>(m_recentFiles.size()) > MaxRecentFiles) {
+        m_recentFiles.resize(MaxRecentFiles);
+    }
+}
+
 void EditorLayer::SaveConfig() {
     auto& j = m_app->GetPersistentState();
     j["editor_config"] = m_config;
     j["font_project"] = m_context.GetFontFactory().GetCurrentProjectPath();
+    auto recentArray = nlohmann::json::array();
+    for (auto const& p : m_recentFiles) {
+        recentArray.push_back(p.string());
+    }
+    j["recent_files"] = recentArray;
 }
 
 void EditorLayer::LoadConfig() {
@@ -813,6 +909,13 @@ void EditorLayer::LoadConfig() {
         std::filesystem::path fontProjectPath = j.value("font_project", "");
         if (!fontProjectPath.empty()) {
             m_context.GetFontFactory().LoadProject(fontProjectPath);
+        }
+
+        if (j.contains("recent_files")) {
+            auto const& recentFiles = j["recent_files"];
+            for (auto it = recentFiles.rbegin(); it != recentFiles.rend(); ++it) {
+                AddRecentFile(std::filesystem::path(it->get<std::string>()));
+            }
         }
     }
 }
