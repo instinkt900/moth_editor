@@ -197,10 +197,11 @@ private:
     void SaveLayout(std::filesystem::path const& path);
     void AutoSave();
 
-    static std::filesystem::path GetCrashRecoveryPath();
-    static void DeleteCrashRecovery();
     void CheckCrashRecovery();
     void SaveCrashRecovery();
+    void DeleteCrashRecovery();
+
+    std::filesystem::path m_crashRecoveryPath;
 
     void Rebuild();
 

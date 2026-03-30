@@ -78,6 +78,6 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.SnapToAngle = j.value("SnapToAngle", config.SnapToAngle);
     config.SnapAngle = j.value("SnapAngle", config.SnapAngle);
     config.AutoSaveEnabled = j.value("AutoSaveEnabled", config.AutoSaveEnabled);
-    config.AutoSaveIntervalMinutes = j.value("AutoSaveIntervalMinutes", config.AutoSaveIntervalMinutes);
-    config.AutoSaveMaxVersions = j.value("AutoSaveMaxVersions", config.AutoSaveMaxVersions);
+    config.AutoSaveIntervalMinutes = std::clamp(j.value("AutoSaveIntervalMinutes", config.AutoSaveIntervalMinutes), 1, 1440);
+    config.AutoSaveMaxVersions = std::clamp(j.value("AutoSaveMaxVersions", config.AutoSaveMaxVersions), 1, 100);
 }

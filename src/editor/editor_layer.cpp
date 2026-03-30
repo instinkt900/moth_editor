@@ -34,11 +34,24 @@
 
 #include <nfd.h>
 #include <ctime>
+#if defined(_WIN32)
+#include <process.h>
+#include <windows.h>
+#else
+#include <cerrno>
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app)
     : m_app(app)
     , m_context(context)
     , m_graphics(graphics) {
+#if defined(_WIN32)
+    m_crashRecoveryPath = std::filesystem::temp_directory_path() / fmt::format("moth_editor_recovery_{}.moth", _getpid());
+#else
+    m_crashRecoveryPath = std::filesystem::temp_directory_path() / fmt::format("moth_editor_recovery_{}.moth", getpid());
+#endif
     LoadConfig();
 
     AddEditorPanel<EditorPanelConfig>(*this, false);
@@ -76,7 +89,7 @@ void EditorLayer::Update(uint32_t ticks) {
 
     if (m_config.AutoSaveEnabled && !m_currentLayoutPath.empty() && IsWorkPending()) {
         m_autoSaveAccumulatedMs += ticks;
-        uint32_t const intervalMs = static_cast<uint32_t>(m_config.AutoSaveIntervalMinutes) * 60u * 1000u;
+        uint32_t const intervalMs = static_cast<uint32_t>(std::clamp(m_config.AutoSaveIntervalMinutes, 1, 1440)) * 60u * 1000u;
         if (m_autoSaveAccumulatedMs >= intervalMs) {
             m_autoSaveAccumulatedMs = 0;
             AutoSave();
@@ -392,6 +405,7 @@ void EditorLayer::SaveLayout(std::filesystem::path const& path) {
         m_lastSaveActionIndex = m_actionIndex;
         m_currentLayoutPath = path;
         AddRecentFile(path);
+        DeleteCrashRecovery();
     }
 }
 
@@ -443,14 +457,62 @@ void EditorLayer::AutoSave() {
     }
 }
 
-std::filesystem::path EditorLayer::GetCrashRecoveryPath() {
-    return std::filesystem::temp_directory_path() / "moth_editor_recovery.moth";
+namespace {
+    bool IsProcessAlive(int pid) {
+#if defined(_WIN32)
+        HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid));
+        if (handle == nullptr) {
+            return false;
+        }
+        DWORD exitCode = 0;
+        bool const alive = GetExitCodeProcess(handle, &exitCode) && exitCode == STILL_ACTIVE;
+        CloseHandle(handle);
+        return alive;
+#else
+        return kill(pid, 0) == 0 || errno == EPERM;
+#endif
+    }
 }
 
 void EditorLayer::CheckCrashRecovery() {
+    // Scan the temp dir for recovery files from crashed instances.
+    // Skip any file whose PID is still alive — that instance is still running.
+    std::string const prefix = "moth_editor_recovery_";
+    std::string const ext = ".moth";
+    std::vector<std::filesystem::path> recoveryFiles;
     std::error_code ec;
-    if (!std::filesystem::exists(GetCrashRecoveryPath(), ec)) {
+    for (auto const& entry : std::filesystem::directory_iterator(std::filesystem::temp_directory_path(), ec)) {
+        if (!entry.is_regular_file(ec)) {
+            continue;
+        }
+        auto const name = entry.path().filename().string();
+        if (name.substr(0, prefix.size()) != prefix || entry.path().extension() != ext) {
+            continue;
+        }
+        // Extract the PID from the filename and skip if that process is still running
+        auto const pidStr = name.substr(prefix.size(), name.size() - prefix.size() - ext.size());
+        try {
+            if (IsProcessAlive(std::stoi(pidStr))) {
+                continue;
+            }
+        } catch (std::exception const&) {
+            // Filename doesn't contain a valid PID — treat it as a crash file
+        }
+        recoveryFiles.push_back(entry.path());
+    }
+    if (recoveryFiles.empty()) {
         return;
+    }
+
+    // Use the most recently modified file; silently discard the rest
+    auto const recoveryPath = *std::max_element(recoveryFiles.begin(), recoveryFiles.end(),
+        [&ec](std::filesystem::path const& a, std::filesystem::path const& b) {
+            return std::filesystem::last_write_time(a, ec) < std::filesystem::last_write_time(b, ec);
+        });
+    for (auto const& path : recoveryFiles) {
+        if (path != recoveryPath) {
+            std::filesystem::remove(path, ec);
+        }
     }
 
     m_confirmPrompt.SetTitle("Crash Recovery");
@@ -458,18 +520,15 @@ void EditorLayer::CheckCrashRecovery() {
     m_confirmPrompt.SetPositiveText("Restore");
     m_confirmPrompt.SetNegativeText("Discard");
     m_confirmPrompt.SetCancelText("");
-    m_confirmPrompt.SetPositiveAction([this]() {
-        auto const recoveryPath = GetCrashRecoveryPath();
+    m_confirmPrompt.SetPositiveAction([this, recoveryPath]() {
         std::shared_ptr<moth_ui::Layout> recoveredLayout;
         if (moth_ui::Layout::Load(recoveryPath, &recoveredLayout) == moth_ui::Layout::LoadResult::Success) {
-            // Restore the original file path stored in extra data
             std::filesystem::path originalPath;
             auto& extraData = recoveredLayout->GetExtraData();
             if (extraData.contains("crash_recovery_original_path")) {
                 originalPath = extraData["crash_recovery_original_path"].get<std::string>();
                 extraData.erase("crash_recovery_original_path");
             }
-
             m_rootLayout = recoveredLayout;
             m_currentLayoutPath = originalPath;
             m_selectedFrame = 0;
@@ -483,10 +542,12 @@ void EditorLayer::CheckCrashRecovery() {
             // Mark as having unsaved work since this is a recovery, not a real save
             m_lastSaveActionIndex = m_actionIndex - 1;
         }
-        DeleteCrashRecovery();
+        std::error_code removeEc;
+        std::filesystem::remove(recoveryPath, removeEc);
     });
-    m_confirmPrompt.SetNegativeAction([]() {
-        DeleteCrashRecovery();
+    m_confirmPrompt.SetNegativeAction([recoveryPath]() {
+        std::error_code removeEc;
+        std::filesystem::remove(recoveryPath, removeEc);
     });
     m_confirmPrompt.SetCancelAction(nullptr);
     m_confirmPrompt.Open();
@@ -500,13 +561,13 @@ void EditorLayer::SaveCrashRecovery() {
     m_rootLayout->GetExtraData()["crash_recovery_original_path"] = m_currentLayoutPath.string();
     moth_ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = false;
-    m_rootLayout->Save(GetCrashRecoveryPath(), saveOptions);
+    m_rootLayout->Save(m_crashRecoveryPath, saveOptions);
     m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
 }
 
-void EditorLayer::DeleteCrashRecovery() { // NOLINT(readability-convert-member-functions-to-static)
+void EditorLayer::DeleteCrashRecovery() {
     std::error_code ec;
-    std::filesystem::remove(GetCrashRecoveryPath(), ec);
+    std::filesystem::remove(m_crashRecoveryPath, ec);
 }
 
 void EditorLayer::Rebuild() {
