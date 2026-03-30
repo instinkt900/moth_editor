@@ -25,15 +25,37 @@ A visual layout and animation editor for [moth_ui](https://github.com/instinkt90
 
 ## Features
 
-**Layout editing** — place and arrange UI elements on a canvas with mouse-driven move and resize controls. Elements can be anchored to parent edges or corners so layouts adapt cleanly across different resolutions without manual adjustment.
+**Layout editing:** place and arrange UI elements on a canvas with mouse-driven move and resize controls. Elements can be anchored to parent edges or corners so layouts adapt cleanly across different resolutions without manual adjustment.
 
-**Keyframe animation** — animate any property over time using a timeline editor. Keyframes can be added, moved, and deleted per property, and multiple named clips can be defined within a single layout for things like idle, hover, and transition states.
+**Keyframe animation:** animate any property over time using a timeline editor. Keyframes can be added, moved, and deleted per property, and multiple named clips can be defined within a single layout for things like idle, hover, and transition states.
 
-**Animation events** — attach named events to specific frames on the timeline. These fire as callbacks in the running application, making it easy to synchronise sound, logic, or state changes to an animation without hard-coding timings.
+**Animation events:** attach named events to specific frames on the timeline. These fire as callbacks in the running application, making it easy to synchronise sound, logic, or state changes to an animation without hard-coding timings.
 
-**Live preview** — play back animations inside the editor at runtime speed to see exactly how they will look in the application before exporting.
+**Live preview:** play back animations inside the editor at runtime speed to see exactly how they will look in the application before exporting.
 
-**Texture packing** — pack all images referenced by a layout into texture atlases in one step, reducing draw calls and load times in the runtime application.
+**Texture packing:** pack all images referenced by a layout into texture atlases in one step, reducing draw calls and load times in the runtime application.
+
+**Undo/redo:** every edit action is tracked and can be stepped back or forward. A dedicated undo stack panel shows the full history at a glance.
+
+**Copy, cut, and paste:** duplicate or move elements within or between layouts using standard clipboard shortcuts.
+
+**Snap to grid and angle:** optional grid snapping keeps elements aligned during placement and resize. Rotation can also be snapped to configurable angle increments.
+
+**Node locking:** lock individual elements in place to prevent accidental edits while working on nearby nodes.
+
+**Properties panel:** inspect and edit the position, size, color, rotation, and other properties of the selected element. Numeric fields update the canvas live.
+
+**Elements panel:** view and manage the hierarchy of elements in the current layout. Select, reorder, show or hide individual nodes from the list.
+
+**Asset list:** browse the image and font assets available to the current layout project.
+
+**Fonts panel:** manage font resources used by text elements.
+
+**Canvas configuration:** set the canvas size, background color, grid spacing, and major grid interval from the canvas properties panel. Visual style settings such as selection highlight color are configurable through the editor config panel.
+
+**Autosave:** automatically save the current layout to disk on a configurable interval (in minutes). Autosave keeps a configurable number of versioned copies and only runs when there are unsaved changes.
+
+**Crash recovery:** a temporary recovery snapshot is written on every edit action when there are unsaved changes. If the editor exits unexpectedly, the recovery file is detected on the next launch and you are prompted to restore or discard it. The recovery file is removed on a clean exit or after a successful save.
 
 ### AI Disclosure
 
@@ -95,9 +117,9 @@ cmake --build --preset conan-release
 
 | Project | Description |
 |---|---|
-| [moth_ui](https://github.com/instinkt900/moth_ui) | Core UI library — node graph, keyframe animation, and event system |
-| [moth_graphics](https://github.com/instinkt900/moth_graphics) | Graphics and application framework built on moth_ui — SDL2 and Vulkan backends, window management, and a layer stack |
-| moth_editor | *(this project)* Visual layout and animation editor — Flash-like authoring tool for creating moth_ui layout files |
+| [moth_ui](https://github.com/instinkt900/moth_ui) | Core UI library: node graph, keyframe animation, and event system |
+| [moth_graphics](https://github.com/instinkt900/moth_graphics) | Graphics and application framework built on moth_ui: SDL2 and Vulkan backends, window management, and a layer stack |
+| moth_editor | *(this project)* Visual layout and animation editor for creating moth_ui layout files |
 | [moth_packer](https://github.com/instinkt900/moth_packer) | Command-line texture atlas packer for images and moth_ui layouts |
 
 ---
