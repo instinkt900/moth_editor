@@ -33,11 +33,26 @@
 #include "texture_packer.h"
 
 #include <nfd.h>
+#include <ctime>
+#if defined(_WIN32)
+#include <process.h>
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <cerrno>
+#include <signal.h>
+#include <unistd.h>
+#endif
 
 EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app)
     : m_app(app)
     , m_context(context)
     , m_graphics(graphics) {
+#if defined(_WIN32)
+    m_crashRecoveryPath = std::filesystem::temp_directory_path() / fmt::format("moth_editor_recovery_{}.moth", _getpid());
+#else
+    m_crashRecoveryPath = std::filesystem::temp_directory_path() / fmt::format("moth_editor_recovery_{}.moth", getpid());
+#endif
     LoadConfig();
 
     AddEditorPanel<EditorPanelConfig>(*this, false);
@@ -71,6 +86,17 @@ bool EditorLayer::OnEvent(moth_ui::Event const& event) {
 void EditorLayer::Update(uint32_t ticks) {
     for (auto& [type, panel] : m_panels) {
         panel->Update(ticks);
+    }
+
+    if (m_config.AutoSaveEnabled && !m_currentLayoutPath.empty() && IsWorkPending()) {
+        m_autoSaveAccumulatedMs += ticks;
+        uint32_t const intervalMs = static_cast<uint32_t>(std::clamp(m_config.AutoSaveIntervalMinutes, 1, 1440)) * 60u * 1000u;
+        if (m_autoSaveAccumulatedMs >= intervalMs) {
+            m_autoSaveAccumulatedMs = 0;
+            AutoSave();
+        }
+    } else {
+        m_autoSaveAccumulatedMs = 0;
     }
 
     auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath.string(), IsWorkPending() ? " *" : "");
@@ -172,6 +198,16 @@ void EditorLayer::DrawMainMenu() {
                 MenuFuncSaveLayoutAs();
             }
             ImGui::Separator();
+            ImGui::Checkbox("Autosave", &m_config.AutoSaveEnabled);
+            if (m_config.AutoSaveEnabled) {
+                ImGui::SetNextItemWidth(80.0f);
+                ImGui::InputInt("Interval (min)", &m_config.AutoSaveIntervalMinutes);
+                m_config.AutoSaveIntervalMinutes = std::max(1, m_config.AutoSaveIntervalMinutes);
+                ImGui::SetNextItemWidth(80.0f);
+                ImGui::InputInt("Max Versions", &m_config.AutoSaveMaxVersions);
+                m_config.AutoSaveMaxVersions = std::max(1, m_config.AutoSaveMaxVersions);
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
                 m_layerStack->FireEvent(moth_graphics::EventRequestQuit{});
             }
@@ -232,6 +268,7 @@ void EditorLayer::DebugDraw() {
 void EditorLayer::OnAddedToStack(moth_ui::LayerStack* layerStack) {
     Layer::OnAddedToStack(layerStack);
     NewLayout();
+    CheckCrashRecovery();
 }
 
 void EditorLayer::OnRemovedFromStack() {
@@ -250,6 +287,7 @@ void EditorLayer::AddEditAction(std::unique_ptr<IEditorAction>&& editAction) {
     }
     m_editActions.push_back(std::move(editAction));
     ++m_actionIndex;
+    SyncCrashRecovery();
 }
 
 void EditorLayer::SetSelectedFrame(int frameNo) {
@@ -270,6 +308,7 @@ void EditorLayer::UndoEditAction() {
         m_editActions[m_actionIndex]->Undo();
         --m_actionIndex;
         Refresh();
+        SyncCrashRecovery();
     }
 }
 
@@ -278,6 +317,7 @@ void EditorLayer::RedoEditAction() {
         ++m_actionIndex;
         m_editActions[m_actionIndex]->Do();
         Refresh();
+        SyncCrashRecovery();
     }
 }
 
@@ -295,8 +335,9 @@ void EditorLayer::NewLayout(bool discard) {
         m_confirmPrompt.SetNegativeText("Discard and New");
         m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this]() {
-            SaveLayout(m_currentLayoutPath.c_str());
-            NewLayout();
+            if (SaveLayout(m_currentLayoutPath.c_str())) {
+                NewLayout();
+            }
         });
         m_confirmPrompt.SetNegativeAction([this]() {
             NewLayout(true);
@@ -326,8 +367,9 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
         m_confirmPrompt.SetNegativeText("Discard and Load");
         m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this, path]() {
-            SaveLayout(m_currentLayoutPath);
-            LoadLayout(path);
+            if (SaveLayout(m_currentLayoutPath)) {
+                LoadLayout(path);
+            }
         });
         m_confirmPrompt.SetNegativeAction([this, path]() {
             LoadLayout(path, true);
@@ -359,13 +401,189 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
     }
 }
 
-void EditorLayer::SaveLayout(std::filesystem::path const& path) {
+bool EditorLayer::SaveLayout(std::filesystem::path const& path) {
     moth_ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = true;
-    if (m_rootLayout->Save(path, saveOptions)) {
-        m_lastSaveActionIndex = m_actionIndex;
-        m_currentLayoutPath = path;
-        AddRecentFile(path);
+    if (!m_rootLayout->Save(path, saveOptions)) {
+        return false;
+    }
+    m_lastSaveActionIndex = m_actionIndex;
+    m_currentLayoutPath = path;
+    AddRecentFile(path);
+    DeleteCrashRecovery();
+    return true;
+}
+
+void EditorLayer::AutoSave() {
+    if (m_currentLayoutPath.empty()) {
+        return;
+    }
+
+    std::time_t const now = std::time(nullptr);
+    std::tm localTime{};
+#if defined(_WIN32)
+    localtime_s(&localTime, &now);
+#else
+    localtime_r(&now, &localTime);
+#endif
+    char timeBuf[32];
+    std::strftime(timeBuf, sizeof(timeBuf), "%Y%m%d_%H%M%S", &localTime);
+
+    auto const dir = m_currentLayoutPath.parent_path();
+    auto const stem = m_currentLayoutPath.stem().string();
+    auto const ext = m_currentLayoutPath.extension().string();
+    auto const autosavePath = dir / (stem + ".autosave_" + timeBuf + ext);
+
+    moth_ui::Layout::SaveOptions saveOptions;
+    saveOptions.pretty = true;
+    if (!m_rootLayout->Save(autosavePath, saveOptions)) {
+        return;
+    }
+
+    // Collect existing autosave files for this layout
+    std::string const prefix = stem + ".autosave_";
+    std::vector<std::filesystem::path> autosaveFiles;
+    std::error_code ec;
+    for (auto const& entry : std::filesystem::directory_iterator(dir, ec)) {
+        if (!entry.is_regular_file(ec)) {
+            continue;
+        }
+        auto const name = entry.path().filename().string();
+        if (name.substr(0, prefix.size()) == prefix && entry.path().extension() == ext) {
+            autosaveFiles.push_back(entry.path());
+        }
+    }
+
+    // Sort ascending by name — timestamps are fixed-width so lexicographic order = chronological
+    std::sort(autosaveFiles.begin(), autosaveFiles.end());
+
+    int const maxVersions = std::max(1, m_config.AutoSaveMaxVersions);
+    while (static_cast<int>(autosaveFiles.size()) > maxVersions) {
+        std::filesystem::remove(autosaveFiles.front(), ec);
+        autosaveFiles.erase(autosaveFiles.begin());
+    }
+}
+
+namespace {
+    bool IsProcessAlive(int pid) {
+#if defined(_WIN32)
+        HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, static_cast<DWORD>(pid));
+        if (handle == nullptr) {
+            return false;
+        }
+        DWORD exitCode = 0;
+        bool const alive = GetExitCodeProcess(handle, &exitCode) && exitCode == STILL_ACTIVE;
+        CloseHandle(handle);
+        return alive;
+#else
+        return kill(pid, 0) == 0 || errno == EPERM;
+#endif
+    }
+}
+
+void EditorLayer::CheckCrashRecovery() {
+    // Scan the temp dir for recovery files from crashed instances.
+    // Skip any file whose PID is still alive — that instance is still running.
+    std::string const prefix = "moth_editor_recovery_";
+    std::string const ext = ".moth";
+    std::vector<std::filesystem::path> recoveryFiles;
+    std::error_code ec;
+    for (auto const& entry : std::filesystem::directory_iterator(std::filesystem::temp_directory_path(), ec)) {
+        if (!entry.is_regular_file(ec)) {
+            continue;
+        }
+        auto const name = entry.path().filename().string();
+        if (name.substr(0, prefix.size()) != prefix || entry.path().extension() != ext) {
+            continue;
+        }
+        // Extract the PID from the filename and skip if that process is still running
+        auto const pidStr = name.substr(prefix.size(), name.size() - prefix.size() - ext.size());
+        try {
+            if (IsProcessAlive(std::stoi(pidStr))) {
+                continue;
+            }
+        } catch (std::exception const&) {
+            // Filename doesn't contain a valid PID — treat it as a crash file
+        }
+        recoveryFiles.push_back(entry.path());
+    }
+    if (recoveryFiles.empty()) {
+        return;
+    }
+
+    // Use the most recently modified file; leave others in place — they will be offered
+    // on subsequent startups until the user has had a chance to review each one
+    auto const recoveryPath = *std::max_element(recoveryFiles.begin(), recoveryFiles.end(),
+        [&ec](std::filesystem::path const& a, std::filesystem::path const& b) {
+            return std::filesystem::last_write_time(a, ec) < std::filesystem::last_write_time(b, ec);
+        });
+
+    m_confirmPrompt.SetTitle("Crash Recovery");
+    m_confirmPrompt.SetMessage("A crash recovery file was found. Would you like to restore your previous session?");
+    m_confirmPrompt.SetPositiveText("Restore");
+    m_confirmPrompt.SetNegativeText("Discard");
+    m_confirmPrompt.SetCancelText("");
+    m_confirmPrompt.SetPositiveAction([this, recoveryPath]() {
+        std::shared_ptr<moth_ui::Layout> recoveredLayout;
+        if (moth_ui::Layout::Load(recoveryPath, &recoveredLayout) == moth_ui::Layout::LoadResult::Success) {
+            std::filesystem::path originalPath;
+            auto& extraData = recoveredLayout->GetExtraData();
+            if (extraData.contains("crash_recovery_original_path")) {
+                originalPath = extraData["crash_recovery_original_path"].get<std::string>();
+                extraData.erase("crash_recovery_original_path");
+            }
+            m_rootLayout = recoveredLayout;
+            m_currentLayoutPath = originalPath;
+            m_selectedFrame = 0;
+            ClearSelection();
+            ClearEditActions();
+            m_lockedNodes.clear();
+            Rebuild();
+            for (auto&& [panelId, panel] : m_panels) {
+                panel->OnLayoutLoaded();
+            }
+            // Mark as having unsaved work since this is a recovery, not a real save
+            m_lastSaveActionIndex = m_actionIndex - 1;
+            std::error_code removeEc;
+            std::filesystem::remove(recoveryPath, removeEc);
+        } else {
+            ShowError(fmt::format("Failed to load crash recovery file: {}", recoveryPath.string()));
+        }
+    });
+    m_confirmPrompt.SetNegativeAction([recoveryPath]() {
+        std::error_code removeEc;
+        std::filesystem::remove(recoveryPath, removeEc);
+    });
+    m_confirmPrompt.SetCancelAction(nullptr);
+    m_confirmPrompt.Open();
+}
+
+void EditorLayer::SaveCrashRecovery() {
+    if (m_rootLayout == nullptr) {
+        return;
+    }
+    // Temporarily stash the original path in extra data so it can be restored on recovery
+    m_rootLayout->GetExtraData()["crash_recovery_original_path"] = m_currentLayoutPath.string();
+    moth_ui::Layout::SaveOptions saveOptions;
+    saveOptions.pretty = false;
+    if (m_rootLayout->Save(m_crashRecoveryPath, saveOptions)) {
+        m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
+    } else {
+        m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
+        ShowError(fmt::format("Failed to write crash recovery file: {}", m_crashRecoveryPath.string()));
+    }
+}
+
+void EditorLayer::DeleteCrashRecovery() {
+    std::error_code ec;
+    std::filesystem::remove(m_crashRecoveryPath, ec);
+}
+
+void EditorLayer::SyncCrashRecovery() {
+    if (IsWorkPending()) {
+        SaveCrashRecovery();
+    } else {
+        DeleteCrashRecovery();
     }
 }
 
@@ -603,8 +821,9 @@ bool EditorLayer::OnRequestQuitEvent(moth_graphics::EventRequestQuit const& even
                     Shutdown();
                 }
             } else {
-                SaveLayout(m_currentLayoutPath);
-                Shutdown();
+                if (SaveLayout(m_currentLayoutPath)) {
+                    Shutdown();
+                }
             }
         });
         m_confirmPrompt.SetNegativeAction([this]() {
@@ -877,6 +1096,7 @@ void EditorLayer::Shutdown() {
     for (auto&& [panelId, panel] : m_panels) {
         panel->OnShutdown();
     }
+    DeleteCrashRecovery();
     SaveConfig();
     m_layerStack->FireEvent(moth_graphics::EventQuit());
 }

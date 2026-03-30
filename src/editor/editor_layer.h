@@ -177,6 +177,7 @@ private:
     std::vector<std::unique_ptr<IEditorAction>> m_editActions;
     int m_actionIndex = -1;
     int m_lastSaveActionIndex = -1;
+    uint32_t m_autoSaveAccumulatedMs = 0;
     bool IsWorkPending() const { return m_lastSaveActionIndex != m_actionIndex; }
     ConfirmPrompt m_confirmPrompt;
 
@@ -193,7 +194,16 @@ private:
     void RedoEditAction();
     void ClearEditActions();
 
-    void SaveLayout(std::filesystem::path const& path);
+    bool SaveLayout(std::filesystem::path const& path);
+    void AutoSave();
+
+    void CheckCrashRecovery();
+    void SaveCrashRecovery();
+    void DeleteCrashRecovery();
+    void SyncCrashRecovery();
+
+    std::filesystem::path m_crashRecoveryPath;
+
     void Rebuild();
 
     void MoveSelectionUp();
