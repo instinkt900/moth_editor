@@ -254,6 +254,7 @@ void EditorLayer::DebugDraw() {
 void EditorLayer::OnAddedToStack(moth_ui::LayerStack* layerStack) {
     Layer::OnAddedToStack(layerStack);
     NewLayout();
+    CheckCrashRecovery();
 }
 
 void EditorLayer::OnRemovedFromStack() {
@@ -272,6 +273,9 @@ void EditorLayer::AddEditAction(std::unique_ptr<IEditorAction>&& editAction) {
     }
     m_editActions.push_back(std::move(editAction));
     ++m_actionIndex;
+    if (IsWorkPending()) {
+        SaveCrashRecovery();
+    }
 }
 
 void EditorLayer::SetSelectedFrame(int frameNo) {
@@ -437,6 +441,72 @@ void EditorLayer::AutoSave() {
         std::filesystem::remove(autosaveFiles.front(), ec);
         autosaveFiles.erase(autosaveFiles.begin());
     }
+}
+
+std::filesystem::path EditorLayer::GetCrashRecoveryPath() {
+    return std::filesystem::temp_directory_path() / "moth_editor_recovery.moth";
+}
+
+void EditorLayer::CheckCrashRecovery() {
+    std::error_code ec;
+    if (!std::filesystem::exists(GetCrashRecoveryPath(), ec)) {
+        return;
+    }
+
+    m_confirmPrompt.SetTitle("Crash Recovery");
+    m_confirmPrompt.SetMessage("A crash recovery file was found. Would you like to restore your previous session?");
+    m_confirmPrompt.SetPositiveText("Restore");
+    m_confirmPrompt.SetNegativeText("Discard");
+    m_confirmPrompt.SetCancelText("");
+    m_confirmPrompt.SetPositiveAction([this]() {
+        auto const recoveryPath = GetCrashRecoveryPath();
+        std::shared_ptr<moth_ui::Layout> recoveredLayout;
+        if (moth_ui::Layout::Load(recoveryPath, &recoveredLayout) == moth_ui::Layout::LoadResult::Success) {
+            // Restore the original file path stored in extra data
+            std::filesystem::path originalPath;
+            auto& extraData = recoveredLayout->GetExtraData();
+            if (extraData.contains("crash_recovery_original_path")) {
+                originalPath = extraData["crash_recovery_original_path"].get<std::string>();
+                extraData.erase("crash_recovery_original_path");
+            }
+
+            m_rootLayout = recoveredLayout;
+            m_currentLayoutPath = originalPath;
+            m_selectedFrame = 0;
+            ClearSelection();
+            ClearEditActions();
+            m_lockedNodes.clear();
+            Rebuild();
+            for (auto&& [panelId, panel] : m_panels) {
+                panel->OnLayoutLoaded();
+            }
+            // Mark as having unsaved work since this is a recovery, not a real save
+            m_lastSaveActionIndex = m_actionIndex - 1;
+        }
+        DeleteCrashRecovery();
+    });
+    m_confirmPrompt.SetNegativeAction([]() {
+        DeleteCrashRecovery();
+    });
+    m_confirmPrompt.SetCancelAction(nullptr);
+    m_confirmPrompt.Open();
+}
+
+void EditorLayer::SaveCrashRecovery() {
+    if (m_rootLayout == nullptr) {
+        return;
+    }
+    // Temporarily stash the original path in extra data so it can be restored on recovery
+    m_rootLayout->GetExtraData()["crash_recovery_original_path"] = m_currentLayoutPath.string();
+    moth_ui::Layout::SaveOptions saveOptions;
+    saveOptions.pretty = false;
+    m_rootLayout->Save(GetCrashRecoveryPath(), saveOptions);
+    m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
+}
+
+void EditorLayer::DeleteCrashRecovery() { // NOLINT(readability-convert-member-functions-to-static)
+    std::error_code ec;
+    std::filesystem::remove(GetCrashRecoveryPath(), ec);
 }
 
 void EditorLayer::Rebuild() {
@@ -947,6 +1017,7 @@ void EditorLayer::Shutdown() {
     for (auto&& [panelId, panel] : m_panels) {
         panel->OnShutdown();
     }
+    DeleteCrashRecovery();
     SaveConfig();
     m_layerStack->FireEvent(moth_graphics::EventQuit());
 }

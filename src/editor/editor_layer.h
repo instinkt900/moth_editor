@@ -196,6 +196,12 @@ private:
 
     void SaveLayout(std::filesystem::path const& path);
     void AutoSave();
+
+    static std::filesystem::path GetCrashRecoveryPath();
+    static void DeleteCrashRecovery();
+    void CheckCrashRecovery();
+    void SaveCrashRecovery();
+
     void Rebuild();
 
     void MoveSelectionUp();
