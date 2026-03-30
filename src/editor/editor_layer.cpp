@@ -432,7 +432,9 @@ void EditorLayer::AutoSave() {
 
     moth_ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = true;
-    m_rootLayout->Save(autosavePath, saveOptions);
+    if (!m_rootLayout->Save(autosavePath, saveOptions)) {
+        return;
+    }
 
     // Collect existing autosave files for this layout
     std::string const prefix = stem + ".autosave_";
@@ -505,16 +507,12 @@ void EditorLayer::CheckCrashRecovery() {
         return;
     }
 
-    // Use the most recently modified file; silently discard the rest
+    // Use the most recently modified file; leave others in place — they will be offered
+    // on subsequent startups until the user has had a chance to review each one
     auto const recoveryPath = *std::max_element(recoveryFiles.begin(), recoveryFiles.end(),
         [&ec](std::filesystem::path const& a, std::filesystem::path const& b) {
             return std::filesystem::last_write_time(a, ec) < std::filesystem::last_write_time(b, ec);
         });
-    for (auto const& path : recoveryFiles) {
-        if (path != recoveryPath) {
-            std::filesystem::remove(path, ec);
-        }
-    }
 
     m_confirmPrompt.SetTitle("Crash Recovery");
     m_confirmPrompt.SetMessage("A crash recovery file was found. Would you like to restore your previous session?");
