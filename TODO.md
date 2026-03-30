@@ -11,13 +11,6 @@ Animation events can be placed on the timeline and will fire as named callbacks 
 
 ---
 
-### Auto-save / crash recovery
-The editor has no auto-save. Any unsaved work is lost if the application crashes or is force-closed. A simple time-based auto-save (e.g. every 2–5 minutes) writing to a temporary file alongside the open layout, with a recovery prompt on next launch if the temp file is newer than the saved file, would cover the most important case.
-
-**Effort:** Medium. Needs a timer, a temp-file naming convention, a recovery prompt on startup, and cleanup of the temp file on clean save/close.
-
----
-
 ## 1.x
 
 ### Easing curve editor
