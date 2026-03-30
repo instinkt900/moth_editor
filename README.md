@@ -35,27 +35,9 @@ A visual layout and animation editor for [moth_ui](https://github.com/instinkt90
 
 **Texture packing:** pack all images referenced by a layout into texture atlases in one step, reducing draw calls and load times in the runtime application.
 
-**Undo/redo:** every edit action is tracked and can be stepped back or forward. A dedicated undo stack panel shows the full history at a glance.
+**Autosave:** automatically save the current layout on a configurable interval. Keeps a configurable number of versioned copies and only runs when there are unsaved changes.
 
-**Copy, cut, and paste:** duplicate or move elements within or between layouts using standard clipboard shortcuts.
-
-**Snap to grid and angle:** optional grid snapping keeps elements aligned during placement and resize. Rotation can also be snapped to configurable angle increments.
-
-**Node locking:** lock individual elements in place to prevent accidental edits while working on nearby nodes.
-
-**Properties panel:** inspect and edit the position, size, color, rotation, and other properties of the selected element. Numeric fields update the canvas live.
-
-**Elements panel:** view and manage the hierarchy of elements in the current layout. Select, reorder, show or hide individual nodes from the list.
-
-**Asset list:** browse the image and font assets available to the current layout project.
-
-**Fonts panel:** manage font resources used by text elements.
-
-**Canvas configuration:** set the canvas size, background color, grid spacing, and major grid interval from the canvas properties panel. Visual style settings such as selection highlight color are configurable through the editor config panel.
-
-**Autosave:** automatically save the current layout to disk on a configurable interval (in minutes). Autosave keeps a configurable number of versioned copies and only runs when there are unsaved changes.
-
-**Crash recovery:** a temporary recovery snapshot is written on every edit action when there are unsaved changes. If the editor exits unexpectedly, the recovery file is detected on the next launch and you are prompted to restore or discard it. The recovery file is removed on a clean exit or after a successful save.
+**Crash recovery:** a recovery snapshot is written on every edit when there are unsaved changes. If the editor exits unexpectedly, the snapshot is detected on the next launch and you are prompted to restore or discard it.
 
 ### AI Disclosure
 
