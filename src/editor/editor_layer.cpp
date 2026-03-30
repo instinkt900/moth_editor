@@ -33,6 +33,7 @@
 #include "texture_packer.h"
 
 #include <nfd.h>
+#include <ctime>
 
 EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app)
     : m_app(app)
@@ -71,6 +72,17 @@ bool EditorLayer::OnEvent(moth_ui::Event const& event) {
 void EditorLayer::Update(uint32_t ticks) {
     for (auto& [type, panel] : m_panels) {
         panel->Update(ticks);
+    }
+
+    if (m_config.AutoSaveEnabled && !m_currentLayoutPath.empty() && IsWorkPending()) {
+        m_autoSaveAccumulatedMs += ticks;
+        uint32_t const intervalMs = static_cast<uint32_t>(m_config.AutoSaveIntervalMinutes) * 60u * 1000u;
+        if (m_autoSaveAccumulatedMs >= intervalMs) {
+            m_autoSaveAccumulatedMs = 0;
+            AutoSave();
+        }
+    } else {
+        m_autoSaveAccumulatedMs = 0;
     }
 
     auto const windowTitle = fmt::format("{}{}", m_currentLayoutPath.empty() ? "New Layout" : m_currentLayoutPath.string(), IsWorkPending() ? " *" : "");
@@ -170,6 +182,16 @@ void EditorLayer::DrawMainMenu() {
             }
             if (ImGui::MenuItem("Save Layout As", "Ctrl+Shift+S")) {
                 MenuFuncSaveLayoutAs();
+            }
+            ImGui::Separator();
+            ImGui::Checkbox("Autosave", &m_config.AutoSaveEnabled);
+            if (m_config.AutoSaveEnabled) {
+                ImGui::SetNextItemWidth(80.0f);
+                ImGui::InputInt("Interval (min)", &m_config.AutoSaveIntervalMinutes);
+                m_config.AutoSaveIntervalMinutes = std::max(1, m_config.AutoSaveIntervalMinutes);
+                ImGui::SetNextItemWidth(80.0f);
+                ImGui::InputInt("Max Versions", &m_config.AutoSaveMaxVersions);
+                m_config.AutoSaveMaxVersions = std::max(1, m_config.AutoSaveMaxVersions);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
@@ -366,6 +388,54 @@ void EditorLayer::SaveLayout(std::filesystem::path const& path) {
         m_lastSaveActionIndex = m_actionIndex;
         m_currentLayoutPath = path;
         AddRecentFile(path);
+    }
+}
+
+void EditorLayer::AutoSave() {
+    if (m_currentLayoutPath.empty()) {
+        return;
+    }
+
+    std::time_t const now = std::time(nullptr);
+    std::tm localTime{};
+#if defined(_WIN32)
+    localtime_s(&localTime, &now);
+#else
+    localtime_r(&now, &localTime);
+#endif
+    char timeBuf[32];
+    std::strftime(timeBuf, sizeof(timeBuf), "%Y%m%d_%H%M%S", &localTime);
+
+    auto const dir = m_currentLayoutPath.parent_path();
+    auto const stem = m_currentLayoutPath.stem().string();
+    auto const ext = m_currentLayoutPath.extension().string();
+    auto const autosavePath = dir / (stem + ".autosave_" + timeBuf + ext);
+
+    moth_ui::Layout::SaveOptions saveOptions;
+    saveOptions.pretty = true;
+    m_rootLayout->Save(autosavePath, saveOptions);
+
+    // Collect existing autosave files for this layout
+    std::string const prefix = stem + ".autosave_";
+    std::vector<std::filesystem::path> autosaveFiles;
+    std::error_code ec;
+    for (auto const& entry : std::filesystem::directory_iterator(dir, ec)) {
+        if (!entry.is_regular_file(ec)) {
+            continue;
+        }
+        auto const name = entry.path().filename().string();
+        if (name.substr(0, prefix.size()) == prefix && entry.path().extension() == ext) {
+            autosaveFiles.push_back(entry.path());
+        }
+    }
+
+    // Sort ascending by name — timestamps are fixed-width so lexicographic order = chronological
+    std::sort(autosaveFiles.begin(), autosaveFiles.end());
+
+    int const maxVersions = std::max(1, m_config.AutoSaveMaxVersions);
+    while (static_cast<int>(autosaveFiles.size()) > maxVersions) {
+        std::filesystem::remove(autosaveFiles.front(), ec);
+        autosaveFiles.erase(autosaveFiles.begin());
     }
 }
 

@@ -26,6 +26,10 @@ struct EditorConfig {
     bool SnapToGrid = false;
     bool SnapToAngle = false;
     float SnapAngle = 15.0f;
+
+    bool AutoSaveEnabled = false;
+    int AutoSaveIntervalMinutes = 5;
+    int AutoSaveMaxVersions = 5;
 };
 
 inline void to_json(nlohmann::json& j, EditorConfig const& config) {
@@ -48,6 +52,9 @@ inline void to_json(nlohmann::json& j, EditorConfig const& config) {
     j["SnapToGrid"] = config.SnapToGrid;
     j["SnapToAngle"] = config.SnapToAngle;
     j["SnapAngle"] = config.SnapAngle;
+    j["AutoSaveEnabled"] = config.AutoSaveEnabled;
+    j["AutoSaveIntervalMinutes"] = config.AutoSaveIntervalMinutes;
+    j["AutoSaveMaxVersions"] = config.AutoSaveMaxVersions;
 }
 
 inline void from_json(nlohmann::json j, EditorConfig& config) {
@@ -70,4 +77,7 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.SnapToGrid = j.value("SnapToGrid", config.SnapToGrid);
     config.SnapToAngle = j.value("SnapToAngle", config.SnapToAngle);
     config.SnapAngle = j.value("SnapAngle", config.SnapAngle);
+    config.AutoSaveEnabled = j.value("AutoSaveEnabled", config.AutoSaveEnabled);
+    config.AutoSaveIntervalMinutes = j.value("AutoSaveIntervalMinutes", config.AutoSaveIntervalMinutes);
+    config.AutoSaveMaxVersions = j.value("AutoSaveMaxVersions", config.AutoSaveMaxVersions);
 }
