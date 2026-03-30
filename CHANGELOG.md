@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [0.5.0] - 2026-03-30
+### Features
+- Add autosave system to moth_editor
+- Add crash recovery to moth_editor
+
+### Bug Fixes
+- Improve crash recovery robustness in moth_editor
+- Add NOMINMAX before windows.h to prevent min/max macro conflicts
+- Skip autosave pruning if save failed, leave other recovery files in place
+- Improve crash recovery correctness in moth_editor
+
+### Miscellaneous
+- Bump moth_graphics version
+- Bump example moth_graphics version
+
+### Changes
+- Bump version from 0.4.0 to 0.5.0
+
 ## [0.4.0] - 2026-03-26
 ### Features
 - Set checkerboard fallback image in editor on startup
