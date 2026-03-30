@@ -194,12 +194,13 @@ private:
     void RedoEditAction();
     void ClearEditActions();
 
-    void SaveLayout(std::filesystem::path const& path);
+    bool SaveLayout(std::filesystem::path const& path);
     void AutoSave();
 
     void CheckCrashRecovery();
     void SaveCrashRecovery();
     void DeleteCrashRecovery();
+    void SyncCrashRecovery();
 
     std::filesystem::path m_crashRecoveryPath;
 

@@ -287,9 +287,7 @@ void EditorLayer::AddEditAction(std::unique_ptr<IEditorAction>&& editAction) {
     }
     m_editActions.push_back(std::move(editAction));
     ++m_actionIndex;
-    if (IsWorkPending()) {
-        SaveCrashRecovery();
-    }
+    SyncCrashRecovery();
 }
 
 void EditorLayer::SetSelectedFrame(int frameNo) {
@@ -310,6 +308,7 @@ void EditorLayer::UndoEditAction() {
         m_editActions[m_actionIndex]->Undo();
         --m_actionIndex;
         Refresh();
+        SyncCrashRecovery();
     }
 }
 
@@ -318,6 +317,7 @@ void EditorLayer::RedoEditAction() {
         ++m_actionIndex;
         m_editActions[m_actionIndex]->Do();
         Refresh();
+        SyncCrashRecovery();
     }
 }
 
@@ -335,8 +335,9 @@ void EditorLayer::NewLayout(bool discard) {
         m_confirmPrompt.SetNegativeText("Discard and New");
         m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this]() {
-            SaveLayout(m_currentLayoutPath.c_str());
-            NewLayout();
+            if (SaveLayout(m_currentLayoutPath.c_str())) {
+                NewLayout();
+            }
         });
         m_confirmPrompt.SetNegativeAction([this]() {
             NewLayout(true);
@@ -366,8 +367,9 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
         m_confirmPrompt.SetNegativeText("Discard and Load");
         m_confirmPrompt.SetCancelText("Cancel");
         m_confirmPrompt.SetPositiveAction([this, path]() {
-            SaveLayout(m_currentLayoutPath);
-            LoadLayout(path);
+            if (SaveLayout(m_currentLayoutPath)) {
+                LoadLayout(path);
+            }
         });
         m_confirmPrompt.SetNegativeAction([this, path]() {
             LoadLayout(path, true);
@@ -399,15 +401,17 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
     }
 }
 
-void EditorLayer::SaveLayout(std::filesystem::path const& path) {
+bool EditorLayer::SaveLayout(std::filesystem::path const& path) {
     moth_ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = true;
-    if (m_rootLayout->Save(path, saveOptions)) {
-        m_lastSaveActionIndex = m_actionIndex;
-        m_currentLayoutPath = path;
-        AddRecentFile(path);
-        DeleteCrashRecovery();
+    if (!m_rootLayout->Save(path, saveOptions)) {
+        return false;
     }
+    m_lastSaveActionIndex = m_actionIndex;
+    m_currentLayoutPath = path;
+    AddRecentFile(path);
+    DeleteCrashRecovery();
+    return true;
 }
 
 void EditorLayer::AutoSave() {
@@ -540,9 +544,11 @@ void EditorLayer::CheckCrashRecovery() {
             }
             // Mark as having unsaved work since this is a recovery, not a real save
             m_lastSaveActionIndex = m_actionIndex - 1;
+            std::error_code removeEc;
+            std::filesystem::remove(recoveryPath, removeEc);
+        } else {
+            ShowError(fmt::format("Failed to load crash recovery file: {}", recoveryPath.string()));
         }
-        std::error_code removeEc;
-        std::filesystem::remove(recoveryPath, removeEc);
     });
     m_confirmPrompt.SetNegativeAction([recoveryPath]() {
         std::error_code removeEc;
@@ -560,13 +566,25 @@ void EditorLayer::SaveCrashRecovery() {
     m_rootLayout->GetExtraData()["crash_recovery_original_path"] = m_currentLayoutPath.string();
     moth_ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = false;
-    m_rootLayout->Save(m_crashRecoveryPath, saveOptions);
-    m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
+    if (m_rootLayout->Save(m_crashRecoveryPath, saveOptions)) {
+        m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
+    } else {
+        m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
+        ShowError(fmt::format("Failed to write crash recovery file: {}", m_crashRecoveryPath.string()));
+    }
 }
 
 void EditorLayer::DeleteCrashRecovery() {
     std::error_code ec;
     std::filesystem::remove(m_crashRecoveryPath, ec);
+}
+
+void EditorLayer::SyncCrashRecovery() {
+    if (IsWorkPending()) {
+        SaveCrashRecovery();
+    } else {
+        DeleteCrashRecovery();
+    }
 }
 
 void EditorLayer::Rebuild() {
@@ -803,8 +821,9 @@ bool EditorLayer::OnRequestQuitEvent(moth_graphics::EventRequestQuit const& even
                     Shutdown();
                 }
             } else {
-                SaveLayout(m_currentLayoutPath);
-                Shutdown();
+                if (SaveLayout(m_currentLayoutPath)) {
+                    Shutdown();
+                }
             }
         });
         m_confirmPrompt.SetNegativeAction([this]() {
