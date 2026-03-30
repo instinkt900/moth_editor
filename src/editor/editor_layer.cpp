@@ -36,6 +36,7 @@
 #include <ctime>
 #if defined(_WIN32)
 #include <process.h>
+#define NOMINMAX
 #include <windows.h>
 #else
 #include <cerrno>
