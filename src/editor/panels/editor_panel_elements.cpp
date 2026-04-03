@@ -6,6 +6,7 @@
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_clip.h"
 #include "moth_ui/layout/layout_entity_text.h"
+#include "moth_ui/layout/layout_entity_flipbook.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
 #include "../element_utils.h"
@@ -71,6 +72,29 @@ namespace {
         {
             "Clip Rect",
             [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityClip>(editorLayer); },
+        },
+        {
+            "Flipbook",
+            [](EditorLayer& editorLayer) {
+                auto const currentPath = std::filesystem::current_path().string();
+                nfdchar_t* outPath = NULL;
+                nfdresult_t result = NFD_OpenDialog("json", currentPath.c_str(), &outPath);
+
+                if (result == NFD_OKAY) {
+                    std::filesystem::path filePath = outPath;
+                    moth_ui::LayoutRect bounds;
+                    bounds.anchor.topLeft = { 0.5f, 0.5f };
+                    bounds.anchor.bottomRight = { 0.5f, 0.5f };
+                    bounds.offset.topLeft = { -50, -50 };
+                    bounds.offset.bottomRight = { 50, 50 };
+                    auto newEntity = std::make_shared<moth_ui::LayoutEntityFlipbook>(bounds);
+                    newEntity->m_flipbookPath = filePath;
+                    auto instance = newEntity->Instantiate(editorLayer.GetContext());
+                    auto addAction = std::make_unique<AddAction>(std::move(instance), editorLayer.GetRoot());
+                    editorLayer.PerformEditAction(std::move(addAction));
+                    editorLayer.GetRoot()->RecalculateBounds();
+                }
+            },
         },
     };
 }

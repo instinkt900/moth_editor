@@ -11,10 +11,12 @@
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout_entity_ref.h"
+#include "moth_ui/layout/layout_entity_flipbook.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/node_rect.h"
 #include "moth_ui/nodes/node_image.h"
 #include "moth_ui/nodes/node_text.h"
+#include "moth_ui/nodes/node_flipbook.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/context.h"
 
@@ -83,6 +85,9 @@ void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> no
         break;
     case moth_ui::LayoutEntityType::Text:
         DrawTextProperties(std::static_pointer_cast<moth_ui::NodeText>(node));
+        break;
+    case moth_ui::LayoutEntityType::Flipbook:
+        DrawFlipbookProperties(std::static_pointer_cast<moth_ui::NodeFlipbook>(node));
         break;
     case moth_ui::LayoutEntityType::Ref:
         DrawRefProperties(std::static_pointer_cast<moth_ui::Group>(node), recurseChildren);
@@ -381,6 +386,55 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
         });
 }
 
+void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::NodeFlipbook> node) {
+    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityFlipbook>(node->GetLayoutEntity());
+
+    auto const& layoutPath = m_editorLayer.GetCurrentLayoutPath();
+    auto const flipbookBase = layoutPath.empty() ? std::filesystem::current_path() : layoutPath.parent_path();
+    std::error_code ec;
+    auto rel = std::filesystem::relative(entity->m_flipbookPath, flipbookBase, ec);
+    std::string displayPath = ec ? entity->m_flipbookPath.string() : rel.string();
+    ImGui::InputText("Flipbook Path", displayPath.data(), displayPath.size() + 1, ImGuiInputTextFlags_ReadOnly);
+
+    if (ImGui::Button("Load Flipbook..")) {
+        auto const currentPath = std::filesystem::current_path().string();
+        nfdchar_t* outPath = NULL;
+        nfdresult_t result = NFD_OpenDialog("json", currentPath.c_str(), &outPath);
+
+        if (result == NFD_OKAY) {
+            std::filesystem::path filePath = outPath;
+            auto const oldPath = entity->m_flipbookPath;
+            auto action = MakeChangeValueAction(entity->m_flipbookPath, oldPath, filePath, [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        }
+    }
+
+    PropertiesInput<char const*>(
+        "Clip Name", entity->m_clipName.c_str(),
+        [&](char const* changedValue) {
+            entity->m_clipName = changedValue;
+            node->ReloadEntity();
+        },
+        [this, node, entity](char const* oldValue, char const* newValue) {
+            auto action = MakeChangeValueAction(entity->m_clipName, std::string(oldValue), std::string(newValue), [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
+    PropertiesInput<bool>(
+        "Autoplay", entity->m_autoplay,
+        [&](auto const newValue) {
+            auto const oldValue = entity->m_autoplay;
+            auto action = MakeChangeValueAction(entity->m_autoplay, oldValue, newValue, [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
+    if (node->GetFlipbook() != nullptr) {
+        ImGui::LabelText("Current Clip", "%s", std::string(node->GetCurrentClipName()).c_str());
+        ImGui::LabelText("Current Frame", "%d", node->GetCurrentFrame());
+        ImGui::LabelText("Playing", "%s", node->IsPlaying() ? "true" : "false");
+    }
+}
+
 char const* GetChildName(std::shared_ptr<moth_ui::LayoutEntity> entity) {
     switch (entity->GetType()) {
     case moth_ui::LayoutEntityType::Entity:
@@ -394,6 +448,8 @@ char const* GetChildName(std::shared_ptr<moth_ui::LayoutEntity> entity) {
         return "Image";
     case moth_ui::LayoutEntityType::Text:
         return "Text";
+    case moth_ui::LayoutEntityType::Flipbook:
+        return "Flipbook";
     case moth_ui::LayoutEntityType::Ref:
         return "Ref";
     default:
