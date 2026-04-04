@@ -16,8 +16,12 @@
 #include "../actions/delete_event_action.h"
 #include "../actions/modify_event_action.h"
 #include "../actions/change_index_action.h"
+#include "../actions/add_discrete_keyframe_action.h"
+#include "../actions/delete_discrete_keyframe_action.h"
+#include "../actions/move_discrete_keyframe_action.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
+#include "moth_ui/nodes/node_flipbook.h"
 #include "moth_ui/layout/layout_entity_group.h"
 
 #undef min
@@ -177,6 +181,14 @@ void EditorPanelAnimation::DeleteSelections() {
             actions.push_back(std::make_unique<DeleteEventAction>(entity, *eventCtx->event));
         } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
             actions.push_back(std::make_unique<DeleteKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->current->m_value));
+        } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+            auto it = dkfCtx->entity->m_discreteTracks.find(dkfCtx->target);
+            if (it != dkfCtx->entity->m_discreteTracks.end()) {
+                auto* val = it->second.GetKeyframe(dkfCtx->frame);
+                if (val != nullptr) {
+                    actions.push_back(std::make_unique<DeleteDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, *val));
+                }
+            }
         }
     }
 
@@ -321,6 +333,48 @@ void EditorPanelAnimation::FilterKeyframeSelections(std::shared_ptr<LayoutEntity
             ++it;
         }
     }
+}
+
+// --- Discrete keyframe selection ---
+
+void EditorPanelAnimation::SelectDiscreteKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+    if (!IsDiscreteKeyframeSelected(entity, target, frameNo)) {
+        DiscreteKeyframeContext context;
+        context.entity = entity;
+        context.target = target;
+        context.frame = frameNo;
+        context.mutableFrame = frameNo;
+        m_selections.push_back(context);
+    }
+}
+
+void EditorPanelAnimation::DeselectDiscreteKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+    auto const it = ranges::find_if(m_selections, [&](auto const& context) {
+        if (auto* kfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+            return kfCtx->entity == entity && kfCtx->target == target && kfCtx->frame == frameNo;
+        }
+        return false;
+    });
+    if (it != std::end(m_selections)) {
+        m_selections.erase(it);
+    }
+}
+
+bool EditorPanelAnimation::IsDiscreteKeyframeSelected(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+    return GetSelectedDiscreteKeyframeContext(entity, target, frameNo) != nullptr;
+}
+
+DiscreteKeyframeContext* EditorPanelAnimation::GetSelectedDiscreteKeyframeContext(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
+    auto const it = ranges::find_if(m_selections, [&](auto const& context) {
+        if (auto* kfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+            return kfCtx->entity == entity && kfCtx->target == target && kfCtx->frame == frameNo;
+        }
+        return false;
+    });
+    if (it != std::end(m_selections)) {
+        return std::get_if<DiscreteKeyframeContext>(&(*it));
+    }
+    return nullptr;
 }
 
 // ---------------------------------------------------------------------------
@@ -558,7 +612,7 @@ void EditorPanelAnimation::DrawClipRow() {
     for (auto&& clip : animationClips) {
         bool selected = IsClipSelected(clip.get());
 
-        auto& clipValues = (m_mouseDragging && selected) ? GetSelectedClipContext(clip.get())->mutableValue : *clip;
+        auto& clipValues = (m_mouseDragging && selected) ? GetSelectedClipContext(clip.get())->mutableValue : *clip; // NOLINT(clang-analyzer-core.NullDereference)
 
         float const clipStartOffset = static_cast<float>(clipValues.m_startFrame) * m_framePixelWidth;
         float const clipEndOffset = static_cast<float>(clipValues.m_endFrame + 1) * m_framePixelWidth;
@@ -722,7 +776,7 @@ void EditorPanelAnimation::DrawEventsRow() {
     for (auto& event : animationEvents) {
         bool selected = IsEventSelected(event.get());
 
-        auto& eventValues = (m_mouseDragging && selected) ? GetSelectedEventContext(event.get())->mutableValue : *event;
+        auto& eventValues = (m_mouseDragging && selected) ? GetSelectedEventContext(event.get())->mutableValue : *event; // NOLINT(clang-analyzer-core.NullDereference)
 
         float const eventStartOffset = static_cast<float>(eventValues.m_frame) * m_framePixelWidth;
         float const eventEndOffset = static_cast<float>(eventValues.m_frame + 1) * m_framePixelWidth;
@@ -786,6 +840,94 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
     if (ImGui::BeginPopup(KeyframePopupName)) {
         auto const child = m_group->GetChildren()[m_clickedChildIdx];
         auto const childEntity = child->GetLayoutEntity();
+
+        // --- Discrete track popup ---
+        if (m_clickedTargetIsDiscrete && m_clickedChildTarget != AnimationTrack::Target::Unknown) {
+            auto& discreteTracks = childEntity->m_discreteTracks;
+            auto dtIt = discreteTracks.find(m_clickedChildTarget);
+            bool keyframeAtFrame = (dtIt != discreteTracks.end()) && (dtIt->second.GetKeyframe(m_clickedFrame) != nullptr);
+
+            if (!keyframeAtFrame && ImGui::MenuItem("Add")) {
+                std::string seedValue;
+                if (dtIt != discreteTracks.end()) {
+                    seedValue = dtIt->second.GetValueAtFrame(m_clickedFrame);
+                }
+                auto action = std::make_unique<AddDiscreteKeyframeAction>(childEntity, m_clickedChildTarget, m_clickedFrame, std::move(seedValue));
+                m_editorLayer.PerformEditAction(std::move(action));
+            }
+
+            if (!m_selections.empty() && ImGui::MenuItem("Delete")) {
+                DeleteSelections();
+            }
+
+            // Edit value for the selected discrete keyframe.
+            if (auto* dkfCtx = GetSelectedDiscreteKeyframeContext(childEntity, m_clickedChildTarget, m_clickedFrame)) {
+                auto dtIt2 = discreteTracks.find(m_clickedChildTarget);
+                if (dtIt2 != discreteTracks.end()) {
+                    if (auto* valPtr = dtIt2->second.GetKeyframe(dkfCtx->frame)) {
+                        std::string newValue;
+                        bool valueChanged = false;
+
+                        if (m_clickedChildTarget == AnimationTrack::Target::FlipbookPlaying) {
+                            // Checkbox for play/pause
+                            bool playing = (*valPtr == "1");
+                            if (ImGui::Checkbox("Playing", &playing)) {
+                                newValue = playing ? "1" : "0";
+                                valueChanged = (newValue != *valPtr);
+                            }
+                        } else if (m_clickedChildTarget == AnimationTrack::Target::FlipbookClip) {
+                            // Dropdown of clip names from the loaded flipbook
+                            auto* flipbookNode = dynamic_cast<moth_ui::NodeFlipbook*>(child.get());
+                            auto const* flipbook = (flipbookNode != nullptr) ? flipbookNode->GetFlipbook() : nullptr;
+                            ImGui::SetNextItemWidth(200.0f);
+                            if ((flipbook != nullptr) && ImGui::BeginCombo("##clipname", valPtr->c_str())) {
+                                moth_ui::IFlipbook::SheetDesc sheetDesc;
+                                flipbook->GetSheetDesc(sheetDesc);
+                                for (int i = 0; i < sheetDesc.NumClips; ++i) {
+                                    auto const clipName = flipbook->GetClipName(i);
+                                    bool selected = (clipName == *valPtr);
+                                    if (ImGui::Selectable(std::string(clipName).c_str(), selected)) {
+                                        newValue = clipName;
+                                        valueChanged = (newValue != *valPtr);
+                                    }
+                                    if (selected) {
+                                        ImGui::SetItemDefaultFocus();
+                                    }
+                                }
+                                ImGui::EndCombo();
+                            } else if (flipbook == nullptr) {
+                                // No flipbook loaded — fall back to text input
+                                static std::array<char, 512> editBuf{};
+                                if (ImGui::IsWindowAppearing()) {
+                                    std::strncpy(editBuf.data(), valPtr->c_str(), editBuf.size() - 1);
+                                    editBuf[editBuf.size() - 1] = '\0';
+                                }
+                                ImGui::SetNextItemWidth(200.0f);
+                                if (ImGui::InputText("##clipname", editBuf.data(), editBuf.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
+                                    newValue = editBuf.data();
+                                    valueChanged = (newValue != *valPtr);
+                                }
+                            }
+                        }
+
+                        if (valueChanged) {
+                            auto delAction = std::make_unique<DeleteDiscreteKeyframeAction>(childEntity, m_clickedChildTarget, dkfCtx->frame, *valPtr);
+                            auto addAction = std::make_unique<AddDiscreteKeyframeAction>(childEntity, m_clickedChildTarget, dkfCtx->frame, std::move(newValue));
+                            std::vector<std::unique_ptr<IEditorAction>> actions;
+                            actions.push_back(std::move(delAction));
+                            actions.push_back(std::move(addAction));
+                            PerformOrCompositeAction(std::move(actions));
+                            ImGui::CloseCurrentPopup();
+                        }
+                    }
+                }
+            }
+
+            ImGui::EndPopup();
+            return true;
+        }
+
+        // --- Continuous track popup ---
         auto& childTracks = childEntity->m_tracks;
         AnimationTrack* trackPtr = nullptr;
         bool keyframeAtFrame = false;
@@ -985,10 +1127,83 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                     if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                         m_clickedChildIdx = childIndex;
                         m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
+                        m_clickedTargetIsDiscrete = false;
                         m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
                         ImGui::OpenPopup(KeyframePopupName);
                     }
                 }
+            }
+        }
+
+        m_drawList->PopClipRect();
+    }
+
+    // Discrete track rows
+    for (auto& [target, track] : childEntity->m_discreteTracks) {
+        ImRect subTrackBounds = rowDimensions.trackBounds;
+
+        if (expanded) {
+            RowDimensions const subRowDimensions = AddRow(GetTrackLabel(target), RowOptions().Indented(true));
+            subTrackBounds = subRowDimensions.trackBounds;
+        }
+
+        m_drawList->PushClipRect(subTrackBounds.Min, subTrackBounds.Max, true);
+
+        float const trackStartOffsetX = subTrackBounds.Min.x + rowDimensions.trackOffset;
+        float const trackStartOffsetY = subTrackBounds.Min.y;
+
+        for (auto& [frame, value] : track.Keyframes()) {
+            bool selected = IsDiscreteKeyframeSelected(childEntity, target, frame);
+
+            auto* const dkfCtxDrag = (m_mouseDragging && selected) ? GetSelectedDiscreteKeyframeContext(childEntity, target, frame) : nullptr;
+            int const frameNumber = (dkfCtxDrag != nullptr) ? dkfCtxDrag->mutableFrame : frame;
+
+            float const frameStartOffset = (static_cast<float>(frameNumber) * m_framePixelWidth) + 1.0f;
+            float const frameEndOffset = static_cast<float>(frameNumber + 1) * m_framePixelWidth;
+            ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2.0f };
+            ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+            ImRect const frameBounds{ frameBoundsMin, frameBoundsMax };
+
+            unsigned int const slotColor = selected ? kColorElementSelected : kColorElement;
+            m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                if (m_mouseInScrollArea && frameBounds.Contains(io.MousePos)) {
+                    if (!IsDiscreteKeyframeSelected(childEntity, target, frame)) {
+                        if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
+                            ClearSelections();
+                        }
+                    }
+                    SelectDiscreteKeyframe(childEntity, target, frame);
+                    m_clickConsumed = true;
+
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                        m_mouseDragging = true;
+                        m_mouseDragStartX = io.MousePos.x;
+                        m_altDrag = io.KeyAlt;
+                    }
+                }
+
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                    if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
+                        m_clickedChildIdx = childIndex;
+                        m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
+                        m_clickedTargetIsDiscrete = expanded;
+                        m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
+                        ImGui::OpenPopup(KeyframePopupName);
+                    }
+                }
+            }
+        }
+
+        // Right-click on empty space in discrete track row (no keyframe hit)
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
+                m_clickedChildIdx = childIndex;
+                m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
+                m_clickedTargetIsDiscrete = expanded;
+                m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
+                ImGui::OpenPopup(KeyframePopupName);
             }
         }
 
@@ -1176,7 +1391,9 @@ int EditorPanelAnimation::CalcNumRows() const {
     for (const auto& [p, metadata] : m_trackMetadata) {
         if (auto child = metadata.ptr.lock()) {
             if (metadata.expanded) {
-                count += static_cast<int>(child->GetLayoutEntity()->m_tracks.size());
+                auto const entity = child->GetLayoutEntity();
+                count += static_cast<int>(entity->m_tracks.size());
+                count += static_cast<int>(entity->m_discreteTracks.size());
             }
         }
     }
@@ -1420,6 +1637,18 @@ void EditorPanelAnimation::CommitDragActions() {
                     actions.push_back(std::make_unique<AddKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->current->m_value, kfCtx->current->m_interpType));
                 }
             }
+        } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+            if (dkfCtx->frame != dkfCtx->mutableFrame) {
+                auto it = dkfCtx->entity->m_discreteTracks.find(dkfCtx->target);
+                if (it != dkfCtx->entity->m_discreteTracks.end()) {
+                    auto* val = it->second.GetKeyframe(dkfCtx->frame);
+                    std::string oldValue = (val != nullptr) ? *val : std::string{};
+                    if (m_altDrag) {
+                        actions.push_back(std::make_unique<AddDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, oldValue));
+                    }
+                    actions.push_back(std::make_unique<MoveDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, dkfCtx->mutableFrame));
+                }
+            }
         }
     }
 
@@ -1478,6 +1707,10 @@ void EditorPanelAnimation::UpdateMouseDragging() {
                 int frame = kfCtx->current->m_frame + frameDelta;
                 frame = std::max(frame, 0);
                 kfCtx->mutableFrame = frame;
+            } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+                int frame = dkfCtx->frame + frameDelta;
+                frame = std::max(frame, 0);
+                dkfCtx->mutableFrame = frame;
             }
         }
     }

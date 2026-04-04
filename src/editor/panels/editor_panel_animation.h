@@ -32,6 +32,13 @@ struct KeyframeContext {
     moth_ui::Keyframe* current = nullptr;
 };
 
+struct DiscreteKeyframeContext {
+    std::shared_ptr<moth_ui::LayoutEntity> entity;
+    moth_ui::AnimationTrack::Target target = moth_ui::AnimationTrack::Target::Unknown;
+    int frame = -1;
+    int mutableFrame = -1;
+};
+
 class EditorPanelAnimation : public EditorPanel {
 public:
     EditorPanelAnimation(EditorLayer& editorLayer, bool visible);
@@ -81,7 +88,7 @@ private:
         float trackOffset = 0.0f;
     };
 
-    using ElementContext = std::variant<ClipContext, EventContext, KeyframeContext>;
+    using ElementContext = std::variant<ClipContext, EventContext, KeyframeContext, DiscreteKeyframeContext>;
     std::vector<ElementContext> m_selections;
     std::vector<KeyframeContext> m_pendingBoxSelections;
     std::vector<moth_ui::AnimationClip*> m_pendingClipBoxSelections;
@@ -105,6 +112,11 @@ private:
     bool IsKeyframeSelected(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
     KeyframeContext* GetSelectedKeyframeContext(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
     void FilterKeyframeSelections(std::shared_ptr<moth_ui::LayoutEntity> entity, int frameNo);
+
+    void SelectDiscreteKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
+    void DeselectDiscreteKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
+    bool IsDiscreteKeyframeSelected(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
+    DiscreteKeyframeContext* GetSelectedDiscreteKeyframeContext(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
 
     void UpdateMouseDragging();
 
@@ -170,6 +182,7 @@ private:
 
     int m_clickedChildIdx = -1;
     moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
+    bool m_clickedTargetIsDiscrete = false;
 
     // Label drag-to-reorder state
     int m_labelDragSourceIdx = -1;  // actual child index being dragged (-1 = none)
