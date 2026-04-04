@@ -630,15 +630,19 @@
               "value": "run_forward"
             },
             {
+              "frame": 19,
+              "value": "run_forward"
+            },
+            {
               "frame": 20,
               "value": "run_right"
             },
             {
-              "frame": 50,
+              "frame": 40,
               "value": "run_forward"
             },
             {
-              "frame": 66,
+              "frame": 61,
               "value": "run_back"
             }
           ],
@@ -651,7 +655,7 @@
               "value": "1"
             },
             {
-              "frame": 20,
+              "frame": 19,
               "value": "1"
             }
           ],
@@ -676,26 +680,6 @@
               "frame": 19,
               "interp": "Linear",
               "value": -130.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": -130.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": -130.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": -130.0
-            },
-            {
-              "frame": 79,
-              "interp": "Linear",
-              "value": -130.0
             }
           ],
           "target": "TopOffset"
@@ -711,26 +695,6 @@
               "frame": 19,
               "interp": "Linear",
               "value": -30.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": -30.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": -30.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": -30.0
-            },
-            {
-              "frame": 79,
-              "interp": "Linear",
-              "value": -30.0
             }
           ],
           "target": "BottomOffset"
@@ -740,12 +704,12 @@
             {
               "frame": 0,
               "interp": "Linear",
-              "value": 60.0
+              "value": 80.0
             },
             {
               "frame": 19,
               "interp": "Linear",
-              "value": 60.0
+              "value": 80.0
             },
             {
               "frame": 20,
@@ -753,24 +717,14 @@
               "value": -120.0
             },
             {
-              "frame": 50,
+              "frame": 40,
               "interp": "Linear",
-              "value": 60.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 60.0
+              "value": 80.0
             },
             {
               "frame": 61,
               "interp": "Linear",
-              "value": 60.0
-            },
-            {
-              "frame": 79,
-              "interp": "Linear",
-              "value": 60.0
+              "value": 80.0
             }
           ],
           "target": "LeftOffset"
@@ -780,12 +734,12 @@
             {
               "frame": 0,
               "interp": "Linear",
-              "value": 160.0
+              "value": 180.0
             },
             {
               "frame": 19,
               "interp": "Linear",
-              "value": 160.0
+              "value": 180.0
             },
             {
               "frame": 20,
@@ -793,24 +747,14 @@
               "value": -20.0
             },
             {
-              "frame": 50,
+              "frame": 40,
               "interp": "Linear",
-              "value": 160.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 160.0
+              "value": 180.0
             },
             {
               "frame": 61,
               "interp": "Linear",
-              "value": 160.0
-            },
-            {
-              "frame": 79,
-              "interp": "Linear",
-              "value": 160.0
+              "value": 180.0
             }
           ],
           "target": "RightOffset"
@@ -824,26 +768,6 @@
             },
             {
               "frame": 19,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 79,
               "interp": "Linear",
               "value": 1.0
             }
@@ -861,26 +785,6 @@
               "frame": 19,
               "interp": "Linear",
               "value": 1.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 79,
-              "interp": "Linear",
-              "value": 1.0
             }
           ],
           "target": "BottomAnchor"
@@ -894,26 +798,6 @@
             },
             {
               "frame": 19,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 79,
               "interp": "Linear",
               "value": 0.0
             }
@@ -931,26 +815,6 @@
               "frame": 19,
               "interp": "Linear",
               "value": 0.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 79,
-              "interp": "Linear",
-              "value": 0.0
             }
           ],
           "target": "RightAnchor"
@@ -964,26 +828,6 @@
             },
             {
               "frame": 19,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 79,
               "interp": "Linear",
               "value": 1.0
             }
@@ -1001,26 +845,6 @@
               "frame": 19,
               "interp": "Linear",
               "value": 1.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 79,
-              "interp": "Linear",
-              "value": 1.0
             }
           ],
           "target": "ColorGreen"
@@ -1034,26 +858,6 @@
             },
             {
               "frame": 19,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 79,
               "interp": "Linear",
               "value": 1.0
             }
@@ -1073,22 +877,12 @@
               "value": 1.0
             },
             {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 1.0
-            },
-            {
               "frame": 61,
               "interp": "Linear",
               "value": 1.0
             },
             {
-              "frame": 79,
+              "frame": 69,
               "interp": "Linear",
               "value": 0.0
             }
@@ -1104,26 +898,6 @@
             },
             {
               "frame": 19,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 20,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 60,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 61,
-              "interp": "Linear",
-              "value": 0.0
-            },
-            {
-              "frame": 79,
               "interp": "Linear",
               "value": 0.0
             }
@@ -1274,7 +1048,7 @@
             {
               "frame": 61,
               "interp": "Linear",
-              "value": 1.0
+              "value": 0.0
             },
             {
               "frame": 79,
@@ -1294,7 +1068,7 @@
             {
               "frame": 61,
               "interp": "Linear",
-              "value": 1.0
+              "value": 0.0
             },
             {
               "frame": 79,
@@ -1314,7 +1088,7 @@
             {
               "frame": 61,
               "interp": "Linear",
-              "value": 1.0
+              "value": 0.0
             },
             {
               "frame": 79,

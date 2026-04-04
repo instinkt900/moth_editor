@@ -322,8 +322,13 @@ KeyframeContext* EditorPanelAnimation::GetSelectedKeyframeContext(std::shared_pt
 void EditorPanelAnimation::FilterKeyframeSelections(std::shared_ptr<LayoutEntity> entity, int frameNo) {
     for (auto it = std::begin(m_selections); it != std::end(m_selections); /* skip */) {
         auto& context = *it;
-        auto* kfCtx = std::get_if<KeyframeContext>(&context);
-        if (kfCtx == nullptr || (kfCtx->entity != entity || kfCtx->current->m_frame != frameNo)) {
+        bool keep = false;
+        if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
+            keep = kfCtx->entity == entity && kfCtx->current->m_frame == frameNo;
+        } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+            keep = dkfCtx->entity == entity && dkfCtx->frame == frameNo;
+        }
+        if (!keep) {
             it = m_selections.erase(it);
         } else {
             ++it;
@@ -376,8 +381,13 @@ DiscreteKeyframeContext* EditorPanelAnimation::GetSelectedDiscreteKeyframeContex
 void EditorPanelAnimation::FilterDiscreteKeyframeSelections(std::shared_ptr<LayoutEntity> entity, int frameNo) {
     for (auto it = std::begin(m_selections); it != std::end(m_selections); /* skip */) {
         auto& context = *it;
-        auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context);
-        if (dkfCtx == nullptr || (dkfCtx->entity != entity || dkfCtx->frame != frameNo)) {
+        bool keep = false;
+        if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
+            keep = kfCtx->entity == entity && kfCtx->current->m_frame == frameNo;
+        } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+            keep = dkfCtx->entity == entity && dkfCtx->frame == frameNo;
+        }
+        if (!keep) {
             it = m_selections.erase(it);
         } else {
             ++it;
