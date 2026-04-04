@@ -378,22 +378,6 @@ DiscreteKeyframeContext* EditorPanelAnimation::GetSelectedDiscreteKeyframeContex
     return nullptr;
 }
 
-void EditorPanelAnimation::FilterDiscreteKeyframeSelections(std::shared_ptr<LayoutEntity> entity, int frameNo) {
-    for (auto it = std::begin(m_selections); it != std::end(m_selections); /* skip */) {
-        auto& context = *it;
-        bool keep = false;
-        if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-            keep = kfCtx->entity == entity && kfCtx->current->m_frame == frameNo;
-        } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
-            keep = dkfCtx->entity == entity && dkfCtx->frame == frameNo;
-        }
-        if (!keep) {
-            it = m_selections.erase(it);
-        } else {
-            ++it;
-        }
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Row layout
@@ -1201,7 +1185,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                             } else {
                                 // When collapsed, keep sibling discrete-track keyframes at the same
                                 // frame selected so the user can move all tracks at once.
-                                FilterDiscreteKeyframeSelections(childEntity, frame);
+                                FilterKeyframeSelections(childEntity, frame);
                             }
                         }
                     }
