@@ -977,6 +977,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                         m_mouseDragging = true;
                         m_mouseDragStartX = io.MousePos.x;
+                        m_altDrag = io.KeyAlt;
                     }
                 }
 
@@ -1401,21 +1402,21 @@ void EditorPanelAnimation::CommitDragActions() {
             if (changed) {
                 actions.push_back(std::make_unique<ModifyClipAction>(groupEntity, *clipCtx->clip, clipCtx->mutableValue));
                 // Alt-drag: duplicate the original clip at its old position.
-                if (ImGui::GetIO().KeyAlt) {
+                if (m_altDrag) {
                     actions.push_back(std::make_unique<AddClipAction>(groupEntity, *clipCtx->clip));
                 }
             }
         } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
             if (eventCtx->event->m_frame != eventCtx->mutableValue.m_frame) {
                 actions.push_back(std::make_unique<ModifyEventAction>(groupEntity, *eventCtx->event, eventCtx->mutableValue));
-                if (ImGui::GetIO().KeyAlt) {
+                if (m_altDrag) {
                     actions.push_back(std::make_unique<AddEventAction>(groupEntity, eventCtx->event->m_frame, eventCtx->event->m_name));
                 }
             }
         } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
             if (kfCtx->current->m_frame != kfCtx->mutableFrame) {
                 actions.push_back(std::make_unique<MoveKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->mutableFrame));
-                if (ImGui::GetIO().KeyAlt) {
+                if (m_altDrag) {
                     actions.push_back(std::make_unique<AddKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->current->m_value, kfCtx->current->m_interpType));
                 }
             }
@@ -1481,9 +1482,12 @@ void EditorPanelAnimation::UpdateMouseDragging() {
         }
     }
 
+    m_altDrag = m_altDrag || ImGui::GetIO().KeyAlt;
+
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         m_mouseDragging = false;
         CommitDragActions();
+        m_altDrag = false;
     }
 }
 

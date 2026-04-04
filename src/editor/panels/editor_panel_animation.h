@@ -161,6 +161,7 @@ private:
 
     bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
     float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
+    bool m_altDrag = false;                 // alt was held at any point during the current drag (for duplicate-on-drag)
     int m_clipDragHandle = kClipHandleNone; // section of the clip we're dragging
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
     bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
