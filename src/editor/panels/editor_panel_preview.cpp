@@ -87,5 +87,10 @@ void EditorPanelPreview::UpdateRenderSurface(moth_ui::IntVec2 surfaceSize) {
     if (!m_renderSurface || m_currentSurfaceSize != surfaceSize) {
         m_currentSurfaceSize = surfaceSize;
         m_renderSurface = m_editorLayer.GetGraphics().CreateTarget(m_currentSurfaceSize.x, m_currentSurfaceSize.y);
+        auto& graphics = m_editorLayer.GetGraphics();
+        graphics.SetTarget(m_renderSurface.get());
+        graphics.SetColor({ 0, 0, 0, 255 });
+        graphics.Clear();
+        graphics.SetTarget(nullptr);
     }
 }
