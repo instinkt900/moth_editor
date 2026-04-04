@@ -14,7 +14,7 @@ EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
 }
 
 void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
-    auto group = std::make_unique<moth_ui::Group>(m_editorLayer.GetContext(), layout);
+    auto group = std::make_shared<moth_ui::Group>(m_editorLayer.GetContext(), layout);
     auto const& clips = layout->m_clips;
     m_clipNames.clear();
     for (auto&& clip : clips) {

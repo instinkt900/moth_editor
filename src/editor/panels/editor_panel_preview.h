@@ -20,7 +20,7 @@ private:
     void DrawContents() override;
 
     bool m_wasVisible = false;
-    std::unique_ptr<moth_ui::Node> m_root;
+    std::shared_ptr<moth_ui::Node> m_root;
     std::vector<std::string> m_clipNames;
     std::string m_selectedClip;
 
