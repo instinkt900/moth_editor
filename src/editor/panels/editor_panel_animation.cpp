@@ -95,21 +95,19 @@ void EditorPanelAnimation::OnLayoutLoaded() {
 
     m_framePixelWidth = 10.f;
 
-    m_minFrame = m_editorLayer.GetConfig().MinAnimationFrame;
     m_maxFrame = m_editorLayer.GetConfig().MaxAnimationFrame;
     m_totalFrames = m_editorLayer.GetConfig().TotalAnimationFrames;
-    m_currentFrame = m_editorLayer.GetConfig().CurrentAnimationFrame;
 
     auto layout = m_editorLayer.GetCurrentLayout();
     auto& extraData = layout->GetExtraData();
     m_persistentLayoutConfig = &extraData["animation_panel"];
     if (!m_persistentLayoutConfig->is_null()) {
-        (*m_persistentLayoutConfig)["m_minFrame"].get_to(m_minFrame);
         (*m_persistentLayoutConfig)["m_maxFrame"].get_to(m_maxFrame);
         (*m_persistentLayoutConfig)["m_totalFrames"].get_to(m_totalFrames);
-        (*m_persistentLayoutConfig)["m_currentFrame"].get_to(m_currentFrame);
     }
-    m_editorLayer.SetSelectedFrame(m_currentFrame);
+    m_currentFrame = 0;
+    m_minFrame = 0;
+    m_editorLayer.SetSelectedFrame(0);
 
     float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
     m_hScrollFactors = { static_cast<float>(m_minFrame) / totalFramesF, static_cast<float>(m_maxFrame) / totalFramesF };
@@ -117,10 +115,8 @@ void EditorPanelAnimation::OnLayoutLoaded() {
 }
 
 void EditorPanelAnimation::OnShutdown() {
-    m_editorLayer.GetConfig().MinAnimationFrame = m_minFrame;
     m_editorLayer.GetConfig().MaxAnimationFrame = m_maxFrame;
     m_editorLayer.GetConfig().TotalAnimationFrames = m_totalFrames;
-    m_editorLayer.GetConfig().CurrentAnimationFrame = m_currentFrame;
 }
 
 void EditorPanelAnimation::DrawContents() {
@@ -1497,9 +1493,7 @@ void EditorPanelAnimation::DrawWidget() {
 
     // Persist frame range to layout file so it survives editor restarts.
     if (m_persistentLayoutConfig != nullptr) {
-        (*m_persistentLayoutConfig)["m_minFrame"] = m_minFrame;
         (*m_persistentLayoutConfig)["m_maxFrame"] = m_maxFrame;
-        (*m_persistentLayoutConfig)["m_currentFrame"] = m_currentFrame;
         (*m_persistentLayoutConfig)["m_totalFrames"] = m_totalFrames;
     }
 
