@@ -373,6 +373,18 @@ DiscreteKeyframeContext* EditorPanelAnimation::GetSelectedDiscreteKeyframeContex
     return nullptr;
 }
 
+void EditorPanelAnimation::FilterDiscreteKeyframeSelections(std::shared_ptr<LayoutEntity> entity, int frameNo) {
+    for (auto it = std::begin(m_selections); it != std::end(m_selections); /* skip */) {
+        auto& context = *it;
+        auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context);
+        if (dkfCtx == nullptr || (dkfCtx->entity != entity || dkfCtx->frame != frameNo)) {
+            it = m_selections.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Row layout
 // ---------------------------------------------------------------------------
@@ -1167,7 +1179,13 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                 if (m_mouseInScrollArea && frameBounds.Contains(io.MousePos)) {
                     if (!IsDiscreteKeyframeSelected(childEntity, target, frame)) {
                         if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
-                            ClearSelections();
+                            if (expanded) {
+                                ClearSelections();
+                            } else {
+                                // When collapsed, keep sibling discrete-track keyframes at the same
+                                // frame selected so the user can move all tracks at once.
+                                FilterDiscreteKeyframeSelections(childEntity, frame);
+                            }
                         }
                     }
                     SelectDiscreteKeyframe(childEntity, target, frame);
@@ -1637,10 +1655,11 @@ void EditorPanelAnimation::CommitDragActions() {
                 if (it != dkfCtx->entity->m_discreteTracks.end()) {
                     auto* val = it->second.GetKeyframe(dkfCtx->frame);
                     std::string oldValue = (val != nullptr) ? *val : std::string{};
+                    actions.push_back(std::make_unique<MoveDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, dkfCtx->mutableFrame));
                     if (m_altDrag) {
+                        // Copy-drag: restore the original keyframe after moving to destination.
                         actions.push_back(std::make_unique<AddDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, oldValue));
                     }
-                    actions.push_back(std::make_unique<MoveDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, dkfCtx->mutableFrame));
                 }
             }
         }
@@ -1713,6 +1732,12 @@ void EditorPanelAnimation::UpdateMouseDragging() {
 
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         m_mouseDragging = false;
+        // Promote mutableFrame → frame so IsDiscreteKeyframeSelected stays in sync after the move.
+        for (auto& context : m_selections) {
+            if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+                dkfCtx->frame = dkfCtx->mutableFrame;
+            }
+        }
         CommitDragActions();
         m_altDrag = false;
     }

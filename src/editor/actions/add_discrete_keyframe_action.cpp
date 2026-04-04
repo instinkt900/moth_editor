@@ -18,12 +18,25 @@ void AddDiscreteKeyframeAction::Do() {
         auto [newIt, ok] = m_entity->m_discreteTracks.emplace(m_target, moth_ui::DiscreteAnimationTrack(m_target));
         it = newIt;
     }
+    auto* existing = it->second.GetKeyframe(m_frameNo);
+    if (existing != nullptr) {
+        m_hadPrevious = true;
+        m_previousValue = *existing;
+    } else {
+        m_hadPrevious = false;
+        m_previousValue.clear();
+    }
     it->second.GetOrCreateKeyframe(m_frameNo) = m_value;
 }
 
 void AddDiscreteKeyframeAction::Undo() {
     auto it = m_entity->m_discreteTracks.find(m_target);
-    if (it != m_entity->m_discreteTracks.end()) {
+    if (it == m_entity->m_discreteTracks.end()) {
+        return;
+    }
+    if (m_hadPrevious) {
+        it->second.GetOrCreateKeyframe(m_frameNo) = m_previousValue;
+    } else {
         it->second.DeleteKeyframe(m_frameNo);
     }
 }

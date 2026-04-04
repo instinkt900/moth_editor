@@ -117,6 +117,7 @@ private:
     void DeselectDiscreteKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
     bool IsDiscreteKeyframeSelected(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
     DiscreteKeyframeContext* GetSelectedDiscreteKeyframeContext(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
+    void FilterDiscreteKeyframeSelections(std::shared_ptr<moth_ui::LayoutEntity> entity, int frameNo);
 
     void UpdateMouseDragging();
 

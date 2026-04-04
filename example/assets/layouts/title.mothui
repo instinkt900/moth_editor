@@ -1386,9 +1386,7 @@
   "events": [],
   "extra_data": {
     "animation_panel": {
-      "m_currentFrame": 35,
       "m_maxFrame": 93,
-      "m_minFrame": 0,
       "m_totalFrames": 600
     }
   },

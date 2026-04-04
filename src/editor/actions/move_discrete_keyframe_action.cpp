@@ -13,6 +13,7 @@ MoveDiscreteKeyframeAction::MoveDiscreteKeyframeAction(std::shared_ptr<moth_ui::
 MoveDiscreteKeyframeAction::~MoveDiscreteKeyframeAction() = default;
 
 void MoveDiscreteKeyframeAction::Do() {
+    m_didMove = false;
     auto it = m_entity->m_discreteTracks.find(m_target);
     if (it == m_entity->m_discreteTracks.end()) {
         return;
@@ -34,9 +35,13 @@ void MoveDiscreteKeyframeAction::Do() {
 
     track.DeleteKeyframe(m_initialFrame);
     track.GetOrCreateKeyframe(m_finalFrame) = m_movedValue;
+    m_didMove = true;
 }
 
 void MoveDiscreteKeyframeAction::Undo() {
+    if (!m_didMove) {
+        return;
+    }
     auto it = m_entity->m_discreteTracks.find(m_target);
     if (it == m_entity->m_discreteTracks.end()) {
         return;

@@ -23,4 +23,5 @@ protected:
     std::string m_movedValue;
     std::string m_displacedValue; ///< Value that was at finalFrame before the move (for undo).
     bool m_hadDisplaced = false;
+    bool m_didMove = false; ///< Set to true only when Do() successfully performed the move.
 };

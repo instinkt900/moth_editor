@@ -20,4 +20,6 @@ protected:
     moth_ui::AnimationTrack::Target m_target;
     int m_frameNo;
     std::string m_value;
+    bool m_hadPrevious = false;  ///< True if a keyframe already existed at m_frameNo when Do() ran.
+    std::string m_previousValue; ///< Value of the overwritten keyframe, used to restore on Undo().
 };

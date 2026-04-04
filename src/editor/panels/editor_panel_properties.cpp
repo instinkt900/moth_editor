@@ -420,8 +420,10 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
 
     // Clip name — dropdown populated from the loaded flipbook.
     {
-        auto const& clipTrack = entity->m_discreteTracks.at(moth_ui::AnimationTrack::Target::FlipbookClip);
-        std::string const currentClip = clipTrack.GetValueAtFrame(m_editorLayer.GetSelectedFrame());
+        auto const clipIt = entity->m_discreteTracks.find(moth_ui::AnimationTrack::Target::FlipbookClip);
+        std::string const currentClip = (clipIt != entity->m_discreteTracks.end())
+            ? clipIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame())
+            : std::string{};
         auto const* flipbook = node->GetFlipbook();
         ImGui::SetNextItemWidth(200.0f);
         if ((flipbook != nullptr) && ImGui::BeginCombo("Clip Name", currentClip.c_str())) {
@@ -443,8 +445,9 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
 
     // Playing — checkbox.
     {
-        auto const& playingTrack = entity->m_discreteTracks.at(moth_ui::AnimationTrack::Target::FlipbookPlaying);
-        bool playing = (playingTrack.GetValueAtFrame(m_editorLayer.GetSelectedFrame()) == "1");
+        auto const playIt = entity->m_discreteTracks.find(moth_ui::AnimationTrack::Target::FlipbookPlaying);
+        bool playing = (playIt != entity->m_discreteTracks.end())
+            && (playIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame()) == "1");
         if (ImGui::Checkbox("Playing", &playing)) {
             setDiscreteKeyframe(moth_ui::AnimationTrack::Target::FlipbookPlaying, playing ? "1" : "0");
         }

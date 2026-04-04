@@ -20,6 +20,11 @@ void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
     for (auto&& clip : clips) {
         m_clipNames.push_back(clip->m_name);
     }
+    // Reset selection if the previously selected clip no longer exists in the new layout.
+    auto const it = std::find(m_clipNames.begin(), m_clipNames.end(), m_selectedClip);
+    if (it == m_clipNames.end()) {
+        m_selectedClip.clear();
+    }
     m_root = std::move(group);
 }
 
