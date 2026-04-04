@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [0.6.0] - 2026-04-04
+### Features
+- Add NodeFlipbook support to the editor
+- Auto-select newly added nodes and simplify flipbook button
+- Add discrete animation track editing for flipbook nodes
+
+### Bug Fixes
+- Clear preview render target to black on creation
+- Grow char input buffer by 256 bytes instead of 10
+- Use sticky alt flag for keyframe duplicate-on-drag
+- Store preview root as shared_ptr and clear render target on creation
+- Always reset current frame and scroll to 0 on layout open
+- Address review findings in discrete keyframe actions and animation panel
+- Free NFD-allocated paths after use and fix discrete drag commit order
+- Use concrete target for discrete-track right-click popup in collapsed rows
+- Prevent duplicate popup open and simplify discrete keyframe value edit
+- Sort discrete keyframe moves by direction to prevent same-track value clobbering
+- Preserve both keyframe types when filtering collapsed-row selections
+- Continuous track popup takes priority over discrete in collapsed rows; add discrete box-select
+
+### Refactoring
+- Remove duplicate FilterDiscreteKeyframeSelections
+
+### Documentation
+- Update README with autosave, crash recovery, and missing features
+- Trim feature list to notable features only
+
+### Miscellaneous
+- Updating example to contain a flipbook node
+- Adding moth_ui dep at version that allows latest flipbook changes
+
+### Changes
+- Remove auto-save / crash recovery item from TODO
+- Bump version from 0.5.0 to 0.6.0
+
 ## [0.5.0] - 2026-03-30
 ### Features
 - Add autosave system to moth_editor
