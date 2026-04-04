@@ -19,6 +19,9 @@ set(SOURCES ${SOURCES}
 	src/editor/actions/add_clip_action.cpp
 	src/editor/actions/add_event_action.cpp
 	src/editor/actions/add_keyframe_action.cpp
+	src/editor/actions/add_discrete_keyframe_action.cpp
+	src/editor/actions/delete_discrete_keyframe_action.cpp
+	src/editor/actions/move_discrete_keyframe_action.cpp
 	src/editor/actions/change_index_action.cpp
 	src/editor/actions/composite_action.cpp
 	src/editor/actions/delete_action.cpp

@@ -6,6 +6,7 @@
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_clip.h"
 #include "moth_ui/layout/layout_entity_text.h"
+#include "moth_ui/layout/layout_entity_flipbook.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
 #include "../element_utils.h"
@@ -27,6 +28,7 @@ namespace {
 
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
+                    NFD_Free(outPath);
                     moth_ui::LayoutRect bounds;
                     bounds.anchor.topLeft = { 0, 0 };
                     bounds.anchor.bottomRight = { 0, 0 };
@@ -45,6 +47,7 @@ namespace {
 
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
+                    NFD_Free(outPath);
                     std::shared_ptr<moth_ui::Layout> referencedLayout;
                     auto const loadResult = moth_ui::Layout::Load(filePath, &referencedLayout);
                     if (loadResult == moth_ui::Layout::LoadResult::Success) {
@@ -71,6 +74,20 @@ namespace {
         {
             "Clip Rect",
             [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityClip>(editorLayer); },
+        },
+        {
+            "Flipbook",
+            [](EditorLayer& editorLayer) {
+                auto const currentPath = std::filesystem::current_path().string();
+                nfdchar_t* outPath = NULL;
+                nfdresult_t result = NFD_OpenDialog("json", currentPath.c_str(), &outPath);
+
+                if (result == NFD_OKAY) {
+                    std::filesystem::path filePath = outPath;
+                    NFD_Free(outPath);
+                    AddEntity<moth_ui::LayoutEntityFlipbook>(editorLayer, filePath);
+                }
+            },
         },
     };
 }

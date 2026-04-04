@@ -23,6 +23,7 @@ private:
     void DrawRectProperties(std::shared_ptr<moth_ui::NodeRect> node);
     void DrawImageProperties(std::shared_ptr<moth_ui::NodeImage> node);
     void DrawTextProperties(std::shared_ptr<moth_ui::NodeText> node);
+    void DrawFlipbookProperties(std::shared_ptr<moth_ui::NodeFlipbook> node);
     void DrawRefProperties(std::shared_ptr<moth_ui::Group> node, bool recurseChildren);
     void DrawLayoutProperties(std::shared_ptr<moth_ui::Group> node);
 };

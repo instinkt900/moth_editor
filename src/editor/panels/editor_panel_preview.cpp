@@ -14,11 +14,16 @@ EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
 }
 
 void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
-    auto group = std::make_unique<moth_ui::Group>(m_editorLayer.GetContext(), layout);
+    auto group = std::make_shared<moth_ui::Group>(m_editorLayer.GetContext(), layout);
     auto const& clips = layout->m_clips;
     m_clipNames.clear();
     for (auto&& clip : clips) {
         m_clipNames.push_back(clip->m_name);
+    }
+    // Reset selection if the previously selected clip no longer exists in the new layout.
+    auto const it = std::find(m_clipNames.begin(), m_clipNames.end(), m_selectedClip);
+    if (it == m_clipNames.end()) {
+        m_selectedClip.clear();
     }
     m_root = std::move(group);
 }
@@ -87,5 +92,10 @@ void EditorPanelPreview::UpdateRenderSurface(moth_ui::IntVec2 surfaceSize) {
     if (!m_renderSurface || m_currentSurfaceSize != surfaceSize) {
         m_currentSurfaceSize = surfaceSize;
         m_renderSurface = m_editorLayer.GetGraphics().CreateTarget(m_currentSurfaceSize.x, m_currentSurfaceSize.y);
+        auto& graphics = m_editorLayer.GetGraphics();
+        graphics.SetTarget(m_renderSurface.get());
+        graphics.SetColor({ 0, 0, 0, 255 });
+        graphics.Clear();
+        graphics.SetTarget(nullptr);
     }
 }
