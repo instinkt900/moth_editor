@@ -1647,18 +1647,45 @@ void EditorPanelAnimation::CommitDragActions() {
                     actions.push_back(std::make_unique<AddKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->current->m_value, kfCtx->current->m_interpType));
                 }
             }
-        } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+        }
+    }
+
+    // Collect discrete keyframe moves separately so they can be sorted before
+    // execution. When multiple keyframes on the same track are moved in the
+    // same direction, executing them in the wrong order causes earlier moves to
+    // clobber the source values of later moves. Sorting highest-frame-first for
+    // rightward moves (and lowest-frame-first for leftward moves) ensures each
+    // action reads an untouched source before writing to its destination.
+    std::vector<DiscreteKeyframeContext const*> discreteMoveCtxs;
+    for (auto const& context : m_selections) {
+        if (auto const* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
             if (dkfCtx->frame != dkfCtx->mutableFrame) {
                 auto it = dkfCtx->entity->m_discreteTracks.find(dkfCtx->target);
                 if (it != dkfCtx->entity->m_discreteTracks.end()) {
-                    auto* val = it->second.GetKeyframe(dkfCtx->frame);
-                    std::string oldValue = (val != nullptr) ? *val : std::string{};
-                    actions.push_back(std::make_unique<MoveDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, dkfCtx->mutableFrame));
-                    if (m_altDrag) {
-                        // Copy-drag: restore the original keyframe after moving to destination.
-                        actions.push_back(std::make_unique<AddDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, oldValue));
-                    }
+                    discreteMoveCtxs.push_back(dkfCtx);
                 }
+            }
+        }
+    }
+    if (!discreteMoveCtxs.empty()) {
+        bool const movingRight = discreteMoveCtxs.front()->mutableFrame > discreteMoveCtxs.front()->frame;
+        if (movingRight) {
+            std::sort(discreteMoveCtxs.begin(), discreteMoveCtxs.end(), [](auto const* a, auto const* b) {
+                return a->frame > b->frame;
+            });
+        } else {
+            std::sort(discreteMoveCtxs.begin(), discreteMoveCtxs.end(), [](auto const* a, auto const* b) {
+                return a->frame < b->frame;
+            });
+        }
+        for (auto const* dkfCtx : discreteMoveCtxs) {
+            auto it = dkfCtx->entity->m_discreteTracks.find(dkfCtx->target);
+            auto* val = it->second.GetKeyframe(dkfCtx->frame);
+            std::string oldValue = (val != nullptr) ? *val : std::string{};
+            actions.push_back(std::make_unique<MoveDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, dkfCtx->mutableFrame));
+            if (m_altDrag) {
+                // Copy-drag: restore the original keyframe after moving to destination.
+                actions.push_back(std::make_unique<AddDiscreteKeyframeAction>(dkfCtx->entity, dkfCtx->target, dkfCtx->frame, oldValue));
             }
         }
     }
