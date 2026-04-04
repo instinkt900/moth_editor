@@ -28,6 +28,7 @@ namespace {
 
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
+                    NFD_Free(outPath);
                     moth_ui::LayoutRect bounds;
                     bounds.anchor.topLeft = { 0, 0 };
                     bounds.anchor.bottomRight = { 0, 0 };
@@ -46,6 +47,7 @@ namespace {
 
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
+                    NFD_Free(outPath);
                     std::shared_ptr<moth_ui::Layout> referencedLayout;
                     auto const loadResult = moth_ui::Layout::Load(filePath, &referencedLayout);
                     if (loadResult == moth_ui::Layout::LoadResult::Success) {
@@ -82,6 +84,7 @@ namespace {
 
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
+                    NFD_Free(outPath);
                     AddEntity<moth_ui::LayoutEntityFlipbook>(editorLayer, filePath);
                 }
             },

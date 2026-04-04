@@ -659,7 +659,9 @@ void EditorLayer::MenuFuncOpenLayout() {
     nfdresult_t result = NFD_OpenDialog(moth_ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
 
     if (result == NFD_OKAY) {
-        LoadLayout(outPath);
+        std::filesystem::path filePath = outPath;
+        NFD_Free(outPath);
+        LoadLayout(filePath);
     }
 }
 
@@ -678,6 +680,7 @@ void EditorLayer::MenuFuncSaveLayoutAs() {
 
     if (result == NFD_OKAY) {
         std::filesystem::path filePath = outPath;
+        NFD_Free(outPath);
         if (!filePath.has_extension()) {
             filePath.replace_extension(moth_ui::Layout::Extension);
         }

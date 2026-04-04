@@ -1732,13 +1732,13 @@ void EditorPanelAnimation::UpdateMouseDragging() {
 
     if (!ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         m_mouseDragging = false;
+        CommitDragActions();
         // Promote mutableFrame → frame so IsDiscreteKeyframeSelected stays in sync after the move.
         for (auto& context : m_selections) {
             if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
                 dkfCtx->frame = dkfCtx->mutableFrame;
             }
         }
-        CommitDragActions();
         m_altDrag = false;
     }
 }

@@ -301,6 +301,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
 
         if (result == NFD_OKAY) {
             std::filesystem::path filePath = outPath;
+            NFD_Free(outPath);
             auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(node->GetLayoutEntity());
             auto const oldPath = targetImageEntity->m_imagePath;
             auto const newPath = filePath;
@@ -404,6 +405,7 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
 
         if (result == NFD_OKAY) {
             std::filesystem::path filePath = outPath;
+            NFD_Free(outPath);
             auto const oldPath = entity->m_flipbookPath;
             auto action = MakeChangeValueAction(entity->m_flipbookPath, oldPath, filePath, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
