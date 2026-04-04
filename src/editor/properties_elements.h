@@ -97,7 +97,7 @@ InputBuffer<SourceType> GetBufferForValue(SourceType const& value) {
 inline InputBuffer<char const*> GetBufferForValue(char const* const& value) {
     static std::vector<char> buffer;
     auto const valueLen = strlen(value);
-    auto const wantedSize = valueLen + 10;
+    auto const wantedSize = valueLen + 256;
     if (buffer.size() < wantedSize) {
         buffer.resize(wantedSize);
     }
