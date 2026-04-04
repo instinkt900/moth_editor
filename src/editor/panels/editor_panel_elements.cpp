@@ -82,17 +82,7 @@ namespace {
 
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
-                    moth_ui::LayoutRect bounds;
-                    bounds.anchor.topLeft = { 0.5f, 0.5f };
-                    bounds.anchor.bottomRight = { 0.5f, 0.5f };
-                    bounds.offset.topLeft = { -50, -50 };
-                    bounds.offset.bottomRight = { 50, 50 };
-                    auto newEntity = std::make_shared<moth_ui::LayoutEntityFlipbook>(bounds);
-                    newEntity->m_flipbookPath = filePath;
-                    auto instance = newEntity->Instantiate(editorLayer.GetContext());
-                    auto addAction = std::make_unique<AddAction>(std::move(instance), editorLayer.GetRoot());
-                    editorLayer.PerformEditAction(std::move(addAction));
-                    editorLayer.GetRoot()->RecalculateBounds();
+                    AddEntity<moth_ui::LayoutEntityFlipbook>(editorLayer, filePath);
                 }
             },
         },
