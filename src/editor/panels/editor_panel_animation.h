@@ -91,6 +91,7 @@ private:
     using ElementContext = std::variant<ClipContext, EventContext, KeyframeContext, DiscreteKeyframeContext>;
     std::vector<ElementContext> m_selections;
     std::vector<KeyframeContext> m_pendingBoxSelections;
+    std::vector<DiscreteKeyframeContext> m_pendingDiscreteBoxSelections;
     std::vector<moth_ui::AnimationClip*> m_pendingClipBoxSelections;
     std::vector<moth_ui::AnimationEvent*> m_pendingEventBoxSelections;
 

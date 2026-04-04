@@ -1071,6 +1071,10 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         }
     }
 
+    // Shared across the continuous and discrete track loops: set to true when any
+    // right-click popup is opened so that later loops do not overwrite the state.
+    bool handledRightClick = false;
+
     for (auto& [target, track] : childTracks) {
         ImRect subTrackBounds = rowDimensions.trackBounds;
 
@@ -1137,13 +1141,14 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                     }
                 }
 
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                if (!handledRightClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                         m_clickedChildIdx = childIndex;
                         m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
                         m_clickedTargetIsDiscrete = false;
                         m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
                         ImGui::OpenPopup(KeyframePopupName);
+                        handledRightClick = true;
                     }
                 }
             }
@@ -1152,7 +1157,8 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         m_drawList->PopClipRect();
     }
 
-    // Discrete track rows
+    // Discrete track rows — reuse handledRightClick so that if a continuous-track
+    // right-click already opened the popup, discrete tracks do not overwrite it.
     for (auto& [target, track] : childEntity->m_discreteTracks) {
         ImRect subTrackBounds = rowDimensions.trackBounds;
 
@@ -1166,7 +1172,6 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         float const trackStartOffsetX = subTrackBounds.Min.x + rowDimensions.trackOffset;
         float const trackStartOffsetY = subTrackBounds.Min.y;
 
-        bool handledKeyframeClick = false;
         for (auto& [frame, value] : track.Keyframes()) {
             bool selected = IsDiscreteKeyframeSelected(childEntity, target, frame);
 
@@ -1178,6 +1183,11 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             ImVec2 const frameBoundsMin{ trackStartOffsetX + frameStartOffset, trackStartOffsetY + 2.0f };
             ImVec2 const frameBoundsMax{ trackStartOffsetX + frameEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
             ImRect const frameBounds{ frameBoundsMin, frameBoundsMax };
+
+            if (m_boxSelecting && frameBounds.Overlaps(m_selectBox)) {
+                m_pendingDiscreteBoxSelections.push_back(DiscreteKeyframeContext{ childEntity, target, frame, frame });
+                selected = true;
+            }
 
             unsigned int const slotColor = selected ? kColorElementSelected : kColorElement;
             m_drawList->AddRectFilled(frameBoundsMin, frameBoundsMax, slotColor, 0.0f);
@@ -1205,21 +1215,21 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                     }
                 }
 
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                if (!handledRightClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                         m_clickedChildIdx = childIndex;
                         m_clickedChildTarget = target;
                         m_clickedTargetIsDiscrete = true;
                         m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
                         ImGui::OpenPopup(KeyframePopupName);
-                        handledKeyframeClick = true;
+                        handledRightClick = true;
                     }
                 }
             }
         }
 
         // Right-click on empty space in discrete track row (no keyframe hit)
-        if (!handledKeyframeClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+        if (!handledRightClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                 m_clickedChildIdx = childIndex;
                 m_clickedChildTarget = target;
@@ -1555,6 +1565,7 @@ void EditorPanelAnimation::DrawWidget() {
     m_drawList = ImGui::GetWindowDrawList();
 
     m_pendingBoxSelections.clear();
+    m_pendingDiscreteBoxSelections.clear();
     m_pendingClipBoxSelections.clear();
     m_pendingEventBoxSelections.clear();
 
@@ -1594,6 +1605,9 @@ void EditorPanelAnimation::DrawWidget() {
         // Commit pending box selections now that the mouse is released.
         for (auto& pending : m_pendingBoxSelections) {
             SelectKeyframe(pending.entity, pending.target, pending.mutableFrame);
+        }
+        for (auto& pending : m_pendingDiscreteBoxSelections) {
+            SelectDiscreteKeyframe(pending.entity, pending.target, pending.frame);
         }
         for (auto* clip : m_pendingClipBoxSelections) {
             SelectClip(clip);
