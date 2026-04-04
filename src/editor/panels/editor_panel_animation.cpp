@@ -919,12 +919,8 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
                         }
 
                         if (valueChanged) {
-                            auto delAction = std::make_unique<DeleteDiscreteKeyframeAction>(childEntity, m_clickedChildTarget, dkfCtx->frame, *valPtr);
                             auto addAction = std::make_unique<AddDiscreteKeyframeAction>(childEntity, m_clickedChildTarget, dkfCtx->frame, std::move(newValue));
-                            std::vector<std::unique_ptr<IEditorAction>> actions;
-                            actions.push_back(std::move(delAction));
-                            actions.push_back(std::move(addAction));
-                            PerformOrCompositeAction(std::move(actions));
+                            m_editorLayer.PerformEditAction(std::move(addAction));
                             ImGui::CloseCurrentPopup();
                         }
                     }
@@ -1160,6 +1156,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         float const trackStartOffsetX = subTrackBounds.Min.x + rowDimensions.trackOffset;
         float const trackStartOffsetY = subTrackBounds.Min.y;
 
+        bool handledKeyframeClick = false;
         for (auto& [frame, value] : track.Keyframes()) {
             bool selected = IsDiscreteKeyframeSelected(childEntity, target, frame);
 
@@ -1205,13 +1202,14 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                         m_clickedTargetIsDiscrete = true;
                         m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
                         ImGui::OpenPopup(KeyframePopupName);
+                        handledKeyframeClick = true;
                     }
                 }
             }
         }
 
         // Right-click on empty space in discrete track row (no keyframe hit)
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+        if (!handledKeyframeClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                 m_clickedChildIdx = childIndex;
                 m_clickedChildTarget = target;
