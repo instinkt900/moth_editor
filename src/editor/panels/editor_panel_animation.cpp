@@ -1201,8 +1201,8 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                         m_clickedChildIdx = childIndex;
-                        m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
-                        m_clickedTargetIsDiscrete = expanded;
+                        m_clickedChildTarget = target;
+                        m_clickedTargetIsDiscrete = true;
                         m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
                         ImGui::OpenPopup(KeyframePopupName);
                     }
@@ -1214,8 +1214,8 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
                 m_clickedChildIdx = childIndex;
-                m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
-                m_clickedTargetIsDiscrete = expanded;
+                m_clickedChildTarget = target;
+                m_clickedTargetIsDiscrete = true;
                 m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
                 ImGui::OpenPopup(KeyframePopupName);
             }
