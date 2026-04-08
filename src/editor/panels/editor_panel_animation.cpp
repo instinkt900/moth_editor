@@ -883,9 +883,7 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
                             auto const* flipbook = (flipbookNode != nullptr) ? flipbookNode->GetFlipbook() : nullptr;
                             ImGui::SetNextItemWidth(200.0f);
                             if ((flipbook != nullptr) && ImGui::BeginCombo("##clipname", valPtr->c_str())) {
-                                moth_ui::IFlipbook::SheetDesc sheetDesc;
-                                flipbook->GetSheetDesc(sheetDesc);
-                                for (int i = 0; i < sheetDesc.NumClips; ++i) {
+                                for (int i = 0; i < flipbook->GetClipCount(); ++i) {
                                     auto const clipName = flipbook->GetClipName(i);
                                     bool selected = (clipName == *valPtr);
                                     if (ImGui::Selectable(std::string(clipName).c_str(), selected)) {
