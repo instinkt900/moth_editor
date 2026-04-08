@@ -71,6 +71,7 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
     }
 
     m_texturePacker = std::make_unique<TexturePacker>();
+    m_spriteEditor = std::make_unique<SpriteEditor>(*this);
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
@@ -172,6 +173,7 @@ void EditorLayer::Draw() {
     }
 
     m_texturePacker->Draw();
+    m_spriteEditor->Draw();
 }
 
 void EditorLayer::DrawMainMenu() {
@@ -255,6 +257,9 @@ void EditorLayer::DrawMainMenu() {
         if (ImGui::BeginMenu("Tools")) {
             if (ImGui::MenuItem("Texture Packer")) {
                 m_texturePacker->Open();
+            }
+            if (ImGui::MenuItem("Sprite Editor")) {
+                m_spriteEditor->Open();
             }
             ImGui::EndMenu();
         }

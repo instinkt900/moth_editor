@@ -6,6 +6,7 @@
 #include "confirm_prompt.h"
 #include "editor_config.h"
 #include "editor/texture_packer.h"
+#include "editor/sprite_editor.h"
 #include "editor/actions/editor_action.h"
 #include "editor/panels/editor_panel.h"
 
@@ -228,4 +229,5 @@ private:
     void LoadConfig();
 
     std::unique_ptr<TexturePacker> m_texturePacker;
+    std::unique_ptr<SpriteEditor> m_spriteEditor;
 };
