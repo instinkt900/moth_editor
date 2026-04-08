@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <vector>
 
 class EditorLayer;
 
@@ -24,4 +25,6 @@ private:
     bool m_open = false;
     char m_pathBuffer[1024] = {};
     std::shared_ptr<moth_graphics::graphics::SpriteSheet> m_spriteSheet;
+    std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry> m_frames;
+    int m_selectedFrame = -1;
 };
