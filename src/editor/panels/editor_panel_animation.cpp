@@ -491,7 +491,8 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
 
     // Clicking on the ribbon grabs the current-frame indicator.
     ImGuiIO const& io = ImGui::GetIO();
-    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && trackBounds.Contains(io.MousePos)) {
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left) && trackBounds.Contains(io.MousePos)) {
         m_grabbedCurrentFrame = true;
     }
 
@@ -1541,7 +1542,7 @@ void EditorPanelAnimation::DrawWidget() {
     trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y };
     trackAreaBounds.Max = m_scrollingPanelBounds.Max;
 
-    bool const leftClickInTrackArea = trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+    bool const leftClickInTrackArea = m_mouseInScrollArea && trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
     m_clickConsumed = !leftClickInTrackArea;
 
     m_drawList = ImGui::GetWindowDrawList();

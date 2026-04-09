@@ -123,25 +123,43 @@ void SpriteEditor::DrawPreview() {
         m_selectedFrame = hit;
     }
 
-    // Frame rect overlays — drawn with child's draw list so they clip to the scroll viewport
+    // Frame rect overlays and pivot crosses — drawn with child's draw list so they clip to the scroll viewport
     ImDrawList* const drawList = ImGui::GetWindowDrawList();
+    ImU32 const normalU32   = ImGui::ColorConvertFloat4ToU32(m_normalColor);
+    ImU32 const selectedU32 = ImGui::ColorConvertFloat4ToU32(m_selectedColor);
     for (int i = 0; i < static_cast<int>(m_frames.size()); ++i) {
         auto const& fr = m_frames[i];
+        bool const selected = (i == m_selectedFrame);
+        ImU32 const color     = selected ? selectedU32 : normalU32;
+        float const thickness = selected ? 2.0f : 1.5f;
+
         float const x0 = imagePos.x + (static_cast<float>(fr.rect.x())      * m_zoom);
         float const y0 = imagePos.y + (static_cast<float>(fr.rect.y())      * m_zoom);
         float const x1 = imagePos.x + (static_cast<float>(fr.rect.right())  * m_zoom);
         float const y1 = imagePos.y + (static_cast<float>(fr.rect.bottom()) * m_zoom);
-
-        bool const selected = (i == m_selectedFrame);
-        ImU32 const color     = selected ? IM_COL32(0, 255, 255, 255) : IM_COL32(255, 255, 0, 200);
-        float const thickness = selected ? 2.0f : 1.5f;
         drawList->AddRect({ x0, y0 }, { x1, y1 }, color, 0.0f, 0, thickness);
+
+        // Pivot cross — pivot is relative to frame top-left, fixed 5px arm length
+        float const px = imagePos.x + (static_cast<float>(fr.rect.x() + fr.pivot.x) * m_zoom);
+        float const py = imagePos.y + (static_cast<float>(fr.rect.y() + fr.pivot.y) * m_zoom);
+        constexpr float kArm = 5.0f;
+        drawList->AddLine({ px - kArm, py }, { px + kArm, py }, color, thickness);
+        drawList->AddLine({ px, py - kArm }, { px, py + kArm }, color, thickness);
     }
 
     ImGui::EndChild();
 }
 
 void SpriteEditor::DrawDataEditor() {
+    // Overlay color pickers
+    ImGui::ColorEdit4("Normal##rcol",   &m_normalColor.x,   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+    ImGui::SameLine(); ImGui::TextUnformatted("Normal");
+    ImGui::SameLine(0.0f, 16.0f);
+    ImGui::ColorEdit4("Selected##rcol", &m_selectedColor.x, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+    ImGui::SameLine(); ImGui::TextUnformatted("Selected");
+
+    ImGui::Separator();
+
     // File path input + browse
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 120.0f);
     ImGui::InputText("##sprite_path", m_pathBuffer, sizeof(m_pathBuffer) - 1);
@@ -214,37 +232,43 @@ void SpriteEditor::DrawDataEditor() {
             int y = fr.rect.y();
             int w = fr.rect.w();
             int h = fr.rect.h();
+            int pivotX = fr.pivot.x;
+            int pivotY = fr.pivot.y;
 
             ImGui::SeparatorText(fmt::format("Frame {}", m_selectedFrame).c_str());
 
-            float const halfW = (ImGui::GetContentRegionAvail().x
-                                 - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-            ImGui::SetNextItemWidth(halfW);
-            bool const xChanged = ImGui::InputInt("X##fedit", &x);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(halfW);
-            bool const yChanged = ImGui::InputInt("Y##fedit", &y);
-            ImGui::SetNextItemWidth(halfW);
-            bool const wChanged = ImGui::InputInt("W##fedit", &w);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(halfW);
-            bool const hChanged = ImGui::InputInt("H##fedit", &h);
+            // 4-column table: label | input | label | input
+            // Fixed-width label columns prevent labels from overflowing the right edge.
+            if (ImGui::BeginTable("##fedit_tbl", 4, ImGuiTableFlags_SizingFixedFit)) {
+                ImGui::TableSetupColumn("##fl1", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("##fv1", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("##fl2", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("##fv2", ImGuiTableColumnFlags_WidthStretch);
 
-            if (xChanged || yChanged || wChanged || hChanged) {
-                w = std::max(w, 1);
-                h = std::max(h, 1);
-                fr.rect = moth_graphics::MakeRect(x, y, w, h);
+                auto editRow = [](char const* l1, char const* id1, int& v1,
+                                  char const* l2, char const* id2, int& v2) -> std::pair<bool, bool> {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(l1);
+                    ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-FLT_MIN); bool const c1 = ImGui::InputInt(id1, &v1);
+                    ImGui::TableSetColumnIndex(2); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(l2);
+                    ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-FLT_MIN); bool const c2 = ImGui::InputInt(id2, &v2);
+                    return { c1, c2 };
+                };
+
+                auto const [xChanged, yChanged] = editRow("X", "##fedit_x", x, "Y", "##fedit_y", y);
+                auto const [wChanged, hChanged] = editRow("W", "##fedit_w", w, "H", "##fedit_h", h);
+                auto const [pxChanged, pyChanged] = editRow("Pivot X", "##fedit_px", pivotX, "Pivot Y", "##fedit_py", pivotY);
+
+                ImGui::EndTable();
+
+                if (xChanged || yChanged || wChanged || hChanged) {
+                    w = std::max(w, 1);
+                    h = std::max(h, 1);
+                    fr.rect = moth_graphics::MakeRect(x, y, w, h);
+                }
+                if (pxChanged) { fr.pivot.x = pivotX; }
+                if (pyChanged) { fr.pivot.y = pivotY; }
             }
-
-            int pivotX = fr.pivot.x;
-            int pivotY = fr.pivot.y;
-            ImGui::SetNextItemWidth(halfW);
-            bool const pxChanged = ImGui::InputInt("Pivot X##fedit", &pivotX);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(halfW);
-            bool const pyChanged = ImGui::InputInt("Pivot Y##fedit", &pivotY);
-            if (pxChanged) { fr.pivot.x = pivotX; }
-            if (pyChanged) { fr.pivot.y = pivotY; }
         }
     }
 
