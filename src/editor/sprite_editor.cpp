@@ -16,6 +16,10 @@ SpriteEditor::SpriteEditor(EditorLayer& editorLayer)
 
 void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
     m_selectedFrame = -1;
+    m_selectedClip = -1;
+    m_clipPlaying = false;
+    m_clipCurrentStep = 0;
+    m_clipElapsedMs = 0.0f;
     m_zoom = -1.0f; // trigger auto-fit on next draw
     m_frames.clear();
 
@@ -287,6 +291,115 @@ void SpriteEditor::DrawDataEditor() {
     // ---- Clip list (editable) ----
     ImGui::Text("Clips: %d", static_cast<int>(m_clips.size()));
 
+    // ---- Clip preview ----
+    if (m_selectedClip >= 0 && m_selectedClip < static_cast<int>(m_clips.size())) {
+        auto const& clip = m_clips[m_selectedClip];
+
+        // Advance animation
+        if (m_clipPlaying && !clip.desc.frames.empty()) {
+            m_clipElapsedMs += ImGui::GetIO().DeltaTime * 1000.0f;
+            while (m_clipPlaying) {
+                int const dur = std::max(clip.desc.frames[m_clipCurrentStep].durationMs, 1);
+                if (m_clipElapsedMs < static_cast<float>(dur)) {
+                    break;
+                }
+                m_clipElapsedMs -= static_cast<float>(dur);
+                int const next = m_clipCurrentStep + 1;
+                if (next >= static_cast<int>(clip.desc.frames.size())) {
+                    switch (clip.desc.loop) {
+                    case moth_graphics::graphics::SpriteSheet::LoopType::Stop:
+                        m_clipCurrentStep = static_cast<int>(clip.desc.frames.size()) - 1;
+                        m_clipPlaying = false;
+                        m_clipElapsedMs = 0.0f;
+                        break;
+                    case moth_graphics::graphics::SpriteSheet::LoopType::Reset:
+                        m_clipCurrentStep = 0;
+                        m_clipPlaying = false;
+                        m_clipElapsedMs = 0.0f;
+                        break;
+                    case moth_graphics::graphics::SpriteSheet::LoopType::Loop:
+                        m_clipCurrentStep = 0;
+                        break;
+                    }
+                } else {
+                    m_clipCurrentStep = next;
+                }
+            }
+        }
+
+        // Draw the current frame
+        auto const* image = m_spriteSheet->GetImage().get();
+        if (image != nullptr && !clip.desc.frames.empty()) {
+            m_clipCurrentStep = std::clamp(m_clipCurrentStep, 0, static_cast<int>(clip.desc.frames.size()) - 1);
+            int const frameIdx = clip.desc.frames[m_clipCurrentStep].frameIndex;
+            if (frameIdx >= 0 && frameIdx < static_cast<int>(m_frames.size())) {
+                auto const& fr = m_frames[frameIdx];
+                float const imgW = static_cast<float>(image->GetWidth());
+                float const imgH = static_cast<float>(image->GetHeight());
+
+                moth_graphics::FloatVec2 const uv0{
+                    static_cast<float>(fr.rect.x())     / imgW,
+                    static_cast<float>(fr.rect.y())     / imgH };
+                moth_graphics::FloatVec2 const uv1{
+                    static_cast<float>(fr.rect.right())  / imgW,
+                    static_cast<float>(fr.rect.bottom()) / imgH };
+
+                constexpr float kPreviewH = 120.0f;
+                float const aspect = (fr.rect.h() > 0)
+                    ? (static_cast<float>(fr.rect.w()) / static_cast<float>(fr.rect.h()))
+                    : 1.0f;
+                float const availW = ImGui::GetContentRegionAvail().x;
+                float dispW = kPreviewH * aspect;
+                float dispH = kPreviewH;
+                if (dispW > availW) {
+                    dispW = availW;
+                    dispH = (aspect > 0.0f) ? (availW / aspect) : kPreviewH;
+                }
+
+                float const offsetX = (availW - dispW) * 0.5f;
+                if (offsetX > 0.0f) {
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
+                }
+                image->ImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
+            }
+        } else if (clip.desc.frames.empty()) {
+            ImGui::TextDisabled("(no steps)");
+        }
+
+        // Playback controls
+        if (ImGui::Button(m_clipPlaying ? "Stop" : "Play")) {
+            if (m_clipPlaying) {
+                m_clipPlaying = false;
+            } else {
+                m_clipCurrentStep = 0;
+                m_clipElapsedMs = 0.0f;
+                m_clipPlaying = true;
+            }
+        }
+        ImGui::SameLine();
+        int const totalSteps = static_cast<int>(clip.desc.frames.size());
+        if (ImGui::Button("Step") && totalSteps > 0) {
+            m_clipPlaying = false;
+            m_clipElapsedMs = 0.0f;
+            int const next = m_clipCurrentStep + 1;
+            if (next >= totalSteps) {
+                switch (clip.desc.loop) {
+                case moth_graphics::graphics::SpriteSheet::LoopType::Stop:
+                    m_clipCurrentStep = totalSteps - 1;
+                    break;
+                case moth_graphics::graphics::SpriteSheet::LoopType::Reset:
+                case moth_graphics::graphics::SpriteSheet::LoopType::Loop:
+                    m_clipCurrentStep = 0;
+                    break;
+                }
+            } else {
+                m_clipCurrentStep = next;
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Text("Step %d / %d  \"%s\"", totalSteps > 0 ? m_clipCurrentStep + 1 : 0, totalSteps, clip.name.c_str());
+    }
+
     // New-clip row
     {
         float const addBtnW = ImGui::CalcTextSize("+ Clip").x + (ImGui::GetStyle().FramePadding.x * 2.0f);
@@ -314,6 +427,12 @@ void SpriteEditor::DrawDataEditor() {
             // Tree node with stable ID so rename doesn't collapse it
             std::string const nodeLabel = fmt::format("{} ({} steps)###clip_{}", clip.name, clip.desc.frames.size(), c);
             bool const open = ImGui::TreeNode(nodeLabel.c_str());
+            if (ImGui::IsItemClicked()) {
+                m_selectedClip = c;
+                m_clipCurrentStep = 0;
+                m_clipElapsedMs = 0.0f;
+                m_clipPlaying = false;
+            }
             ImGui::SameLine();
             if (ImGui::SmallButton("X")) {
                 clipToDelete = c;
@@ -404,6 +523,12 @@ void SpriteEditor::DrawDataEditor() {
 
         if (clipToDelete >= 0) {
             m_clips.erase(m_clips.begin() + clipToDelete);
+            if (m_selectedClip == clipToDelete) {
+                m_selectedClip = -1;
+                m_clipPlaying = false;
+            } else if (m_selectedClip > clipToDelete) {
+                m_selectedClip--;
+            }
         }
     }
 }
