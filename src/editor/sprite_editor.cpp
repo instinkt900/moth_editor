@@ -283,6 +283,26 @@ void SpriteEditor::DrawDataEditor() {
                 if (pxChanged) { fr.pivot.x = pivotX; }
                 if (pyChanged) { fr.pivot.y = pivotY; }
             }
+
+            // Pivot preset grid
+            {
+                int const hw = fr.rect.w() / 2;
+                int const hh = fr.rect.h() / 2;
+                int const fw = fr.rect.w();
+                int const fh = fr.rect.h();
+                float const btnW = (ImGui::GetContentRegionAvail().x - (ImGui::GetStyle().ItemSpacing.x * 2.0f)) / 3.0f;
+                ImVec2 const bs{ btnW, 0.0f };
+
+                if (ImGui::Button("TL##pv", bs)) { fr.pivot.x = 0;  fr.pivot.y = 0;  }  ImGui::SameLine();
+                if (ImGui::Button("T##pv",  bs)) { fr.pivot.x = hw; fr.pivot.y = 0;  }  ImGui::SameLine();
+                if (ImGui::Button("TR##pv", bs)) { fr.pivot.x = fw; fr.pivot.y = 0;  }
+                if (ImGui::Button("L##pv",  bs)) { fr.pivot.x = 0;  fr.pivot.y = hh; }  ImGui::SameLine();
+                if (ImGui::Button("C##pv",  bs)) { fr.pivot.x = hw; fr.pivot.y = hh; }  ImGui::SameLine();
+                if (ImGui::Button("R##pv",  bs)) { fr.pivot.x = fw; fr.pivot.y = hh; }
+                if (ImGui::Button("BL##pv", bs)) { fr.pivot.x = 0;  fr.pivot.y = fh; }  ImGui::SameLine();
+                if (ImGui::Button("B##pv",  bs)) { fr.pivot.x = hw; fr.pivot.y = fh; }  ImGui::SameLine();
+                if (ImGui::Button("BR##pv", bs)) { fr.pivot.x = fw; fr.pivot.y = fh; }
+            }
         }
     }
 
