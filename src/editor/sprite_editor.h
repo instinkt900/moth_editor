@@ -26,8 +26,10 @@ private:
     char m_pathBuffer[1024] = {};
     std::shared_ptr<moth_graphics::graphics::SpriteSheet> m_spriteSheet;
     std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry> m_frames;
+    std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry> m_clips;
     int m_selectedFrame = -1;
     float m_zoom = 1.0f; // -1 = auto-fit on next draw
     ImVec4 m_normalColor{ 1.0f, 1.0f, 0.0f, 200.0f / 255.0f };
     ImVec4 m_selectedColor{ 0.0f, 1.0f, 1.0f, 1.0f };
+    char m_newClipNameBuffer[256] = {};
 };

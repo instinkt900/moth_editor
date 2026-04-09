@@ -32,6 +32,16 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
         m_spriteSheet->GetFrameDesc(i, entry);
         m_frames.push_back(entry);
     }
+
+    m_clips.clear();
+    int const clipCount = m_spriteSheet->GetClipCount();
+    m_clips.reserve(static_cast<size_t>(clipCount));
+    for (int i = 0; i < clipCount; ++i) {
+        moth_graphics::graphics::SpriteSheet::ClipEntry entry;
+        entry.name = m_spriteSheet->GetClipName(i);
+        m_spriteSheet->GetClipDesc(entry.name, entry.desc);
+        m_clips.push_back(std::move(entry));
+    }
 }
 
 void SpriteEditor::DrawPreview() {
@@ -274,43 +284,126 @@ void SpriteEditor::DrawDataEditor() {
 
     ImGui::Separator();
 
-    // ---- Clip list (read-only) ----
-    int const clipCount = m_spriteSheet->GetClipCount();
-    ImGui::Text("Clips: %d", clipCount);
+    // ---- Clip list (editable) ----
+    ImGui::Text("Clips: %d", static_cast<int>(m_clips.size()));
+
+    // New-clip row
+    {
+        float const addBtnW = ImGui::CalcTextSize("+ Clip").x + (ImGui::GetStyle().FramePadding.x * 2.0f);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - addBtnW - ImGui::GetStyle().ItemSpacing.x);
+        ImGui::InputText("##new_clip_name", m_newClipNameBuffer, sizeof(m_newClipNameBuffer) - 1);
+        ImGui::SameLine();
+        if (ImGui::Button("+ Clip")) {
+            if (m_newClipNameBuffer[0] != '\0') {
+                moth_graphics::graphics::SpriteSheet::ClipEntry newClip;
+                newClip.name = m_newClipNameBuffer;
+                newClip.desc.loop = moth_graphics::graphics::SpriteSheet::LoopType::Stop;
+                m_clips.push_back(std::move(newClip));
+                m_newClipNameBuffer[0] = '\0';
+            }
+        }
+    }
 
     if (ImGui::CollapsingHeader("Clips", ImGuiTreeNodeFlags_DefaultOpen)) {
-        for (int c = 0; c < clipCount; ++c) {
-            auto const clipName = m_spriteSheet->GetClipName(c);
-            moth_graphics::graphics::SpriteSheet::ClipDesc clipDesc;
-            if (!m_spriteSheet->GetClipDesc(clipName, clipDesc)) {
-                continue;
+        int clipToDelete = -1;
+
+        for (int c = 0; c < static_cast<int>(m_clips.size()); ++c) {
+            auto& clip = m_clips[c];
+            ImGui::PushID(c);
+
+            // Tree node with stable ID so rename doesn't collapse it
+            std::string const nodeLabel = fmt::format("{} ({} steps)###clip_{}", clip.name, clip.desc.frames.size(), c);
+            bool const open = ImGui::TreeNode(nodeLabel.c_str());
+            ImGui::SameLine();
+            if (ImGui::SmallButton("X")) {
+                clipToDelete = c;
             }
 
-            std::string const nodeLabel = fmt::format("{} ({} steps)###clip_{}", clipName, clipDesc.frames.size(), c);
-            if (ImGui::TreeNode(nodeLabel.c_str())) {
-                char const* loopStr = nullptr;
-                switch (clipDesc.loop) {
-                case moth_graphics::graphics::SpriteSheet::LoopType::Stop:  loopStr = "stop";  break;
-                case moth_graphics::graphics::SpriteSheet::LoopType::Reset: loopStr = "reset"; break;
-                case moth_graphics::graphics::SpriteSheet::LoopType::Loop:  loopStr = "loop";  break;
+            if (open) {
+                // Name
+                char nameBuf[256];
+                strncpy(nameBuf, clip.name.c_str(), sizeof(nameBuf) - 1);
+                nameBuf[sizeof(nameBuf) - 1] = '\0';
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                if (ImGui::InputText("##cname", nameBuf, sizeof(nameBuf))) {
+                    clip.name = nameBuf;
                 }
-                ImGui::Text("Loop: %s", loopStr);
-                if (!clipDesc.frames.empty()) {
-                    ImGui::Text("Frame duration: %d ms", clipDesc.frames[0].durationMs);
+
+                // Loop type
+                static char const* const kLoopItems[] = { "Stop", "Reset", "Loop" };
+                int loopIdx = static_cast<int>(clip.desc.loop);
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                if (ImGui::Combo("##loop", &loopIdx, kLoopItems, 3)) {
+                    clip.desc.loop = static_cast<moth_graphics::graphics::SpriteSheet::LoopType>(loopIdx);
                 }
-                if (ImGui::BeginTable("##clip_steps", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-                    ImGui::TableSetupColumn("Step",  ImGuiTableColumnFlags_WidthFixed, 40.0f);
+
+                // Steps table: # | Frame | ms | [X]
+                int stepToDelete = -1;
+                int const maxFrameIdx = static_cast<int>(m_frames.size()) - 1;
+
+                if (ImGui::BeginTable("##steps", 4,
+                        ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit)) {
+                    ImGui::TableSetupColumn("#",     ImGuiTableColumnFlags_WidthFixed,  25.0f);
                     ImGui::TableSetupColumn("Frame", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("ms",    ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("",      ImGuiTableColumnFlags_WidthFixed,  22.0f);
                     ImGui::TableHeadersRow();
-                    for (int f = 0; f < static_cast<int>(clipDesc.frames.size()); ++f) {
+
+                    for (int f = 0; f < static_cast<int>(clip.desc.frames.size()); ++f) {
+                        auto& step = clip.desc.frames[f];
                         ImGui::TableNextRow();
-                        ImGui::TableSetColumnIndex(0); ImGui::Text("%d", f);
-                        ImGui::TableSetColumnIndex(1); ImGui::Text("%d", clipDesc.frames[f].frameIndex);
+                        ImGui::PushID(f);
+
+                        ImGui::TableSetColumnIndex(0);
+                        bool const stepSelected = (m_selectedFrame == step.frameIndex);
+                        if (ImGui::Selectable(fmt::format("{}", f).c_str(), stepSelected,
+                                ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap,
+                                ImVec2(0, 0))) {
+                            m_selectedFrame = step.frameIndex;
+                        }
+
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::SetNextItemWidth(-FLT_MIN);
+                        if (ImGui::InputInt("##fi", &step.frameIndex, 0, 0)) {
+                            step.frameIndex = std::clamp(step.frameIndex, 0, std::max(maxFrameIdx, 0));
+                        }
+
+                        ImGui::TableSetColumnIndex(2);
+                        ImGui::SetNextItemWidth(-FLT_MIN);
+                        if (ImGui::InputInt("##ms", &step.durationMs, 0, 0)) {
+                            step.durationMs = std::max(step.durationMs, 0);
+                        }
+
+                        ImGui::TableSetColumnIndex(3);
+                        if (ImGui::SmallButton("X")) {
+                            stepToDelete = f;
+                        }
+
+                        ImGui::PopID();
                     }
                     ImGui::EndTable();
                 }
+
+                if (stepToDelete >= 0) {
+                    clip.desc.frames.erase(clip.desc.frames.begin() + stepToDelete);
+                }
+
+                // Add step — defaults to the currently selected frame (or 0)
+                if (ImGui::Button("+ Step")) {
+                    moth_graphics::graphics::SpriteSheet::ClipFrame newStep;
+                    newStep.frameIndex = (m_selectedFrame >= 0) ? m_selectedFrame : 0;
+                    newStep.durationMs = clip.desc.frames.empty() ? 100 : clip.desc.frames.back().durationMs;
+                    clip.desc.frames.push_back(newStep);
+                }
+
                 ImGui::TreePop();
             }
+
+            ImGui::PopID();
+        }
+
+        if (clipToDelete >= 0) {
+            m_clips.erase(m_clips.begin() + clipToDelete);
         }
     }
 }
