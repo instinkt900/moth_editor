@@ -347,43 +347,91 @@ void SpriteEditor::DrawDataEditor() {
             }
         }
 
-        // Draw the current frame
+        // Draw the current frame, pivot-aligned
         auto const* image = m_spriteSheet->GetImage().get();
-        if (image != nullptr && !clip.desc.frames.empty()) {
+        if (clip.desc.frames.empty()) {
+            ImGui::TextDisabled("(no steps)");
+        } else if (image != nullptr) {
             m_clipCurrentStep = std::clamp(m_clipCurrentStep, 0, static_cast<int>(clip.desc.frames.size()) - 1);
+            int const maxFrameIdx = static_cast<int>(m_frames.size()) - 1;
+
+            // Bounding box in pivot-relative space: covers all steps so the
+            // anchor stays fixed as frames change.
+            int minOX = 0;
+            int maxOX = 1;
+            int minOY = 0;
+            int maxOY = 1;
+            bool firstStep = true;
+            for (auto const& step : clip.desc.frames) {
+                int const fi = std::clamp(step.frameIndex, 0, std::max(maxFrameIdx, 0));
+                if (maxFrameIdx < 0) { break; }
+                auto const& f = m_frames[fi];
+                if (firstStep) {
+                    minOX = -f.pivot.x;               maxOX = f.rect.w() - f.pivot.x;
+                    minOY = -f.pivot.y;               maxOY = f.rect.h() - f.pivot.y;
+                    firstStep = false;
+                } else {
+                    minOX = std::min(minOX, -f.pivot.x);
+                    maxOX = std::max(maxOX, f.rect.w() - f.pivot.x);
+                    minOY = std::min(minOY, -f.pivot.y);
+                    maxOY = std::max(maxOY, f.rect.h() - f.pivot.y);
+                }
+            }
+            int const boundW = std::max(maxOX - minOX, 1);
+            int const boundH = std::max(maxOY - minOY, 1);
+
+            constexpr float kPreviewH = 120.0f;
+            float const availW = ImGui::GetContentRegionAvail().x;
+            float const zoom = std::min(availW / static_cast<float>(boundW),
+                                        kPreviewH / static_cast<float>(boundH));
+            float const contentW = static_cast<float>(boundW) * zoom;
+            float const contentH = static_cast<float>(boundH) * zoom;
+
+            // Reserve canvas space
+            ImVec2 const canvasMin = ImGui::GetCursorScreenPos();
+            ImVec2 const canvasMax{ canvasMin.x + availW, canvasMin.y + kPreviewH };
+            ImGui::InvisibleButton("##clip_canvas", ImVec2{ availW, kPreviewH });
+
+            // Pivot anchor in screen space (centered within canvas)
+            float const anchorX = canvasMin.x + ((availW   - contentW) * 0.5f) + (static_cast<float>(-minOX) * zoom);
+            float const anchorY = canvasMin.y + ((kPreviewH - contentH) * 0.5f) + (static_cast<float>(-minOY) * zoom);
+
+            ImDrawList* const dl = ImGui::GetWindowDrawList();
+            dl->PushClipRect(canvasMin, canvasMax, true);
+            dl->AddRectFilled(canvasMin, canvasMax, IM_COL32(30, 30, 30, 200));
+
+            // Draw current frame positioned so its pivot lands on anchorX/Y
             int const frameIdx = clip.desc.frames[m_clipCurrentStep].frameIndex;
-            if (frameIdx >= 0 && frameIdx < static_cast<int>(m_frames.size())) {
+            if (frameIdx >= 0 && frameIdx <= maxFrameIdx) {
                 auto const& fr = m_frames[frameIdx];
                 float const imgW = static_cast<float>(image->GetWidth());
                 float const imgH = static_cast<float>(image->GetHeight());
 
                 moth_graphics::FloatVec2 const uv0{
-                    static_cast<float>(fr.rect.x())     / imgW,
-                    static_cast<float>(fr.rect.y())     / imgH };
+                    static_cast<float>(fr.rect.x())      / imgW,
+                    static_cast<float>(fr.rect.y())      / imgH };
                 moth_graphics::FloatVec2 const uv1{
                     static_cast<float>(fr.rect.right())  / imgW,
                     static_cast<float>(fr.rect.bottom()) / imgH };
 
-                constexpr float kPreviewH = 120.0f;
-                float const aspect = (fr.rect.h() > 0)
-                    ? (static_cast<float>(fr.rect.w()) / static_cast<float>(fr.rect.h()))
-                    : 1.0f;
-                float const availW = ImGui::GetContentRegionAvail().x;
-                float dispW = kPreviewH * aspect;
-                float dispH = kPreviewH;
-                if (dispW > availW) {
-                    dispW = availW;
-                    dispH = (aspect > 0.0f) ? (availW / aspect) : kPreviewH;
-                }
+                float const fx = anchorX - (static_cast<float>(fr.pivot.x) * zoom);
+                float const fy = anchorY - (static_cast<float>(fr.pivot.y) * zoom);
+                float const fw = static_cast<float>(fr.rect.w()) * zoom;
+                float const fh = static_cast<float>(fr.rect.h()) * zoom;
 
-                float const offsetX = (availW - dispW) * 0.5f;
-                if (offsetX > 0.0f) {
-                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
-                }
-                image->ImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
+                ImGui::SetCursorScreenPos({ fx, fy });
+                image->ImGui({ static_cast<int>(fw), static_cast<int>(fh) }, uv0, uv1);
             }
-        } else if (clip.desc.frames.empty()) {
-            ImGui::TextDisabled("(no steps)");
+
+            // Pivot crosshair
+            constexpr float kArm = 5.0f;
+            dl->AddLine({ anchorX - kArm, anchorY }, { anchorX + kArm, anchorY }, IM_COL32(255, 80, 80, 220), 1.5f);
+            dl->AddLine({ anchorX, anchorY - kArm }, { anchorX, anchorY + kArm }, IM_COL32(255, 80, 80, 220), 1.5f);
+
+            dl->PopClipRect();
+
+            // Restore cursor to below the canvas
+            ImGui::SetCursorScreenPos({ canvasMin.x, canvasMax.y + ImGui::GetStyle().ItemSpacing.y });
         }
 
         // Playback controls
