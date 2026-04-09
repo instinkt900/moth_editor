@@ -18,6 +18,7 @@ public:
 
 private:
     void LoadSpriteSheet(std::filesystem::path const& path);
+    void SaveSpriteSheet();
     void DrawPreview();
     void DrawDataEditor();
 
