@@ -224,26 +224,33 @@ void SpriteEditor::DrawPreview() {
 
     // Frame rect overlays and pivot crosses — drawn with child's draw list so they clip to the scroll viewport
     ImDrawList* const drawList = ImGui::GetWindowDrawList();
-    ImU32 const normalU32   = ImGui::ColorConvertFloat4ToU32(m_normalColor);
-    ImU32 const selectedU32 = ImGui::ColorConvertFloat4ToU32(m_selectedColor);
+    auto const& cfg = m_editorLayer.GetConfig();
+    auto const toU32 = [](moth_ui::Color const& c) {
+        return ImGui::ColorConvertFloat4ToU32(ImVec4{ c.data[0], c.data[1], c.data[2], c.data[3] });
+    };
+    ImU32 const normalU32   = toU32(cfg.SpriteEditorNormalColor);
+    ImU32 const selectedU32 = toU32(cfg.SpriteEditorSelectedColor);
     for (int i = 0; i < static_cast<int>(m_frames.size()); ++i) {
         auto const& fr = m_frames[i];
         bool const selected = (i == m_selectedFrame);
         ImU32 const color     = selected ? selectedU32 : normalU32;
-        float const thickness = selected ? 2.0f : 1.5f;
+        float const thickness = static_cast<float>(cfg.SpriteEditorRectThickness);
+        // AddRect centers its stroke on the boundary; offset by half-thickness
+        // outward so the inner edge of the line exactly borders the frame.
+        float const half = thickness * 0.5f;
 
-        float const x0 = imagePos.x + (static_cast<float>(fr.rect.x())      * m_zoom);
-        float const y0 = imagePos.y + (static_cast<float>(fr.rect.y())      * m_zoom);
-        float const x1 = imagePos.x + (static_cast<float>(fr.rect.right())  * m_zoom);
-        float const y1 = imagePos.y + (static_cast<float>(fr.rect.bottom()) * m_zoom);
+        float const x0 = imagePos.x + (static_cast<float>(fr.rect.x())      * m_zoom) - half;
+        float const y0 = imagePos.y + (static_cast<float>(fr.rect.y())      * m_zoom) - half;
+        float const x1 = imagePos.x + (static_cast<float>(fr.rect.right())  * m_zoom) + half;
+        float const y1 = imagePos.y + (static_cast<float>(fr.rect.bottom()) * m_zoom) + half;
         drawList->AddRect({ x0, y0 }, { x1, y1 }, color, 0.0f, 0, thickness);
 
         // Pivot cross — pivot is relative to frame top-left, fixed 5px arm length
         float const px = imagePos.x + (static_cast<float>(fr.rect.x() + fr.pivot.x) * m_zoom);
         float const py = imagePos.y + (static_cast<float>(fr.rect.y() + fr.pivot.y) * m_zoom);
         constexpr float kArm = 5.0f;
-        drawList->AddLine({ px - kArm, py }, { px + kArm, py }, color, thickness);
-        drawList->AddLine({ px, py - kArm }, { px, py + kArm }, color, thickness);
+        drawList->AddLine({ px - kArm, py }, { px + kArm, py }, color, 1.5f);
+        drawList->AddLine({ px, py - kArm }, { px, py + kArm }, color, 1.5f);
     }
 
     ImGui::EndChild();
@@ -251,11 +258,18 @@ void SpriteEditor::DrawPreview() {
 
 void SpriteEditor::DrawDataEditor() {
     // Overlay color pickers
-    ImGui::ColorEdit4("Normal##rcol",   &m_normalColor.x,   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+    auto& cfg = m_editorLayer.GetConfig();
+    ImGui::ColorEdit4("Normal##rcol",   cfg.SpriteEditorNormalColor.data,   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
     ImGui::SameLine(); ImGui::TextUnformatted("Normal");
     ImGui::SameLine(0.0f, 16.0f);
-    ImGui::ColorEdit4("Selected##rcol", &m_selectedColor.x, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
+    ImGui::ColorEdit4("Selected##rcol", cfg.SpriteEditorSelectedColor.data, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
     ImGui::SameLine(); ImGui::TextUnformatted("Selected");
+    ImGui::SameLine(0.0f, 16.0f);
+    ImGui::TextUnformatted("Thickness");
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(80.0f);
+    ImGui::InputInt("##rthick", &cfg.SpriteEditorRectThickness);
+    cfg.SpriteEditorRectThickness = std::max(1, cfg.SpriteEditorRectThickness);
 
     ImGui::Separator();
 
@@ -380,7 +394,8 @@ void SpriteEditor::DrawDataEditor() {
                 float const py = imagePos.y + (static_cast<float>(fr.pivot.y) * scaleY);
                 ImDrawList* const dl = ImGui::GetWindowDrawList();
                 constexpr float kArm = 5.0f;
-                ImU32 const crossColor = ImGui::ColorConvertFloat4ToU32(m_selectedColor);
+                auto const& selCol = cfg.SpriteEditorSelectedColor;
+                ImU32 const crossColor = ImGui::ColorConvertFloat4ToU32(ImVec4{ selCol.data[0], selCol.data[1], selCol.data[2], selCol.data[3] });
                 dl->AddLine({ px - kArm, py }, { px + kArm, py }, crossColor, 1.5f);
                 dl->AddLine({ px, py - kArm }, { px, py + kArm }, crossColor, 1.5f);
             } else {
