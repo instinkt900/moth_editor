@@ -27,4 +27,5 @@ private:
     std::shared_ptr<moth_graphics::graphics::SpriteSheet> m_spriteSheet;
     std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry> m_frames;
     int m_selectedFrame = -1;
+    float m_zoom = 1.0f; // -1 = auto-fit on next draw
 };
