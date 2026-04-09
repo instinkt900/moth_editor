@@ -288,37 +288,105 @@ void SpriteEditor::DrawDataEditor() {
     ImGui::Text("Frames: %d", static_cast<int>(m_frames.size()));
 
     if (ImGui::CollapsingHeader("Frames", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::BeginTable("##frames_table", 5,
-                ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
-                ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchSame,
-                ImVec2(0.0f, 150.0f))) {
-            ImGui::TableSetupScrollFreeze(0, 1);
-            ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30.0f);
-            ImGui::TableSetupColumn("X", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("Y", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("W", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableSetupColumn("H", ImGuiTableColumnFlags_WidthStretch);
-            ImGui::TableHeadersRow();
+        // Side-by-side: frame list (left) + selected frame preview (right)
+        if (ImGui::BeginTable("##frames_layout", 2, ImGuiTableFlags_SizingFixedFit)) {
+            ImGui::TableSetupColumn("##fl_list", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("##fl_prev", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+            ImGui::TableNextRow();
 
-            for (int i = 0; i < static_cast<int>(m_frames.size()); ++i) {
-                auto const& fr = m_frames[i];
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
+            // Frame list
+            ImGui::TableSetColumnIndex(0);
+            if (ImGui::BeginTable("##frames_table", 5,
+                    ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                    ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchSame,
+                    ImVec2(0.0f, 150.0f))) {
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30.0f);
+                ImGui::TableSetupColumn("X", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Y", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("W", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("H", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableHeadersRow();
 
-                ImGui::PushID(i);
-                bool const isSelected = (m_selectedFrame == i);
-                if (ImGui::Selectable(fmt::format("{}", i).c_str(), isSelected,
-                        ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap,
-                        ImVec2(0, 0))) {
-                    m_selectedFrame = isSelected ? -1 : i;
+                for (int i = 0; i < static_cast<int>(m_frames.size()); ++i) {
+                    auto const& fr = m_frames[i];
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+
+                    ImGui::PushID(i);
+                    bool const isSelected = (m_selectedFrame == i);
+                    if (ImGui::Selectable(fmt::format("{}", i).c_str(), isSelected,
+                            ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap,
+                            ImVec2(0, 0))) {
+                        m_selectedFrame = isSelected ? -1 : i;
+                    }
+                    ImGui::PopID();
+
+                    ImGui::TableSetColumnIndex(1); ImGui::Text("%d", fr.rect.x());
+                    ImGui::TableSetColumnIndex(2); ImGui::Text("%d", fr.rect.y());
+                    ImGui::TableSetColumnIndex(3); ImGui::Text("%d", fr.rect.w());
+                    ImGui::TableSetColumnIndex(4); ImGui::Text("%d", fr.rect.h());
                 }
-                ImGui::PopID();
-
-                ImGui::TableSetColumnIndex(1); ImGui::Text("%d", fr.rect.x());
-                ImGui::TableSetColumnIndex(2); ImGui::Text("%d", fr.rect.y());
-                ImGui::TableSetColumnIndex(3); ImGui::Text("%d", fr.rect.w());
-                ImGui::TableSetColumnIndex(4); ImGui::Text("%d", fr.rect.h());
+                ImGui::EndTable();
             }
+
+            // Selected frame preview (with pivot drag)
+            ImGui::TableSetColumnIndex(1);
+            auto const* image = m_spriteSheet->GetImage().get();
+            if (image != nullptr && m_selectedFrame >= 0 && m_selectedFrame < static_cast<int>(m_frames.size())) {
+                auto& fr = m_frames[m_selectedFrame];
+                float const imgW = static_cast<float>(image->GetWidth());
+                float const imgH = static_cast<float>(image->GetHeight());
+                moth_graphics::FloatVec2 const uv0{ static_cast<float>(fr.rect.x())     / imgW,
+                                                    static_cast<float>(fr.rect.y())     / imgH };
+                moth_graphics::FloatVec2 const uv1{ static_cast<float>(fr.rect.right())  / imgW,
+                                                    static_cast<float>(fr.rect.bottom()) / imgH };
+                constexpr float kMaxH = 150.0f;
+                float const col = ImGui::GetContentRegionAvail().x;
+                float const aspect = (fr.rect.h() > 0)
+                    ? (static_cast<float>(fr.rect.w()) / static_cast<float>(fr.rect.h()))
+                    : 1.0f;
+                float dispW = col;
+                float dispH = (aspect > 0.0f) ? (col / aspect) : kMaxH;
+                if (dispH > kMaxH) {
+                    dispH = kMaxH;
+                    dispW = kMaxH * aspect;
+                }
+
+                // InvisibleButton first so it captures mouse focus and prevents
+                // window dragging when the user drags to reposition the pivot.
+                ImVec2 const imagePos = ImGui::GetCursorScreenPos();
+                ImGui::InvisibleButton("##fp_interact", ImVec2{ dispW, dispH });
+                bool const fpActive = ImGui::IsItemActive();
+
+                // Draw image at the same position
+                ImGui::SetCursorScreenPos(imagePos);
+                image->ImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
+
+                float const scaleX = (fr.rect.w() > 0) ? (dispW / static_cast<float>(fr.rect.w())) : 1.0f;
+                float const scaleY = (fr.rect.h() > 0) ? (dispH / static_cast<float>(fr.rect.h())) : 1.0f;
+
+                // Click/drag to reposition pivot
+                if (fpActive && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                    ImVec2 const mouse = ImGui::GetMousePos();
+                    float const relX = (mouse.x - imagePos.x) / scaleX;
+                    float const relY = (mouse.y - imagePos.y) / scaleY;
+                    fr.pivot.x = static_cast<int>(std::round(std::clamp(relX, 0.0f, static_cast<float>(fr.rect.w()))));
+                    fr.pivot.y = static_cast<int>(std::round(std::clamp(relY, 0.0f, static_cast<float>(fr.rect.h()))));
+                }
+
+                // Pivot crosshair
+                float const px = imagePos.x + (static_cast<float>(fr.pivot.x) * scaleX);
+                float const py = imagePos.y + (static_cast<float>(fr.pivot.y) * scaleY);
+                ImDrawList* const dl = ImGui::GetWindowDrawList();
+                constexpr float kArm = 5.0f;
+                ImU32 const crossColor = ImGui::ColorConvertFloat4ToU32(m_selectedColor);
+                dl->AddLine({ px - kArm, py }, { px + kArm, py }, crossColor, 1.5f);
+                dl->AddLine({ px, py - kArm }, { px, py + kArm }, crossColor, 1.5f);
+            } else {
+                ImGui::TextDisabled("--");
+            }
+
             ImGui::EndTable();
         }
 
@@ -630,6 +698,9 @@ void SpriteEditor::DrawDataEditor() {
                                 ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap,
                                 ImVec2(0, 0))) {
                             m_selectedFrame = step.frameIndex;
+                            m_clipCurrentStep = f;
+                            m_clipElapsedMs = 0.0f;
+                            m_clipPlaying = false;
                         }
 
                         ImGui::TableSetColumnIndex(1);
