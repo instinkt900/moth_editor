@@ -862,6 +862,22 @@ void SpriteEditor::Draw() {
     if (ImGui::Begin("Sprite Editor", &m_open, ImGuiWindowFlags_MenuBar)) {
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("New")) {
+                    m_pathBuffer[0]      = '\0';
+                    m_imagePathBuffer[0] = '\0';
+                    m_frames.clear();
+                    m_clips.clear();
+                    m_selectedFrame   = -1;
+                    m_selectedClip    = -1;
+                    m_clipPlaying     = false;
+                    m_clipCurrentStep = 0;
+                    m_clipElapsedMs   = 0.0f;
+                    m_zoom            = 1.0f;
+                    m_spriteSheet     = std::make_shared<moth_graphics::graphics::SpriteSheet>(
+                        nullptr,
+                        std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry>{},
+                        std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry>{});
+                }
                 if (ImGui::MenuItem("Load...")) {
                     doLoad();
                 }
