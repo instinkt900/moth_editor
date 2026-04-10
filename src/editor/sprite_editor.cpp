@@ -751,7 +751,7 @@ void SpriteEditor::Draw() {
         if (NFD_OpenDialog("json", currentPath.c_str(), &outPath) == NFD_OKAY && outPath != nullptr) {
             strncpy(m_pathBuffer, outPath, sizeof(m_pathBuffer) - 1);
             m_pathBuffer[sizeof(m_pathBuffer) - 1] = '\0';
-            free(outPath); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — NFD allocates with malloc
+            NFD_Free(outPath);
             LoadSpriteSheet(m_pathBuffer);
         }
     };
@@ -765,6 +765,16 @@ void SpriteEditor::Draw() {
                 }
                 if (ImGui::MenuItem("Save", nullptr, false, m_spriteSheet != nullptr)) {
                     SaveSpriteSheet();
+                }
+                if (ImGui::MenuItem("Save As...", nullptr, false, m_spriteSheet != nullptr)) {
+                    nfdchar_t* outPath = nullptr;
+                    std::string const currentPath = std::filesystem::current_path().string();
+                    if (NFD_SaveDialog("json", currentPath.c_str(), &outPath) == NFD_OKAY && outPath != nullptr) {
+                        strncpy(m_pathBuffer, outPath, sizeof(m_pathBuffer) - 1);
+                        m_pathBuffer[sizeof(m_pathBuffer) - 1] = '\0';
+                        NFD_Free(outPath);
+                        SaveSpriteSheet();
+                    }
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit")) {
