@@ -257,42 +257,12 @@ void SpriteEditor::DrawPreview() {
 }
 
 void SpriteEditor::DrawDataEditor() {
-    // Overlay color pickers
-    auto& cfg = m_editorLayer.GetConfig();
-    ImGui::ColorEdit4("Normal##rcol",   cfg.SpriteEditorNormalColor.data,   ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
-    ImGui::SameLine(); ImGui::TextUnformatted("Normal");
-    ImGui::SameLine(0.0f, 16.0f);
-    ImGui::ColorEdit4("Selected##rcol", cfg.SpriteEditorSelectedColor.data, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
-    ImGui::SameLine(); ImGui::TextUnformatted("Selected");
-    ImGui::SameLine(0.0f, 16.0f);
-    ImGui::TextUnformatted("Thickness");
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(80.0f);
-    ImGui::InputInt("##rthick", &cfg.SpriteEditorRectThickness);
-    cfg.SpriteEditorRectThickness = std::max(1, cfg.SpriteEditorRectThickness);
-
-    ImGui::Separator();
-
-    // File path input + browse
-    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 120.0f);
-    ImGui::InputText("##sprite_path", m_pathBuffer, sizeof(m_pathBuffer) - 1);
-    ImGui::SameLine();
-    if (ImGui::Button("...")) {
-        nfdchar_t* outPath = nullptr;
-        std::string const currentPath = std::filesystem::current_path().string();
-        if (NFD_OpenDialog("json", currentPath.c_str(), &outPath) == NFD_OKAY && outPath != nullptr) {
-            strncpy(m_pathBuffer, outPath, sizeof(m_pathBuffer) - 1);
-            m_pathBuffer[sizeof(m_pathBuffer) - 1] = '\0';
-            free(outPath); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — NFD allocates with malloc
-            LoadSpriteSheet(m_pathBuffer);
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Save")) {
-        SaveSpriteSheet();
-    }
+    // Read-only path display
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+    ImGui::InputText("##sprite_path", m_pathBuffer, sizeof(m_pathBuffer) - 1, ImGuiInputTextFlags_ReadOnly);
 
     if (!m_spriteSheet) {
+        ImGui::TextDisabled("Use File > Load to open a sprite sheet.");
         return;
     }
 
@@ -394,7 +364,7 @@ void SpriteEditor::DrawDataEditor() {
                 float const py = imagePos.y + (static_cast<float>(fr.pivot.y) * scaleY);
                 ImDrawList* const dl = ImGui::GetWindowDrawList();
                 constexpr float kArm = 5.0f;
-                auto const& selCol = cfg.SpriteEditorSelectedColor;
+                auto const& selCol = m_editorLayer.GetConfig().SpriteEditorSelectedColor;
                 ImU32 const crossColor = ImGui::ColorConvertFloat4ToU32(ImVec4{ selCol.data[0], selCol.data[1], selCol.data[2], selCol.data[3] });
                 dl->AddLine({ px - kArm, py }, { px + kArm, py }, crossColor, 1.5f);
                 dl->AddLine({ px, py - kArm }, { px, py + kArm }, crossColor, 1.5f);
@@ -775,8 +745,45 @@ void SpriteEditor::Draw() {
         return;
     }
 
+    auto const doLoad = [this]() {
+        nfdchar_t* outPath = nullptr;
+        std::string const currentPath = std::filesystem::current_path().string();
+        if (NFD_OpenDialog("json", currentPath.c_str(), &outPath) == NFD_OKAY && outPath != nullptr) {
+            strncpy(m_pathBuffer, outPath, sizeof(m_pathBuffer) - 1);
+            m_pathBuffer[sizeof(m_pathBuffer) - 1] = '\0';
+            free(outPath); // NOLINT(cppcoreguidelines-no-malloc,cppcoreguidelines-owning-memory) — NFD allocates with malloc
+            LoadSpriteSheet(m_pathBuffer);
+        }
+    };
+
     ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Sprite Editor", &m_open)) {
+    if (ImGui::Begin("Sprite Editor", &m_open, ImGuiWindowFlags_MenuBar)) {
+        if (ImGui::BeginMenuBar()) {
+            if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("Load...")) {
+                    doLoad();
+                }
+                if (ImGui::MenuItem("Save", nullptr, false, m_spriteSheet != nullptr)) {
+                    SaveSpriteSheet();
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Exit")) {
+                    m_open = false;
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Preferences")) {
+                auto& cfg = m_editorLayer.GetConfig();
+                ImGui::ColorEdit4("Normal border##pref",   cfg.SpriteEditorNormalColor.data,   ImGuiColorEditFlags_NoInputs);
+                ImGui::ColorEdit4("Selected border##pref", cfg.SpriteEditorSelectedColor.data, ImGuiColorEditFlags_NoInputs);
+                ImGui::SetNextItemWidth(120.0f);
+                ImGui::InputInt("Border thickness##pref", &cfg.SpriteEditorRectThickness);
+                cfg.SpriteEditorRectThickness = std::max(1, cfg.SpriteEditorRectThickness);
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
+
         if (ImGui::BeginTable("##sprite_layout", 2,
                 ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV)) {
             ImGui::TableSetupColumn("Preview", ImGuiTableColumnFlags_WidthStretch, 0.6f);
