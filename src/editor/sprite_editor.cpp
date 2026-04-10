@@ -24,12 +24,31 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
     m_clipElapsedMs = 0.0f;
     m_zoom = -1.0f; // trigger auto-fit on next draw
     m_frames.clear();
+    m_imagePathBuffer[0] = '\0';
 
     auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
     m_spriteSheet = assetContext.GetSpriteSheetFactory().GetSpriteSheet(path);
     if (!m_spriteSheet) {
         spdlog::error("Failed to load sprite sheet: {}", path.string());
         return;
+    }
+
+    // Read the image path from the JSON so Import Sheet and Save know it
+    try {
+        std::ifstream ifile(path);
+        if (ifile.is_open()) {
+            nlohmann::json json;
+            ifile >> json;
+            if (json.contains("image") && json["image"].is_string()) {
+                auto const imageAbsPath = std::filesystem::absolute(
+                    path.parent_path() / json["image"].get<std::string>()).lexically_normal();
+                auto const imageStr = imageAbsPath.string();
+                strncpy(m_imagePathBuffer, imageStr.c_str(), sizeof(m_imagePathBuffer) - 1);
+                m_imagePathBuffer[sizeof(m_imagePathBuffer) - 1] = '\0';
+            }
+        }
+    } catch (std::exception const& e) {
+        spdlog::warn("SpriteEditor: could not read image path from '{}': {}", path.string(), e.what());
     }
 
     m_frames.reserve(static_cast<size_t>(m_spriteSheet->GetFrameCount()));
@@ -48,6 +67,30 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
         m_spriteSheet->GetClipDesc(entry.name, entry.desc);
         m_clips.push_back(std::move(entry));
     }
+}
+
+void SpriteEditor::ImportSheet(std::filesystem::path const& imagePath) {
+    auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
+    auto image = assetContext.ImageFromFile(imagePath);
+    if (!image) {
+        spdlog::error("SpriteEditor: failed to load image '{}'", imagePath.string());
+        return;
+    }
+
+    auto imageStr = imagePath.string();
+    strncpy(m_imagePathBuffer, imageStr.c_str(), sizeof(m_imagePathBuffer) - 1);
+    m_imagePathBuffer[sizeof(m_imagePathBuffer) - 1] = '\0';
+
+    m_spriteSheet = std::make_shared<moth_graphics::graphics::SpriteSheet>(
+        std::shared_ptr<moth_graphics::graphics::IImage>(std::move(image)),
+        m_frames,
+        m_clips);
+    m_zoom = -1.0f;    // re-fit to new image dimensions
+    m_selectedFrame = -1;
+    m_selectedClip  = -1;
+    m_clipPlaying   = false;
+    m_clipCurrentStep = 0;
+    m_clipElapsedMs   = 0.0f;
 }
 
 void SpriteEditor::SaveSpriteSheet() {
@@ -71,6 +114,13 @@ void SpriteEditor::SaveSpriteSheet() {
             spdlog::error("SpriteEditor: failed to parse '{}': {}", path.string(), e.what());
             return;
         }
+    }
+
+    // Update the image field if we have a known image path
+    if (m_imagePathBuffer[0] != '\0') {
+        std::filesystem::path const imagePath = m_imagePathBuffer;
+        std::filesystem::path const relImage  = imagePath.lexically_relative(path.parent_path());
+        json["image"] = relImage.string();
     }
 
     // Write frames
@@ -268,6 +318,12 @@ void SpriteEditor::DrawDataEditor() {
 
     ImGui::Separator();
 
+    float const totalH = ImGui::GetContentRegionAvail().y;
+    float const framesH = std::floor(totalH * 0.5f);
+
+    // ---- Frames pane (top half, independently scrollable) ----
+    if (ImGui::BeginChild("##frames_pane", ImVec2(0, framesH), ImGuiChildFlags_None)) {
+
     // ---- Frame list ----
     ImGui::Text("Frames: %d", static_cast<int>(m_frames.size()));
 
@@ -354,10 +410,14 @@ void SpriteEditor::DrawDataEditor() {
                 auto& fr = m_frames[m_selectedFrame];
                 float const imgW = static_cast<float>(image->GetWidth());
                 float const imgH = static_cast<float>(image->GetHeight());
-                moth_graphics::FloatVec2 const uv0{ static_cast<float>(fr.rect.x())     / imgW,
-                                                    static_cast<float>(fr.rect.y())     / imgH };
-                moth_graphics::FloatVec2 const uv1{ static_cast<float>(fr.rect.right())  / imgW,
-                                                    static_cast<float>(fr.rect.bottom()) / imgH };
+                // Clamp UVs so the preview shows the clamped region even when the
+                // frame rect extends beyond the imported image.
+                moth_graphics::FloatVec2 const uv0{
+                    std::clamp(static_cast<float>(fr.rect.x())      / imgW, 0.0f, 1.0f),
+                    std::clamp(static_cast<float>(fr.rect.y())      / imgH, 0.0f, 1.0f) };
+                moth_graphics::FloatVec2 const uv1{
+                    std::clamp(static_cast<float>(fr.rect.right())  / imgW, 0.0f, 1.0f),
+                    std::clamp(static_cast<float>(fr.rect.bottom()) / imgH, 0.0f, 1.0f) };
                 constexpr float kMaxH = 150.0f;
                 float const col = ImGui::GetContentRegionAvail().x;
                 float const aspect = (fr.rect.h() > 0)
@@ -369,38 +429,41 @@ void SpriteEditor::DrawDataEditor() {
                     dispH = kMaxH;
                     dispW = kMaxH * aspect;
                 }
-
-                // InvisibleButton first so it captures mouse focus and prevents
-                // window dragging when the user drags to reposition the pivot.
-                ImVec2 const imagePos = ImGui::GetCursorScreenPos();
-                ImGui::InvisibleButton("##fp_interact", ImVec2{ dispW, dispH });
-                bool const fpActive = ImGui::IsItemActive();
-
-                // Draw image at the same position
-                ImGui::SetCursorScreenPos(imagePos);
-                image->ImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
+                dispW = std::max(dispW, 1.0f);
+                dispH = std::max(dispH, 1.0f);
 
                 float const scaleX = (fr.rect.w() > 0) ? (dispW / static_cast<float>(fr.rect.w())) : 1.0f;
                 float const scaleY = (fr.rect.h() > 0) ? (dispH / static_cast<float>(fr.rect.h())) : 1.0f;
 
-                // Click/drag to reposition pivot
-                if (fpActive && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-                    ImVec2 const mouse = ImGui::GetMousePos();
-                    float const relX = (mouse.x - imagePos.x) / scaleX;
-                    float const relY = (mouse.y - imagePos.y) / scaleY;
-                    fr.pivot.x = static_cast<int>(std::round(std::clamp(relX, 0.0f, static_cast<float>(fr.rect.w()))));
-                    fr.pivot.y = static_cast<int>(std::round(std::clamp(relY, 0.0f, static_cast<float>(fr.rect.h()))));
-                }
+                // Use a child window so cursor tracking is fully isolated from the
+                // parent table — eliminates the InvisibleButton+SetCursorScreenPos
+                // pattern that corrupted layout when frame rects were outside the image.
+                if (ImGui::BeginChild("##fp_child", ImVec2{ dispW, dispH }, ImGuiChildFlags_None,
+                        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+                    ImVec2 const childMin = ImGui::GetWindowPos();
 
-                // Pivot crosshair
-                float const px = imagePos.x + (static_cast<float>(fr.pivot.x) * scaleX);
-                float const py = imagePos.y + (static_cast<float>(fr.pivot.y) * scaleY);
-                ImDrawList* const dl = ImGui::GetWindowDrawList();
-                constexpr float kArm = 5.0f;
-                auto const& selCol = m_editorLayer.GetConfig().SpriteEditorSelectedColor;
-                ImU32 const crossColor = ImGui::ColorConvertFloat4ToU32(ImVec4{ selCol.data[0], selCol.data[1], selCol.data[2], selCol.data[3] });
-                dl->AddLine({ px - kArm, py }, { px + kArm, py }, crossColor, 1.5f);
-                dl->AddLine({ px, py - kArm }, { px, py + kArm }, crossColor, 1.5f);
+                    image->ImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
+
+                    // Click/drag to reposition pivot
+                    if (ImGui::IsWindowHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                        ImVec2 const mouse = ImGui::GetMousePos();
+                        float const relX = (mouse.x - childMin.x) / scaleX;
+                        float const relY = (mouse.y - childMin.y) / scaleY;
+                        fr.pivot.x = static_cast<int>(std::round(std::clamp(relX, 0.0f, static_cast<float>(fr.rect.w()))));
+                        fr.pivot.y = static_cast<int>(std::round(std::clamp(relY, 0.0f, static_cast<float>(fr.rect.h()))));
+                    }
+
+                    // Pivot crosshair
+                    float const px = childMin.x + (static_cast<float>(fr.pivot.x) * scaleX);
+                    float const py = childMin.y + (static_cast<float>(fr.pivot.y) * scaleY);
+                    ImDrawList* const dl = ImGui::GetWindowDrawList();
+                    constexpr float kArm = 5.0f;
+                    auto const& selCol = m_editorLayer.GetConfig().SpriteEditorSelectedColor;
+                    ImU32 const crossColor = ImGui::ColorConvertFloat4ToU32(ImVec4{ selCol.data[0], selCol.data[1], selCol.data[2], selCol.data[3] });
+                    dl->AddLine({ px - kArm, py }, { px + kArm, py }, crossColor, 1.5f);
+                    dl->AddLine({ px, py - kArm }, { px, py + kArm }, crossColor, 1.5f);
+                }
+                ImGui::EndChild();
             } else {
                 ImGui::TextDisabled("--");
             }
@@ -475,7 +538,11 @@ void SpriteEditor::DrawDataEditor() {
         }
     }
 
-    ImGui::Separator();
+    } // end ##frames_pane
+    ImGui::EndChild();
+
+    // ---- Clips pane (bottom half, independently scrollable) ----
+    ImGui::BeginChild("##clips_pane", ImVec2(0, 0), ImGuiChildFlags_None);
 
     // ---- Clip list (editable) ----
     ImGui::Text("Clips: %d", static_cast<int>(m_clips.size()));
@@ -556,51 +623,51 @@ void SpriteEditor::DrawDataEditor() {
             float const contentW = static_cast<float>(boundW) * zoom;
             float const contentH = static_cast<float>(boundH) * zoom;
 
-            // Reserve canvas space
-            ImVec2 const canvasMin = ImGui::GetCursorScreenPos();
-            ImVec2 const canvasMax{ canvasMin.x + availW, canvasMin.y + kPreviewH };
-            ImGui::InvisibleButton("##clip_canvas", ImVec2{ availW, kPreviewH });
+            // Use a child window so its internal cursor tracking is isolated
+            // from the parent — the parent always advances by exactly kPreviewH.
+            if (ImGui::BeginChild("##clip_canvas", ImVec2{ availW, kPreviewH }, ImGuiChildFlags_None,
+                    ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+                ImVec2 const canvasMin = ImGui::GetWindowPos();
+                ImVec2 const canvasMax{ canvasMin.x + availW, canvasMin.y + kPreviewH };
 
-            // Pivot anchor in screen space (centered within canvas)
-            float const anchorX = canvasMin.x + ((availW   - contentW) * 0.5f) + (static_cast<float>(-minOX) * zoom);
-            float const anchorY = canvasMin.y + ((kPreviewH - contentH) * 0.5f) + (static_cast<float>(-minOY) * zoom);
+                // Pivot anchor in screen space (centered within canvas)
+                float const anchorX = canvasMin.x + ((availW   - contentW) * 0.5f) + (static_cast<float>(-minOX) * zoom);
+                float const anchorY = canvasMin.y + ((kPreviewH - contentH) * 0.5f) + (static_cast<float>(-minOY) * zoom);
 
-            ImDrawList* const dl = ImGui::GetWindowDrawList();
-            dl->PushClipRect(canvasMin, canvasMax, true);
-            dl->AddRectFilled(canvasMin, canvasMax, IM_COL32(30, 30, 30, 200));
+                ImDrawList* const dl = ImGui::GetWindowDrawList();
+                dl->AddRectFilled(canvasMin, canvasMax, IM_COL32(30, 30, 30, 200));
 
-            // Draw current frame positioned so its pivot lands on anchorX/Y
-            int const frameIdx = clip.desc.frames[m_clipCurrentStep].frameIndex;
-            if (frameIdx >= 0 && frameIdx <= maxFrameIdx) {
-                auto const& fr = m_frames[frameIdx];
-                float const imgW = static_cast<float>(image->GetWidth());
-                float const imgH = static_cast<float>(image->GetHeight());
+                // Draw current frame positioned so its pivot lands on anchorX/Y
+                int const frameIdx = clip.desc.frames[m_clipCurrentStep].frameIndex;
+                if (frameIdx >= 0 && frameIdx <= maxFrameIdx) {
+                    auto const& fr = m_frames[frameIdx];
+                    float const imgW = static_cast<float>(image->GetWidth());
+                    float const imgH = static_cast<float>(image->GetHeight());
 
-                moth_graphics::FloatVec2 const uv0{
-                    static_cast<float>(fr.rect.x())      / imgW,
-                    static_cast<float>(fr.rect.y())      / imgH };
-                moth_graphics::FloatVec2 const uv1{
-                    static_cast<float>(fr.rect.right())  / imgW,
-                    static_cast<float>(fr.rect.bottom()) / imgH };
+                    moth_graphics::FloatVec2 const uv0{
+                        static_cast<float>(fr.rect.x())      / imgW,
+                        static_cast<float>(fr.rect.y())      / imgH };
+                    moth_graphics::FloatVec2 const uv1{
+                        static_cast<float>(fr.rect.right())  / imgW,
+                        static_cast<float>(fr.rect.bottom()) / imgH };
 
-                float const fx = anchorX - (static_cast<float>(fr.pivot.x) * zoom);
-                float const fy = anchorY - (static_cast<float>(fr.pivot.y) * zoom);
-                float const fw = static_cast<float>(fr.rect.w()) * zoom;
-                float const fh = static_cast<float>(fr.rect.h()) * zoom;
+                    float const fx = anchorX - (static_cast<float>(fr.pivot.x) * zoom);
+                    float const fy = anchorY - (static_cast<float>(fr.pivot.y) * zoom);
+                    float const fw = static_cast<float>(fr.rect.w()) * zoom;
+                    float const fh = static_cast<float>(fr.rect.h()) * zoom;
 
-                ImGui::SetCursorScreenPos({ fx, fy });
-                image->ImGui({ static_cast<int>(fw), static_cast<int>(fh) }, uv0, uv1);
+                    if (fw > 0.0f && fh > 0.0f) {
+                        ImGui::SetCursorScreenPos({ fx, fy });
+                        image->ImGui({ static_cast<int>(fw), static_cast<int>(fh) }, uv0, uv1);
+                    }
+                }
+
+                // Pivot crosshair
+                constexpr float kArm = 5.0f;
+                dl->AddLine({ anchorX - kArm, anchorY }, { anchorX + kArm, anchorY }, IM_COL32(255, 80, 80, 220), 1.5f);
+                dl->AddLine({ anchorX, anchorY - kArm }, { anchorX, anchorY + kArm }, IM_COL32(255, 80, 80, 220), 1.5f);
             }
-
-            // Pivot crosshair
-            constexpr float kArm = 5.0f;
-            dl->AddLine({ anchorX - kArm, anchorY }, { anchorX + kArm, anchorY }, IM_COL32(255, 80, 80, 220), 1.5f);
-            dl->AddLine({ anchorX, anchorY - kArm }, { anchorX, anchorY + kArm }, IM_COL32(255, 80, 80, 220), 1.5f);
-
-            dl->PopClipRect();
-
-            // Restore cursor to below the canvas
-            ImGui::SetCursorScreenPos({ canvasMin.x, canvasMax.y + ImGui::GetStyle().ItemSpacing.y });
+            ImGui::EndChild();
         }
 
         // Playback controls
@@ -771,6 +838,8 @@ void SpriteEditor::DrawDataEditor() {
             }
         }
     }
+
+    ImGui::EndChild(); // ##clips_pane
 }
 
 void SpriteEditor::Draw() {
@@ -807,6 +876,16 @@ void SpriteEditor::Draw() {
                         m_pathBuffer[sizeof(m_pathBuffer) - 1] = '\0';
                         NFD_Free(outPath);
                         SaveSpriteSheet();
+                    }
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Import Sheet...", nullptr, false, m_spriteSheet != nullptr)) {
+                    nfdchar_t* outPath = nullptr;
+                    std::string const currentPath = std::filesystem::current_path().string();
+                    if (NFD_OpenDialog("png,jpg,jpeg,bmp", currentPath.c_str(), &outPath) == NFD_OKAY && outPath != nullptr) {
+                        std::filesystem::path const imagePath = outPath;
+                        NFD_Free(outPath);
+                        ImportSheet(imagePath);
                     }
                 }
                 ImGui::Separator();

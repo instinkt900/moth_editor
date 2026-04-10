@@ -18,6 +18,7 @@ public:
 
 private:
     void LoadSpriteSheet(std::filesystem::path const& path);
+    void ImportSheet(std::filesystem::path const& imagePath);
     void SaveSpriteSheet();
     void DrawPreview();
     void DrawDataEditor();
@@ -25,6 +26,7 @@ private:
     EditorLayer& m_editorLayer;
     bool m_open = false;
     char m_pathBuffer[1024] = {};
+    char m_imagePathBuffer[1024] = {};
     std::shared_ptr<moth_graphics::graphics::SpriteSheet> m_spriteSheet;
     std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry> m_frames;
     std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry> m_clips;
