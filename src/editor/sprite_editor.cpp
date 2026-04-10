@@ -16,7 +16,39 @@ SpriteEditor::SpriteEditor(EditorLayer& editorLayer)
     : m_editorLayer(editorLayer) {
 }
 
+void SpriteEditor::AddSpriteAction(std::unique_ptr<IEditorAction> action) {
+    while (static_cast<int>(m_undoStack.size()) - 1 > m_undoIndex) {
+        m_undoStack.pop_back();
+    }
+    m_undoStack.push_back(std::move(action));
+    ++m_undoIndex;
+}
+
+void SpriteEditor::UndoSpriteAction() {
+    if (m_undoIndex >= 0) {
+        m_undoStack[m_undoIndex]->Undo();
+        --m_undoIndex;
+    }
+}
+
+void SpriteEditor::RedoSpriteAction() {
+    if (m_undoIndex < static_cast<int>(m_undoStack.size()) - 1) {
+        ++m_undoIndex;
+        m_undoStack[m_undoIndex]->Do();
+    }
+}
+
+void SpriteEditor::ClearSpriteActions() {
+    m_undoStack.clear();
+    m_undoIndex = -1;
+    m_pendingFrameSnapshot.reset();
+    m_pendingClipSnapshot.reset();
+    m_pivotDragging = false;
+    m_pivotDragSnapshot.reset();
+}
+
 void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
+    ClearSpriteActions();
     m_selectedFrame = -1;
     m_selectedClip = -1;
     m_clipPlaying = false;
@@ -379,11 +411,22 @@ void SpriteEditor::DrawDataEditor() {
                 moth_graphics::graphics::SpriteSheet::FrameEntry newFrame;
                 newFrame.rect  = moth_graphics::MakeRect(0, 0, 32, 32);
                 newFrame.pivot = { 0, 0 };
+                auto const before = m_frames;
+                int const beforeSel = m_selectedFrame;
                 m_frames.push_back(newFrame);
                 m_selectedFrame = static_cast<int>(m_frames.size()) - 1;
+                auto const after = m_frames;
+                int const afterSel = m_selectedFrame;
+                AddSpriteAction(std::make_unique<BasicAction>(
+                    [this, after, afterSel]()   { m_frames = after;  m_selectedFrame = afterSel; },
+                    [this, before, beforeSel]() { m_frames = before; m_selectedFrame = beforeSel; }
+                ));
             }
 
             if (frameToDelete >= 0) {
+                auto const beforeFrames = m_frames;
+                auto const beforeClips  = m_clips;
+                int const beforeSel = m_selectedFrame;
                 m_frames.erase(m_frames.begin() + frameToDelete);
                 // Fix up selection
                 if (m_selectedFrame == frameToDelete) {
@@ -399,6 +442,17 @@ void SpriteEditor::DrawDataEditor() {
                         }
                     }
                 }
+                auto const afterFrames = m_frames;
+                auto const afterClips  = m_clips;
+                int const afterSel = m_selectedFrame;
+                AddSpriteAction(std::make_unique<BasicAction>(
+                    [this, afterFrames, afterClips, afterSel]() {
+                        m_frames = afterFrames; m_clips = afterClips; m_selectedFrame = afterSel;
+                    },
+                    [this, beforeFrames, beforeClips, beforeSel]() {
+                        m_frames = beforeFrames; m_clips = beforeClips; m_selectedFrame = beforeSel;
+                    }
+                ));
             }
 
             // Selected frame preview (with pivot drag)
@@ -442,13 +496,44 @@ void SpriteEditor::DrawDataEditor() {
 
                     image->ImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
 
-                    // Click/drag to reposition pivot
-                    if (ImGui::IsWindowHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+                    // Overlay an InvisibleButton across the full child area so ImGui
+                    // claims the left-button press and the parent window cannot drag.
+                    // SetCursorScreenPos is safe here because we are already inside the
+                    // isolated ##fp_child — it cannot corrupt the parent table layout.
+                    ImGui::SetCursorScreenPos(childMin);
+                    ImGui::InvisibleButton("##pivot_drag_area", ImVec2{ dispW, dispH });
+
+                    if (ImGui::IsItemActivated()) {
+                        m_pivotDragSnapshot = m_frames;
+                        m_pivotDragging = true;
+                    }
+                    if (ImGui::IsItemActive()) {
                         ImVec2 const mouse = ImGui::GetMousePos();
                         float const relX = (mouse.x - childMin.x) / scaleX;
                         float const relY = (mouse.y - childMin.y) / scaleY;
                         fr.pivot.x = static_cast<int>(std::round(std::clamp(relX, 0.0f, static_cast<float>(fr.rect.w()))));
                         fr.pivot.y = static_cast<int>(std::round(std::clamp(relY, 0.0f, static_cast<float>(fr.rect.h()))));
+                    }
+                    if (ImGui::IsItemDeactivated() && m_pivotDragging) {
+                        if (m_pivotDragSnapshot.has_value()) {
+                            bool changed = false;
+                            if (m_selectedFrame >= 0 &&
+                                m_selectedFrame < static_cast<int>(m_frames.size()) &&
+                                m_selectedFrame < static_cast<int>(m_pivotDragSnapshot->size())) {
+                                auto const& oldFr = (*m_pivotDragSnapshot)[m_selectedFrame];
+                                changed = (oldFr.pivot.x != fr.pivot.x || oldFr.pivot.y != fr.pivot.y);
+                            }
+                            if (changed) {
+                                auto before = std::move(*m_pivotDragSnapshot);
+                                auto const after = m_frames;
+                                AddSpriteAction(std::make_unique<BasicAction>(
+                                    [this, after]()  { m_frames = after; },
+                                    [this, before]() { m_frames = before; }
+                                ));
+                            }
+                            m_pivotDragSnapshot.reset();
+                        }
+                        m_pivotDragging = false;
                     }
 
                     // Pivot crosshair
@@ -489,13 +574,20 @@ void SpriteEditor::DrawDataEditor() {
                 ImGui::TableSetupColumn("##fl2", ImGuiTableColumnFlags_WidthFixed);
                 ImGui::TableSetupColumn("##fv2", ImGuiTableColumnFlags_WidthStretch);
 
-                auto editRow = [](char const* l1, char const* id1, int& v1,
-                                  char const* l2, char const* id2, int& v2) -> std::pair<bool, bool> {
+                bool anyFrameActivated   = false;
+                bool anyFrameDeactivated = false;
+                auto editRow = [&anyFrameActivated, &anyFrameDeactivated](
+                        char const* l1, char const* id1, int& v1,
+                        char const* l2, char const* id2, int& v2) -> std::pair<bool, bool> {
                     ImGui::TableNextRow();
                     ImGui::TableSetColumnIndex(0); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(l1);
                     ImGui::TableSetColumnIndex(1); ImGui::SetNextItemWidth(-FLT_MIN); bool const c1 = ImGui::InputInt(id1, &v1);
+                    anyFrameActivated   |= ImGui::IsItemActivated();
+                    anyFrameDeactivated |= ImGui::IsItemDeactivatedAfterEdit();
                     ImGui::TableSetColumnIndex(2); ImGui::AlignTextToFramePadding(); ImGui::TextUnformatted(l2);
                     ImGui::TableSetColumnIndex(3); ImGui::SetNextItemWidth(-FLT_MIN); bool const c2 = ImGui::InputInt(id2, &v2);
+                    anyFrameActivated   |= ImGui::IsItemActivated();
+                    anyFrameDeactivated |= ImGui::IsItemDeactivatedAfterEdit();
                     return { c1, c2 };
                 };
 
@@ -512,6 +604,22 @@ void SpriteEditor::DrawDataEditor() {
                 }
                 if (pxChanged) { fr.pivot.x = pivotX; }
                 if (pyChanged) { fr.pivot.y = pivotY; }
+
+                // On first activation, capture snapshot (after the editRow calls set the flag)
+                if (anyFrameActivated && !m_pendingFrameSnapshot.has_value()) {
+                    m_pendingFrameSnapshot = m_frames;
+                }
+                // On deactivation, commit the action
+                if (anyFrameDeactivated && m_pendingFrameSnapshot.has_value()) {
+                    auto before = std::move(*m_pendingFrameSnapshot);
+                    m_pendingFrameSnapshot.reset();
+                    auto const after = m_frames;
+                    int const selFrame = m_selectedFrame;
+                    AddSpriteAction(std::make_unique<BasicAction>(
+                        [this, after, selFrame]()  { m_frames = after;  m_selectedFrame = selFrame; },
+                        [this, before, selFrame]() { m_frames = before; m_selectedFrame = selFrame; }
+                    ));
+                }
             }
 
             // Pivot preset grid
@@ -523,15 +631,29 @@ void SpriteEditor::DrawDataEditor() {
                 float const btnW = (ImGui::GetContentRegionAvail().x - (ImGui::GetStyle().ItemSpacing.x * 2.0f)) / 3.0f;
                 ImVec2 const bs{ btnW, 0.0f };
 
-                if (ImGui::Button("TL##pv", bs)) { fr.pivot.x = 0;  fr.pivot.y = 0;  }  ImGui::SameLine();
-                if (ImGui::Button("T##pv",  bs)) { fr.pivot.x = hw; fr.pivot.y = 0;  }  ImGui::SameLine();
-                if (ImGui::Button("TR##pv", bs)) { fr.pivot.x = fw; fr.pivot.y = 0;  }
-                if (ImGui::Button("L##pv",  bs)) { fr.pivot.x = 0;  fr.pivot.y = hh; }  ImGui::SameLine();
-                if (ImGui::Button("C##pv",  bs)) { fr.pivot.x = hw; fr.pivot.y = hh; }  ImGui::SameLine();
-                if (ImGui::Button("R##pv",  bs)) { fr.pivot.x = fw; fr.pivot.y = hh; }
-                if (ImGui::Button("BL##pv", bs)) { fr.pivot.x = 0;  fr.pivot.y = fh; }  ImGui::SameLine();
-                if (ImGui::Button("B##pv",  bs)) { fr.pivot.x = hw; fr.pivot.y = fh; }  ImGui::SameLine();
-                if (ImGui::Button("BR##pv", bs)) { fr.pivot.x = fw; fr.pivot.y = fh; }
+                auto pivotPreset = [&](char const* label, ImVec2 btnSz, int px, int py) {
+                    if (ImGui::Button(label, btnSz)) {
+                        auto const before = m_frames;
+                        fr.pivot.x = px;
+                        fr.pivot.y = py;
+                        auto const after = m_frames;
+                        int const sel = m_selectedFrame;
+                        AddSpriteAction(std::make_unique<BasicAction>(
+                            [this, after, sel]()  { m_frames = after;  m_selectedFrame = sel; },
+                            [this, before, sel]() { m_frames = before; m_selectedFrame = sel; }
+                        ));
+                    }
+                };
+
+                pivotPreset("TL##pv", bs, 0,  0);   ImGui::SameLine();
+                pivotPreset("T##pv",  bs, hw, 0);   ImGui::SameLine();
+                pivotPreset("TR##pv", bs, fw, 0);
+                pivotPreset("L##pv",  bs, 0,  hh);  ImGui::SameLine();
+                pivotPreset("C##pv",  bs, hw, hh);  ImGui::SameLine();
+                pivotPreset("R##pv",  bs, fw, hh);
+                pivotPreset("BL##pv", bs, 0,  fh);  ImGui::SameLine();
+                pivotPreset("B##pv",  bs, hw, fh);  ImGui::SameLine();
+                pivotPreset("BR##pv", bs, fw, fh);
             }
         }
     }
@@ -710,11 +832,18 @@ void SpriteEditor::DrawDataEditor() {
         ImGui::SameLine();
         if (ImGui::Button("+ Clip")) {
             if (m_newClipNameBuffer[0] != '\0') {
+                auto const before = m_clips;
+                int const beforeSel = m_selectedClip;
                 moth_graphics::graphics::SpriteSheet::ClipEntry newClip;
                 newClip.name = m_newClipNameBuffer;
                 newClip.desc.loop = moth_graphics::graphics::SpriteSheet::LoopType::Stop;
                 m_clips.push_back(std::move(newClip));
                 m_newClipNameBuffer[0] = '\0';
+                auto const after = m_clips;
+                AddSpriteAction(std::make_unique<BasicAction>(
+                    [this, after]()            { m_clips = after; },
+                    [this, before, beforeSel]() { m_clips = before; m_selectedClip = beforeSel; }
+                ));
             }
         }
     }
@@ -741,7 +870,7 @@ void SpriteEditor::DrawDataEditor() {
             }
 
             if (open) {
-                // Name
+                // Name (deferred: capture on activate, push on deactivate after edit)
                 char nameBuf[256];
                 strncpy(nameBuf, clip.name.c_str(), sizeof(nameBuf) - 1);
                 nameBuf[sizeof(nameBuf) - 1] = '\0';
@@ -749,18 +878,38 @@ void SpriteEditor::DrawDataEditor() {
                 if (ImGui::InputText("##cname", nameBuf, sizeof(nameBuf))) {
                     clip.name = nameBuf;
                 }
+                if (ImGui::IsItemActivated() && !m_pendingClipSnapshot.has_value()) {
+                    m_pendingClipSnapshot = m_clips;
+                }
+                if (ImGui::IsItemDeactivatedAfterEdit() && m_pendingClipSnapshot.has_value()) {
+                    auto before = std::move(*m_pendingClipSnapshot);
+                    m_pendingClipSnapshot.reset();
+                    auto const after = m_clips;
+                    AddSpriteAction(std::make_unique<BasicAction>(
+                        [this, after]()  { m_clips = after; },
+                        [this, before]() { m_clips = before; }
+                    ));
+                }
 
-                // Loop type
+                // Loop type (immediate)
                 static char const* const kLoopItems[] = { "Stop", "Reset", "Loop" };
                 int loopIdx = static_cast<int>(clip.desc.loop);
                 ImGui::SetNextItemWidth(-FLT_MIN);
                 if (ImGui::Combo("##loop", &loopIdx, kLoopItems, 3)) {
+                    auto const before = m_clips;
                     clip.desc.loop = static_cast<moth_graphics::graphics::SpriteSheet::LoopType>(loopIdx);
+                    auto const after = m_clips;
+                    AddSpriteAction(std::make_unique<BasicAction>(
+                        [this, after]()  { m_clips = after; },
+                        [this, before]() { m_clips = before; }
+                    ));
                 }
 
                 // Steps table: # | Frame | ms | [X]
                 int stepToDelete = -1;
                 int const maxFrameIdx = static_cast<int>(m_frames.size()) - 1;
+                bool anyClipActivated   = false;
+                bool anyClipDeactivated = false;
 
                 if (ImGui::BeginTable("##steps", 4,
                         ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit)) {
@@ -791,12 +940,16 @@ void SpriteEditor::DrawDataEditor() {
                         if (ImGui::InputInt("##fi", &step.frameIndex, 0, 0)) {
                             step.frameIndex = std::clamp(step.frameIndex, 0, std::max(maxFrameIdx, 0));
                         }
+                        anyClipActivated   |= ImGui::IsItemActivated();
+                        anyClipDeactivated |= ImGui::IsItemDeactivatedAfterEdit();
 
                         ImGui::TableSetColumnIndex(2);
                         ImGui::SetNextItemWidth(-FLT_MIN);
                         if (ImGui::InputInt("##ms", &step.durationMs, 0, 0)) {
                             step.durationMs = std::max(step.durationMs, 0);
                         }
+                        anyClipActivated   |= ImGui::IsItemActivated();
+                        anyClipDeactivated |= ImGui::IsItemDeactivatedAfterEdit();
 
                         ImGui::TableSetColumnIndex(3);
                         if (ImGui::SmallButton("X")) {
@@ -808,16 +961,41 @@ void SpriteEditor::DrawDataEditor() {
                     ImGui::EndTable();
                 }
 
+                if (anyClipActivated && !m_pendingClipSnapshot.has_value()) {
+                    m_pendingClipSnapshot = m_clips;
+                }
+                if (anyClipDeactivated && m_pendingClipSnapshot.has_value()) {
+                    auto before = std::move(*m_pendingClipSnapshot);
+                    m_pendingClipSnapshot.reset();
+                    auto const after = m_clips;
+                    AddSpriteAction(std::make_unique<BasicAction>(
+                        [this, after]()  { m_clips = after; },
+                        [this, before]() { m_clips = before; }
+                    ));
+                }
+
                 if (stepToDelete >= 0) {
+                    auto const before = m_clips;
                     clip.desc.frames.erase(clip.desc.frames.begin() + stepToDelete);
+                    auto const after = m_clips;
+                    AddSpriteAction(std::make_unique<BasicAction>(
+                        [this, after]()  { m_clips = after; },
+                        [this, before]() { m_clips = before; }
+                    ));
                 }
 
                 // Add step — defaults to the currently selected frame (or 0)
                 if (ImGui::Button("+ Step")) {
+                    auto const before = m_clips;
                     moth_graphics::graphics::SpriteSheet::ClipFrame newStep;
                     newStep.frameIndex = (m_selectedFrame >= 0) ? m_selectedFrame : 0;
                     newStep.durationMs = clip.desc.frames.empty() ? 100 : clip.desc.frames.back().durationMs;
                     clip.desc.frames.push_back(newStep);
+                    auto const after = m_clips;
+                    AddSpriteAction(std::make_unique<BasicAction>(
+                        [this, after]()  { m_clips = after; },
+                        [this, before]() { m_clips = before; }
+                    ));
                 }
 
                 ImGui::TreePop();
@@ -827,6 +1005,8 @@ void SpriteEditor::DrawDataEditor() {
         }
 
         if (clipToDelete >= 0) {
+            auto const before = m_clips;
+            int const beforeSel = m_selectedClip;
             m_clips.erase(m_clips.begin() + clipToDelete);
             if (m_selectedClip == clipToDelete) {
                 m_selectedClip = -1;
@@ -834,6 +1014,12 @@ void SpriteEditor::DrawDataEditor() {
             } else if (m_selectedClip > clipToDelete) {
                 m_selectedClip--;
             }
+            auto const after = m_clips;
+            int const afterSel = m_selectedClip;
+            AddSpriteAction(std::make_unique<BasicAction>(
+                [this, after, afterSel]()   { m_clips = after;  m_selectedClip = afterSel; },
+                [this, before, beforeSel]() { m_clips = before; m_selectedClip = beforeSel; }
+            ));
         }
     }
 
@@ -858,9 +1044,21 @@ void SpriteEditor::Draw() {
 
     ImGui::SetNextWindowSize(ImVec2(1000, 600), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Sprite Editor", &m_open, ImGuiWindowFlags_MenuBar)) {
+        // Keyboard shortcuts (only when this window or its children are focused)
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) {
+            auto const& io = ImGui::GetIO();
+            if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z, false)) {
+                UndoSpriteAction();
+            }
+            if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y, false)) {
+                RedoSpriteAction();
+            }
+        }
+
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("New")) {
+                    ClearSpriteActions();
                     m_pathBuffer[0]      = '\0';
                     m_imagePathBuffer[0] = '\0';
                     m_frames.clear();
@@ -907,6 +1105,17 @@ void SpriteEditor::Draw() {
                 ImGui::Separator();
                 if (ImGui::MenuItem("Exit")) {
                     m_open = false;
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Edit")) {
+                bool const canUndo = m_undoIndex >= 0;
+                bool const canRedo = m_undoIndex < static_cast<int>(m_undoStack.size()) - 1;
+                if (ImGui::MenuItem("Undo", "Ctrl+Z", false, canUndo)) {
+                    UndoSpriteAction();
+                }
+                if (ImGui::MenuItem("Redo", "Ctrl+Y", false, canRedo)) {
+                    RedoSpriteAction();
                 }
                 ImGui::EndMenu();
             }

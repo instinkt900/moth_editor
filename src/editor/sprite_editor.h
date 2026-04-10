@@ -1,9 +1,11 @@
 #pragma once
 
+#include "actions/editor_action.h"
 #include "moth_graphics/graphics/spritesheet.h"
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class EditorLayer;
@@ -23,6 +25,12 @@ private:
     void DrawPreview();
     void DrawDataEditor();
 
+    // Undo/redo stack (independent from the main editor's stack)
+    void AddSpriteAction(std::unique_ptr<IEditorAction> action);
+    void UndoSpriteAction();
+    void RedoSpriteAction();
+    void ClearSpriteActions();
+
     EditorLayer& m_editorLayer;
     bool m_open = false;
     char m_pathBuffer[1024] = {};
@@ -37,4 +45,18 @@ private:
     bool m_clipPlaying = false;
     int m_clipCurrentStep = 0;
     float m_clipElapsedMs = 0.0f;
+
+    // Undo stack
+    std::vector<std::unique_ptr<IEditorAction>> m_undoStack;
+    int m_undoIndex = -1;
+
+    // Deferred snapshot for InputInt/InputText commits (captured on activate, pushed on deactivate)
+    using FrameVec = std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry>;
+    using ClipVec  = std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry>;
+    std::optional<FrameVec> m_pendingFrameSnapshot;
+    std::optional<ClipVec>  m_pendingClipSnapshot;
+
+    // Pivot drag state (click-drag in frame mini-preview)
+    bool m_pivotDragging = false;
+    std::optional<FrameVec> m_pivotDragSnapshot;
 };
