@@ -280,16 +280,18 @@ void SpriteEditor::DrawDataEditor() {
 
             // Frame list
             ImGui::TableSetColumnIndex(0);
-            if (ImGui::BeginTable("##frames_table", 5,
+            int frameToDelete = -1;
+            if (ImGui::BeginTable("##frames_table", 6,
                     ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
                     ImGuiTableFlags_ScrollY | ImGuiTableFlags_SizingStretchSame,
                     ImVec2(0.0f, 150.0f))) {
                 ImGui::TableSetupScrollFreeze(0, 1);
-                ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30.0f);
-                ImGui::TableSetupColumn("X", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("Y", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("W", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("H", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("#",  ImGuiTableColumnFlags_WidthFixed, 30.0f);
+                ImGui::TableSetupColumn("X",  ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Y",  ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("W",  ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("H",  ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("##fdel", ImGuiTableColumnFlags_WidthFixed, 20.0f);
                 ImGui::TableHeadersRow();
 
                 for (int i = 0; i < static_cast<int>(m_frames.size()); ++i) {
@@ -304,14 +306,45 @@ void SpriteEditor::DrawDataEditor() {
                             ImVec2(0, 0))) {
                         m_selectedFrame = isSelected ? -1 : i;
                     }
-                    ImGui::PopID();
 
                     ImGui::TableSetColumnIndex(1); ImGui::Text("%d", fr.rect.x());
                     ImGui::TableSetColumnIndex(2); ImGui::Text("%d", fr.rect.y());
                     ImGui::TableSetColumnIndex(3); ImGui::Text("%d", fr.rect.w());
                     ImGui::TableSetColumnIndex(4); ImGui::Text("%d", fr.rect.h());
+
+                    ImGui::TableSetColumnIndex(5);
+                    if (ImGui::SmallButton("x")) {
+                        frameToDelete = i;
+                    }
+                    ImGui::PopID();
                 }
                 ImGui::EndTable();
+            }
+
+            if (ImGui::Button("+ Frame")) {
+                moth_graphics::graphics::SpriteSheet::FrameEntry newFrame;
+                newFrame.rect  = moth_graphics::MakeRect(0, 0, 32, 32);
+                newFrame.pivot = { 0, 0 };
+                m_frames.push_back(newFrame);
+                m_selectedFrame = static_cast<int>(m_frames.size()) - 1;
+            }
+
+            if (frameToDelete >= 0) {
+                m_frames.erase(m_frames.begin() + frameToDelete);
+                // Fix up selection
+                if (m_selectedFrame == frameToDelete) {
+                    m_selectedFrame = -1;
+                } else if (m_selectedFrame > frameToDelete) {
+                    m_selectedFrame--;
+                }
+                // Fix up any clip steps that referenced this frame
+                for (auto& clip : m_clips) {
+                    for (auto& step : clip.desc.frames) {
+                        if (step.frameIndex >= frameToDelete && step.frameIndex > 0) {
+                            step.frameIndex--;
+                        }
+                    }
+                }
             }
 
             // Selected frame preview (with pivot drag)
