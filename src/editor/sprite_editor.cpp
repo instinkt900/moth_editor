@@ -100,19 +100,17 @@ void SpriteEditor::SaveSpriteSheet() {
 
     std::filesystem::path const path = m_pathBuffer;
 
-    // Read existing JSON to preserve the "image" field (and any other unknown fields)
-    nlohmann::json json;
+    // Read existing JSON to preserve unknown fields; start fresh if the file doesn't exist yet.
+    nlohmann::json json = nlohmann::json::object();
     {
         std::ifstream ifile(path);
-        if (!ifile.is_open()) {
-            spdlog::error("SpriteEditor: failed to open '{}' for reading", path.string());
-            return;
-        }
-        try {
-            ifile >> json;
-        } catch (std::exception const& e) {
-            spdlog::error("SpriteEditor: failed to parse '{}': {}", path.string(), e.what());
-            return;
+        if (ifile.is_open()) {
+            try {
+                ifile >> json;
+            } catch (std::exception const& e) {
+                spdlog::warn("SpriteEditor: could not parse existing '{}', overwriting: {}", path.string(), e.what());
+                json = nlohmann::json::object();
+            }
         }
     }
 
@@ -881,10 +879,12 @@ void SpriteEditor::Draw() {
                 if (ImGui::MenuItem("Load...")) {
                     doLoad();
                 }
-                if (ImGui::MenuItem("Save", nullptr, false, m_spriteSheet != nullptr)) {
+                bool const hasImage = m_imagePathBuffer[0] != '\0';
+                bool const hasPath  = m_pathBuffer[0] != '\0';
+                if (ImGui::MenuItem("Save", nullptr, false, hasImage && hasPath)) {
                     SaveSpriteSheet();
                 }
-                if (ImGui::MenuItem("Save As...", nullptr, false, m_spriteSheet != nullptr)) {
+                if (ImGui::MenuItem("Save As...", nullptr, false, hasImage)) {
                     nfdchar_t* outPath = nullptr;
                     std::string const currentPath = std::filesystem::current_path().string();
                     if (NFD_SaveDialog("json", currentPath.c_str(), &outPath) == NFD_OKAY && outPath != nullptr) {
