@@ -27,11 +27,19 @@ private:
     void DrawFramesPane();
     void DrawClipsPane();
 
+    using FrameVec = std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry>;
+    using ClipVec  = std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry>;
+
     // Undo/redo stack (independent from the main editor's stack)
     void AddSpriteAction(std::unique_ptr<IEditorAction> action);
     void UndoSpriteAction();
     void RedoSpriteAction();
     void ClearSpriteActions();
+
+    // Snapshot helpers — capture current state as "after" and push a reversible action
+    void PushFrameAction(FrameVec before, int selBefore, int selAfter);
+    void PushClipAction(ClipVec before, int selBefore, int selAfter);
+    void PushFrameClipAction(FrameVec beforeF, ClipVec beforeC, int selBefore, int selAfter);
 
     EditorLayer& m_editorLayer;
     bool m_open = false;
@@ -52,9 +60,7 @@ private:
     std::vector<std::unique_ptr<IEditorAction>> m_undoStack;
     int m_undoIndex = -1;
 
-    // Deferred snapshot for InputInt/InputText commits (captured on activate, pushed on deactivate)
-    using FrameVec = std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry>;
-    using ClipVec  = std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry>;
+    // Deferred InputInt/InputText snapshots (captured on activate, committed on deactivate)
     std::optional<FrameVec> m_pendingFrameSnapshot;
     std::optional<ClipVec>  m_pendingClipSnapshot;
 
