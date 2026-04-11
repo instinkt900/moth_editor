@@ -54,7 +54,12 @@ set(SOURCES ${SOURCES}
 	src/editor/panels/editor_panel_preview.cpp
 	src/editor/panels/editor_panel_properties.cpp
 	src/editor/panels/editor_panel_undo_stack.cpp
-	src/editor/sprite_editor.cpp
+	src/editor/sprite_editor/sprite_editor.cpp
+	src/editor/sprite_editor/sprite_editor_io.cpp
+	src/editor/sprite_editor/sprite_editor_undo.cpp
+	src/editor/sprite_editor/sprite_editor_preview.cpp
+	src/editor/sprite_editor/sprite_editor_frames.cpp
+	src/editor/sprite_editor/sprite_editor_clips.cpp
 	src/editor/properties_elements.cpp
 	src/editor/texture_packer.cpp
 	src/editor_application.cpp

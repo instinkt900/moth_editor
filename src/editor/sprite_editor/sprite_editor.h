@@ -1,6 +1,6 @@
 #pragma once
 
-#include "actions/editor_action.h"
+#include "editor/actions/editor_action.h"
 #include "moth_graphics/graphics/spritesheet.h"
 
 #include <filesystem>
@@ -24,6 +24,8 @@ private:
     void SaveSpriteSheet();
     void DrawPreview();
     void DrawDataEditor();
+    void DrawFramesPane();
+    void DrawClipsPane();
 
     // Undo/redo stack (independent from the main editor's stack)
     void AddSpriteAction(std::unique_ptr<IEditorAction> action);

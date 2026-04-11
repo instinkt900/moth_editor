@@ -6,7 +6,7 @@
 #include "confirm_prompt.h"
 #include "editor_config.h"
 #include "editor/texture_packer.h"
-#include "editor/sprite_editor.h"
+#include "editor/sprite_editor/sprite_editor.h"
 #include "editor/actions/editor_action.h"
 #include "editor/panels/editor_panel.h"
 
