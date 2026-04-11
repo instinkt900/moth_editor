@@ -40,34 +40,33 @@ multi-select is respected.
 
 ---
 
-### Sprite Editor
+### Sprite Editor — moth_packer Integration
 
-**Effort:** Large
+**Effort:** Medium
 
-A dedicated visual editor for defining sprite animation data on top of a packed atlas. Works in
-conjunction with moth_packer rather than replacing it — moth_packer handles image packing and
-produces the atlas, the editor handles the animation layer on top.
+The sprite editor is complete. It loads a packed atlas and descriptor, supports defining named
+clips as ordered frame sequences with per-frame pivot points, plays back animations in real time,
+and saves the descriptor back to disk with full undo/redo.
 
-Typical workflows:
-- Run moth_packer to produce a baseline atlas and descriptor, then open it in the editor to
-  define clips and pivot points.
-- Build animation data from scratch in the editor against an existing atlas.
+The outstanding work is integration with moth_packer to drive the packing step from inside the
+editor so that a pre-packed atlas is no longer a prerequisite. Two pieces are required:
 
-Core functionality:
-- Load a packed atlas and its descriptor as produced by moth_packer.
-- Define named animation clips as explicit ordered lists of frame indices (not ranges), supporting
-  repeated frames and frame sharing between clips.
-- Set per-frame pivot points interactively — click to place the pivot on the frame image — so
-  that variable-size frames align correctly at runtime.
-- Preview animations playing back in real time.
-- Save/export the animation descriptor for consumption by moth_ui at runtime.
+**Editor canvas:** the sprite editor canvas currently renders a single atlas image. It needs to
+accept multiple loose source images — imported via file dialog or drag-and-drop — and display
+them on a working canvas before any packing has occurred. Each image on the canvas represents
+one or more frames, and the user should be able to assign clip membership, frame order, and
+pivot hints per image at this stage. This is the missing authoring step between "I have some
+PNGs" and "I have a descriptor".
 
-Blocked on the moth_ui sprite animation redesign (see moth_ui TODO and moth_packer TODO) since
-the runtime data model needs to exist before the editor can target it.
+**moth_packer in-memory API:** once the canvas images and their metadata are ready, the editor
+needs to call moth_packer without touching the filesystem — passing the in-memory pixel buffers
+and accumulated metadata, and receiving a packed atlas buffer and typed descriptor in return.
+moth_packer does not yet expose this interface (tracked in its own TODO). The repack flow is
+also needed: when the user edits an already-packed sheet (adding or removing frames), the
+existing atlas and descriptor should be fed back through the packer to produce a re-optimised
+atlas with updated rects, preserving all clip and pivot data.
 
-**Stretch goal:** Since moth_packer is a library, the editor could optionally drive the packing
-step directly — import loose frame images, trigger a pack, and produce the atlas without leaving
-the tool. The command-line packer would remain available for automated/build-pipeline use.
+The command-line packer would remain available for build-pipeline use.
 
 ---
 
