@@ -3,6 +3,7 @@
 #include "imgui_internal.h"
 #include "moth_ui/utils/vector.h"
 #include "moth_ui/graphics/iimage.h"
+#include "moth_graphics/graphics/moth_ui/moth_image.h"
 
 namespace imgui_ext {
     using namespace moth_ui;
@@ -66,7 +67,10 @@ namespace imgui_ext {
 
     void Image(moth_ui::IImage const* image, int width, int height) {
         if (image != nullptr) {
-            image->ImGui({ width, height });
+            auto const* mothImage = dynamic_cast<moth_graphics::graphics::MothImage const*>(image);
+            if (mothImage != nullptr) {
+                mothImage->GetImage()->ImGui({ width, height });
+            }
         }
     }
 }
