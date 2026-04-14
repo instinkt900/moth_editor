@@ -52,7 +52,15 @@ void TexturePacker::Draw() {
             if (ImGui::Button("Pack")) {
                 std::vector<moth_packer::ImageDetails> images;
                 moth_packer::CollectImagesFromLayoutsDir(s_layoutPathBuffer, true, images);
-                if (!moth_packer::Pack(images, s_outputPathBuffer, "packed", true, false, s_minWidth, s_minHeight, s_maxWidth, s_maxHeight)) {
+                moth_packer::PackOptions opts;
+                opts.outputPath    = s_outputPathBuffer;
+                opts.filename      = "packed";
+                opts.forceOverwrite = true;
+                opts.minWidth      = s_minWidth;
+                opts.minHeight     = s_minHeight;
+                opts.maxWidth      = s_maxWidth;
+                opts.maxHeight     = s_maxHeight;
+                if (!moth_packer::Pack(images, opts)) {
                     spdlog::error("Texture packing failed.");
                 }
             }

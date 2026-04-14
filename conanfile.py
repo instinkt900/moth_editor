@@ -18,7 +18,7 @@ class MothUIEditor(ConanFile):
         self.version = load(self, "version.txt").strip()
 
     def requirements(self):
-        self.requires("moth_ui/[>=1.7.0 <2.0.0]")
+        self.requires("moth_ui/1.0.0-rc.1")
         self.requires("moth_graphics/[>=0.10.0 <1.0.0]")
         self.requires("moth_packer/[>=0.4.0 <1.0.0]")
 

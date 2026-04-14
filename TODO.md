@@ -70,6 +70,19 @@ The command-line packer would remain available for build-pipeline use.
 
 ---
 
+### Texture Packer — Interactive Canvas
+
+**Effort:** Medium
+
+The texture packer editor canvas currently shows the packed atlas as a static image. It should
+receive the same interactive treatment the sprite editor canvas recently got: click and drag a
+frame rect to move it, drag an edge or corner handle to resize it, with eight handle squares
+drawn on the selected frame (four corners and four edge midpoints) and zoom-invariant hit radii.
+Cursor should change on hover to the appropriate resize arrow. Changes should commit through the
+existing undo stack.
+
+---
+
 ### Asset Panel Image Preview
 
 **Effort:** Small

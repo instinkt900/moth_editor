@@ -67,4 +67,13 @@ private:
     // Pivot drag state (click-drag in frame mini-preview)
     bool m_pivotDragging = false;
     std::optional<FrameVec> m_pivotDragSnapshot;
+
+    // Frame drag/resize state (click-drag in the preview canvas).
+    // op is one of the FrameDragOp enum values (defined in sprite_editor_preview.cpp);
+    // stored as int to avoid exposing imgui.h from this header.
+    struct FrameDragState {
+        int op;
+        FrameVec snapshot;
+    };
+    std::optional<FrameDragState> m_frameDrag;
 };
