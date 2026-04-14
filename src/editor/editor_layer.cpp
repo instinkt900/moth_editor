@@ -70,7 +70,7 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
         panel->Refresh();
     }
 
-    m_texturePacker = std::make_unique<TexturePacker>();
+    m_texturePacker = std::make_unique<TexturePacker>(*this);
     m_spriteEditor = std::make_unique<SpriteEditor>(*this);
 }
 

@@ -1,13 +1,3 @@
 #pragma once
-
-class TexturePacker {
-public:
-    TexturePacker() = default;
-    ~TexturePacker() = default;
-
-    void Open() { m_open = true; }
-    void Draw();
-
-private:
-    bool m_open = false;
-};
+// Forwarding header — the implementation has moved to editor/texture_packer/
+#include "editor/texture_packer/texture_packer.h"
