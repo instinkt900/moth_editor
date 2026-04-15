@@ -44,6 +44,8 @@
 #include <unistd.h>
 #endif
 
+EditorLayer::~EditorLayer() = default;
+
 EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app)
     : m_app(app)
     , m_context(context)
