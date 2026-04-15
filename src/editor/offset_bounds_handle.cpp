@@ -51,15 +51,9 @@ bool OffsetBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
 void OffsetBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     auto const currentPos = static_cast<moth_ui::FloatVec2>(m_widget.GetCanvasPanel().SnapToGrid(position));
 
-    // Capture start position and pivot world pos for the first update of each drag.
     if (!m_dragActive) {
         m_prevDragWorldPos = currentPos;
         m_dragActive = true;
-        auto const bounds = static_cast<moth_ui::FloatRect>(m_target->GetScreenRect());
-        auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
-        auto const entity = m_target->GetLayoutEntity();
-        auto const pivotFrac = entity ? entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
-        m_startPivotWorld = bounds.topLeft + dims * pivotFrac;
         return;
     }
 
@@ -82,17 +76,4 @@ void OffsetBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     bounds.offset.bottomRight.y += dy * static_cast<float>(m_anchor.Bottom);
 
     m_target->RecalculateBounds();
-
-    // Keep the pivot at the same world position it was at when the drag started,
-    // so the rotation anchor doesn't drift as the node is resized.
-    auto const newBounds = static_cast<moth_ui::FloatRect>(m_target->GetScreenRect());
-    auto const newDims = moth_ui::FloatVec2{ newBounds.w(), newBounds.h() };
-    if (newDims.x != 0.0f && newDims.y != 0.0f) {
-        auto const entity = m_target->GetLayoutEntity();
-        if (entity) {
-            auto const newPivot = (m_startPivotWorld - newBounds.topLeft) / newDims;
-            entity->m_pivot = newPivot;
-            m_target->SetPivot(newPivot);
-        }
-    }
 }

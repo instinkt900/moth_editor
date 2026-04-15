@@ -243,6 +243,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
                     canvasSize.y);
                 root->SetScreenRect(guideRect);
                 root->Draw();
+                graphics.SetBlendMode(moth_ui::BlendMode::Replace); // reset after tree draw
             }
         }
         graphics.SetLogicalSize(moth_graphics::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
