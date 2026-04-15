@@ -230,16 +230,15 @@ void TexturePacker::DrawInputPanel() {
     }
 
     {
-        // Background color as 8-digit hex RRGGBBAA
-        char hexBuf[9];
-        snprintf(hexBuf, sizeof(hexBuf), "%08X", m_paddingColor);
+        // Background color as 8-digit hex RRGGBBAA.
+        // m_paddingColorHex is a persistent member so partial edits survive across frames.
         ImGui::AlignTextToFramePadding();
         ImGui::TextUnformatted("Background Color");
         ImGui::SameLine();
         ImGui::SetNextItemWidth(-FLT_MIN);
-        if (ImGui::InputText("##bg_color", hexBuf, sizeof(hexBuf),
+        if (ImGui::InputText("##bg_color", m_paddingColorHex, sizeof(m_paddingColorHex),
                 ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsUppercase)) {
-            m_paddingColor = static_cast<uint32_t>(std::strtoul(hexBuf, nullptr, 16));
+            m_paddingColor = static_cast<uint32_t>(std::strtoul(m_paddingColorHex, nullptr, 16));
         }
     }
 

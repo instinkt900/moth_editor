@@ -30,6 +30,7 @@ void SpriteEditor::ClearSpriteActions() {
     m_pendingClipSnapshot.reset();
     m_pivotDragging = false;
     m_pivotDragSnapshot.reset();
+    m_frameDrag.reset();
 }
 
 void SpriteEditor::PushFrameAction(FrameVec before, int selBefore, int selAfter) {

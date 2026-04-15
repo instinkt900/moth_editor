@@ -30,7 +30,7 @@
 #include "moth_ui/animation/keyframe.h"
 #include "moth_graphics/platform/window.h"
 
-#include "texture_packer.h"
+#include "editor/texture_packer/texture_packer.h"
 
 #include <nfd.h>
 #include <ctime>

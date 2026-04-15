@@ -8,6 +8,15 @@
 #include "moth_graphics/graphics/spritesheet_factory.h"
 
 void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
+    // Load and validate before touching any editor state so a failed load
+    // leaves the current document intact.
+    auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
+    auto newSheet = assetContext.GetSpriteSheetFactory().GetSpriteSheet(path);
+    if (!newSheet) {
+        spdlog::error("Failed to load sprite sheet: {}", path.string());
+        return;
+    }
+
     ClearSpriteActions();
     m_selectedFrame = -1;
     m_selectedClip = -1;
@@ -17,13 +26,7 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
     m_zoom = -1.0f; // trigger auto-fit on next draw
     m_frames.clear();
     m_imagePathBuffer[0] = '\0';
-
-    auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
-    m_spriteSheet = assetContext.GetSpriteSheetFactory().GetSpriteSheet(path);
-    if (!m_spriteSheet) {
-        spdlog::error("Failed to load sprite sheet: {}", path.string());
-        return;
-    }
+    m_spriteSheet = std::move(newSheet);
 
     // Read the image path from the JSON so Import Sheet and Save know it
     try {

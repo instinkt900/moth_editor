@@ -154,9 +154,8 @@ void SpriteEditor::DrawPreview() {
     };
     if (m_zoom < 0.0f) {
         fitZoom();
-        if (m_zoom < 0.0f) { // avail was zero — defer until next frame
-            m_zoom = 1.0f;
-        }
+        // If avail was zero fitZoom() couldn't compute a value — keep the sentinel
+        // so it retries on the next frame instead of falling back to 1:1.
     }
 
     // Toolbar
@@ -209,7 +208,9 @@ void SpriteEditor::DrawPreview() {
     ImVec2 const mouse = ImGui::GetMousePos();
 
     // Show a drag/resize cursor whenever the mouse is over the selected frame border.
-    if (m_selectedFrame >= 0 && ImGui::IsItemHovered()) {
+    bool const selectedInRange = (m_selectedFrame >= 0 &&
+                                  m_selectedFrame < static_cast<int>(m_frames.size()));
+    if (selectedInRange && ImGui::IsItemHovered()) {
         FrameDragOp const hoverOp = HitTestFrame(mouse, imagePos, m_zoom,
                                                   m_frames[m_selectedFrame].rect);
         if (hoverOp != FrameDragOp::None) {
@@ -221,7 +222,7 @@ void SpriteEditor::DrawPreview() {
         // Priority 1: start a drag/resize on the already-selected frame if the mouse
         // is on its border or interior.
         FrameDragOp startOp = FrameDragOp::None;
-        if (m_selectedFrame >= 0) {
+        if (selectedInRange) {
             startOp = HitTestFrame(mouse, imagePos, m_zoom,
                                    m_frames[m_selectedFrame].rect);
         }

@@ -48,6 +48,7 @@ private:
     int m_padding    = 0;
     moth_packer::PaddingType  m_paddingType   = moth_packer::PaddingType::Color;
     uint32_t                  m_paddingColor  = 0x00000000;  // RRGGBBAA
+    char m_paddingColorHex[9] = {"00000000"};  // persistent edit buffer for the hex InputText
     moth_packer::AtlasFormat  m_outputFormat  = moth_packer::AtlasFormat::PNG;
     int m_jpegQuality = 90;
 

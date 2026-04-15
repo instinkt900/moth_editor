@@ -62,7 +62,6 @@ set(SOURCES ${SOURCES}
 	src/editor/sprite_editor/sprite_editor_frames.cpp
 	src/editor/sprite_editor/sprite_editor_clips.cpp
 	src/editor/properties_elements.cpp
-	src/editor/texture_packer.cpp
 	src/editor/texture_packer/texture_packer.cpp
 	src/editor/texture_packer/texture_packer_input.cpp
 	src/editor/texture_packer/texture_packer_output.cpp

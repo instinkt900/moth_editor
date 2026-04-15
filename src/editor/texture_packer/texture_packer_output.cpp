@@ -111,7 +111,7 @@ void TexturePacker::DoPack() {
                 if (!name.empty()) {
                     preview.imageNames.push_back(
                         std::filesystem::path(name).filename().string());
-                    auto const& r = imgEntry["rect"];
+                    auto const r = imgEntry.value("rect", nlohmann::json::object());
                     preview.imageRects.push_back({
                         r.value("x", 0), r.value("y", 0),
                         r.value("w", 0), r.value("h", 0) });

@@ -11,6 +11,8 @@ void SpriteEditor::DrawClipsPane() {
         // Advance animation playback
         if (m_clipPlaying && !clip.desc.frames.empty()) {
             m_clipElapsedMs += ImGui::GetIO().DeltaTime * 1000.0f;
+            m_clipCurrentStep = std::clamp(m_clipCurrentStep, 0,
+                static_cast<int>(clip.desc.frames.size()) - 1);
             while (m_clipPlaying) {
                 int const dur = std::max(clip.desc.frames[m_clipCurrentStep].durationMs, 1);
                 if (m_clipElapsedMs < static_cast<float>(dur)) { break; }

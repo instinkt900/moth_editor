@@ -35,8 +35,8 @@ void DeleteAction::Undo() {
     parentLayoutEntity->m_children.insert(insertIt, layoutEntity);
     layoutEntity->m_parent = parentLayoutEntity.get();
 
-    // merge the actual node instances
-    m_parentNode->AddChild(m_deletedNode, m_originalIndex);
+    // merge the actual node instances at the same clamped index used for the layout tree
+    m_parentNode->AddChild(m_deletedNode, safeIndex);
 }
 
 void DeleteAction::OnImGui() {

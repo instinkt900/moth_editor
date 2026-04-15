@@ -79,12 +79,12 @@ void SpriteEditor::DrawFramesPane() {
                 } else if (m_selectedFrame > frameToDelete) {
                     --m_selectedFrame;
                 }
-                // Fix up clip steps: decrement any step that pointed past the deleted index.
-                // When step.frameIndex == frameToDelete, the "> 0" guard keeps it at 0
-                // (redirecting to the frame that shifted into that slot) to avoid going negative.
+                // Fix up clip steps: decrement indices that point past the deleted frame.
+                // Steps pointing AT frameToDelete are left unchanged — they now point at the
+                // frame that shifted into that slot (the old frame at frameToDelete + 1).
                 for (auto& clip : m_clips) {
                     for (auto& step : clip.desc.frames) {
-                        if (step.frameIndex >= frameToDelete && step.frameIndex > 0) {
+                        if (step.frameIndex > frameToDelete) {
                             --step.frameIndex;
                         }
                     }
@@ -95,7 +95,8 @@ void SpriteEditor::DrawFramesPane() {
 
             // ---- Selected frame mini-preview (with pivot drag) ----
             ImGui::TableSetColumnIndex(1);
-            auto const* image = m_spriteSheet->GetImage().get();
+            auto const* image = (m_spriteSheet && m_spriteSheet->GetImage())
+                                ? m_spriteSheet->GetImage().get() : nullptr;
             if (image != nullptr && m_selectedFrame >= 0 && m_selectedFrame < static_cast<int>(m_frames.size())) {
                 auto& fr = m_frames[m_selectedFrame];
                 float const imgW = static_cast<float>(image->GetWidth());
