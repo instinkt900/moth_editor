@@ -3,6 +3,56 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [1.0.0-rc.1] - 2026-04-15
+### Features
+- Add Sprite Editor tool (step 1 — view)
+- Sprite editor frame selection and editing
+- Sprite editor zoom and pan
+- Sprite editor color pickers, pivot display, zoom, input layout fixes; fix animation panel click-through
+- Sprite editor editable clips and frame selection from clip steps
+- Sprite editor clip preview with playback controls
+- Sprite editor pivot preset buttons
+- Sprite editor clip preview with pivot-aligned rendering
+- Sprite editor save button
+- Frame preview beside frame list and clip step seeks preview
+- Persist sprite editor rect colors and thickness in editor config
+- Add menu bar to sprite editor with File and Preferences menus
+- Add Save As to sprite editor File menu
+- Add frame creation and deletion to sprite editor
+- Add File > New to sprite editor
+- Add independent undo/redo stack to sprite editor
+- Sprite editor interactive canvas drag/resize + housekeeping
+- Redesign texture packer tool with split input/output UI
+- Add --vulkan flag to select Vulkan/GLFW backend at launch
+
+### Bug Fixes
+- Sprite editor import sheet and layout corruption
+- Gate sprite editor saves on image and path being set
+- Update DeleteAction for moth_ui Group::IndexOf/AddChild int type change
+- Update imgui_ext Image overload for moth_ui IImage change
+- Strip pre-release suffix from version before passing to CMake project()
+- Allow pre-release suffix in cliff.toml tag_pattern
+- Forward-declare TexturePacker in editor_layer.h to avoid adl_serializer ODR violation
+- Harden sprite editor against out-of-range state and partial load failures
+- Include moth_ui/moth_ui.h before individual moth_ui headers in editor_layer.cpp
+- Harden sprite editor and texture packer against edge-case state
+- Null-guard spritesheet in clip preview, orphaned step sentinel, cross-root image path, and pack invalidation gaps
+- Respect --version override in set_version
+
+### Refactoring
+- Update editor panels to new IFlipbook API and expand TODO
+- Split sprite editor into subdirectory with per-concern files
+- Tighten sprite editor — push helpers, snprintf, bounding-box cleanup
+
+### Documentation
+- Update sprite editor TODO with canvas and packer integration detail
+
+### Miscellaneous
+- Updating dep versions and todo
+
+### Changes
+- Bump version to 1.0.0-rc.1
+
 ## [0.6.0] - 2026-04-04
 ### Features
 - Add NodeFlipbook support to the editor
