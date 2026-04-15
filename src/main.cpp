@@ -5,14 +5,18 @@
 #include <moth_graphics/platform/sdl/sdl_platform.h>
 
 int main(int argc, char** argv) {
-    bool const useVulkan = [&]() {
-        for (int i = 1; i < argc; ++i) {
-            if (std::string_view(argv[i]) == "--vulkan") {
-                return true;
-            }
-        }
-        return false;
-    }();
+    bool useVulkan = false;
+    bool enableViewports = false;
+    for (int i = 1; i < argc; ++i) {
+        std::string_view const arg(argv[i]);
+        if (arg == "--vulkan") { useVulkan = true; }
+        else if (arg == "--viewports") { enableViewports = true; }
+    }
+
+    if (enableViewports && !useVulkan) {
+        spdlog::warn("--viewports has no effect without --vulkan (SDL2 renderer does not support multi-viewports)");
+        enableViewports = false;
+    }
 
     std::unique_ptr<moth_graphics::platform::IPlatform> platform;
     if (useVulkan) {
@@ -22,6 +26,7 @@ int main(int argc, char** argv) {
     }
     platform->Startup();
     EditorApplication app(*platform);
+    app.SetImGuiViewportsEnabled(enableViewports);
     app.Init();
     app.Run();
     platform->Shutdown();
