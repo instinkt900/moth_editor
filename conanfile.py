@@ -15,7 +15,8 @@ class MothUIEditor(ConanFile):
     exports_sources = "CMakeLists.txt", "version.txt", "src/*", "external/nativefiledialog/*"
 
     def set_version(self):
-        self.version = load(self, "version.txt").strip()
+        if not self.version:
+            self.version = load(self, "version.txt").strip()
 
     def requirements(self):
         self.requires("moth_ui/1.0.0-rc.1")
