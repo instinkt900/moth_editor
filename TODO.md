@@ -40,48 +40,6 @@ multi-select is respected.
 
 ---
 
-### Sprite Editor — moth_packer Integration
-
-**Effort:** Medium
-
-The sprite editor is complete. It loads a packed atlas and descriptor, supports defining named
-clips as ordered frame sequences with per-frame pivot points, plays back animations in real time,
-and saves the descriptor back to disk with full undo/redo.
-
-The outstanding work is integration with moth_packer to drive the packing step from inside the
-editor so that a pre-packed atlas is no longer a prerequisite. Two pieces are required:
-
-**Editor canvas:** the sprite editor canvas currently renders a single atlas image. It needs to
-accept multiple loose source images — imported via file dialog or drag-and-drop — and display
-them on a working canvas before any packing has occurred. Each image on the canvas represents
-one or more frames, and the user should be able to assign clip membership, frame order, and
-pivot hints per image at this stage. This is the missing authoring step between "I have some
-PNGs" and "I have a descriptor".
-
-**moth_packer in-memory API:** once the canvas images and their metadata are ready, the editor
-needs to call moth_packer without touching the filesystem — passing the in-memory pixel buffers
-and accumulated metadata, and receiving a packed atlas buffer and typed descriptor in return.
-moth_packer does not yet expose this interface (tracked in its own TODO). The repack flow is
-also needed: when the user edits an already-packed sheet (adding or removing frames), the
-existing atlas and descriptor should be fed back through the packer to produce a re-optimised
-atlas with updated rects, preserving all clip and pivot data.
-
-The command-line packer would remain available for build-pipeline use.
-
----
-
-### Texture Packer — Interactive Canvas
-
-**Effort:** Medium
-
-The texture packer editor canvas currently shows the packed atlas as a static image. It should
-receive the same interactive treatment the sprite editor canvas recently got: click and drag a
-frame rect to move it, drag an edge or corner handle to resize it, with eight handle squares
-drawn on the selected frame (four corners and four edge midpoints) and zoom-invariant hit radii.
-Cursor should change on hover to the appropriate resize arrow. Changes should commit through the
-existing undo stack.
-
----
 
 ### Asset Panel Image Preview
 
