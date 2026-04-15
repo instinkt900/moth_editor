@@ -112,14 +112,14 @@ void EditorLayer::Draw() {
 
     auto* root = ImGui::DockBuilderGetNode(m_rootDockId);
     if (!root->IsSplitNode()) {
-        auto dockTop = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Up, 0.1f, nullptr, &m_rootDockId);
+        auto dockTop = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Up, 0.035f, nullptr, &m_rootDockId);
         auto dockBottom = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Down, 0.2f, nullptr, &m_rootDockId);
         auto dockLeft = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Left, 0.1f, nullptr, &m_rootDockId);
         auto dockRight = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Right, 0.1f, nullptr, &m_rootDockId);
 
         ImGuiID dockTopLeft = 0;
         ImGuiID dockTopRight = 0;
-        ImGui::DockBuilderSplitNode(dockTop, ImGuiDir_Left, 0.5f, &dockTopLeft, &dockTopRight);
+        ImGui::DockBuilderSplitNode(dockTop, ImGuiDir_Left, 0.25f, &dockTopLeft, &dockTopRight);
 
         ImGui::DockBuilderGetNode(dockTopLeft)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
         ImGui::DockBuilderGetNode(dockTopRight)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);

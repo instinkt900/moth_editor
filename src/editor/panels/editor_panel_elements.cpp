@@ -97,14 +97,12 @@ EditorPanelElements::EditorPanelElements(EditorLayer& editorLayer, bool visible)
 }
 
 void EditorPanelElements::DrawContents() {
-    ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
-    ImGui::GetWindowPos();
-    ImGui::GetWindowContentRegionMin();
+    ImVec2 const buttonSize(ImGui::GetFontSize() * 7.0f, 0.0f);
     for (auto& [label, func] : ElementButtons) {
-        if (ImGui::Button(label, button_size)) {
+        if (ImGui::Button(label, buttonSize)) {
             func(m_editorLayer);
         }
-        if ((ImGui::GetItemRectMax().x + button_size.x) < (ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x)) {
+        if ((ImGui::GetItemRectMax().x + buttonSize.x) < (ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMax().x)) {
             ImGui::SameLine();
         }
     }
