@@ -59,6 +59,6 @@ commit_parsers = [
 filter_commits = false
 
 # Tags are plain version numbers like "0.4.0" (no "v" prefix)
-tag_pattern = "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+tag_pattern = "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?$"
 
 ignore_tags = ""

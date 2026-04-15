@@ -8,7 +8,7 @@ class MothUIExample(ConanFile):
     generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
 
     def requirements(self):
-        self.requires("moth_graphics/[>=0.10.0 <1.0.0]")
+        self.requires("moth_graphics/1.0.0-rc.1")
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.27.0]")

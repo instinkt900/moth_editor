@@ -5,7 +5,9 @@
 #include "moth_ui/events/event.h"
 #include "confirm_prompt.h"
 #include "editor_config.h"
-#include "editor/texture_packer.h"
+#include "editor/sprite_editor/sprite_editor.h"
+
+class TexturePacker;
 #include "editor/actions/editor_action.h"
 #include "editor/panels/editor_panel.h"
 
@@ -26,7 +28,7 @@ class EditorApplication;
 class EditorLayer : public moth_ui::Layer {
 public:
     EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app);
-    ~EditorLayer() override = default;
+    ~EditorLayer() override;
 
     moth_graphics::graphics::IGraphics& GetGraphics() const { return m_graphics; }
 
@@ -228,4 +230,5 @@ private:
     void LoadConfig();
 
     std::unique_ptr<TexturePacker> m_texturePacker;
+    std::unique_ptr<SpriteEditor> m_spriteEditor;
 };

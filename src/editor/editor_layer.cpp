@@ -23,6 +23,7 @@
 #include "editor/actions/change_index_action.h"
 #include "editor/actions/editor_action.h"
 
+#include "moth_ui/moth_ui.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/events/event_dispatch.h"
@@ -30,7 +31,7 @@
 #include "moth_ui/animation/keyframe.h"
 #include "moth_graphics/platform/window.h"
 
-#include "texture_packer.h"
+#include "editor/texture_packer/texture_packer.h"
 
 #include <nfd.h>
 #include <ctime>
@@ -43,6 +44,8 @@
 #include <signal.h>
 #include <unistd.h>
 #endif
+
+EditorLayer::~EditorLayer() = default;
 
 EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app)
     : m_app(app)
@@ -70,7 +73,8 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
         panel->Refresh();
     }
 
-    m_texturePacker = std::make_unique<TexturePacker>();
+    m_texturePacker = std::make_unique<TexturePacker>(*this);
+    m_spriteEditor = std::make_unique<SpriteEditor>(*this);
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
@@ -172,6 +176,7 @@ void EditorLayer::Draw() {
     }
 
     m_texturePacker->Draw();
+    m_spriteEditor->Draw();
 }
 
 void EditorLayer::DrawMainMenu() {
@@ -255,6 +260,9 @@ void EditorLayer::DrawMainMenu() {
         if (ImGui::BeginMenu("Tools")) {
             if (ImGui::MenuItem("Texture Packer")) {
                 m_texturePacker->Open();
+            }
+            if (ImGui::MenuItem("Sprite Editor")) {
+                m_spriteEditor->Open();
             }
             ImGui::EndMenu();
         }

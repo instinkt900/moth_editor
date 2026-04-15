@@ -4,7 +4,7 @@
 #include <functional>
 #include <memory>
 
-#include <moth_ui/ui_fwd.h>
+#include <moth_ui/moth_ui_fwd.h>
 #include <moth_graphics/utils/moth_ui_format.h>
 #include <spdlog/spdlog.h>
 

@@ -30,6 +30,10 @@ struct EditorConfig {
     bool AutoSaveEnabled = false;
     int AutoSaveIntervalMinutes = 5;
     int AutoSaveMaxVersions = 5;
+
+    moth_ui::Color SpriteEditorNormalColor = moth_ui::Color{ 1.0f, 1.0f, 0.0f, 200.0f / 255.0f };
+    moth_ui::Color SpriteEditorSelectedColor = moth_ui::Color{ 0.0f, 1.0f, 1.0f, 1.0f };
+    int SpriteEditorRectThickness = 1;
 };
 
 inline void to_json(nlohmann::json& j, EditorConfig const& config) {
@@ -55,6 +59,9 @@ inline void to_json(nlohmann::json& j, EditorConfig const& config) {
     j["AutoSaveEnabled"] = config.AutoSaveEnabled;
     j["AutoSaveIntervalMinutes"] = config.AutoSaveIntervalMinutes;
     j["AutoSaveMaxVersions"] = config.AutoSaveMaxVersions;
+    j["SpriteEditorNormalColor"] = config.SpriteEditorNormalColor;
+    j["SpriteEditorSelectedColor"] = config.SpriteEditorSelectedColor;
+    j["SpriteEditorRectThickness"] = config.SpriteEditorRectThickness;
 }
 
 inline void from_json(nlohmann::json j, EditorConfig& config) {
@@ -80,4 +87,7 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.AutoSaveEnabled = j.value("AutoSaveEnabled", config.AutoSaveEnabled);
     config.AutoSaveIntervalMinutes = std::clamp(j.value("AutoSaveIntervalMinutes", config.AutoSaveIntervalMinutes), 1, 1440);
     config.AutoSaveMaxVersions = std::clamp(j.value("AutoSaveMaxVersions", config.AutoSaveMaxVersions), 1, 100);
+    config.SpriteEditorNormalColor = j.value("SpriteEditorNormalColor", config.SpriteEditorNormalColor);
+    config.SpriteEditorSelectedColor = j.value("SpriteEditorSelectedColor", config.SpriteEditorSelectedColor);
+    config.SpriteEditorRectThickness = std::max(j.value("SpriteEditorRectThickness", config.SpriteEditorRectThickness), 1);
 }

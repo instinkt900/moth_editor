@@ -2,41 +2,50 @@
 
 ## 1.0.0
 
----
+### Animation Event Parameters
 
-### Animation event parameters
-Animation events can be placed on the timeline and will fire as named callbacks at runtime, but there is no way to attach a data payload in the editor. The underlying `AnimationEvent` type in moth_ui needs to be checked for parameter support; if it exists, the editor just needs UI for it (an editable field in the event edit popup). If it doesn't, the type and serialisation need extending first.
+**Effort:** Small–Medium
 
-**Effort:** Small–medium depending on whether moth_ui already supports event parameters. UI side is a small addition to the existing event modify dialog.
+Animation events can be placed on the timeline and fire as named callbacks at runtime, but there
+is no way to attach a data payload in the editor. The `AnimationEvent` type in moth_ui needs to
+be checked for parameter support first — if it exists, the editor just needs a small addition to
+the event edit popup. If it doesn't, the type and serialisation need extending before the editor
+work can begin.
 
 ---
 
 ## 1.x
 
-### Easing curve editor
-Currently only discrete interpolation types are selectable per keyframe (e.g. linear, step). A bezier easing curve editor — inline in the animation panel or as a popup when editing a keyframe — would give much finer control over animation feel. This is a significant UI addition.
+### Easing Curve Editor
 
-**Effort:** Large. Requires a bezier curve widget, mapping control point positions to interpolation parameters, and changes to how the animation track stores and evaluates keyframe easing.
+**Effort:** Large
 
----
-
-### Align and distribute
-No tools for aligning multiple selected nodes to each other (left edge, centre, right edge, top, bottom) or distributing them evenly. These are standard in any layout tool and are especially useful when setting up grids or lists of elements.
-
-**Effort:** Small–medium. Pure logic operating on selected entities' bounds; each alignment is a small set of property changes wrapped in a composite action. The main work is the menu/toolbar UI and making sure multi-select is respected.
+Currently only discrete interpolation types are selectable per keyframe (e.g. linear, step). A
+bezier easing curve editor — inline in the animation panel or as a popup when editing a keyframe
+— would give much finer control over animation feel. Requires a bezier curve widget, mapping
+control point positions to interpolation parameters, and changes to how animation tracks store
+and evaluate keyframe easing.
 
 ---
 
-### Deep sublayout overrides
-Sublayout refs currently support property overrides one level deep — direct children of a ref can have properties overridden per instance, but if those children are themselves refs, their overrides are not reachable from the parent. This is a moth_ui limitation: `propertyOverrides` addresses children by flat index, so there is no way to express a path into a nested ref.
+### Align and Distribute
 
-Fixing this would require a path-based addressing scheme (e.g. `childIndex/childIndex/...`) in moth_ui's serialize/deserialize logic for `LayoutEntityRef`, plus corresponding editor UI to allow selecting and editing properties on deeply nested ref children. Most useful if building UI kits where refs are nested multiple levels deep.
+**Effort:** Small–Medium
 
-**Effort:** Medium–large, split across moth_ui (core data model and serialisation) and moth_editor (UI for selecting and editing overrides on nested children).
+No tools for aligning multiple selected nodes to each other (left edge, center, right edge, top,
+bottom) or distributing them evenly. These are standard in any layout tool and are especially
+useful when setting up grids or lists of elements. Each alignment is a small set of property
+changes wrapped in a composite undo action; the main work is the menu/toolbar UI and ensuring
+multi-select is respected.
 
 ---
 
-### Asset panel image preview
-Images in the asset list are shown only as filenames. A thumbnail preview (either as a tooltip on hover or as a small inline image) would make it much easier to find the right asset without memorising file names.
 
-**Effort:** Small. Images are already loaded into the graphics backend; rendering a scaled version in a tooltip via `imgui_ext::Image` should be straightforward.
+### Asset Panel Image Preview
+
+**Effort:** Small
+
+Images in the asset list are shown only as filenames. A thumbnail preview — either as a tooltip
+on hover or as a small inline image — would make it much easier to find the right asset without
+memorising file names. Images are already loaded into the graphics backend; rendering a scaled
+version in a tooltip via `imgui_ext::Image` should be straightforward.

@@ -27,7 +27,7 @@
 #include <range/v3/algorithm/remove_if.hpp>
 
 #include <moth_ui/utils/rect.h>
-#include <moth_ui/ui_fwd.h>
+#include <moth_ui/moth_ui_fwd.h>
 
 #include "utils.h"
 #include "editor/imgui_ext.h"
