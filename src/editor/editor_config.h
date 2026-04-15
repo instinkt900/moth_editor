@@ -71,8 +71,8 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.CanvasGridColorMajor = j.value("CanvasGridColorMajor", config.CanvasGridColorMajor);
     config.CanvasGridColorMinor = j.value("CanvasGridColorMinor", config.CanvasGridColorMinor);
     config.CanvasSize = j.value("CanvasSize", config.CanvasSize);
-    config.CanvasGridSpacing = j.value("CanvasGridSpacing", config.CanvasGridSpacing);
-    config.CanvasGridMajorFactor = j.value("CanvasGridMajorFactor", config.CanvasGridMajorFactor);
+    config.CanvasGridSpacing = std::max(j.value("CanvasGridSpacing", config.CanvasGridSpacing), 1);
+    config.CanvasGridMajorFactor = std::max(j.value("CanvasGridMajorFactor", config.CanvasGridMajorFactor), 1);
     config.SelectionColor = j.value("SelectionColor", config.SelectionColor);
     config.SelectionSliceColor = j.value("SelectionSliceColor", config.SelectionSliceColor);
     config.PreviewSourceRectColor = j.value("PreviewSourceRectColor", config.PreviewSourceRectColor);

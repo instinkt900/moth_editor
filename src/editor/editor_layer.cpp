@@ -59,8 +59,8 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
     LoadConfig();
 
     AddEditorPanel<EditorPanelConfig>(*this, false);
-    auto* const canvasPanel = AddEditorPanel<EditorPanelCanvas>(*this, true);
-    AddEditorPanel<EditorPanelCanvasProperties>(*this, true, *canvasPanel);
+    AddEditorPanel<EditorPanelCanvas>(*this, true);
+    AddEditorPanel<EditorPanelCanvasProperties>(*this, true);
     AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
@@ -242,6 +242,13 @@ void EditorLayer::DrawMainMenu() {
             if (ImGui::MenuItem("Reset Canvas", "F")) {
                 ResetCanvas();
             }
+            ImGui::Separator();
+            ImGui::SetNextItemWidth(80.0f);
+            ImGui::InputInt("Grid Spacing", &m_config.CanvasGridSpacing);
+            m_config.CanvasGridSpacing = std::max(m_config.CanvasGridSpacing, 1);
+            ImGui::SetNextItemWidth(80.0f);
+            ImGui::InputInt("Grid Major Factor", &m_config.CanvasGridMajorFactor);
+            m_config.CanvasGridMajorFactor = std::max(m_config.CanvasGridMajorFactor, 1);
             ImGui::Separator();
             if (ImGui::BeginMenu("Panels")) {
                 std::map<std::string, bool*> sortedVisBools;
