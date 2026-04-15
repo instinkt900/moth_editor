@@ -49,6 +49,9 @@ void TexturePacker::DrawInputPanel() {
                 } else if (m_selectedInput > i) {
                     --m_selectedInput;
                 }
+                m_hasPacked = false;
+                m_previewAtlases.clear();
+                m_selectedOutput = -1;
                 ImGui::PopID();
                 break;
             }

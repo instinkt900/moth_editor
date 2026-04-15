@@ -30,7 +30,7 @@ void DeleteAction::Undo() {
     // need to merge the layout entity trees too
     auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_deletedNode->GetLayoutEntity();
-    int const safeIndex = std::min(m_originalIndex, static_cast<int>(parentLayoutEntity->m_children.size()));
+    int const safeIndex = std::clamp(m_originalIndex, 0, static_cast<int>(parentLayoutEntity->m_children.size()));
     auto insertIt = std::begin(parentLayoutEntity->m_children) + static_cast<std::ptrdiff_t>(safeIndex);
     parentLayoutEntity->m_children.insert(insertIt, layoutEntity);
     layoutEntity->m_parent = parentLayoutEntity.get();

@@ -72,6 +72,8 @@ void SpriteEditor::ImportSheet(std::filesystem::path const& imagePath) {
         return;
     }
 
+    ClearSpriteActions();
+
     auto imageStr = imagePath.string();
     strncpy(m_imagePathBuffer, imageStr.c_str(), sizeof(m_imagePathBuffer) - 1);
     m_imagePathBuffer[sizeof(m_imagePathBuffer) - 1] = '\0';
@@ -141,13 +143,22 @@ void SpriteEditor::SaveSpriteSheet() {
         case moth_graphics::graphics::SpriteSheet::LoopType::Stop:  loopStr = "stop";  break;
         case moth_graphics::graphics::SpriteSheet::LoopType::Reset: loopStr = "reset"; break;
         case moth_graphics::graphics::SpriteSheet::LoopType::Loop:  loopStr = "loop";  break;
+        default:                                                     loopStr = "stop";  break;
         }
         clipObj["loop"] = loopStr;
 
         nlohmann::json stepsJson = nlohmann::json::array();
+        int const frameCount = static_cast<int>(m_frames.size());
         for (auto const& step : entry.desc.frames) {
             nlohmann::json stepObj;
-            stepObj["frame"]       = step.frameIndex;
+            int const safeFrameIdx = (frameCount > 0)
+                ? std::clamp(step.frameIndex, 0, frameCount - 1)
+                : 0;
+            if (safeFrameIdx != step.frameIndex) {
+                spdlog::warn("SpriteEditor: clip '{}' step has out-of-range frameIndex {}, saving as {}",
+                    entry.name, step.frameIndex, safeFrameIdx);
+            }
+            stepObj["frame"]       = safeFrameIdx;
             stepObj["duration_ms"] = step.durationMs;
             stepsJson.push_back(std::move(stepObj));
         }

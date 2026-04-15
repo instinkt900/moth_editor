@@ -317,8 +317,6 @@ void SpriteEditor::DrawPreview() {
         constexpr float kArm = 5.0f;
         drawList->AddLine({ px - kArm, py }, { px + kArm, py }, color, 1.5f);
         drawList->AddLine({ px, py - kArm }, { px, py + kArm }, color, 1.5f);
-
-
     }
 
     ImGui::EndChild();

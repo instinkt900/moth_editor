@@ -18,7 +18,9 @@ void TexturePacker::DoPack() {
     std::error_code ec;
     std::filesystem::create_directories(tmpDir, ec);
     if (ec) {
-        spdlog::error("TexturePacker: could not create temp dir: {}", ec.message());
+        auto const msg = fmt::format("TexturePacker: could not create temp dir: {}", ec.message());
+        spdlog::error("{}", msg);
+        m_editorLayer.ShowError(msg);
         return;
     }
 
@@ -46,6 +48,7 @@ void TexturePacker::DoPack() {
 
     if (!moth_packer::Pack(m_inputImages, opts)) {
         spdlog::error("TexturePacker: packing failed.");
+        m_editorLayer.ShowError("TexturePacker: packing failed.");
         return;
     }
 
@@ -58,12 +61,16 @@ void TexturePacker::DoPack() {
     try {
         std::ifstream f(jsonPath);
         if (!f.is_open()) {
-            spdlog::error("TexturePacker: could not open descriptor '{}'", jsonPath.string());
+            auto const msg = fmt::format("TexturePacker: could not open descriptor '{}'", jsonPath.string());
+            spdlog::error("{}", msg);
+            m_editorLayer.ShowError(msg);
             return;
         }
         f >> descriptor;
     } catch (std::exception const& e) {
-        spdlog::error("TexturePacker: failed to parse descriptor: {}", e.what());
+        auto const msg = fmt::format("TexturePacker: failed to parse descriptor: {}", e.what());
+        spdlog::error("{}", msg);
+        m_editorLayer.ShowError(msg);
         return;
     }
 
@@ -142,6 +149,7 @@ void TexturePacker::DoSave() {
 
     if (!moth_packer::Pack(m_inputImages, opts)) {
         spdlog::error("TexturePacker: save failed.");
+        m_editorLayer.ShowError("TexturePacker: save failed.");
     } else {
         spdlog::info("TexturePacker: saved to '{}/{}'",
             m_saveDir, m_saveFilename);

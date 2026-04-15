@@ -80,12 +80,20 @@ void SpriteEditor::DrawFramesPane() {
                     --m_selectedFrame;
                 }
                 // Fix up clip steps: decrement indices that point past the deleted frame.
-                // Steps pointing AT frameToDelete are left unchanged — they now point at the
-                // frame that shifted into that slot (the old frame at frameToDelete + 1).
+                // Steps pointing AT frameToDelete and not the last frame are left unchanged
+                // — they now point at the frame that shifted into that slot.
+                // Then clamp all indices to the new valid range so steps that pointed at the
+                // deleted last frame don't go out of bounds.
                 for (auto& clip : m_clips) {
                     for (auto& step : clip.desc.frames) {
                         if (step.frameIndex > frameToDelete) {
                             --step.frameIndex;
+                        }
+                        if (!m_frames.empty()) {
+                            step.frameIndex = std::min(step.frameIndex,
+                                static_cast<int>(m_frames.size()) - 1);
+                        } else {
+                            step.frameIndex = 0;
                         }
                     }
                 }

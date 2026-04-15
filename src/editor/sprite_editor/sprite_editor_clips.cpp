@@ -166,6 +166,7 @@ void SpriteEditor::DrawClipsPane() {
             newClip.desc.loop = moth_graphics::graphics::SpriteSheet::LoopType::Stop;
             m_clips.push_back(std::move(newClip));
             m_newClipNameBuffer[0] = '\0';
+            m_selectedClip = static_cast<int>(m_clips.size()) - 1;
             PushClipAction(std::move(before), beforeSel, m_selectedClip);
         }
     }
@@ -243,7 +244,10 @@ void SpriteEditor::DrawClipsPane() {
                         if (ImGui::Selectable(stepBuf, stepSelected,
                                 ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowOverlap,
                                 ImVec2(0, 0))) {
-                            m_selectedFrame = step.frameIndex;
+                            if (!m_frames.empty()) {
+                                m_selectedFrame = std::clamp(step.frameIndex, 0,
+                                    static_cast<int>(m_frames.size()) - 1);
+                            }
                             m_clipCurrentStep = f;
                             m_clipElapsedMs = 0.0f;
                             m_clipPlaying = false;
@@ -291,7 +295,8 @@ void SpriteEditor::DrawClipsPane() {
                 if (ImGui::Button("+ Step")) {
                     auto before = m_clips;
                     moth_graphics::graphics::SpriteSheet::ClipFrame newStep;
-                    newStep.frameIndex = (m_selectedFrame >= 0) ? m_selectedFrame : 0;
+                    newStep.frameIndex = (m_selectedFrame >= 0 && maxFrameIdx >= 0)
+                        ? std::clamp(m_selectedFrame, 0, maxFrameIdx) : 0;
                     newStep.durationMs = clip.desc.frames.empty() ? 100 : clip.desc.frames.back().durationMs;
                     clip.desc.frames.push_back(newStep);
                     PushClipAction(std::move(before), m_selectedClip, m_selectedClip);
