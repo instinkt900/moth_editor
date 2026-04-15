@@ -70,6 +70,10 @@ bool EditorPanelCanvas::BeginPanel() {
 
 void EditorPanelCanvas::DrawContents() {
     // ---- Zoom toolbar ----
+    if (ImGui::Button("Center")) {
+        m_canvasOffset = { 0.0f, 0.0f };
+    }
+    ImGui::SameLine();
     if (ImGui::Button("1:1")) {
         m_canvasZoom = 100;
     }
@@ -80,10 +84,6 @@ void EditorPanelCanvas::DrawContents() {
     ImGui::SameLine();
     if (ImGui::Button("-")) {
         m_canvasZoom = std::max(static_cast<int>(static_cast<float>(m_canvasZoom) / 1.25f), s_minZoom);
-    }
-    ImGui::SameLine();
-    if (ImGui::Button("Center")) {
-        m_canvasOffset = { 0.0f, 0.0f };
     }
     ImGui::SameLine();
     ImGui::Text("%d%%", m_canvasZoom);
