@@ -23,6 +23,7 @@
 #include "editor/actions/change_index_action.h"
 #include "editor/actions/editor_action.h"
 
+#include "moth_ui/moth_ui.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/events/event_dispatch.h"
