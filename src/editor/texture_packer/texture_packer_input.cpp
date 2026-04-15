@@ -181,6 +181,9 @@ void TexturePacker::DrawInputPanel() {
         m_inputImages.clear();
         m_selectedInput = -1;
         m_inputPreview.reset();
+        m_hasPacked = false;
+        m_previewAtlases.clear();
+        m_selectedOutput = -1;
     }
 
     // ---- Pack options ----

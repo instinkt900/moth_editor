@@ -115,7 +115,7 @@ void SpriteEditor::SaveSpriteSheet() {
     if (m_imagePathBuffer[0] != '\0') {
         std::filesystem::path const imagePath = m_imagePathBuffer;
         std::filesystem::path const relImage  = imagePath.lexically_relative(path.parent_path());
-        json["image"] = relImage.string();
+        json["image"] = relImage.empty() ? imagePath.filename().string() : relImage.string();
     }
 
     // Write frames

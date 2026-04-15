@@ -93,7 +93,7 @@ void SpriteEditor::DrawFramesPane() {
                             step.frameIndex = std::min(step.frameIndex,
                                 static_cast<int>(m_frames.size()) - 1);
                         } else {
-                            step.frameIndex = 0;
+                            step.frameIndex = -1;
                         }
                     }
                 }

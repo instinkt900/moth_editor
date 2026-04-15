@@ -42,7 +42,8 @@ void SpriteEditor::DrawClipsPane() {
         }
 
         // Draw the current frame, pivot-anchored
-        auto const* image = m_spriteSheet->GetImage().get();
+        auto const* image = (m_spriteSheet && m_spriteSheet->GetImage())
+                            ? m_spriteSheet->GetImage().get() : nullptr;
         if (clip.desc.frames.empty()) {
             ImGui::TextDisabled("(no steps)");
         } else if (image != nullptr) {
