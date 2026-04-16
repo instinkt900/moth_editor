@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
-## [1.0.0-rc.1] - 2026-04-15
+## [1.0.0-rc.1] - 2026-04-16
 ### Features
 - Add Sprite Editor tool (step 1 — view)
 - Sprite editor frame selection and editing
@@ -24,6 +24,10 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Sprite editor interactive canvas drag/resize + housekeeping
 - Redesign texture packer tool with split input/output UI
 - Add --vulkan flag to select Vulkan/GLFW backend at launch
+- Add canvas zoom toolbar, move grid controls to menu, fix scroll-to-pan
+- Auto-size canvas inputs to panel width, set 25/75 top strip split
+- Add --viewports flag to enable ImGui multi-viewport on Vulkan
+- Add Texture Filter property to image and flipbook nodes
 
 ### Bug Fixes
 - Sprite editor import sheet and layout corruption
@@ -38,17 +42,21 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Harden sprite editor and texture packer against edge-case state
 - Null-guard spritesheet in clip preview, orphaned step sentinel, cross-root image path, and pack invalidation gaps
 - Respect --version override in set_version
+- Pivot stays fractional on resize, reset blend mode after tree draw, hide negative enum sentinels from combos
+- Clamp CanvasSize to >=1 in UI and config load; round zoom wheel delta
 
 ### Refactoring
 - Update editor panels to new IFlipbook API and expand TODO
 - Split sprite editor into subdirectory with per-concern files
 - Tighten sprite editor — push helpers, snprintf, bounding-box cleanup
+- Move Center button to left of canvas zoom toolbar
 
 ### Documentation
 - Update sprite editor TODO with canvas and packer integration detail
 
 ### Miscellaneous
 - Updating dep versions and todo
+- Remove forwarding texture_packer.h shim
 
 ### Changes
 - Bump version to 1.0.0-rc.1
