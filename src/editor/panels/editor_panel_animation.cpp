@@ -1712,55 +1712,53 @@ void EditorPanelAnimation::UpdateMouseDragging() {
     float const dragDelta = ImGui::GetMousePos().x - m_mouseDragStartX;
     int const frameDelta = static_cast<int>(dragDelta / m_framePixelWidth);
 
-    if (frameDelta != 0) {
-        for (auto& context : m_selections) {
-            if (auto* clipCtx = std::get_if<ClipContext>(&context)) {
-                // Single clip: the drag handle determines whether we move the left edge, right edge, or both.
-                if (m_selections.size() == 1) {
-                    int& l = clipCtx->mutableValue.m_startFrame;
-                    int& r = clipCtx->mutableValue.m_endFrame;
-                    if ((m_clipDragHandle & kClipHandleLeft) != 0) {
-                        l = clipCtx->clip->m_startFrame + frameDelta;
-                    }
-                    if ((m_clipDragHandle & kClipHandleRight) != 0) {
-                        r = clipCtx->clip->m_endFrame + frameDelta;
-                    }
-                    if (l < 0) {
-                        if ((m_clipDragHandle & kClipHandleRight) != 0) {
-                            r -= l;
-                        }
-                        l = 0;
-                    }
-                    if ((m_clipDragHandle & kClipHandleLeft) != 0 && l > r) {
-                        l = r;
-                    }
-                    if ((m_clipDragHandle & kClipHandleRight) != 0 && r < l) {
-                        r = l;
-                    }
-                } else {
-                    int start = clipCtx->clip->m_startFrame + frameDelta;
-                    int end = clipCtx->clip->m_endFrame + frameDelta;
-                    if (start < 0) {
-                        int const shift = -start;
-                        start += shift;
-                        end += shift;
-                    }
-                    clipCtx->mutableValue.m_startFrame = start;
-                    clipCtx->mutableValue.m_endFrame = end;
+    for (auto& context : m_selections) {
+        if (auto* clipCtx = std::get_if<ClipContext>(&context)) {
+            // Single clip: the drag handle determines whether we move the left edge, right edge, or both.
+            if (m_selections.size() == 1) {
+                int& l = clipCtx->mutableValue.m_startFrame;
+                int& r = clipCtx->mutableValue.m_endFrame;
+                if ((m_clipDragHandle & kClipHandleLeft) != 0) {
+                    l = clipCtx->clip->m_startFrame + frameDelta;
                 }
-            } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
-                int frame = eventCtx->event->m_frame + frameDelta;
-                frame = std::max(frame, 0);
-                eventCtx->mutableValue.m_frame = frame;
-            } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-                int frame = kfCtx->current->m_frame + frameDelta;
-                frame = std::max(frame, 0);
-                kfCtx->mutableFrame = frame;
-            } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
-                int frame = dkfCtx->frame + frameDelta;
-                frame = std::max(frame, 0);
-                dkfCtx->mutableFrame = frame;
+                if ((m_clipDragHandle & kClipHandleRight) != 0) {
+                    r = clipCtx->clip->m_endFrame + frameDelta;
+                }
+                if (l < 0) {
+                    if ((m_clipDragHandle & kClipHandleRight) != 0) {
+                        r -= l;
+                    }
+                    l = 0;
+                }
+                if ((m_clipDragHandle & kClipHandleLeft) != 0 && l > r) {
+                    l = r;
+                }
+                if ((m_clipDragHandle & kClipHandleRight) != 0 && r < l) {
+                    r = l;
+                }
+            } else {
+                int start = clipCtx->clip->m_startFrame + frameDelta;
+                int end = clipCtx->clip->m_endFrame + frameDelta;
+                if (start < 0) {
+                    int const shift = -start;
+                    start += shift;
+                    end += shift;
+                }
+                clipCtx->mutableValue.m_startFrame = start;
+                clipCtx->mutableValue.m_endFrame = end;
             }
+        } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
+            int frame = eventCtx->event->m_frame + frameDelta;
+            frame = std::max(frame, 0);
+            eventCtx->mutableValue.m_frame = frame;
+        } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
+            int frame = kfCtx->current->m_frame + frameDelta;
+            frame = std::max(frame, 0);
+            kfCtx->mutableFrame = frame;
+        } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
+            int frame = dkfCtx->frame + frameDelta;
+            frame = std::max(frame, 0);
+            dkfCtx->mutableFrame = frame;
         }
     }
 
