@@ -472,7 +472,7 @@ void EditorPanelCanvas::UpdateInput() {
         if (io.KeyCtrl) {
             // Ctrl+scroll zooms
             if (io.MouseWheel != 0.0f) {
-                m_canvasZoom += static_cast<int>(io.MouseWheel * 6.0f * scaleFactor);
+                m_canvasZoom += static_cast<int>(std::lround(io.MouseWheel * 6.0f * scaleFactor));
                 m_canvasZoom = std::clamp(m_canvasZoom, s_minZoom, s_maxZoom);
             }
         } else {

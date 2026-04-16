@@ -25,4 +25,6 @@ void EditorPanelCanvasProperties::DrawContents() {
     ImGui::PopID();
     ImGui::SameLine(0, spacing);
     ImGui::Text("px");
+    canvasSize.x = std::max(1, canvasSize.x);
+    canvasSize.y = std::max(1, canvasSize.y);
 }
