@@ -11,7 +11,6 @@
 #include "panels/editor_panel_properties.h"
 #include "panels/editor_panel_elements.h"
 #include "panels/editor_panel_animation.h"
-#include "panels/editor_panel_fonts.h"
 #include "panels/editor_panel_undo_stack.h"
 #include "panels/editor_panel_preview.h"
 #include "panels/editor_panel_canvas.h"
@@ -25,6 +24,8 @@
 
 #include "moth_ui/moth_ui.h"
 #include "moth_ui/layout/layout.h"
+#include "moth_ui/layout/layout_entity_group.h"
+#include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/context.h"
@@ -65,7 +66,6 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
     AddEditorPanel<EditorPanelAnimation>(*this, true);
-    AddEditorPanel<EditorPanelFonts>(*this, true);
     AddEditorPanel<EditorPanelUndoStack>(*this, false);
     AddEditorPanel<EditorPanelPreview>(*this, false);
 
@@ -75,6 +75,7 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
 
     m_texturePacker = std::make_unique<TexturePacker>(*this);
     m_spriteEditor = std::make_unique<SpriteEditor>(*this);
+    m_fontDialog = std::make_unique<EditorPanelFonts>(*this);
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
@@ -134,18 +135,17 @@ void EditorLayer::Draw() {
         auto* panelProperties = GetEditorPanel<EditorPanelProperties>();
         auto* panelElements = GetEditorPanel<EditorPanelElements>();
         auto* panelAnimation = GetEditorPanel<EditorPanelAnimation>();
-        auto* panelFonts = GetEditorPanel<EditorPanelFonts>();
 
         ImGui::DockBuilderDockWindow(panelCanvasProperties->GetTitle().c_str(), dockTopLeft);
         ImGui::DockBuilderDockWindow(panelElements->GetTitle().c_str(), dockTopRight);
         ImGui::DockBuilderDockWindow(panelProperties->GetTitle().c_str(), dockLeft);
         ImGui::DockBuilderDockWindow(panelAssets->GetTitle().c_str(), dockRight);
-        ImGui::DockBuilderDockWindow(panelFonts->GetTitle().c_str(), dockRight);
         ImGui::DockBuilderDockWindow(panelAnimation->GetTitle().c_str(), dockBottom);
 
         ImGui::DockBuilderFinish(m_rootDockId);
     }
 
+    ImGui::SetNextWindowSizeConstraints(ImVec2(400.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
     if (ImGui::BeginPopupModal("Error", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::TextWrapped("%s", m_lastErrorMsg.c_str());
         ImVec2 button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
@@ -177,6 +177,7 @@ void EditorLayer::Draw() {
 
     m_texturePacker->Draw();
     m_spriteEditor->Draw();
+    m_fontDialog->Draw();
 }
 
 void EditorLayer::DrawMainMenu() {
@@ -236,6 +237,10 @@ void EditorLayer::DrawMainMenu() {
             ImGui::Checkbox("Snap to Angle", &m_config.SnapToAngle);
             ImGui::SetNextItemWidth(80.0f);
             ImGui::InputFloat("Snap Angle", &m_config.SnapAngle, 0.0f, 0.0f, "%.1f");
+            ImGui::Separator();
+            if (ImGui::MenuItem("Fonts...")) {
+                m_fontDialog->Open();
+            }
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
@@ -374,6 +379,26 @@ void EditorLayer::NewLayout(bool discard) {
     }
 }
 
+static void CollectMissingFonts(moth_ui::LayoutEntityGroup const& group,
+                                std::vector<std::string> const& knownFonts,
+                                std::set<std::string>& missing) {
+    for (auto const& child : group.m_children) {
+        if (child->GetType() == moth_ui::LayoutEntityType::Text) {
+            auto const* textEntity = dynamic_cast<moth_ui::LayoutEntityText const*>(child.get());
+            if (textEntity != nullptr && !textEntity->m_fontName.empty()) {
+                if (std::find(knownFonts.begin(), knownFonts.end(), textEntity->m_fontName) == knownFonts.end()) {
+                    missing.insert(textEntity->m_fontName);
+                }
+            }
+        } else if (child->GetType() == moth_ui::LayoutEntityType::Group) {
+            auto const* groupEntity = dynamic_cast<moth_ui::LayoutEntityGroup const*>(child.get());
+            if (groupEntity != nullptr) {
+                CollectMissingFonts(*groupEntity, knownFonts, missing);
+            }
+        }
+    }
+}
+
 void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
     if (!discard && IsWorkPending()) {
         m_confirmPrompt.SetTitle("Unsaved Changes");
@@ -402,6 +427,19 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
             ClearEditActions();
             m_lockedNodes.clear();
             Rebuild();
+            {
+                auto const knownFonts = m_context.GetFontFactory().GetFontNameList();
+                std::set<std::string> missingFonts;
+                CollectMissingFonts(*m_rootLayout, knownFonts, missingFonts);
+                if (!missingFonts.empty()) {
+                    std::string msg = "Layout references fonts that are not loaded:\n";
+                    for (auto const& name : missingFonts) {
+                        msg += fmt::format("  - {}\n", name);
+                    }
+                    msg += "\nLoad a font project via Edit > Fonts.";
+                    ShowError(msg);
+                }
+            }
             AddRecentFile(path);
             for (auto&& [panelId, panel] : m_panels) {
                 panel->OnLayoutLoaded();

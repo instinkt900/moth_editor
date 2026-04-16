@@ -1,16 +1,20 @@
 #pragma once
 
-#include "editor_panel.h"
-#include "../confirm_prompt.h"
-#include "../content_list.h"
+#include <filesystem>
 
-class EditorPanelFonts : public EditorPanel {
+class EditorLayer;
+
+class EditorPanelFonts {
 public:
-    EditorPanelFonts(EditorLayer& editorLayer, bool visible);
-    ~EditorPanelFonts() override = default;
+    explicit EditorPanelFonts(EditorLayer& editorLayer);
+    ~EditorPanelFonts() = default;
+
+    void Open() { m_open = true; }
+    void Draw();
 
 private:
-    void DrawContents() override;
+    EditorLayer& m_editorLayer;
+    bool m_open = false;
 
     int m_selectedIndex = -1;
     std::filesystem::path m_pendingFontPath;

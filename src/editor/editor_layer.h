@@ -10,6 +10,7 @@
 class TexturePacker;
 #include "editor/actions/editor_action.h"
 #include "editor/panels/editor_panel.h"
+#include "editor/panels/editor_panel_fonts.h"
 
 #include "moth_ui/layout/layout_rect.h"
 #include "moth_ui/events/event_mouse.h"
@@ -231,4 +232,5 @@ private:
 
     std::unique_ptr<TexturePacker> m_texturePacker;
     std::unique_ptr<SpriteEditor> m_spriteEditor;
+    std::unique_ptr<EditorPanelFonts> m_fontDialog;
 };
