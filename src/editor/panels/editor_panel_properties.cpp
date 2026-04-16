@@ -192,6 +192,13 @@ void EditorPanelProperties::DrawRectProperties(std::shared_ptr<moth_ui::NodeRect
 void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeImage> node) {
     auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(node->GetLayoutEntity());
 
+    PropertiesInput<moth_ui::TextureFilter>(
+        "Texture Filter", entity->m_textureFilter, {},
+        [&](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(entity->m_textureFilter, oldValue, newValue, [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
+
     PropertiesInput<moth_ui::ImageScaleType>(
         "Image Scale Type", entity->m_imageScaleType, {},
         [&](auto oldValue, auto newValue) {
@@ -390,6 +397,13 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
 
 void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::NodeFlipbook> node) {
     auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityFlipbook>(node->GetLayoutEntity());
+
+    PropertiesInput<moth_ui::TextureFilter>(
+        "Texture Filter", entity->m_textureFilter, {},
+        [&](auto oldValue, auto newValue) {
+            auto action = MakeChangeValueAction(entity->m_textureFilter, oldValue, newValue, [node]() { node->ReloadEntity(); });
+            m_editorLayer.PerformEditAction(std::move(action));
+        });
 
     auto const& layoutPath = m_editorLayer.GetCurrentLayoutPath();
     auto const flipbookBase = layoutPath.empty() ? std::filesystem::current_path() : layoutPath.parent_path();
