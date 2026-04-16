@@ -138,8 +138,8 @@ void EditorLayer::Draw() {
 
         ImGui::DockBuilderDockWindow(panelCanvasProperties->GetTitle().c_str(), dockTopLeft);
         ImGui::DockBuilderDockWindow(panelElements->GetTitle().c_str(), dockTopRight);
-        ImGui::DockBuilderDockWindow(panelProperties->GetTitle().c_str(), dockLeft);
-        ImGui::DockBuilderDockWindow(panelAssets->GetTitle().c_str(), dockRight);
+        ImGui::DockBuilderDockWindow(panelAssets->GetTitle().c_str(), dockLeft);
+        ImGui::DockBuilderDockWindow(panelProperties->GetTitle().c_str(), dockRight);
         ImGui::DockBuilderDockWindow(panelAnimation->GetTitle().c_str(), dockBottom);
 
         ImGui::DockBuilderFinish(m_rootDockId);

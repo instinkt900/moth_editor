@@ -10,6 +10,7 @@
 #include "../element_utils.h"
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_image.h"
+#include "moth_ui/layout/layout_entity_flipbook.h"
 #include "moth_ui/layout/layout.h"
 #include "../actions/composite_action.h"
 #include "editor_application.h"
@@ -275,13 +276,28 @@ void EditorPanelCanvas::EndPanel() {
                 AddEntityWithBounds<moth_ui::LayoutEntityRef>(m_editorLayer, bounds, *newLayout);
             }
         } else if (auto const* const payload = ImGui::AcceptDragDropPayload("image_path", 0)) {
-            std::string* layoutPath = static_cast<std::string*>(payload->Data);
+            std::string* imagePath = static_cast<std::string*>(payload->Data);
             moth_ui::LayoutRect bounds;
             bounds.anchor.topLeft = { 0, 0 };
             bounds.anchor.bottomRight = { 0, 0 };
             bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
             bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
-            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, layoutPath->c_str());
+            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, imagePath->c_str());
+        } else if (auto const* const payload = ImGui::AcceptDragDropPayload("flipbook_path", 0)) {
+            std::string* flipbookPath = static_cast<std::string*>(payload->Data);
+            std::filesystem::path const flipbookFsPath{ *flipbookPath };
+            auto* factory = m_editorLayer.GetContext().GetFlipbookFactory();
+            bool const valid = factory != nullptr && factory->GetFlipbook(flipbookFsPath) != nullptr;
+            if (valid) {
+                moth_ui::LayoutRect bounds;
+                bounds.anchor.topLeft = { 0, 0 };
+                bounds.anchor.bottomRight = { 0, 0 };
+                bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
+                bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
+                AddEntityWithBounds<moth_ui::LayoutEntityFlipbook>(m_editorLayer, bounds, flipbookFsPath);
+            } else {
+                m_editorLayer.ShowError(fmt::format("Failed to load flipbook: {}", flipbookFsPath.filename().string()));
+            }
         }
         ImGui::EndDragDropTarget();
     }
