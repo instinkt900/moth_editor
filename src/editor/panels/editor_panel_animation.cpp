@@ -490,8 +490,11 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
     }
 
     // Clicking on the ribbon grabs the current-frame indicator.
+    // IsItemHovered checks the ribbon InvisibleButton directly; it is false when
+    // a floating popup is on top, which prevents click-through without the
+    // broader IsWindowHovered check that was unreliable in docked contexts.
     ImGuiIO const& io = ImGui::GetIO();
-    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) &&
+    if (ImGui::IsItemHovered() &&
             ImGui::IsMouseClicked(ImGuiMouseButton_Left) && trackBounds.Contains(io.MousePos)) {
         m_grabbedCurrentFrame = true;
     }
@@ -1531,7 +1534,8 @@ void EditorPanelAnimation::DrawWidget() {
     float const panelHeight = m_rowHeight * static_cast<float>(targetRowCount);
     ImGui::BeginChildFrame(889, ImVec2{ canvasSize.x, canvasSize.y - m_horizontalScrollbarHeight });
     ImRect const frameRect = { ImGui::GetWindowPos(), ImGui::GetWindowPos() + ImGui::GetWindowSize() };
-    m_mouseInScrollArea = frameRect.Contains(ImGui::GetMousePos());
+    m_mouseInScrollArea = frameRect.Contains(ImGui::GetMousePos()) &&
+                          ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem);
     AddScrollPanelItem(ImVec2(canvasSize.x - m_verticalScrollbarWidth, panelHeight));
     m_scrollingPanelBounds.Min = ImGui::GetItemRectMin();
     m_scrollingPanelBounds.Max = ImGui::GetItemRectMax();
