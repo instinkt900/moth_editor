@@ -143,5 +143,4 @@ private:
 
     void UpdateInput();
 
-    friend class EditorPanelCanvasProperties;
 };

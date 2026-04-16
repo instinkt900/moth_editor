@@ -59,8 +59,8 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
     LoadConfig();
 
     AddEditorPanel<EditorPanelConfig>(*this, false);
-    auto* const canvasPanel = AddEditorPanel<EditorPanelCanvas>(*this, true);
-    AddEditorPanel<EditorPanelCanvasProperties>(*this, true, *canvasPanel);
+    AddEditorPanel<EditorPanelCanvas>(*this, true);
+    AddEditorPanel<EditorPanelCanvasProperties>(*this, true);
     AddEditorPanel<EditorPanelAssetList>(*this, true);
     AddEditorPanel<EditorPanelProperties>(*this, true);
     AddEditorPanel<EditorPanelElements>(*this, true);
@@ -112,14 +112,14 @@ void EditorLayer::Draw() {
 
     auto* root = ImGui::DockBuilderGetNode(m_rootDockId);
     if (!root->IsSplitNode()) {
-        auto dockTop = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Up, 0.1f, nullptr, &m_rootDockId);
+        auto dockTop = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Up, 0.035f, nullptr, &m_rootDockId);
         auto dockBottom = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Down, 0.2f, nullptr, &m_rootDockId);
         auto dockLeft = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Left, 0.1f, nullptr, &m_rootDockId);
         auto dockRight = ImGui::DockBuilderSplitNode(m_rootDockId, ImGuiDir_Right, 0.1f, nullptr, &m_rootDockId);
 
         ImGuiID dockTopLeft = 0;
         ImGuiID dockTopRight = 0;
-        ImGui::DockBuilderSplitNode(dockTop, ImGuiDir_Left, 0.5f, &dockTopLeft, &dockTopRight);
+        ImGui::DockBuilderSplitNode(dockTop, ImGuiDir_Left, 0.25f, &dockTopLeft, &dockTopRight);
 
         ImGui::DockBuilderGetNode(dockTopLeft)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
         ImGui::DockBuilderGetNode(dockTopRight)->SetLocalFlags(ImGuiDockNodeFlags_HiddenTabBar);
@@ -242,6 +242,13 @@ void EditorLayer::DrawMainMenu() {
             if (ImGui::MenuItem("Reset Canvas", "F")) {
                 ResetCanvas();
             }
+            ImGui::Separator();
+            ImGui::SetNextItemWidth(80.0f);
+            ImGui::InputInt("Grid Spacing", &m_config.CanvasGridSpacing);
+            m_config.CanvasGridSpacing = std::max(m_config.CanvasGridSpacing, 1);
+            ImGui::SetNextItemWidth(80.0f);
+            ImGui::InputInt("Grid Major Factor", &m_config.CanvasGridMajorFactor);
+            m_config.CanvasGridMajorFactor = std::max(m_config.CanvasGridMajorFactor, 1);
             ImGui::Separator();
             if (ImGui::BeginMenu("Panels")) {
                 std::map<std::string, bool*> sortedVisBools;

@@ -218,6 +218,12 @@ InputContext<T> InputElement(char const* label, InputBuffer<T> valueBuffer) {
     if (ImGui::BeginCombo(label, enumValueStr.c_str())) {
         for (size_t i = 0; i < magic_enum::enum_count<T>(); ++i) {
             auto const currentEnumValue = magic_enum::enum_value<T>(i);
+            using UnderlyingT = std::underlying_type_t<T>;
+            if constexpr (std::is_signed_v<UnderlyingT>) {
+                if (static_cast<UnderlyingT>(currentEnumValue) < 0) {
+                    continue;
+                }
+            }
             bool selected = currentEnumValue == *valueBuffer.Buffer;
             std::string const currentValueStr(magic_enum::enum_name(currentEnumValue));
             if (ImGui::Selectable(currentValueStr.c_str(), selected) && currentEnumValue != *valueBuffer.Buffer) {

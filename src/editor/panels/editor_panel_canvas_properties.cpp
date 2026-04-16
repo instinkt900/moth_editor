@@ -1,28 +1,30 @@
 #include "common.h"
 #include "editor_panel_canvas_properties.h"
 #include "../editor_layer.h"
-#include "../utils.h"
-#include "editor_panel_canvas.h"
-#include "../imgui_ext.h"
-#include "imgui_internal.h"
 
-namespace {
-    int constexpr s_maxZoom = 800;
-    int constexpr s_minZoom = 30;
-}
-
-EditorPanelCanvasProperties::EditorPanelCanvasProperties(EditorLayer& editorLayer, bool visible, EditorPanelCanvas& canvasPanel)
-    : EditorPanel(editorLayer, "Canvas Properties", visible, true)
-    , m_canvasPanel(canvasPanel) {
+EditorPanelCanvasProperties::EditorPanelCanvasProperties(EditorLayer& editorLayer, bool visible)
+    : EditorPanel(editorLayer, "Canvas Properties", visible, true) {
 }
 
 void EditorPanelCanvasProperties::DrawContents() {
-    imgui_ext::InputIntVec2("Canvas Size", &m_editorLayer.GetConfig().CanvasSize);
-    ImGui::InputInt("Canvas Zoom", &m_canvasPanel.m_canvasZoom);
-    m_canvasPanel.m_canvasZoom = std::clamp(m_canvasPanel.m_canvasZoom, s_minZoom, s_maxZoom);
-    ImGui::PushItemWidth(ImMax(1.0f, (ImGui::CalcItemWidth() - 6) / 2.0f));
-    ImGui::InputInt("##Grid Spacing", &m_editorLayer.GetConfig().CanvasGridSpacing);
-    ImGui::SameLine();
-    ImGui::InputInt("Grid Spacing/Major Factor", &m_editorLayer.GetConfig().CanvasGridMajorFactor);
-    ImGui::PopItemWidth();
+    auto& canvasSize = m_editorLayer.GetConfig().CanvasSize;
+    float const separatorW = ImGui::CalcTextSize("x").x;
+    float const labelW = ImGui::CalcTextSize("px").x;
+    float const spacing = 4.0f;
+    float const inputWidth = std::max(1.0f, (ImGui::GetContentRegionAvail().x - separatorW - labelW - (spacing * 4)) / 2.0f);
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::PushID(&canvasSize.x);
+    ImGui::InputInt("##w", &canvasSize.x, 0);
+    ImGui::PopID();
+    ImGui::SameLine(0, spacing);
+    ImGui::Text("x");
+    ImGui::SameLine(0, spacing);
+    ImGui::SetNextItemWidth(inputWidth);
+    ImGui::PushID(&canvasSize.y);
+    ImGui::InputInt("##h", &canvasSize.y, 0);
+    ImGui::PopID();
+    ImGui::SameLine(0, spacing);
+    ImGui::Text("px");
+    canvasSize.x = std::max(1, canvasSize.x);
+    canvasSize.y = std::max(1, canvasSize.y);
 }

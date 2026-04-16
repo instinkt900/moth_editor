@@ -20,6 +20,9 @@
 #include <cmath>
 
 namespace {
+    int constexpr s_minZoom = 30;
+    int constexpr s_maxZoom = 800;
+
     // Rotate point around the node's pivot point (in world/screen space)
     moth_ui::FloatVec2 RotateAroundPivot(moth_ui::FloatVec2 const& point, moth_ui::FloatVec2 const& pivot, float angleDeg) {
         float const rad = angleDeg * moth_ui::kDegToRad;
@@ -66,6 +69,29 @@ bool EditorPanelCanvas::BeginPanel() {
 }
 
 void EditorPanelCanvas::DrawContents() {
+    // ---- Zoom toolbar ----
+    if (ImGui::Button("Center")) {
+        m_canvasOffset = { 0.0f, 0.0f };
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("1:1")) {
+        m_canvasZoom = 100;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("+")) {
+        m_canvasZoom = std::min(static_cast<int>(static_cast<float>(m_canvasZoom) * 1.25f), s_maxZoom);
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("-")) {
+        m_canvasZoom = std::max(static_cast<int>(static_cast<float>(m_canvasZoom) / 1.25f), s_minZoom);
+    }
+    ImGui::SameLine();
+    ImGui::Text("%d%%", m_canvasZoom);
+
+    // Record canvas origin here so ConvertSpace reflects where the image actually starts
+    ImVec2 const imageOrigin = ImGui::GetCursorScreenPos();
+    m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(imageOrigin.x), static_cast<int>(imageOrigin.y) };
+
     moth_ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
 
     UpdateDisplayTexture(windowRegionSize);
@@ -128,7 +154,6 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
         m_displayTexture = graphics.CreateTarget(displaySize.x, displaySize.y);
     }
 
-    m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(ImGui::GetWindowPos().x), static_cast<int>(ImGui::GetWindowPos().y) };
     m_canvasWindowSize = displaySize;
 
     // auto const oldRenderTarget = graphics.GetTarget();
@@ -218,6 +243,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
                     canvasSize.y);
                 root->SetScreenRect(guideRect);
                 root->Draw();
+                graphics.SetBlendMode(moth_ui::BlendMode::Replace); // reset after tree draw
             }
         }
         graphics.SetLogicalSize(moth_graphics::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
@@ -428,22 +454,36 @@ void EditorPanelCanvas::UpdateInput() {
     if (ImGui::IsWindowHovered()) {
         float const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
 
+        // Middle-drag pans the canvas
         if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle)) {
             if (!m_draggingCanvas) {
                 m_draggingCanvas = true;
                 m_initialCanvasOffset = m_canvasOffset;
             }
-
-            auto const dragDelta = moth_ui::FloatVec2{ ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).x, ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).y };
-
-            m_canvasOffset = m_initialCanvasOffset + (moth_ui::FloatVec2{ dragDelta.x, dragDelta.y });
+            auto const dragDelta = moth_ui::FloatVec2{
+                ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).x,
+                ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).y };
+            m_canvasOffset = m_initialCanvasOffset + dragDelta;
         } else {
             m_draggingCanvas = false;
         }
 
         auto const io = ImGui::GetIO();
-        if (io.MouseWheel != 0) {
-            m_canvasZoom += static_cast<int>(io.MouseWheel * 6 * scaleFactor);
+        if (io.KeyCtrl) {
+            // Ctrl+scroll zooms
+            if (io.MouseWheel != 0.0f) {
+                m_canvasZoom += static_cast<int>(std::lround(io.MouseWheel * 6.0f * scaleFactor));
+                m_canvasZoom = std::clamp(m_canvasZoom, s_minZoom, s_maxZoom);
+            }
+        } else {
+            // Scroll pans — works with trackpad two-finger swipe and mouse wheel
+            constexpr float kPanSpeed = 20.0f;
+            if (io.MouseWheel != 0.0f) {
+                m_canvasOffset.y += io.MouseWheel * kPanSpeed;
+            }
+            if (io.MouseWheelH != 0.0f) {
+                m_canvasOffset.x += io.MouseWheelH * kPanSpeed;
+            }
         }
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
