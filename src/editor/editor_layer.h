@@ -58,6 +58,7 @@ public:
     bool IsLocked(std::shared_ptr<moth_ui::Node> node) const;
 
     void Refresh();
+    void Rebuild();
 
     void BeginEditBounds(std::shared_ptr<moth_ui::Node> node = nullptr);
     void EndEditBounds();
@@ -206,8 +207,6 @@ private:
     void SyncCrashRecovery();
 
     std::filesystem::path m_crashRecoveryPath;
-
-    void Rebuild();
 
     void MoveSelectionUp();
     void MoveSelectionDown();

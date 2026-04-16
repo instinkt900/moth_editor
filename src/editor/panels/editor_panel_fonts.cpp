@@ -35,6 +35,7 @@ void EditorPanelFonts::Draw() {
         if (NFD_OpenDialog("json", currentPath.c_str(), &outPath) == NFD_OKAY) {
             fontFactory.LoadProject(std::filesystem::path(outPath));
             fontNames = fontFactory.GetFontNameList();
+            m_editorLayer.Rebuild();
         }
     }
     ImGui::SameLine();
@@ -126,6 +127,7 @@ void EditorPanelFonts::Draw() {
         float const btnW = ImGui::GetFontSize() * 7.0f;
         if (ImGui::Button("OK", ImVec2(btnW, 0))) {
             fontFactory.AddFont(NameBuffer, m_pendingFontPath);
+            m_editorLayer.Rebuild();
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();
