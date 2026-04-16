@@ -28,6 +28,9 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Auto-size canvas inputs to panel width, set 25/75 top strip split
 - Add --viewports flag to enable ImGui multi-viewport on Vulkan
 - Add Texture Filter property to image and flipbook nodes
+- Move fonts to standalone dialog via Edit > Fonts
+- Rebuild layout after loading font project or adding a font
+- Overhaul asset browser panel
 
 ### Bug Fixes
 - Sprite editor import sheet and layout corruption
@@ -44,6 +47,8 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Respect --version override in set_version
 - Pivot stays fractional on resize, reset blend mode after tree draw, hide negative enum sentinels from combos
 - Clamp CanvasSize to >=1 in UI and config load; round zoom wheel delta
+- Prevent animation panel click-through to floating windows
+- Allow keyframe drag to return to original position
 
 ### Refactoring
 - Update editor panels to new IFlipbook API and expand TODO
@@ -53,6 +58,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 
 ### Documentation
 - Update sprite editor TODO with canvas and packer integration detail
+- Updating todo
 
 ### Miscellaneous
 - Updating dep versions and todo
