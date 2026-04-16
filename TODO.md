@@ -1,6 +1,6 @@
 # TODO
 
-## 1.0.0
+## 1.x
 
 ### Animation Event Parameters
 
@@ -13,8 +13,6 @@ the event edit popup. If it doesn't, the type and serialisation need extending b
 work can begin.
 
 ---
-
-## 1.x
 
 ### Easing Curve Editor
 
@@ -38,14 +36,3 @@ useful when setting up grids or lists of elements. Each alignment is a small set
 changes wrapped in a composite undo action; the main work is the menu/toolbar UI and ensuring
 multi-select is respected.
 
----
-
-
-### Asset Panel Image Preview
-
-**Effort:** Small
-
-Images in the asset list are shown only as filenames. A thumbnail preview — either as a tooltip
-on hover or as a small inline image — would make it much easier to find the right asset without
-memorising file names. Images are already loaded into the graphics backend; rendering a scaled
-version in a tooltip via `imgui_ext::Image` should be straightforward.
