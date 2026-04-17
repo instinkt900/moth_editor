@@ -13,6 +13,7 @@
 #include <unordered_map>
 
 #include <fmt/format.h>
+#include <moth_ui/utils/serialize_utils.h>
 #include <nlohmann/json.hpp>
 #include <imgui.h>
 #include <magic_enum.hpp>
