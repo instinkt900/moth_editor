@@ -204,16 +204,6 @@ void EditorLayer::DrawMainMenu() {
                 MenuFuncSaveLayoutAs();
             }
             ImGui::Separator();
-            ImGui::Checkbox("Autosave", &m_config.AutoSaveEnabled);
-            if (m_config.AutoSaveEnabled) {
-                ImGui::SetNextItemWidth(80.0f);
-                ImGui::InputInt("Interval (min)", &m_config.AutoSaveIntervalMinutes);
-                m_config.AutoSaveIntervalMinutes = std::max(1, m_config.AutoSaveIntervalMinutes);
-                ImGui::SetNextItemWidth(80.0f);
-                ImGui::InputInt("Max Versions", &m_config.AutoSaveMaxVersions);
-                m_config.AutoSaveMaxVersions = std::max(1, m_config.AutoSaveMaxVersions);
-            }
-            ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
                 m_layerStack->FireEvent(moth_graphics::EventRequestQuit{});
             }
@@ -233,13 +223,16 @@ void EditorLayer::DrawMainMenu() {
                 DeleteEntity();
             }
             ImGui::Separator();
-            ImGui::Checkbox("Snap to Grid", &m_config.SnapToGrid);
-            ImGui::Checkbox("Snap to Angle", &m_config.SnapToAngle);
-            ImGui::SetNextItemWidth(80.0f);
-            ImGui::InputFloat("Snap Angle", &m_config.SnapAngle, 0.0f, 0.0f, "%.1f");
+            ImGui::MenuItem("Snap to Grid", nullptr, &m_config.SnapToGrid);
+            ImGui::MenuItem("Snap to Angle", nullptr, &m_config.SnapToAngle);
             ImGui::Separator();
             if (ImGui::MenuItem("Fonts...")) {
                 m_fontDialog->Open();
+            }
+            if (ImGui::MenuItem("Preferences...")) {
+                if (auto* config = GetEditorPanel<EditorPanelConfig>()) {
+                    config->m_visible = true;
+                }
             }
             ImGui::EndMenu();
         }
@@ -248,12 +241,11 @@ void EditorLayer::DrawMainMenu() {
                 ResetCanvas();
             }
             ImGui::Separator();
-            ImGui::SetNextItemWidth(80.0f);
-            ImGui::InputInt("Grid Spacing", &m_config.CanvasGridSpacing);
-            m_config.CanvasGridSpacing = std::max(m_config.CanvasGridSpacing, 1);
-            ImGui::SetNextItemWidth(80.0f);
-            ImGui::InputInt("Grid Major Factor", &m_config.CanvasGridMajorFactor);
-            m_config.CanvasGridMajorFactor = std::max(m_config.CanvasGridMajorFactor, 1);
+            if (auto* preview = GetEditorPanel<EditorPanelPreview>()) {
+                if (ImGui::MenuItem("Preview", "Ctrl+P", preview->m_visible)) {
+                    preview->m_visible = !preview->m_visible;
+                }
+            }
             ImGui::Separator();
             if (ImGui::BeginMenu("Panels")) {
                 std::map<std::string, bool*> sortedVisBools;
@@ -809,6 +801,13 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
         case moth_ui::Key::N:
             if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 MenuFuncNewLayout();
+            }
+            break;
+        case moth_ui::Key::P:
+            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                if (auto* preview = GetEditorPanel<EditorPanelPreview>()) {
+                    preview->m_visible = !preview->m_visible;
+                }
             }
             break;
         case moth_ui::Key::O:

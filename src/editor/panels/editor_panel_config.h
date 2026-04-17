@@ -13,5 +13,10 @@ private:
     EditorConfig& m_config;
     ConfirmPrompt m_resetConfirm;
 
+    char m_newResName[64] = {};
+    int m_newResWidth = 0;
+    int m_newResHeight = 0;
+
+    bool BeginPanel() override;
     void DrawContents() override;
 };

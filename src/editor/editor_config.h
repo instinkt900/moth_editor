@@ -3,7 +3,16 @@
 #include "moth_ui/utils/color.h"
 #include "moth_ui/utils/vector_serialization.h"
 
+#include <string>
+#include <vector>
+
 struct EditorConfig {
+    struct Resolution {
+        std::string name;
+        int width = 0;
+        int height = 0;
+    };
+
     moth_ui::Color CanvasBackgroundColor = moth_ui::Color{ 0.67f, 0.67f, 0.67f, 1.0f };
     moth_ui::Color CanvasOutlineColor = moth_ui::Color{ 0.0f, 0.0f, 0.0f, 1.0f };
     moth_ui::Color CanvasColor = moth_ui::Color{ 1.0f, 1.0f, 1.0f, 1.0f };
@@ -34,6 +43,33 @@ struct EditorConfig {
     moth_ui::Color SpriteEditorNormalColor = moth_ui::Color{ 1.0f, 1.0f, 0.0f, 200.0f / 255.0f };
     moth_ui::Color SpriteEditorSelectedColor = moth_ui::Color{ 0.0f, 1.0f, 1.0f, 1.0f };
     int SpriteEditorRectThickness = 1;
+
+    // clang-format off
+    std::vector<Resolution> Resolutions = {
+        { "320 × 180  (16:9)",   320,  180 },
+        { "320 × 240  (4:3)",    320,  240 },
+        { "480 × 270  (16:9)",   480,  270 },
+        { "640 × 360  (16:9)",   640,  360 },
+        { "640 × 480  (4:3)",    640,  480 },
+        { "800 × 600  (4:3)",    800,  600 },
+        { "960 × 540  (16:9)",   960,  540 },
+        { "1024 × 576 (16:9)",  1024,  576 },
+        { "1024 × 768 (4:3)",   1024,  768 },
+        { "1280 × 720 (16:9)",  1280,  720 },
+        { "1280 × 800 (16:10)", 1280,  800 },
+        { "1280 × 1024 (5:4)",  1280, 1024 },
+        { "1366 × 768 (16:9)",  1366,  768 },
+        { "1600 × 900 (16:9)",  1600,  900 },
+        { "1920 × 1080 (16:9)", 1920, 1080 },
+        { "1920 × 1200 (16:10)",1920, 1200 },
+        { "2560 × 1440 (16:9)", 2560, 1440 },
+        { "3840 × 2160 (16:9)", 3840, 2160 },
+        { "360 × 640  (9:16)",   360,  640 },
+        { "375 × 667  (9:16)",   375,  667 },
+        { "414 × 896  (9:16)",   414,  896 },
+        { "768 × 1024 (3:4)",    768, 1024 },
+    };
+    // clang-format on
 };
 
 inline void to_json(nlohmann::json& j, EditorConfig const& config) {
@@ -62,6 +98,12 @@ inline void to_json(nlohmann::json& j, EditorConfig const& config) {
     j["SpriteEditorNormalColor"] = config.SpriteEditorNormalColor;
     j["SpriteEditorSelectedColor"] = config.SpriteEditorSelectedColor;
     j["SpriteEditorRectThickness"] = config.SpriteEditorRectThickness;
+
+    auto resArray = nlohmann::json::array();
+    for (auto const& r : config.Resolutions) {
+        resArray.push_back({ { "name", r.name }, { "width", r.width }, { "height", r.height } });
+    }
+    j["Resolutions"] = resArray;
 }
 
 inline void from_json(nlohmann::json j, EditorConfig& config) {
@@ -91,4 +133,17 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.SpriteEditorNormalColor = j.value("SpriteEditorNormalColor", config.SpriteEditorNormalColor);
     config.SpriteEditorSelectedColor = j.value("SpriteEditorSelectedColor", config.SpriteEditorSelectedColor);
     config.SpriteEditorRectThickness = std::max(j.value("SpriteEditorRectThickness", config.SpriteEditorRectThickness), 1);
+
+    if (j.contains("Resolutions") && j["Resolutions"].is_array()) {
+        config.Resolutions.clear();
+        for (auto const& entry : j["Resolutions"]) {
+            EditorConfig::Resolution r;
+            r.name = entry.value("name", std::string{});
+            r.width = entry.value("width", 0);
+            r.height = entry.value("height", 0);
+            if (r.width > 0 && r.height > 0 && !r.name.empty()) {
+                config.Resolutions.push_back(std::move(r));
+            }
+        }
+    }
 }
