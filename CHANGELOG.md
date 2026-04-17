@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
-## [1.0.0-rc.1] - 2026-04-16
+## [1.0.0-rc.1] - 2026-04-17
 ### Features
 - Add Sprite Editor tool (step 1 — view)
 - Sprite editor frame selection and editing
@@ -31,6 +31,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Move fonts to standalone dialog via Edit > Fonts
 - Rebuild layout after loading font project or adding a font
 - Overhaul asset browser panel
+- Add Preferences panel, View>Preview shortcut, and resolution presets
 
 ### Bug Fixes
 - Sprite editor import sheet and layout corruption
@@ -49,6 +50,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Clamp CanvasSize to >=1 in UI and config load; round zoom wheel delta
 - Prevent animation panel click-through to floating windows
 - Allow keyframe drag to return to original position
+- Include serialize_utils.h in PCH before json.hpp to prevent adl_serializer ODR error
 
 ### Refactoring
 - Update editor panels to new IFlipbook API and expand TODO
