@@ -48,6 +48,8 @@ public:
     void OnLayoutLoaded() override;
     void OnShutdown() override;
 
+    void TogglePlayback();
+
 private:
     void DrawContents() override;
 
@@ -225,6 +227,14 @@ private:
 
     void CommitDragActions();
     void PerformOrCompositeAction(std::vector<std::unique_ptr<IEditorAction>> actions);
+
+    // Playback state
+    std::string m_selectedClipName;  // empty = no clip selected
+    bool m_playing = false;
+    float m_playbackAccumSec = 0.0f; // accumulated fractional seconds between frame steps
+
+    void DrawPlaybackControls();
+    void AdvancePlayback();
 
     bool m_boxSelectStarted = false;
     bool m_boxSelecting = false;

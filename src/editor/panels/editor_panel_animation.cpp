@@ -88,10 +88,16 @@ EditorPanelAnimation::EditorPanelAnimation(EditorLayer& editorLayer, bool visibl
 void EditorPanelAnimation::OnNewLayout() {
     m_currentFrame = 0;
     m_editorLayer.GetConfig().CurrentAnimationFrame = 0;
+    m_playing = false;
+    m_playbackAccumSec = 0.0f;
+    m_selectedClipName.clear();
 }
 
 void EditorPanelAnimation::OnLayoutLoaded() {
     ClearSelections();
+    m_playing = false;
+    m_playbackAccumSec = 0.0f;
+    m_selectedClipName.clear();
 
     m_framePixelWidth = 10.f;
 
@@ -121,7 +127,23 @@ void EditorPanelAnimation::OnShutdown() {
 
 void EditorPanelAnimation::DrawContents() {
     m_currentFrame = m_editorLayer.GetSelectedFrame();
+
+    // Advance playback before the widget so the updated frame is visible immediately.
+    if (m_playing) {
+        AdvancePlayback();
+    }
+
+    bool const wasPlaying = m_playing;
+    int const frameBeforeWidget = m_currentFrame;
     DrawWidget();
+
+    // If the user manually changed the frame (drag or InputInt), pause playback.
+    // Only applies when already playing — ignore frame changes caused by pressing Play itself.
+    if (wasPlaying && m_playing && m_currentFrame != frameBeforeWidget) {
+        m_playing = false;
+        m_playbackAccumSec = 0.0f;
+    }
+
     m_editorLayer.SetSelectedFrame(m_currentFrame);
 }
 
@@ -1431,7 +1453,142 @@ void EditorPanelAnimation::DrawCursor() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Playback
+// ---------------------------------------------------------------------------
+
+void EditorPanelAnimation::AdvancePlayback() {
+    auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+    AnimationClip* clip = nullptr;
+    for (auto& c : entity->m_clips) {
+        if (c->m_name == m_selectedClipName) {
+            clip = c.get();
+            break;
+        }
+    }
+    if (clip == nullptr) {
+        m_playing = false;
+        return;
+    }
+
+    float const fps = (clip->m_fps > 0.0f) ? clip->m_fps : AnimationClip::DefaultFPS;
+    m_playbackAccumSec += ImGui::GetIO().DeltaTime;
+    float const secPerFrame = 1.0f / fps;
+    int const framesToAdvance = static_cast<int>(m_playbackAccumSec / secPerFrame);
+    if (framesToAdvance <= 0) {
+        return;
+    }
+    m_playbackAccumSec -= static_cast<float>(framesToAdvance) * secPerFrame;
+
+    int newFrame = m_currentFrame + framesToAdvance;
+    if (newFrame > clip->m_endFrame) {
+        switch (clip->m_loopType) {
+            case AnimationClip::LoopType::Loop: {
+                int const len = clip->FrameCount();
+                newFrame = clip->m_startFrame + ((newFrame - clip->m_startFrame) % len);
+                break;
+            }
+            case AnimationClip::LoopType::Stop:
+                newFrame = clip->m_endFrame;
+                m_playing = false;
+                break;
+            case AnimationClip::LoopType::Reset:
+                newFrame = clip->m_startFrame;
+                m_playing = false;
+                break;
+        }
+    }
+    m_currentFrame = newFrame;
+}
+
+void EditorPanelAnimation::TogglePlayback() {
+    if (m_playing) {
+        m_playing = false;
+        m_playbackAccumSec = 0.0f;
+        return;
+    }
+    if (m_selectedClipName.empty() || m_group == nullptr) {
+        return;
+    }
+    auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+    for (auto const& c : entity->m_clips) {
+        if (c->m_name == m_selectedClipName) {
+            bool const outsideRange = m_currentFrame < c->m_startFrame || m_currentFrame > c->m_endFrame;
+            bool const stoppedAtEnd = c->m_loopType == AnimationClip::LoopType::Stop && m_currentFrame == c->m_endFrame;
+            if (outsideRange || stoppedAtEnd) {
+                m_currentFrame = c->m_startFrame;
+                m_editorLayer.SetSelectedFrame(m_currentFrame);
+            }
+            break;
+        }
+    }
+    m_playing = true;
+    m_playbackAccumSec = 0.0f;
+}
+
+void EditorPanelAnimation::DrawPlaybackControls() {
+    auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+    auto const& clips = entity->m_clips;
+
+    // Validate that the selected clip name still refers to an existing clip.
+    bool const clipExists = !m_selectedClipName.empty() &&
+        std::any_of(clips.begin(), clips.end(), [&](auto const& c) { return c->m_name == m_selectedClipName; });
+    if (!clipExists && !m_selectedClipName.empty()) {
+        m_selectedClipName.clear();
+        m_playing = false;
+    }
+
+    // Clip dropdown
+    char const* previewName = m_selectedClipName.empty() ? "(none)" : m_selectedClipName.c_str();
+    ImGui::PushItemWidth(150);
+    if (ImGui::BeginCombo("##clip_select", previewName)) {
+        bool const noneSelected = m_selectedClipName.empty();
+        if (ImGui::Selectable("(none)", noneSelected)) {
+            m_selectedClipName.clear();
+            m_playing = false;
+            m_playbackAccumSec = 0.0f;
+        }
+        if (noneSelected) {
+            ImGui::SetItemDefaultFocus();
+        }
+        for (auto const& c : clips) {
+            bool const isSelected = c->m_name == m_selectedClipName;
+            if (ImGui::Selectable(c->m_name.c_str(), isSelected)) {
+                m_selectedClipName = c->m_name;
+                m_playing = false;
+                m_playbackAccumSec = 0.0f;
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+
+    // Play / Pause button
+    bool const canPlay = !m_selectedClipName.empty();
+    if (!canPlay) {
+        ImGui::BeginDisabled();
+    }
+    if (m_playing) {
+        if (ImGui::Button("Pause")) {
+            TogglePlayback();
+        }
+    } else {
+        if (ImGui::Button("Play ")) {
+            TogglePlayback();
+        }
+    }
+    if (!canPlay) {
+        ImGui::EndDisabled();
+    }
+    ImGui::SameLine();
+}
+
 void EditorPanelAnimation::DrawFrameRangeSettings() {
+    DrawPlaybackControls();
     ImGui::PushItemWidth(130);
     ImGui::InputInt("Current Frame ", &m_currentFrame);
     ImGui::SameLine();
