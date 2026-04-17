@@ -7,9 +7,13 @@
 char const* const EditorApplication::IMGUI_FILE = "imgui.ini";
 char const* const EditorApplication::PERSISTENCE_FILE = "editor.json";
 
+// Must outlive ImGui context destruction, which happens in Application::~Application()
+// (base class dtor) after EditorApplication's members are already destroyed.
+static std::string s_imguiSettingsPath;
+
 EditorApplication::EditorApplication(moth_graphics::platform::IPlatform& platform)
     : Application(platform, "Moth UI Tool", 1920, 1080) {
-    m_imguiSettingsPath = (std::filesystem::current_path() / IMGUI_FILE).string();
+    s_imguiSettingsPath = std::filesystem::absolute(std::filesystem::current_path() / IMGUI_FILE).string();
     m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
     std::ifstream persistenceFile(m_persistentFilePath.string());
     if (persistenceFile.is_open()) {
@@ -52,6 +56,7 @@ EditorApplication::~EditorApplication() {
 }
 
 void EditorApplication::PostCreateWindow() {
+    ImGui::GetIO().IniFilename = s_imguiSettingsPath.c_str();
     {
         constexpr int kSize = 64;
         constexpr int kTile = 8;
