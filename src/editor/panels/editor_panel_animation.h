@@ -49,6 +49,8 @@ public:
     void OnShutdown() override;
 
     void TogglePlayback();
+    void DeleteSelections();
+    bool HasSelections() const;
 
 private:
     void DrawContents() override;
@@ -98,7 +100,6 @@ private:
     std::vector<moth_ui::AnimationEvent*> m_pendingEventBoxSelections;
 
     void ClearSelections();
-    void DeleteSelections();
 
     void SelectClip(moth_ui::AnimationClip* clip);
     void DeselectClip(moth_ui::AnimationClip* clip);

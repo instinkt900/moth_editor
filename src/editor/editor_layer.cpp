@@ -167,9 +167,14 @@ void EditorLayer::Draw() {
         panel->Draw();
     }
 
-    if (IsEditorPanelFocused<EditorPanelCanvas>() || IsEditorPanelFocused<EditorPanelAnimation>()) {
+    if (!ImGui::GetIO().WantCaptureKeyboard) {
+        auto* animPanel = GetEditorPanel<EditorPanelAnimation>();
         if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-            DeleteEntity();
+            if (animPanel != nullptr && animPanel->IsHovered() && animPanel->HasSelections()) {
+                animPanel->DeleteSelections();
+            } else if (!m_selection.empty()) {
+                DeleteEntity();
+            }
         } else if (ImGui::IsKeyPressed(ImGuiKey_H)) {
             ToggleEntityVisibility();
         }

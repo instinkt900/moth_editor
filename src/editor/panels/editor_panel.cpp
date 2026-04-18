@@ -19,8 +19,10 @@ void EditorPanel::Draw() {
     
     if (m_visible) {
         m_focused = false;
+        m_hovered = false;
         if (BeginPanel()) {
             m_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows);
+            m_hovered = ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByPopup);
             DrawContents();
         }
         EndPanel();

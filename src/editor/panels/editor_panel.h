@@ -28,6 +28,7 @@ public:
     std::string const& GetTitle() const { return m_title; }
     bool IsExposed() const { return m_exposed; }
     bool IsFocused() const { return m_focused; }
+    bool IsHovered() const { return m_hovered; }
 
     virtual void OnNewLayout() {}
     virtual void OnLayoutLoaded() {}
@@ -47,6 +48,7 @@ protected:
     bool m_exposed = false;
     bool m_wasVisible = false;
     bool m_focused = false;
+    bool m_hovered = false;
 
     virtual void OnOpen() {}
     virtual void OnClose() {}

@@ -511,6 +511,32 @@ void EditorPanelCanvas::UpdateInput() {
         }
     }
 
+    if (!ImGui::GetIO().WantCaptureKeyboard) {
+        auto const& selection = m_editorLayer.GetSelection();
+        if (!selection.empty()) {
+            moth_ui::FloatVec2 nudge{ 0.0f, 0.0f };
+            if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
+                nudge.x = -1.0f;
+            } else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
+                nudge.x = 1.0f;
+            } else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
+                nudge.y = -1.0f;
+            } else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
+                nudge.y = 1.0f;
+            }
+            if (nudge.x != 0.0f || nudge.y != 0.0f) {
+                m_editorLayer.BeginEditBounds();
+                for (auto&& node : selection) {
+                    auto& bounds = node->GetLayoutRect();
+                    bounds.offset.topLeft += nudge;
+                    bounds.offset.bottomRight += nudge;
+                    node->RecalculateBounds();
+                }
+                m_editorLayer.EndEditBounds();
+            }
+        }
+    }
+
     // always want to accept released so we dont end up stuck down
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
         OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });

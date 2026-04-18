@@ -184,6 +184,10 @@ void EditorPanelAnimation::PerformOrCompositeAction(std::vector<std::unique_ptr<
     }
 }
 
+bool EditorPanelAnimation::HasSelections() const {
+    return !m_selections.empty();
+}
+
 void EditorPanelAnimation::DeleteSelections() {
     if (m_selections.empty()) {
         return;
