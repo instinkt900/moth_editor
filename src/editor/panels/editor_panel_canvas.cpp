@@ -514,15 +514,16 @@ void EditorPanelCanvas::UpdateInput() {
     if (!ImGui::GetIO().WantCaptureKeyboard) {
         auto const& selection = m_editorLayer.GetSelection();
         if (!selection.empty()) {
+            float const nudgeStep = ImGui::GetIO().KeyCtrl ? 10.0f : 1.0f;
             moth_ui::FloatVec2 nudge{ 0.0f, 0.0f };
             if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
-                nudge.x = -1.0f;
+                nudge.x = -nudgeStep;
             } else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
-                nudge.x = 1.0f;
+                nudge.x = nudgeStep;
             } else if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
-                nudge.y = -1.0f;
+                nudge.y = -nudgeStep;
             } else if (ImGui::IsKeyPressed(ImGuiKey_DownArrow)) {
-                nudge.y = 1.0f;
+                nudge.y = nudgeStep;
             }
             if (nudge.x != 0.0f || nudge.y != 0.0f) {
                 m_editorLayer.BeginEditBounds();
