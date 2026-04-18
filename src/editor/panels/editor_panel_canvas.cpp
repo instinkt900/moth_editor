@@ -418,11 +418,27 @@ void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
         auto const delta = newPosition - m_grabPosition;
         m_grabPosition = newPosition;
 
+        auto const floatDelta = static_cast<moth_ui::FloatVec2>(delta);
+        bool const shiftHeld = ImGui::GetIO().KeyShift;
+
         auto const selection = m_editorLayer.GetSelection();
         for (auto&& node : selection) {
             auto& bounds = node->GetLayoutRect();
-            bounds.offset.topLeft += static_cast<moth_ui::FloatVec2>(delta);
-            bounds.offset.bottomRight += static_cast<moth_ui::FloatVec2>(delta);
+            if (shiftHeld) {
+                auto const* parent = node->GetParent();
+                if (parent != nullptr) {
+                    auto const parentRect = static_cast<moth_ui::FloatRect>(parent->GetScreenRect());
+                    auto const parentDimensions = moth_ui::FloatVec2{ parentRect.w(), parentRect.h() };
+                    if (parentDimensions.x > 0.0f && parentDimensions.y > 0.0f) {
+                        auto const anchorDelta = floatDelta / parentDimensions;
+                        bounds.anchor.topLeft += anchorDelta;
+                        bounds.anchor.bottomRight += anchorDelta;
+                    }
+                }
+            } else {
+                bounds.offset.topLeft += floatDelta;
+                bounds.offset.bottomRight += floatDelta;
+            }
             node->RecalculateBounds();
         }
         m_dragSelecting = false;
