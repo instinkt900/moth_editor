@@ -160,34 +160,52 @@ inline InputContext<moth_ui::Color> InputElement(char const* label, InputBuffer<
 inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBuffer<moth_ui::LayoutRect> valueBuffer) {
     bool changed = false;
     bool focused = false;
-    if (ImGui::CollapsingHeader(label)) {
-        if (ImGui::TreeNode("Anchor")) {
-            ImGui::PushItemWidth(50);
-            changed |= ImGui::InputFloat("Top", &valueBuffer.Buffer->anchor.topLeft.y, 0, 0, "%.2f");
+
+    ImGui::Text("%s", label);
+
+    auto drawSection = [&](char const* header, moth_ui::FloatRect& rect) {
+        ImGui::Indent();
+        ImGui::Text("%s", header);
+        ImGui::PushID(header);
+        if (ImGui::BeginTable("##tbl", 2)) {
+            ImGui::TableNextColumn();
+            ImGui::Text("L");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            changed |= ImGui::InputFloat("##l", &rect.topLeft.x, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Left", &valueBuffer.Buffer->anchor.topLeft.x, 0, 0, "%.2f");
+
+            ImGui::TableNextColumn();
+            ImGui::Text("T");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            changed |= ImGui::InputFloat("##t", &rect.topLeft.y, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Bottom", &valueBuffer.Buffer->anchor.bottomRight.y, 0, 0, "%.2f");
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("R");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            changed |= ImGui::InputFloat("##r", &rect.bottomRight.x, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Right", &valueBuffer.Buffer->anchor.bottomRight.x, 0, 0, "%.2f");
+
+            ImGui::TableNextColumn();
+            ImGui::Text("B");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            changed |= ImGui::InputFloat("##b", &rect.bottomRight.y, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
-            ImGui::PopItemWidth();
-            ImGui::TreePop();
+
+            ImGui::EndTable();
         }
-        if (ImGui::TreeNode("Offset")) {
-            ImGui::PushItemWidth(50);
-            changed |= ImGui::InputFloat("Top", &valueBuffer.Buffer->offset.topLeft.y, 0, 0, "%.2f");
-            focused |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Left", &valueBuffer.Buffer->offset.topLeft.x, 0, 0, "%.2f");
-            focused |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Bottom", &valueBuffer.Buffer->offset.bottomRight.y, 0, 0, "%.2f");
-            focused |= ImGui::IsItemFocused();
-            changed |= ImGui::InputFloat("Right", &valueBuffer.Buffer->offset.bottomRight.x, 0, 0, "%.2f");
-            focused |= ImGui::IsItemFocused();
-            ImGui::PopItemWidth();
-            ImGui::TreePop();
-        }
-    }
+        ImGui::PopID();
+        ImGui::Unindent();
+    };
+
+    drawSection("Anchor", valueBuffer.Buffer->anchor);
+    drawSection("Offset", valueBuffer.Buffer->offset);
+
     return { changed, focused, valueBuffer };
 }
 
