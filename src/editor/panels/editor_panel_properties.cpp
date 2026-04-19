@@ -104,6 +104,8 @@ void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> no
 void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> node) {
     auto const entity = node->GetLayoutEntity();
 
+    ImGui::SeparatorText("Node");
+
     PropertiesInput<char const*>(
         "ID", entity->m_id.c_str(),
         [&](char const* changedValue) {
@@ -129,25 +131,53 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         m_editorLayer.PerformEditAction(std::move(action));
     });
 
-    PropertiesInput<moth_ui::LayoutRect>(
-        "Bounds", node->GetLayoutRect(),
-        [&](moth_ui::LayoutRect changedValue) {
-            m_editorLayer.BeginEditBounds(node);
-            node->GetLayoutRect() = changedValue;
-            node->RecalculateBounds();
-        },
-        [this](moth_ui::LayoutRect oldValue, moth_ui::LayoutRect newValue) {
+    {
+        auto const& sr = node->GetScreenRect();
+        int const boundsW = sr.bottomRight.x - sr.topLeft.x;
+        int const boundsH = sr.bottomRight.y - sr.topLeft.y;
+        float const pivScreenX = static_cast<float>(sr.topLeft.x) + (entity->m_pivot.x * static_cast<float>(boundsW));
+        float const pivScreenY = static_cast<float>(sr.topLeft.y) + (entity->m_pivot.y * static_cast<float>(boundsH));
+
+        auto const posText = fmt::format("{:.0f}, {:.0f}", pivScreenX, pivScreenY);
+        auto const sizeText = fmt::format("{} x {}", boundsW, boundsH);
+
+
+        ImGui::Text("Position");
+        ImGui::SameLine();
+        float const posTextWidth = ImGui::CalcTextSize(posText.c_str()).x;
+        ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - posTextWidth);
+        ImGui::Text("%s", posText.c_str());
+        ImGui::Text("Size");
+        ImGui::SameLine();
+        float const sizTextWidth = ImGui::CalcTextSize(sizeText.c_str()).x;
+        ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - sizTextWidth);
+        ImGui::Text("%s", sizeText.c_str());
+    }
+
+    auto valueBuffer = GetBufferForValue(node->GetLayoutRect());
+    auto const inputContext = InputElement("Bounds", valueBuffer);
+    if (inputContext.Changed) {
+        m_editorLayer.BeginEditBounds(node);
+        node->GetLayoutRect() = *inputContext.ValueBuffer.Buffer;
+        node->RecalculateBounds();
+    }
+    if (inputContext.Focused) {
+        OnInputFocus<moth_ui::LayoutRect>("Bounds", node->GetLayoutRect(), [this](moth_ui::LayoutRect, moth_ui::LayoutRect) {
             m_editorLayer.EndEditBounds();
         });
+    }
 
-    PropertiesInput<moth_ui::Color>(
-        "Color", node->GetColor(),
-        [&](moth_ui::Color changedValue) {
-            m_editorLayer.BeginEditColor(node);
-            node->SetColor(changedValue);
-        },
-        [this](moth_ui::Color oldValue, moth_ui::Color newValue) {
-            m_editorLayer.EndEditColor();
+    ImGui::Indent();
+    DrawBoundsTools(node);
+    ImGui::Unindent();
+
+    PropertiesInput<moth_ui::FloatVec2>(
+        "Pivot", entity->m_pivot, {},
+        [this, node, entity](moth_ui::FloatVec2 oldValue, moth_ui::FloatVec2 newValue) {
+            auto action = MakeChangeValueAction(entity->m_pivot, oldValue, newValue, [node]() {
+                node->ReloadEntity();
+            });
+            m_editorLayer.PerformEditAction(std::move(action));
         });
 
     PropertiesInput<float>(
@@ -160,13 +190,14 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
             m_editorLayer.EndEditRotation();
         });
 
-    PropertiesInput<moth_ui::FloatVec2>(
-        "Pivot", entity->m_pivot, {},
-        [this, node, entity](moth_ui::FloatVec2 oldValue, moth_ui::FloatVec2 newValue) {
-            auto action = MakeChangeValueAction(entity->m_pivot, oldValue, newValue, [node]() {
-                node->ReloadEntity();
-            });
-            m_editorLayer.PerformEditAction(std::move(action));
+    PropertiesInput<moth_ui::Color>(
+        "Color", node->GetColor(),
+        [&](moth_ui::Color changedValue) {
+            m_editorLayer.BeginEditColor(node);
+            node->SetColor(changedValue);
+        },
+        [this](moth_ui::Color oldValue, moth_ui::Color newValue) {
+            m_editorLayer.EndEditColor();
         });
 
     PropertiesInput<moth_ui::BlendMode>(
@@ -177,8 +208,105 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         });
 }
 
+void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node) {
+    if (!ImGui::CollapsingHeader("Tools##bounds")) {
+        return;
+    }
+
+
+    auto* parent = node->GetParent();
+    if (parent == nullptr) {
+        ImGui::TextDisabled("(root node has no parent)");
+        return;
+    }
+
+    auto const& screenRect = node->GetScreenRect();
+    auto const& parentRect = parent->GetScreenRect();
+    moth_ui::FloatVec2 const parentOffset = static_cast<moth_ui::FloatVec2>(parentRect.topLeft);
+    moth_ui::FloatVec2 const parentDim = static_cast<moth_ui::FloatVec2>(parentRect.bottomRight - parentRect.topLeft);
+    moth_ui::FloatVec2 const nodeTL = static_cast<moth_ui::FloatVec2>(screenRect.topLeft);
+    moth_ui::FloatVec2 const nodeBR = static_cast<moth_ui::FloatVec2>(screenRect.bottomRight);
+
+    // Remap anchor to a new value while keeping screen position constant.
+    // From RecalculateBounds: screen = parentOffset + offset + parentDim * anchor
+    // So: offset_new = screen - parentOffset - parentDim * anchor_new
+    auto applyAnchor = [&](moth_ui::FloatVec2 anchorTL, moth_ui::FloatVec2 anchorBR) {
+        m_editorLayer.BeginEditBounds(node);
+        auto& lr = node->GetLayoutRect();
+        lr.anchor.topLeft = anchorTL;
+        lr.anchor.bottomRight = anchorBR;
+        lr.offset.topLeft = nodeTL - parentOffset - (parentDim * anchorTL);
+        lr.offset.bottomRight = nodeBR - parentOffset - (parentDim * anchorBR);
+        node->RecalculateBounds();
+        m_editorLayer.EndEditBounds();
+    };
+
+    // 9-point anchor preset grid — both corners anchored to the same point
+    struct AnchorPreset {
+        moth_ui::FloatVec2 anchor;
+        char const* label = nullptr;
+        char const* tooltip = nullptr;
+    };
+    static const AnchorPreset presets[3][3] = {
+        { { { 0.0f, 0.0f }, "TL", "Top Left" }, { { 0.5f, 0.0f }, "TC", "Top Center" }, { { 1.0f, 0.0f }, "TR", "Top Right" } },
+        { { { 0.0f, 0.5f }, "ML", "Middle Left" }, { { 0.5f, 0.5f }, "C", "Center" }, { { 1.0f, 0.5f }, "MR", "Middle Right" } },
+        { { { 0.0f, 1.0f }, "BL", "Bottom Left" }, { { 0.5f, 1.0f }, "BC", "Bottom Center" }, { { 1.0f, 1.0f }, "BR", "Bottom Right" } },
+    };
+
+    ImGui::Text("Set Anchor:");
+    for (int row = 0; row < 3; ++row) {
+        for (int col = 0; col < 3; ++col) {
+            if (col > 0) {
+                ImGui::SameLine(0, 4);
+            }
+            auto const& p = presets[row][col];
+            ImGui::PushID((row * 3) + col);
+            if (ImGui::Button(p.label, ImVec2(24, 24))) {
+                applyAnchor(p.anchor, p.anchor);
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("%s", p.tooltip);
+            }
+            ImGui::PopID();
+        }
+    }
+
+    // Full bounds: anchor TL=(0,0), BR=(1,1) — node stretches with parent
+    if (ImGui::Button("Full Bounds")) {
+        applyAnchor({ 0.0f, 0.0f }, { 1.0f, 1.0f });
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Anchor TL=(0,0) BR=(1,1); adjust offsets to maintain position");
+    }
+
+    // Anchor to offset: zero all offsets; update anchor fractions to maintain position.
+    // anchor_new = (screen - parentOffset) / parentDim
+    bool const parentValid = (parentDim.x != 0.0f && parentDim.y != 0.0f);
+    if (!parentValid) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Anchor to Offset")) {
+        m_editorLayer.BeginEditBounds(node);
+        auto& lr = node->GetLayoutRect();
+        lr.anchor.topLeft = (nodeTL - parentOffset) / parentDim;
+        lr.anchor.bottomRight = (nodeBR - parentOffset) / parentDim;
+        lr.offset.topLeft = { 0.0f, 0.0f };
+        lr.offset.bottomRight = { 0.0f, 0.0f };
+        node->RecalculateBounds();
+        m_editorLayer.EndEditBounds();
+    }
+    if (!parentValid) {
+        ImGui::EndDisabled();
+    }
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Zero all offsets; update anchor to maintain current screen position");
+    }
+}
+
 void EditorPanelProperties::DrawRectProperties(std::shared_ptr<moth_ui::NodeRect> node) {
     auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityRect>(node->GetLayoutEntity());
+
+    ImGui::SeparatorText("Rect");
 
     PropertiesInput<bool>(
         "Filled", entity->m_filled,
@@ -191,6 +319,8 @@ void EditorPanelProperties::DrawRectProperties(std::shared_ptr<moth_ui::NodeRect
 
 void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeImage> node) {
     auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(node->GetLayoutEntity());
+
+    ImGui::SeparatorText("Image");
 
     PropertiesInput<moth_ui::TextureFilter>(
         "Texture Filter", entity->m_textureFilter, {},
@@ -321,6 +451,8 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
 void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText> node) {
     auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityText>(node->GetLayoutEntity());
 
+    ImGui::SeparatorText("Text");
+
     PropertiesInput<int>(
         "Font Size", entity->m_fontSize,
         [&](int changedValue) {
@@ -398,6 +530,8 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
 void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::NodeFlipbook> node) {
     auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityFlipbook>(node->GetLayoutEntity());
 
+    ImGui::SeparatorText("Flipbook");
+
     PropertiesInput<moth_ui::TextureFilter>(
         "Texture Filter", entity->m_textureFilter, {},
         [&](auto oldValue, auto newValue) {
@@ -438,8 +572,8 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
     {
         auto const clipIt = entity->m_discreteTracks.find(moth_ui::AnimationTrack::Target::FlipbookClip);
         std::string const currentClip = (clipIt != entity->m_discreteTracks.end())
-            ? clipIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame())
-            : std::string{};
+                                            ? clipIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame())
+                                            : std::string{};
         auto const* flipbook = node->GetFlipbook();
         ImGui::SetNextItemWidth(200.0f);
         if ((flipbook != nullptr) && ImGui::BeginCombo("Clip Name", currentClip.c_str())) {
@@ -449,7 +583,9 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
                 if (ImGui::Selectable(std::string(clipName).c_str(), selected)) {
                     setDiscreteKeyframe(moth_ui::AnimationTrack::Target::FlipbookClip, std::string(clipName));
                 }
-                if (selected) { ImGui::SetItemDefaultFocus(); }
+                if (selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
             }
             ImGui::EndCombo();
         } else if (flipbook == nullptr) {
@@ -460,8 +596,7 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
     // Playing — checkbox.
     {
         auto const playIt = entity->m_discreteTracks.find(moth_ui::AnimationTrack::Target::FlipbookPlaying);
-        bool playing = (playIt != entity->m_discreteTracks.end())
-            && (playIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame()) == "1");
+        bool playing = (playIt != entity->m_discreteTracks.end()) && (playIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame()) == "1");
         if (ImGui::Checkbox("Playing", &playing)) {
             setDiscreteKeyframe(moth_ui::AnimationTrack::Target::FlipbookPlaying, playing ? "1" : "0");
         }
@@ -498,10 +633,14 @@ char const* GetChildName(std::shared_ptr<moth_ui::LayoutEntity> entity) {
 void EditorPanelProperties::DrawRefProperties(std::shared_ptr<moth_ui::Group> node, bool recurseChildren) {
     auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityRef>(node->GetLayoutEntity());
 
+    ImGui::SeparatorText("Ref");
+
     if (recurseChildren) {
         if (ImGui::TreeNode("Children")) {
             int childIndex = 0;
-            for (auto&& child : node->GetChildren()) {
+            auto const& children = node->GetChildren();
+            for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
+                auto const& child = *it;
                 static std::string name;
                 name = fmt::format("{}: {}", childIndex, GetChildName(child->GetLayoutEntity()));
                 if (ImGui::TreeNode(name.c_str())) {
