@@ -799,14 +799,19 @@ void EditorLayer::ResetCanvas() {
 
 bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     if (event.GetAction() == moth_ui::KeyAction::Up) {
+        bool const wantKeyboard = ImGui::GetIO().WantCaptureKeyboard;
         switch (event.GetKey()) {
         case moth_ui::Key::Space:
-            if (auto* anim = GetEditorPanel<EditorPanelAnimation>()) {
-                anim->TogglePlayback();
+            if (!wantKeyboard) {
+                if (auto* anim = GetEditorPanel<EditorPanelAnimation>()) {
+                    anim->TogglePlayback();
+                }
             }
             return true;
         case moth_ui::Key::F:
-            ResetCanvas();
+            if (!wantKeyboard) {
+                ResetCanvas();
+            }
             break;
         case moth_ui::Key::N:
             if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
@@ -860,10 +865,14 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
             }
             return true;
         case moth_ui::Key::Pageup:
-            MoveSelectionUp();
+            if (!wantKeyboard) {
+                MoveSelectionUp();
+            }
             return true;
         case moth_ui::Key::Pagedown:
-            MoveSelectionDown();
+            if (!wantKeyboard) {
+                MoveSelectionDown();
+            }
             return true;
         default:
             return false;
