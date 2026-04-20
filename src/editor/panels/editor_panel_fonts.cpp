@@ -78,9 +78,10 @@ void EditorPanelFonts::Draw() {
     if (ImGui::Button("Add Font", ImVec2(sideButtonW, 0))) {
         auto const currentPath = std::filesystem::current_path().string();
         nfdchar_t* outPath = NULL;
-        if (NFD_OpenDialog("ttf", currentPath.c_str(), &outPath) == NFD_OKAY) {
+        if (NFD_OpenDialog("ttf,otf", currentPath.c_str(), &outPath) == NFD_OKAY) {
             m_pendingFontPath = outPath;
-            NameBuffer[0] = 0;
+            auto const stem = m_pendingFontPath.stem().string();
+            std::snprintf(NameBuffer, sizeof(NameBuffer), "%s", stem.c_str());
             ImGui::OpenPopup("Name Font");
         }
     }
