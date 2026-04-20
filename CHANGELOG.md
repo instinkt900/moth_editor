@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
-## [1.0.0-rc.1] - 2026-04-17
+## [1.0.0-rc.1] - 2026-04-19
 ### Features
 - Add Sprite Editor tool (step 1 — view)
 - Sprite editor frame selection and editing
@@ -32,6 +32,11 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Rebuild layout after loading font project or adding a font
 - Overhaul asset browser panel
 - Add Preferences panel, View>Preview shortcut, and resolution presets
+- Add clip playback controls to animation panel
+- Add arrow key nudging for canvas nodes and Delete key for animation keyframes
+- Use Ctrl+arrow for 10px nudge instead of Shift
+- Shift+drag moves node anchor along with offset
+- Add bounds tools panel with anchor presets to properties
 
 ### Bug Fixes
 - Sprite editor import sheet and layout corruption
@@ -51,12 +56,15 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Prevent animation panel click-through to floating windows
 - Allow keyframe drag to return to original position
 - Include serialize_utils.h in PCH before json.hpp to prevent adl_serializer ODR error
+- Use static storage for imgui IniFilename to prevent use-after-free
+- Suppress bare-key shortcuts when ImGui wants keyboard input
 
 ### Refactoring
 - Update editor panels to new IFlipbook API and expand TODO
 - Split sprite editor into subdirectory with per-concern files
 - Tighten sprite editor — push helpers, snprintf, bounding-box cleanup
 - Move Center button to left of canvas zoom toolbar
+- Redesign bounds property inputs
 
 ### Documentation
 - Update sprite editor TODO with canvas and packer integration detail
@@ -65,6 +73,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 ### Miscellaneous
 - Updating dep versions and todo
 - Remove forwarding texture_packer.h shim
+- Removing example out into its own repo
 
 ### Changes
 - Bump version to 1.0.0-rc.1
