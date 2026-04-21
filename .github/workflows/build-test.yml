@@ -47,7 +47,3 @@ jobs:
         cmake --preset ${{ matrix.configure_preset }}
         cmake --build --preset conan-release --config Release
 
-    - name: Build example
-      shell: bash
-      working-directory: example
-      run: conan create . -pr ../.conan/profile -s build_type=Release --build=missing
