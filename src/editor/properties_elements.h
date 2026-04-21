@@ -149,7 +149,7 @@ inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuf
 }
 
 inline InputContext<moth_ui::Color> InputElement(char const* label, InputBuffer<moth_ui::Color> valueBuffer) {
-    bool changed = ImGui::ColorEdit4(label, valueBuffer.Buffer->data, 0);
+    bool changed = ImGui::ColorEdit4(label, valueBuffer.Buffer->data, ImGuiColorEditFlags_DisplayHex);
     bool focused = ImGui::IsItemFocused();
     return { changed, focused, valueBuffer };
 }
