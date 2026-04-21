@@ -80,6 +80,7 @@ void EditorPanelFonts::Draw() {
         nfdchar_t* outPath = NULL;
         if (NFD_OpenDialog("ttf,otf", currentPath.c_str(), &outPath) == NFD_OKAY) {
             m_pendingFontPath = outPath;
+            NFD_Free(outPath);
             auto const stem = m_pendingFontPath.stem().string();
             std::snprintf(NameBuffer, sizeof(NameBuffer), "%s", stem.c_str());
             ImGui::OpenPopup("Name Font");

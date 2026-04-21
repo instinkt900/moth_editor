@@ -570,13 +570,19 @@ bool EditorPanelAnimation::DrawClipPopup() {
         }
 
         if (clipContext != nullptr && ImGui::BeginMenu("Edit")) {
+            static char nameBuf[1024];
             if (!m_pendingClipEdit.has_value()) {
                 m_pendingClipEdit = EditContext<AnimationClip>(clipContext->clip);
+                // Initialise buffer once so ImGui owns it during editing.
+                ImFormatString(nameBuf, IM_ARRAYSIZE(nameBuf), "%s", m_pendingClipEdit->mutableValue.m_name.c_str());
             }
 
-            static char nameBuf[1024];
-            ImFormatString(nameBuf, IM_ARRAYSIZE(nameBuf), "%s", m_pendingClipEdit->mutableValue.m_name.c_str());
             if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) {
+                m_pendingClipEdit->mutableValue.m_name = std::string(nameBuf);
+            }
+            // Sync on any deactivation: Escape reverts nameBuf via ImGui so this
+            // correctly cancels (HasChanged becomes false); Tab/click-away commits.
+            if (ImGui::IsItemDeactivated()) {
                 m_pendingClipEdit->mutableValue.m_name = std::string(nameBuf);
             }
 
@@ -761,6 +767,9 @@ bool EditorPanelAnimation::DrawEventPopup() {
             }
 
             if (ImGui::InputText("Event Name", nameBuf, sizeof(nameBuf))) {
+                m_pendingEventEdit->mutableValue.m_name = std::string(nameBuf);
+            }
+            if (ImGui::IsItemDeactivated()) {
                 m_pendingEventEdit->mutableValue.m_name = std::string(nameBuf);
             }
             ImGui::EndMenu();
