@@ -287,11 +287,25 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                 commitAction(current, *inputContext.ValueBuffer.Buffer);
             }
         } else {
-            if (ImGui::IsItemActivated()) {
-                // Capture original value BEFORE changeAction has a chance to mutate the source.
+            // Use the label's ID as a stable composite key so that multi-sub-widget
+            // inputs (IntRect, LayoutRect) are tracked as a single logical edit.
+            // For single-item inputs (InputText, InputFloat, etc.) GetID(label) equals
+            // GetItemID(), so the deactivation checks below remain correct for both.
+            auto const widgetId = ImGui::GetID(label);
+
+            if (ImGui::IsItemActivated() && ImGui::GetItemID() == widgetId) {
+                // Single-item widget: reliable activation signal — capture original
+                // BEFORE changeAction has a chance to mutate the source.
                 CommitEditContext();
-                m_currentEditContext = std::make_unique<PropertyEditContext<T>>(ImGui::GetItemID(), current, commitAction);
+                m_currentEditContext = std::make_unique<PropertyEditContext<T>>(widgetId, current, commitAction);
+            } else if (inputContext.Focused && GetCurrentEditFocusID() != widgetId) {
+                // Composite widget (IntRect, LayoutRect): IsItemActivated() only fires
+                // for the last sub-item, so use the accumulated focus state instead.
+                // current is still pre-mutation here because changeAction runs below.
+                CommitEditContext();
+                m_currentEditContext = std::make_unique<PropertyEditContext<T>>(widgetId, current, commitAction);
             }
+
             if (inputContext.Changed && m_currentEditContext) {
                 auto* ctx = dynamic_cast<PropertyEditContext<T>*>(m_currentEditContext.get());
                 if (ctx != nullptr) {
@@ -302,7 +316,14 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                     }
                 }
             }
-            if (ImGui::IsItemDeactivatedAfterEdit() && m_currentEditContext && m_currentEditContext->GetID() == ImGui::GetItemID()) {
+
+            // Deactivation checks compare against widgetId, which equals GetItemID()
+            // for single-item widgets so they commit/cancel on the correct frame.
+            // For composite widgets the last sub-item's ID won't match widgetId unless
+            // the user happened to leave via that last field, so composite commits are
+            // deferred to the next IsItemActivated() call (CommitEditContext()) or to
+            // the selection-change flush in EndPanel — both are reliable.
+            if (ImGui::IsItemDeactivatedAfterEdit() && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
                 auto* ctx = dynamic_cast<PropertyEditContext<T>*>(m_currentEditContext.get());
                 if (ctx != nullptr) {
                     if constexpr (std::is_same_v<T, char const*>) {
@@ -312,9 +333,8 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                     }
                 }
                 CommitEditContext();
-            } else if (ImGui::IsItemDeactivated() && m_currentEditContext && m_currentEditContext->GetID() == ImGui::GetItemID()) {
-                // Cancelled (e.g. Escape): discard context without committing so no
-                // spurious undo action is created from the partially-typed value.
+            } else if (ImGui::IsItemDeactivated() && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
+                // Cancelled (e.g. Escape): discard without committing.
                 m_currentEditContext.reset();
             }
         }
