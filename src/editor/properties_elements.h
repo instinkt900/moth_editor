@@ -68,12 +68,9 @@ private:
 };
 
 extern std::unique_ptr<PropertyEditContextBase> m_currentEditContext;
-extern ImGuiID m_editingID;
 
 ImGuiID GetCurrentEditFocusID();
 void CommitEditContext();
-void BeginEdits();
-void EndEdits();
 
 template <class SourceType>
 struct InputBuffer {
@@ -271,15 +268,54 @@ void OnInputFocus(char const* label, SourceType const& value, std::function<void
         CommitEditContext();
         m_currentEditContext = std::make_unique<PropertyEditContext<SourceType>>(id, value, commitAction);
     } else {
-        auto* context = static_cast<PropertyEditContext<SourceType>*>(m_currentEditContext.get());
-        context->UpdateValue(value);
+        auto* context = dynamic_cast<PropertyEditContext<SourceType>*>(m_currentEditContext.get());
+        if (context != nullptr) {
+            context->UpdateValue(value);
+        }
     }
-    m_editingID = id;
 }
 
 template <class T>
 bool PropertiesInput(char const* label, T current, std::function<void(T)> const& changeAction = {}, std::function<void(T, T)> const& commitAction = {}) {
     auto const inputContext = TypeInput(label, current);
+
+    if (commitAction) {
+        if constexpr (std::is_enum_v<T>) {
+            // Enum combos are instant-commit: selection completes in one frame.
+            if (inputContext.Changed) {
+                CommitEditContext();
+                commitAction(current, *inputContext.ValueBuffer.Buffer);
+            }
+        } else {
+            if (ImGui::IsItemActivated()) {
+                // Capture original value BEFORE changeAction has a chance to mutate the source.
+                CommitEditContext();
+                m_currentEditContext = std::make_unique<PropertyEditContext<T>>(ImGui::GetItemID(), current, commitAction);
+            }
+            if (inputContext.Changed && m_currentEditContext) {
+                auto* ctx = dynamic_cast<PropertyEditContext<T>*>(m_currentEditContext.get());
+                if (ctx != nullptr) {
+                    if constexpr (std::is_same_v<T, char const*>) {
+                        ctx->UpdateValue(inputContext.ValueBuffer.Buffer);
+                    } else {
+                        ctx->UpdateValue(*inputContext.ValueBuffer.Buffer);
+                    }
+                }
+            }
+            if (ImGui::IsItemDeactivatedAfterEdit() && m_currentEditContext && m_currentEditContext->GetID() == ImGui::GetItemID()) {
+                auto* ctx = dynamic_cast<PropertyEditContext<T>*>(m_currentEditContext.get());
+                if (ctx != nullptr) {
+                    if constexpr (std::is_same_v<T, char const*>) {
+                        ctx->UpdateValue(inputContext.ValueBuffer.Buffer);
+                    } else {
+                        ctx->UpdateValue(*inputContext.ValueBuffer.Buffer);
+                    }
+                }
+                CommitEditContext();
+            }
+        }
+    }
+
     if (changeAction && inputContext.Changed) {
         if constexpr (std::is_same_v<T, char const*>) {
             changeAction(inputContext.ValueBuffer.Buffer);
@@ -287,23 +323,7 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
             changeAction(*inputContext.ValueBuffer.Buffer);
         }
     }
-    if (commitAction && inputContext.Focused) {
-        if constexpr (std::is_enum_v<T>) {
-            // Enum combos are instant-commit: selection completes in one frame so
-            // Focused and Changed arrive together. The focus-tracking path would
-            // capture the already-mutated value as originalValue and never see a
-            // delta. Instead, commit immediately using the pre-mutation value
-            // (current) and the newly selected value.
-            if (inputContext.Changed) {
-                CommitEditContext();
-                commitAction(current, *inputContext.ValueBuffer.Buffer);
-            }
-        } else if constexpr (std::is_same_v<T, char const*>) {
-            OnInputFocus<T>(label, inputContext.ValueBuffer.Buffer, commitAction);
-        } else {
-            OnInputFocus(label, *inputContext.ValueBuffer.Buffer, commitAction);
-        }
-    }
+
     return inputContext.Changed;
 }
 
@@ -327,13 +347,29 @@ inline bool PropertiesInput(char const* label, char const* text, int lines, std:
     auto valueBuffer = GetBufferForValue(text);
     // TODO: add ImGuiInputTextFlags_WordWrapping once imgui is upgraded to 1.91.0+
     bool const changed = ImGui::InputTextMultiline(label, valueBuffer.Buffer, valueBuffer.Size - 1, ImVec2{ 0, static_cast<float>(std::max(1, lines)) * ImGui::GetFontSize() });
-    bool const focused = ImGui::IsItemFocused();
+
+    if (commitAction) {
+        if (ImGui::IsItemActivated()) {
+            CommitEditContext();
+            m_currentEditContext = std::make_unique<PropertyEditContext<char const*>>(ImGui::GetItemID(), text, commitAction);
+        }
+        if (changed && m_currentEditContext) {
+            auto* ctx = dynamic_cast<PropertyEditContext<char const*>*>(m_currentEditContext.get());
+            if (ctx != nullptr) {
+                ctx->UpdateValue(valueBuffer.Buffer);
+            }
+        }
+        if (ImGui::IsItemDeactivatedAfterEdit() && m_currentEditContext && m_currentEditContext->GetID() == ImGui::GetItemID()) {
+            auto* ctx = dynamic_cast<PropertyEditContext<char const*>*>(m_currentEditContext.get());
+            if (ctx != nullptr) {
+                ctx->UpdateValue(valueBuffer.Buffer);
+            }
+            CommitEditContext();
+        }
+    }
 
     if (changeAction && changed) {
         changeAction(valueBuffer.Buffer);
-    }
-    if (commitAction && focused) {
-        OnInputFocus(label, static_cast<char const*>(valueBuffer.Buffer), commitAction);
     }
     return changed;
 }

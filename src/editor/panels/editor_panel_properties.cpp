@@ -42,15 +42,12 @@ bool EditorPanelProperties::BeginPanel() {
         m_currentSelection = *std::begin(selection);
     }
 
-    BeginEdits();
     bool ret = EditorPanel::BeginPanel();
     ImGui::PushID(m_currentSelection.get());
     return ret;
 }
 
 void EditorPanelProperties::EndPanel() {
-    EndEdits();
-
     if (m_lastSelection && m_currentSelection != m_lastSelection) {
         CommitEditContext();
     }
