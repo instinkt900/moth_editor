@@ -109,54 +109,69 @@ template <class SourceType>
 struct InputContext {
     bool Changed;
     bool Focused;
+    bool DeactivatedAfterEdit;
+    bool Deactivated;
     InputBuffer<SourceType> ValueBuffer;
 };
 
 inline InputContext<bool> InputElement(char const* label, InputBuffer<bool> valueBuffer) {
     bool changed = ImGui::Checkbox(label, valueBuffer.Buffer);
-    bool focused = false;
-    return { changed, focused, valueBuffer };
+    return { changed, false, false, false, valueBuffer };
 }
 
 inline InputContext<int> InputElement(char const* label, InputBuffer<int> valueBuffer) {
     bool changed = ImGui::InputInt(label, valueBuffer.Buffer, 0);
     bool focused = ImGui::IsItemFocused();
-    return { changed, focused, valueBuffer };
+    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+    bool deactivated = ImGui::IsItemDeactivated();
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<float> InputElement(char const* label, InputBuffer<float> valueBuffer) {
     bool changed = ImGui::InputFloat(label, valueBuffer.Buffer);
     bool focused = ImGui::IsItemFocused();
-    return { changed, focused, valueBuffer };
+    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+    bool deactivated = ImGui::IsItemDeactivated();
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<char const*> InputElement(char const* label, InputBuffer<char const*> valueBuffer) {
     bool changed = ImGui::InputText(label, valueBuffer.Buffer, valueBuffer.Size - 1);
     bool focused = ImGui::IsItemFocused();
-    return { changed, focused, valueBuffer };
+    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+    bool deactivated = ImGui::IsItemDeactivated();
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<moth_ui::IntVec2> InputElement(char const* label, InputBuffer<moth_ui::IntVec2> valueBuffer) {
     bool changed = ImGui::InputInt2(label, valueBuffer.Buffer->data, 0);
     bool focused = ImGui::IsItemFocused();
-    return { changed, focused, valueBuffer };
+    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+    bool deactivated = ImGui::IsItemDeactivated();
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuffer<moth_ui::FloatVec2> valueBuffer) {
     bool changed = ImGui::InputFloat2(label, valueBuffer.Buffer->data, "%.3f");
     bool focused = ImGui::IsItemFocused();
-    return { changed, focused, valueBuffer };
+    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+    bool deactivated = ImGui::IsItemDeactivated();
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<moth_ui::Color> InputElement(char const* label, InputBuffer<moth_ui::Color> valueBuffer) {
     bool changed = ImGui::ColorEdit4(label, valueBuffer.Buffer->data, ImGuiColorEditFlags_DisplayHex);
     bool focused = ImGui::IsItemFocused();
-    return { changed, focused, valueBuffer };
+    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+    bool deactivated = ImGui::IsItemDeactivated();
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBuffer<moth_ui::LayoutRect> valueBuffer) {
     bool changed = false;
     bool focused = false;
+    bool deactivatedAfterEdit = false;
+    bool deactivated = false;
 
     ImGui::Text("%s", label);
 
@@ -171,6 +186,8 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##l", &rect.topLeft.x, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
+            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+            deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextColumn();
             ImGui::Text("T");
@@ -178,6 +195,8 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##t", &rect.topLeft.y, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
+            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+            deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
@@ -186,6 +205,8 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##r", &rect.bottomRight.x, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
+            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+            deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextColumn();
             ImGui::Text("B");
@@ -193,6 +214,8 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##b", &rect.bottomRight.y, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
+            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+            deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::EndTable();
         }
@@ -203,25 +226,35 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
     drawSection("Anchor", valueBuffer.Buffer->anchor);
     drawSection("Offset", valueBuffer.Buffer->offset);
 
-    return { changed, focused, valueBuffer };
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<moth_ui::IntRect> InputElement(char const* label, InputBuffer<moth_ui::IntRect> valueBuffer) {
     bool changed = false;
     bool focused = false;
+    bool deactivatedAfterEdit = false;
+    bool deactivated = false;
 
     if (ImGui::CollapsingHeader(label)) {
         changed |= ImGui::InputInt("Top", &valueBuffer.Buffer->topLeft.y, 0);
         focused |= ImGui::IsItemFocused();
+        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+        deactivated |= ImGui::IsItemDeactivated();
         changed |= ImGui::InputInt("Left", &valueBuffer.Buffer->topLeft.x, 0);
         focused |= ImGui::IsItemFocused();
+        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+        deactivated |= ImGui::IsItemDeactivated();
         changed |= ImGui::InputInt("Bottom", &valueBuffer.Buffer->bottomRight.y, 0);
         focused |= ImGui::IsItemFocused();
+        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+        deactivated |= ImGui::IsItemDeactivated();
         changed |= ImGui::InputInt("Right", &valueBuffer.Buffer->bottomRight.x, 0);
         focused |= ImGui::IsItemFocused();
+        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+        deactivated |= ImGui::IsItemDeactivated();
     }
 
-    return { changed, focused, valueBuffer };
+    return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 template <typename T, typename F = std::function<void(T, T)>, std::enable_if_t<std::is_enum_v<T>, bool> = true>
@@ -250,7 +283,7 @@ InputContext<T> InputElement(char const* label, InputBuffer<T> valueBuffer) {
         ImGui::EndCombo();
     }
 
-    return { changed, focused, valueBuffer };
+    return { changed, focused, false, false, valueBuffer };
 }
 
 
@@ -317,13 +350,13 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                 }
             }
 
-            // Deactivation checks compare against widgetId, which equals GetItemID()
-            // for single-item widgets so they commit/cancel on the correct frame.
-            // For composite widgets the last sub-item's ID won't match widgetId unless
-            // the user happened to leave via that last field, so composite commits are
-            // deferred to the next IsItemActivated() call (CommitEditContext()) or to
-            // the selection-change flush in EndPanel — both are reliable.
-            if (ImGui::IsItemDeactivatedAfterEdit() && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
+            // inputContext.DeactivatedAfterEdit / Deactivated are OR-accumulated across
+            // every child by each InputElement overload, so composite widgets (LayoutRect,
+            // IntRect) commit/cancel when *any* child loses focus — not just the last one.
+            // The !inputContext.Focused guard prevents a premature commit when the user
+            // tabs between children of the same composite (one child deactivates while
+            // another gains focus in the same frame).
+            if (inputContext.DeactivatedAfterEdit && !inputContext.Focused && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
                 auto* ctx = dynamic_cast<PropertyEditContext<T>*>(m_currentEditContext.get());
                 if (ctx != nullptr) {
                     if constexpr (std::is_same_v<T, char const*>) {
@@ -333,7 +366,7 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                     }
                 }
                 CommitEditContext();
-            } else if (ImGui::IsItemDeactivated() && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
+            } else if (inputContext.Deactivated && !inputContext.Focused && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
                 // Cancelled (e.g. Escape): discard without committing.
                 m_currentEditContext.reset();
             }
