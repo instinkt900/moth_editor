@@ -312,6 +312,10 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                     }
                 }
                 CommitEditContext();
+            } else if (ImGui::IsItemDeactivated() && m_currentEditContext && m_currentEditContext->GetID() == ImGui::GetItemID()) {
+                // Cancelled (e.g. Escape): discard context without committing so no
+                // spurious undo action is created from the partially-typed value.
+                m_currentEditContext.reset();
             }
         }
     }
@@ -365,6 +369,8 @@ inline bool PropertiesInput(char const* label, char const* text, int lines, std:
                 ctx->UpdateValue(valueBuffer.Buffer);
             }
             CommitEditContext();
+        } else if (ImGui::IsItemDeactivated() && m_currentEditContext && m_currentEditContext->GetID() == ImGui::GetItemID()) {
+            m_currentEditContext.reset();
         }
     }
 

@@ -769,6 +769,9 @@ bool EditorPanelAnimation::DrawEventPopup() {
             if (ImGui::InputText("Event Name", nameBuf, sizeof(nameBuf))) {
                 m_pendingEventEdit->mutableValue.m_name = std::string(nameBuf);
             }
+            if (ImGui::IsItemDeactivated()) {
+                m_pendingEventEdit->mutableValue.m_name = std::string(nameBuf);
+            }
             ImGui::EndMenu();
         }
 

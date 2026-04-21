@@ -151,6 +151,13 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         ImGui::Text("%s", sizeText.c_str());
     }
 
+    // Bounds uses the legacy OnInputFocus path intentionally: InputElement("Bounds", ...)
+    // is a composite widget (4×2 InputFloat sub-items) so ImGui::GetItemID() only refers
+    // to the last sub-input, making IsItemActivated()/IsItemDeactivatedAfterEdit() unreliable
+    // for the whole group. BeginEditBounds is safe to call on consecutive Changed frames —
+    // its internal guard prevents duplicate undo sessions — and EndEditBounds is committed
+    // when the context is flushed (via IsItemActivated() on the next PropertiesInput, or on
+    // selection change in EndPanel).
     auto valueBuffer = GetBufferForValue(node->GetLayoutRect());
     auto const inputContext = InputElement("Bounds", valueBuffer);
     if (inputContext.Changed) {
