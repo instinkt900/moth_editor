@@ -135,20 +135,8 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         float const pivScreenX = static_cast<float>(sr.topLeft.x) + (entity->m_pivot.x * static_cast<float>(boundsW));
         float const pivScreenY = static_cast<float>(sr.topLeft.y) + (entity->m_pivot.y * static_cast<float>(boundsH));
 
-        auto const posText = fmt::format("{:.0f}, {:.0f}", pivScreenX, pivScreenY);
-        auto const sizeText = fmt::format("{} x {}", boundsW, boundsH);
-
-
-        ImGui::Text("Position");
-        ImGui::SameLine();
-        float const posTextWidth = ImGui::CalcTextSize(posText.c_str()).x;
-        ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - posTextWidth);
-        ImGui::Text("%s", posText.c_str());
-        ImGui::Text("Size");
-        ImGui::SameLine();
-        float const sizTextWidth = ImGui::CalcTextSize(sizeText.c_str()).x;
-        ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - sizTextWidth);
-        ImGui::Text("%s", sizeText.c_str());
+        ImGui::LabelText("Position", "%.0f, %.0f", pivScreenX, pivScreenY);
+        ImGui::LabelText("Size", "%d x %d", boundsW, boundsH);
     }
 
     // Bounds uses the legacy OnInputFocus path intentionally: InputElement("Bounds", ...)
@@ -286,6 +274,7 @@ void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node)
     // Anchor to offset: zero all offsets; update anchor fractions to maintain position.
     // anchor_new = (screen - parentOffset) / parentDim
     bool const parentValid = (parentDim.x != 0.0f && parentDim.y != 0.0f);
+    ImGui::SameLine();
     if (!parentValid) {
         ImGui::BeginDisabled();
     }
@@ -389,7 +378,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
     std::error_code ec;
     auto rel = std::filesystem::relative(entity->m_imagePath, imageBase, ec);
     std::string imagePath = ec ? entity->m_imagePath.string() : rel.string();
-    ImGui::InputText("Image Path", imagePath.data(), imagePath.size() + 1, ImGuiInputTextFlags_ReadOnly);
+    ImGui::LabelText("Image Path", "%s", imagePath.c_str());
 
     if (node->GetImage() != nullptr) {
         using namespace moth_ui;
@@ -548,7 +537,7 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
     std::error_code ec;
     auto rel = std::filesystem::relative(entity->m_flipbookPath, flipbookBase, ec);
     std::string displayPath = ec ? entity->m_flipbookPath.string() : rel.string();
-    ImGui::InputText("Flipbook Path", displayPath.data(), displayPath.size() + 1, ImGuiInputTextFlags_ReadOnly);
+    ImGui::LabelText("Flipbook Path", "%s", displayPath.c_str());
 
     if (ImGui::Button("Load Flipbook..")) {
         auto const currentPath = std::filesystem::current_path().string();
@@ -579,7 +568,6 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
                                             ? clipIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame())
                                             : std::string{};
         auto const* flipbook = node->GetFlipbook();
-        ImGui::SetNextItemWidth(200.0f);
         if ((flipbook != nullptr) && ImGui::BeginCombo("Clip Name", currentClip.c_str())) {
             for (int i = 0; i < flipbook->GetClipCount(); ++i) {
                 auto const clipName = flipbook->GetClipName(i);
