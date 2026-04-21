@@ -9,9 +9,12 @@ public:
     virtual ~PropertyEditContextBase() = default;
     ImGuiID GetID() const { return m_id; }
     virtual void Commit() = 0;
+    void SetHadDeactivatedAfterEdit() { m_hadDeactivatedAfterEdit = true; }
+    bool HadDeactivatedAfterEdit() const { return m_hadDeactivatedAfterEdit; }
 
 protected:
     ImGuiID m_id;
+    bool m_hadDeactivatedAfterEdit = false;
 };
 template <class T>
 class PropertyEditContext : public PropertyEditContextBase {
@@ -116,7 +119,9 @@ struct InputContext {
 
 inline InputContext<bool> InputElement(char const* label, InputBuffer<bool> valueBuffer) {
     bool changed = ImGui::Checkbox(label, valueBuffer.Buffer);
-    return { changed, false, false, false, valueBuffer };
+    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+    bool deactivated = ImGui::IsItemDeactivated();
+    return { changed, false, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<int> InputElement(char const* label, InputBuffer<int> valueBuffer) {
@@ -356,6 +361,14 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
             // The !inputContext.Focused guard prevents a premature commit when the user
             // tabs between children of the same composite (one child deactivates while
             // another gains focus in the same frame).
+            //
+            // Track whether any child has been successfully edited this session so that
+            // the Deactivated branch (e.g. tabbing out of an unedited trailing field) can
+            // commit rather than discard the earlier edits.
+            if (inputContext.DeactivatedAfterEdit && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
+                m_currentEditContext->SetHadDeactivatedAfterEdit();
+            }
+
             if (inputContext.DeactivatedAfterEdit && !inputContext.Focused && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
                 auto* ctx = dynamic_cast<PropertyEditContext<T>*>(m_currentEditContext.get());
                 if (ctx != nullptr) {
@@ -367,8 +380,13 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                 }
                 CommitEditContext();
             } else if (inputContext.Deactivated && !inputContext.Focused && m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
-                // Cancelled (e.g. Escape): discard without committing.
-                m_currentEditContext.reset();
+                if (m_currentEditContext->HadDeactivatedAfterEdit()) {
+                    // A prior child was successfully edited — commit rather than discard.
+                    CommitEditContext();
+                } else {
+                    // Cancelled (e.g. Escape) with no prior edits: discard.
+                    m_currentEditContext.reset();
+                }
             }
         }
     }
