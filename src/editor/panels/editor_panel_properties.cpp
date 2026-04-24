@@ -390,7 +390,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
     std::error_code ec;
     auto rel = std::filesystem::relative(entity->m_imagePath, imageBase, ec);
     std::string imagePath = ec ? entity->m_imagePath.string() : rel.string();
-    ImGui::LabelText("Image Path", "%s", imagePath.c_str());
+    ImGui::InputText("Image Path", imagePath.data(), imagePath.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
     if (node->GetImage() != nullptr) {
         using namespace moth_ui;
@@ -549,7 +549,7 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
     std::error_code ec;
     auto rel = std::filesystem::relative(entity->m_flipbookPath, flipbookBase, ec);
     std::string displayPath = ec ? entity->m_flipbookPath.string() : rel.string();
-    ImGui::LabelText("Flipbook Path", "%s", displayPath.c_str());
+    ImGui::InputText("Flipbook Path", displayPath.data(), displayPath.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
     if (ImGui::Button("Load Flipbook..")) {
         auto const currentPath = std::filesystem::current_path().string();

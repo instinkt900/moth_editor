@@ -130,16 +130,13 @@ bool PivotBoundsHandle::OnMouseDown(moth_ui::EventMouseDown const& event) {
 }
 
 bool PivotBoundsHandle::OnMouseUp(moth_ui::EventMouseUp const& event) {
-    if (m_target == nullptr) {
-        return false;
-    }
     if (event.GetButton() != moth_ui::MouseButton::Left) {
         return false;
     }
     if (m_holding) {
         m_widget.GetCanvasPanel().GetEditorLayer().EndEditBounds();
+        m_holding = false;
     }
-    m_holding = false;
     return false;
 }
 

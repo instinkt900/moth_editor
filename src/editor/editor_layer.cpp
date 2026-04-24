@@ -912,6 +912,12 @@ bool EditorLayer::OnRequestQuitEvent(moth_graphics::EventRequestQuit const& even
 }
 
 void EditorLayer::ClearSelection() {
+    if (!m_editBoundsContext.empty()) {
+        EndEditBounds();
+    }
+    if (m_editColorContext) {
+        EndEditColor();
+    }
     m_selection.clear();
 }
 
@@ -919,12 +925,18 @@ void EditorLayer::AddSelection(std::shared_ptr<moth_ui::Node> node) {
     if (!m_editBoundsContext.empty()) {
         EndEditBounds();
     }
+    if (m_editColorContext) {
+        EndEditColor();
+    }
     m_selection.insert(node);
 }
 
 void EditorLayer::RemoveSelection(std::shared_ptr<moth_ui::Node> node) {
     if (!m_editBoundsContext.empty()) {
         EndEditBounds();
+    }
+    if (m_editColorContext) {
+        EndEditColor();
     }
     m_selection.erase(node);
 }

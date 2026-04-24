@@ -168,7 +168,11 @@ inline InputContext<moth_ui::IntVec2> InputElement(char const* label, InputBuffe
     deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
     deactivated |= ImGui::IsItemDeactivated();
     ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
-    ImGui::TextUnformatted(label);
+    {
+        char const* labelEnd = label;
+        while (*labelEnd != '\0' && (*labelEnd != '#' || *(labelEnd + 1) != '#')) { ++labelEnd; }
+        ImGui::TextUnformatted(label, labelEnd);
+    }
     ImGui::PopID();
 
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
@@ -194,7 +198,11 @@ inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuf
     deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
     deactivated |= ImGui::IsItemDeactivated();
     ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
-    ImGui::TextUnformatted(label);
+    {
+        char const* labelEnd = label;
+        while (*labelEnd != '\0' && (*labelEnd != '#' || *(labelEnd + 1) != '#')) { ++labelEnd; }
+        ImGui::TextUnformatted(label, labelEnd);
+    }
     ImGui::PopID();
 
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
@@ -288,47 +296,29 @@ inline InputContext<moth_ui::IntRect> InputElement(char const* label, InputBuffe
             ImGui::TableSetupColumn("Y##irh",   ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableHeadersRow();
 
-            ImGui::TableNextRow();
-            ImGui::PushID("irtl");
-            ImGui::TableNextColumn();
-            ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted("TL");
+            auto drawRow = [&](char const* id, char const* rowLabel, int& x, int& y) {
+                ImGui::TableNextRow();
+                ImGui::PushID(id);
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextUnformatted(rowLabel);
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                changed |= ImGui::InputInt("##x", &x, 0);
+                focused |= ImGui::IsItemFocused();
+                deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+                deactivated |= ImGui::IsItemDeactivated();
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                changed |= ImGui::InputInt("##y", &y, 0);
+                focused |= ImGui::IsItemFocused();
+                deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+                deactivated |= ImGui::IsItemDeactivated();
+                ImGui::PopID();
+            };
 
-            ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputInt("##x", &valueBuffer.Buffer->topLeft.x, 0);
-            focused |= ImGui::IsItemFocused();
-            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-            deactivated |= ImGui::IsItemDeactivated();
-
-            ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputInt("##y", &valueBuffer.Buffer->topLeft.y, 0);
-            focused |= ImGui::IsItemFocused();
-            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-            deactivated |= ImGui::IsItemDeactivated();
-            ImGui::PopID();
-
-            ImGui::TableNextRow();
-            ImGui::PushID("irbr");
-            ImGui::TableNextColumn();
-            ImGui::AlignTextToFramePadding();
-            ImGui::TextUnformatted("BR");
-
-            ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputInt("##x", &valueBuffer.Buffer->bottomRight.x, 0);
-            focused |= ImGui::IsItemFocused();
-            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-            deactivated |= ImGui::IsItemDeactivated();
-
-            ImGui::TableNextColumn();
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputInt("##y", &valueBuffer.Buffer->bottomRight.y, 0);
-            focused |= ImGui::IsItemFocused();
-            deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-            deactivated |= ImGui::IsItemDeactivated();
-            ImGui::PopID();
+            drawRow("irtl", "TL", valueBuffer.Buffer->topLeft.x,     valueBuffer.Buffer->topLeft.y);
+            drawRow("irbr", "BR", valueBuffer.Buffer->bottomRight.x,  valueBuffer.Buffer->bottomRight.y);
 
             ImGui::EndTable();
         }
