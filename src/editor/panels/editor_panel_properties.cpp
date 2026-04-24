@@ -198,7 +198,10 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
 
         // Commit when: the inline item was edited directly (hex field) and lost focus,
         // OR a colour edit is pending and no popup is currently open (picker dismissed).
-        bool const allPopupsClosed = !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId);
+        ImGui::PushID("Color");
+        bool const colorPickerOpen = ImGui::IsPopupOpen("##Picker");
+        ImGui::PopID();
+        bool const allPopupsClosed = !colorPickerOpen;
         if (deactivatedAfterEdit || (m_editorLayer.HasPendingColorEdit() && allPopupsClosed)) {
             m_editorLayer.EndEditColor();
         }

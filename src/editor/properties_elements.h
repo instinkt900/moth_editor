@@ -226,6 +226,7 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
     ImGui::TextUnformatted(label);
 
     constexpr ImGuiTableFlags tFlags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchSame;
+    ImGui::PushID(label);
     if (ImGui::BeginTable("##lrtbl", 5, tFlags)) {
         ImGui::TableSetupColumn("##lrname", ImGuiTableColumnFlags_WidthFixed, 46.0f);
         ImGui::TableSetupColumn("L##lrh", ImGuiTableColumnFlags_WidthStretch);
@@ -278,6 +279,7 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
 
         ImGui::EndTable();
     }
+    ImGui::PopID();
 
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
@@ -289,6 +291,7 @@ inline InputContext<moth_ui::IntRect> InputElement(char const* label, InputBuffe
     bool deactivated = false;
 
     if (ImGui::CollapsingHeader(label)) {
+        ImGui::PushID(label);
         constexpr ImGuiTableFlags tFlags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchSame;
         if (ImGui::BeginTable("##irectbl", 3, tFlags)) {
             ImGui::TableSetupColumn("##irname", ImGuiTableColumnFlags_WidthFixed, 28.0f);
@@ -322,6 +325,7 @@ inline InputContext<moth_ui::IntRect> InputElement(char const* label, InputBuffe
 
             ImGui::EndTable();
         }
+        ImGui::PopID();
     }
 
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
