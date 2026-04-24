@@ -149,18 +149,62 @@ inline InputContext<char const*> InputElement(char const* label, InputBuffer<cha
 }
 
 inline InputContext<moth_ui::IntVec2> InputElement(char const* label, InputBuffer<moth_ui::IntVec2> valueBuffer) {
-    bool changed = ImGui::InputInt2(label, valueBuffer.Buffer->data, 0);
-    bool focused = ImGui::IsItemFocused();
-    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
-    bool deactivated = ImGui::IsItemDeactivated();
+    bool changed = false;
+    bool focused = false;
+    bool deactivatedAfterEdit = false;
+    bool deactivated = false;
+
+    float const w = std::floor((ImGui::CalcItemWidth() - ImGui::GetStyle().ItemInnerSpacing.x) / 2.0f);
+    ImGui::PushID(label);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputInt("##x", &valueBuffer.Buffer->data[0], 0);
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputInt("##y", &valueBuffer.Buffer->data[1], 0);
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    {
+        char const* labelEnd = label;
+        while (*labelEnd != '\0' && (*labelEnd != '#' || *(labelEnd + 1) != '#')) { ++labelEnd; }
+        ImGui::TextUnformatted(label, labelEnd);
+    }
+    ImGui::PopID();
+
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuffer<moth_ui::FloatVec2> valueBuffer) {
-    bool changed = ImGui::InputFloat2(label, valueBuffer.Buffer->data, "%.3f");
-    bool focused = ImGui::IsItemFocused();
-    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
-    bool deactivated = ImGui::IsItemDeactivated();
+    bool changed = false;
+    bool focused = false;
+    bool deactivatedAfterEdit = false;
+    bool deactivated = false;
+
+    float const w = std::floor((ImGui::CalcItemWidth() - ImGui::GetStyle().ItemInnerSpacing.x) / 2.0f);
+    ImGui::PushID(label);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputFloat("##x", &valueBuffer.Buffer->data[0], 0, 0, "%.3f");
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputFloat("##y", &valueBuffer.Buffer->data[1], 0, 0, "%.3f");
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    {
+        char const* labelEnd = label;
+        while (*labelEnd != '\0' && (*labelEnd != '#' || *(labelEnd + 1) != '#')) { ++labelEnd; }
+        ImGui::TextUnformatted(label, labelEnd);
+    }
+    ImGui::PopID();
+
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
@@ -178,16 +222,28 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
     bool deactivatedAfterEdit = false;
     bool deactivated = false;
 
-    ImGui::Text("%s", label);
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted(label);
 
-    auto drawSection = [&](char const* header, moth_ui::FloatRect& rect) {
-        ImGui::Indent();
-        ImGui::Text("%s", header);
-        ImGui::PushID(header);
-        if (ImGui::BeginTable("##tbl", 2)) {
+    constexpr ImGuiTableFlags tFlags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchSame;
+    ImGui::PushID(label);
+    if (ImGui::BeginTable("##lrtbl", 5, tFlags)) {
+        ImGui::TableSetupColumn("##lrname", ImGuiTableColumnFlags_WidthFixed, 46.0f);
+        ImGui::TableSetupColumn("L##lrh", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("T##lrh", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("R##lrh", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("B##lrh", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableHeadersRow();
+
+        auto drawRow = [&](char const* rowLabel, moth_ui::FloatRect& rect) {
+            ImGui::TableNextRow();
+            ImGui::PushID(rowLabel);
+
             ImGui::TableNextColumn();
-            ImGui::Text("L");
-            ImGui::SameLine();
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted(rowLabel);
+
+            ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##l", &rect.topLeft.x, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
@@ -195,18 +251,13 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
             deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextColumn();
-            ImGui::Text("T");
-            ImGui::SameLine();
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##t", &rect.topLeft.y, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
             deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
             deactivated |= ImGui::IsItemDeactivated();
 
-            ImGui::TableNextRow();
             ImGui::TableNextColumn();
-            ImGui::Text("R");
-            ImGui::SameLine();
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##r", &rect.bottomRight.x, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
@@ -214,22 +265,21 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
             deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextColumn();
-            ImGui::Text("B");
-            ImGui::SameLine();
             ImGui::SetNextItemWidth(-FLT_MIN);
             changed |= ImGui::InputFloat("##b", &rect.bottomRight.y, 0, 0, "%.2f");
             focused |= ImGui::IsItemFocused();
             deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
             deactivated |= ImGui::IsItemDeactivated();
 
-            ImGui::EndTable();
-        }
-        ImGui::PopID();
-        ImGui::Unindent();
-    };
+            ImGui::PopID();
+        };
 
-    drawSection("Anchor", valueBuffer.Buffer->anchor);
-    drawSection("Offset", valueBuffer.Buffer->offset);
+        drawRow("Anchor", valueBuffer.Buffer->anchor);
+        drawRow("Offset", valueBuffer.Buffer->offset);
+
+        ImGui::EndTable();
+    }
+    ImGui::PopID();
 
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
@@ -241,22 +291,41 @@ inline InputContext<moth_ui::IntRect> InputElement(char const* label, InputBuffe
     bool deactivated = false;
 
     if (ImGui::CollapsingHeader(label)) {
-        changed |= ImGui::InputInt("Top", &valueBuffer.Buffer->topLeft.y, 0);
-        focused |= ImGui::IsItemFocused();
-        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-        deactivated |= ImGui::IsItemDeactivated();
-        changed |= ImGui::InputInt("Left", &valueBuffer.Buffer->topLeft.x, 0);
-        focused |= ImGui::IsItemFocused();
-        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-        deactivated |= ImGui::IsItemDeactivated();
-        changed |= ImGui::InputInt("Bottom", &valueBuffer.Buffer->bottomRight.y, 0);
-        focused |= ImGui::IsItemFocused();
-        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-        deactivated |= ImGui::IsItemDeactivated();
-        changed |= ImGui::InputInt("Right", &valueBuffer.Buffer->bottomRight.x, 0);
-        focused |= ImGui::IsItemFocused();
-        deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
-        deactivated |= ImGui::IsItemDeactivated();
+        ImGui::PushID(label);
+        constexpr ImGuiTableFlags tFlags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchSame;
+        if (ImGui::BeginTable("##irectbl", 3, tFlags)) {
+            ImGui::TableSetupColumn("##irname", ImGuiTableColumnFlags_WidthFixed, 28.0f);
+            ImGui::TableSetupColumn("X##irh",   ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Y##irh",   ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableHeadersRow();
+
+            auto drawRow = [&](char const* id, char const* rowLabel, int& x, int& y) {
+                ImGui::TableNextRow();
+                ImGui::PushID(id);
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextUnformatted(rowLabel);
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                changed |= ImGui::InputInt("##x", &x, 0);
+                focused |= ImGui::IsItemFocused();
+                deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+                deactivated |= ImGui::IsItemDeactivated();
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-FLT_MIN);
+                changed |= ImGui::InputInt("##y", &y, 0);
+                focused |= ImGui::IsItemFocused();
+                deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+                deactivated |= ImGui::IsItemDeactivated();
+                ImGui::PopID();
+            };
+
+            drawRow("irtl", "TL", valueBuffer.Buffer->topLeft.x,     valueBuffer.Buffer->topLeft.y);
+            drawRow("irbr", "BR", valueBuffer.Buffer->bottomRight.x,  valueBuffer.Buffer->bottomRight.y);
+
+            ImGui::EndTable();
+        }
+        ImGui::PopID();
     }
 
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };

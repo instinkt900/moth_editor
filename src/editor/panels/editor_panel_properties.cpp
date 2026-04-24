@@ -135,20 +135,8 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         float const pivScreenX = static_cast<float>(sr.topLeft.x) + (entity->m_pivot.x * static_cast<float>(boundsW));
         float const pivScreenY = static_cast<float>(sr.topLeft.y) + (entity->m_pivot.y * static_cast<float>(boundsH));
 
-        auto const posText = fmt::format("{:.0f}, {:.0f}", pivScreenX, pivScreenY);
-        auto const sizeText = fmt::format("{} x {}", boundsW, boundsH);
-
-
-        ImGui::Text("Position");
-        ImGui::SameLine();
-        float const posTextWidth = ImGui::CalcTextSize(posText.c_str()).x;
-        ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - posTextWidth);
-        ImGui::Text("%s", posText.c_str());
-        ImGui::Text("Size");
-        ImGui::SameLine();
-        float const sizTextWidth = ImGui::CalcTextSize(sizeText.c_str()).x;
-        ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - sizTextWidth);
-        ImGui::Text("%s", sizeText.c_str());
+        ImGui::LabelText("Position", "%.0f, %.0f", pivScreenX, pivScreenY);
+        ImGui::LabelText("Size", "%d x %d", boundsW, boundsH);
     }
 
     // Bounds uses the legacy OnInputFocus path intentionally: InputElement("Bounds", ...)
@@ -194,15 +182,30 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
             m_editorLayer.EndEditRotation();
         });
 
-    PropertiesInput<moth_ui::Color>(
-        "Color", node->GetColor(),
-        [&](moth_ui::Color changedValue) {
+    // Color is handled outside PropertiesInput: the picker popup causes the inline
+    // swatch item to deactivate on frame 2 (before any colour changes), discarding the
+    // PropertyEditContext before EndEditColor can be called.  Drive Begin/EndEditColor
+    // directly and commit on popup dismissal instead of on item deactivation.
+    {
+        auto valueBuffer = GetBufferForValue(node->GetColor());
+        bool const changed = ImGui::ColorEdit4("Color", valueBuffer.Buffer->data, ImGuiColorEditFlags_DisplayHex);
+        bool const deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+
+        if (changed) {
             m_editorLayer.BeginEditColor(node);
-            node->SetColor(changedValue);
-        },
-        [this](moth_ui::Color oldValue, moth_ui::Color newValue) {
+            node->SetColor(*valueBuffer.Buffer);
+        }
+
+        // Commit when: the inline item was edited directly (hex field) and lost focus,
+        // OR a colour edit is pending and no popup is currently open (picker dismissed).
+        ImGui::PushID("Color");
+        bool const colorPickerOpen = ImGui::IsPopupOpen("##Picker");
+        ImGui::PopID();
+        bool const allPopupsClosed = !colorPickerOpen;
+        if (deactivatedAfterEdit || (m_editorLayer.HasPendingColorEdit() && allPopupsClosed)) {
             m_editorLayer.EndEditColor();
-        });
+        }
+    }
 
     PropertiesInput<moth_ui::BlendMode>(
         "Blend Mode", node->GetBlendMode(), {},
@@ -286,6 +289,7 @@ void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node)
     // Anchor to offset: zero all offsets; update anchor fractions to maintain position.
     // anchor_new = (screen - parentOffset) / parentDim
     bool const parentValid = (parentDim.x != 0.0f && parentDim.y != 0.0f);
+    ImGui::SameLine();
     if (!parentValid) {
         ImGui::BeginDisabled();
     }
@@ -579,7 +583,6 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
                                             ? clipIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame())
                                             : std::string{};
         auto const* flipbook = node->GetFlipbook();
-        ImGui::SetNextItemWidth(200.0f);
         if ((flipbook != nullptr) && ImGui::BeginCombo("Clip Name", currentClip.c_str())) {
             for (int i = 0; i < flipbook->GetClipCount(); ++i) {
                 auto const clipName = flipbook->GetClipName(i);
