@@ -149,18 +149,54 @@ inline InputContext<char const*> InputElement(char const* label, InputBuffer<cha
 }
 
 inline InputContext<moth_ui::IntVec2> InputElement(char const* label, InputBuffer<moth_ui::IntVec2> valueBuffer) {
-    bool changed = ImGui::InputInt2(label, valueBuffer.Buffer->data, 0);
-    bool focused = ImGui::IsItemFocused();
-    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
-    bool deactivated = ImGui::IsItemDeactivated();
+    bool changed = false;
+    bool focused = false;
+    bool deactivatedAfterEdit = false;
+    bool deactivated = false;
+
+    float const w = std::floor((ImGui::CalcItemWidth() - ImGui::GetStyle().ItemInnerSpacing.x) / 2.0f);
+    ImGui::PushID(label);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputInt("##x", &valueBuffer.Buffer->data[0], 0);
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputInt("##y", &valueBuffer.Buffer->data[1], 0);
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::TextUnformatted(label);
+    ImGui::PopID();
+
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
 inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuffer<moth_ui::FloatVec2> valueBuffer) {
-    bool changed = ImGui::InputFloat2(label, valueBuffer.Buffer->data, "%.3f");
-    bool focused = ImGui::IsItemFocused();
-    bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
-    bool deactivated = ImGui::IsItemDeactivated();
+    bool changed = false;
+    bool focused = false;
+    bool deactivatedAfterEdit = false;
+    bool deactivated = false;
+
+    float const w = std::floor((ImGui::CalcItemWidth() - ImGui::GetStyle().ItemInnerSpacing.x) / 2.0f);
+    ImGui::PushID(label);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputFloat("##x", &valueBuffer.Buffer->data[0], 0, 0, "%.3f");
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::SetNextItemWidth(w);
+    changed |= ImGui::InputFloat("##y", &valueBuffer.Buffer->data[1], 0, 0, "%.3f");
+    focused |= ImGui::IsItemFocused();
+    deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
+    deactivated |= ImGui::IsItemDeactivated();
+    ImGui::SameLine(0, ImGui::GetStyle().ItemInnerSpacing.x);
+    ImGui::TextUnformatted(label);
+    ImGui::PopID();
+
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 

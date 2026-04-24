@@ -3,7 +3,6 @@
 #include "bounds_widget.h"
 #include "editor_layer.h"
 #include "panels/editor_panel_canvas.h"
-#include "actions/editor_action.h"
 #include "moth_ui/events/event_dispatch.h"
 #include "moth_ui/layout/layout_entity.h"
 #include "moth_ui/nodes/node.h"
@@ -123,9 +122,7 @@ bool PivotBoundsHandle::OnMouseDown(moth_ui::EventMouseDown const& event) {
         return false;
     }
     if (IsInBounds(event.GetPosition())) {
-        auto const entity = m_target->GetLayoutEntity();
-        m_originalPivot = entity ? entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
-        m_originalOffset = m_target->GetLayoutRect().offset;
+        m_widget.GetCanvasPanel().GetEditorLayer().BeginEditBounds(m_widget.GetSelection());
         m_holding = true;
         return true;
     }
@@ -140,30 +137,7 @@ bool PivotBoundsHandle::OnMouseUp(moth_ui::EventMouseUp const& event) {
         return false;
     }
     if (m_holding) {
-        auto const entity = m_target->GetLayoutEntity();
-        if (entity && entity->m_pivot != m_originalPivot) {
-            auto node = m_widget.GetSelection();
-            auto const finalPivot = entity->m_pivot;
-            auto const finalOffset = m_target->GetLayoutRect().offset;
-            auto const originalPivot = m_originalPivot;
-            auto const originalOffset = m_originalOffset;
-
-            auto action = std::make_unique<BasicAction>(
-                [entity, node, finalPivot, finalOffset]() {
-                    entity->m_pivot = finalPivot;
-                    node->GetLayoutRect().offset = finalOffset;
-                    node->SetPivot(finalPivot);
-                    node->RecalculateBounds();
-                },
-                [entity, node, originalPivot, originalOffset]() {
-                    entity->m_pivot = originalPivot;
-                    node->GetLayoutRect().offset = originalOffset;
-                    node->SetPivot(originalPivot);
-                    node->RecalculateBounds();
-                }
-            );
-            m_widget.GetCanvasPanel().GetEditorLayer().PerformEditAction(std::move(action));
-        }
+        m_widget.GetCanvasPanel().GetEditorLayer().EndEditBounds();
     }
     m_holding = false;
     return false;
