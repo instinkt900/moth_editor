@@ -182,15 +182,27 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
             m_editorLayer.EndEditRotation();
         });
 
-    PropertiesInput<moth_ui::Color>(
-        "Color", node->GetColor(),
-        [&](moth_ui::Color changedValue) {
+    // Color is handled outside PropertiesInput: the picker popup causes the inline
+    // swatch item to deactivate on frame 2 (before any colour changes), discarding the
+    // PropertyEditContext before EndEditColor can be called.  Drive Begin/EndEditColor
+    // directly and commit on popup dismissal instead of on item deactivation.
+    {
+        auto valueBuffer = GetBufferForValue(node->GetColor());
+        bool const changed = ImGui::ColorEdit4("Color", valueBuffer.Buffer->data, ImGuiColorEditFlags_DisplayHex);
+        bool const deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
+
+        if (changed) {
             m_editorLayer.BeginEditColor(node);
-            node->SetColor(changedValue);
-        },
-        [this](moth_ui::Color oldValue, moth_ui::Color newValue) {
+            node->SetColor(*valueBuffer.Buffer);
+        }
+
+        // Commit when: the inline item was edited directly (hex field) and lost focus,
+        // OR a colour edit is pending and no popup is currently open (picker dismissed).
+        bool const allPopupsClosed = !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId);
+        if (deactivatedAfterEdit || (m_editorLayer.HasPendingColorEdit() && allPopupsClosed)) {
             m_editorLayer.EndEditColor();
-        });
+        }
+    }
 
     PropertiesInput<moth_ui::BlendMode>(
         "Blend Mode", node->GetBlendMode(), {},

@@ -65,6 +65,7 @@ public:
 
     void BeginEditColor(std::shared_ptr<moth_ui::Node> node);
     void EndEditColor();
+    bool HasPendingColorEdit() const { return m_editColorContext != nullptr; }
 
     void BeginEditRotation(std::shared_ptr<moth_ui::Node> node);
     void EndEditRotation();
