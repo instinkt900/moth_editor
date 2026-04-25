@@ -164,7 +164,10 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
     ImGui::Unindent();
 
     PropertiesInput<moth_ui::FloatVec2>(
-        "Pivot", entity->m_pivot, {},
+        "Pivot", entity->m_pivot,
+        [node](moth_ui::FloatVec2 changedValue) {
+            node->SetPivot(changedValue);
+        },
         [this, node, entity](moth_ui::FloatVec2 oldValue, moth_ui::FloatVec2 newValue) {
             auto action = MakeChangeValueAction(entity->m_pivot, oldValue, newValue, [node]() {
                 node->ReloadEntity();
