@@ -618,6 +618,9 @@ bool EditorPanelAnimation::DrawClipPopup() {
         if (stillExists && m_pendingClipEdit->HasChanged()) {
             auto action = std::make_unique<ModifyClipAction>(groupEntity, *m_pendingClipEdit->reference, m_pendingClipEdit->mutableValue);
             m_editorLayer.PerformEditAction(std::move(action));
+            if (auto* selCtx = GetSelectedClipContext(m_pendingClipEdit->reference)) {
+                selCtx->mutableValue = m_pendingClipEdit->mutableValue;
+            }
         }
         m_pendingClipEdit.reset();
     }
@@ -787,6 +790,9 @@ bool EditorPanelAnimation::DrawEventPopup() {
         if (stillExists && m_pendingEventEdit->HasChanged()) {
             auto action = std::make_unique<ModifyEventAction>(groupEntity, *m_pendingEventEdit->reference, m_pendingEventEdit->mutableValue);
             m_editorLayer.PerformEditAction(std::move(action));
+            if (auto* selCtx = GetSelectedEventContext(m_pendingEventEdit->reference)) {
+                selCtx->mutableValue = m_pendingEventEdit->mutableValue;
+            }
         }
         m_pendingEventEdit.reset();
     }
