@@ -31,6 +31,10 @@ public:
         m_pendingValue = value;
     }
 
+    T const& GetPendingValue() const {
+        return m_pendingValue;
+    }
+
     void Commit() override {
         if (m_originalValue != m_pendingValue) {
             m_commitAction(m_originalValue, m_pendingValue);
@@ -56,6 +60,10 @@ public:
 
     void UpdateValue(char const* const& value) {
         m_pendingValue = value;
+    }
+
+    std::string const& GetPendingValue() const {
+        return m_pendingValue;
     }
 
     void Commit() override {
@@ -384,7 +392,26 @@ void OnInputFocus(char const* label, SourceType const& value, std::function<void
 
 template <class T>
 bool PropertiesInput(char const* label, T current, std::function<void(T)> const& changeAction = {}, std::function<void(T, T)> const& commitAction = {}) {
-    auto const inputContext = TypeInput(label, current);
+    // When an edit is already in progress, feed the pending value back
+    // as the display value so that composite widgets (FloatVec2, IntVec2,
+    // LayoutRect) do not lose previously-edited fields.  The InputElement
+    // buffer is rebuilt from current each frame, but ImGui only preserves
+    // the active sub-item's value across frames; inactive sub-items revert
+    // to whatever they receive.  Using the pending value ensures the
+    // buffer reflects all accumulated edits, not just the most recent one.
+    auto const widgetId = ImGui::GetID(label);
+    T displayValue = current;
+    if (m_currentEditContext && m_currentEditContext->GetID() == widgetId) {
+        auto* ctx = dynamic_cast<PropertyEditContext<T>*>(m_currentEditContext.get());
+        if (ctx != nullptr) {
+            if constexpr (std::is_same_v<T, char const*>) {
+                displayValue = ctx->GetPendingValue().c_str();
+            } else {
+                displayValue = ctx->GetPendingValue();
+            }
+        }
+    }
+    auto const inputContext = TypeInput(label, displayValue);
 
     if (commitAction) {
         if constexpr (std::is_enum_v<T>) {
@@ -394,12 +421,6 @@ bool PropertiesInput(char const* label, T current, std::function<void(T)> const&
                 commitAction(current, *inputContext.ValueBuffer.Buffer);
             }
         } else {
-            // Use the label's ID as a stable composite key so that multi-sub-widget
-            // inputs (IntRect, LayoutRect) are tracked as a single logical edit.
-            // For single-item inputs (InputText, InputFloat, etc.) GetID(label) equals
-            // GetItemID(), so the deactivation checks below remain correct for both.
-            auto const widgetId = ImGui::GetID(label);
-
             if (ImGui::IsItemActivated() && ImGui::GetItemID() == widgetId) {
                 // Single-item widget: reliable activation signal — capture original
                 // BEFORE changeAction has a chance to mutate the source.
