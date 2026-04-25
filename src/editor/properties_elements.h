@@ -245,28 +245,28 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
 
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputFloat("##l", &rect.topLeft.x, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("##l", &rect.topLeft.x, 0, 0, "%.4f");
             focused |= ImGui::IsItemFocused();
             deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
             deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputFloat("##t", &rect.topLeft.y, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("##t", &rect.topLeft.y, 0, 0, "%.4f");
             focused |= ImGui::IsItemFocused();
             deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
             deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputFloat("##r", &rect.bottomRight.x, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("##r", &rect.bottomRight.x, 0, 0, "%.4f");
             focused |= ImGui::IsItemFocused();
             deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
             deactivated |= ImGui::IsItemDeactivated();
 
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-FLT_MIN);
-            changed |= ImGui::InputFloat("##b", &rect.bottomRight.y, 0, 0, "%.2f");
+            changed |= ImGui::InputFloat("##b", &rect.bottomRight.y, 0, 0, "%.4f");
             focused |= ImGui::IsItemFocused();
             deactivatedAfterEdit |= ImGui::IsItemDeactivatedAfterEdit();
             deactivated |= ImGui::IsItemDeactivated();

@@ -221,6 +221,24 @@ void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node)
     }
 
 
+    // Copy / Paste bounds
+    if (ImGui::Button("Copy Bounds")) {
+        m_boundsClipboard = node->GetLayoutRect();
+    }
+    ImGui::SameLine();
+    if (!m_boundsClipboard.has_value()) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Paste Bounds")) {
+        m_editorLayer.BeginEditBounds(node);
+        node->GetLayoutRect() = *m_boundsClipboard;
+        node->RecalculateBounds();
+        m_editorLayer.EndEditBounds();
+    }
+    if (!m_boundsClipboard.has_value()) {
+        ImGui::EndDisabled();
+    }
+
     auto* parent = node->GetParent();
     if (parent == nullptr) {
         ImGui::TextDisabled("(root node has no parent)");
