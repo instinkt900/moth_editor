@@ -2,6 +2,7 @@
 
 #include "editor_panel.h"
 #include "moth_ui/context.h"
+#include "moth_ui/layout/layout_rect.h"
 
 class EditorPanelProperties : public EditorPanel {
 public:
@@ -17,6 +18,7 @@ private:
 
     std::shared_ptr<moth_ui::Node> m_currentSelection = nullptr;
     std::shared_ptr<moth_ui::Node> m_lastSelection = nullptr;
+    std::optional<moth_ui::LayoutRect> m_boundsClipboard;
 
     void DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren = true);
     void DrawCommonProperties(std::shared_ptr<moth_ui::Node> node);

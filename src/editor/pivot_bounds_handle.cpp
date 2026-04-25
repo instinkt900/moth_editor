@@ -33,8 +33,7 @@ void PivotBoundsHandle::Draw() {
     auto const& screenRect = m_target->GetScreenRect();
     auto const bounds = static_cast<moth_ui::FloatRect>(screenRect);
     auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
-    auto const entity = m_target->GetLayoutEntity();
-    auto const pivot = entity ? entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
+    auto const pivot = m_target->GetPivot();
 
     m_position = bounds.topLeft + dims * pivot;
 
@@ -75,7 +74,7 @@ void PivotBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     float const s = std::sin(rotation);
 
     // Current pivot in world space (the rotation centre — unchanged by rotation).
-    auto const pivotLocalOld = entity->m_pivot * dims;
+    auto const pivotLocalOld = m_target->GetPivot() * dims;
     auto const pivotWorldOld = bounds.topLeft + pivotLocalOld;
 
     // Back-rotate the mouse-from-pivot vector into the node's local (unrotated)

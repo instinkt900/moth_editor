@@ -79,7 +79,7 @@ moth_ui::FloatVec2 BoundsWidget::GetRotatedWorldPos(moth_ui::FloatVec2 const& wo
     auto const bounds = static_cast<moth_ui::FloatRect>(m_node->GetScreenRect());
     auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
     auto const entity = m_node->GetLayoutEntity();
-    auto const pivot = entity ? entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
+    auto const pivot = m_node->GetPivot();
     auto const pivotWorld = bounds.topLeft + dims * pivot;
     float const rotation = m_node->GetRotation() * moth_ui::kDegToRad;
     float const c = std::cos(rotation);

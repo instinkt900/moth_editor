@@ -840,27 +840,27 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
             }
         } break;
         case moth_ui::Key::Z:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 UndoEditAction();
             }
             return true;
         case moth_ui::Key::Y:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 RedoEditAction();
             }
             return true;
         case moth_ui::Key::C:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 CopyEntity();
             }
             return true;
         case moth_ui::Key::X:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 CutEntity();
             }
             return true;
         case moth_ui::Key::V:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 PasteEntity();
             }
             return true;

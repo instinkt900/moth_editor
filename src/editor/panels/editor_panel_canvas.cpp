@@ -36,8 +36,7 @@ namespace {
     moth_ui::FloatVec2 GetNodePivotWorld(moth_ui::Node const& node) {
         auto const bounds = static_cast<moth_ui::FloatRect>(node.GetScreenRect());
         auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
-        auto const entity = node.GetLayoutEntity();
-        auto const pivot = entity ? entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
+        auto const pivot = node.GetPivot();
         return bounds.topLeft + dims * pivot;
     }
 
