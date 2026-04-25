@@ -198,11 +198,10 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
 
         // Commit when: the inline item was edited directly (hex field) and lost focus,
         // OR a colour edit is pending and no popup is currently open (picker dismissed).
-        ImGui::PushID("Color");
-        bool const colorPickerOpen = ImGui::IsPopupOpen("##Picker");
-        ImGui::PopID();
-        bool const allPopupsClosed = !colorPickerOpen;
-        if (deactivatedAfterEdit || (m_editorLayer.HasPendingColorEdit() && allPopupsClosed)) {
+        // Use AnyPopupId because ColorEdit4 internally pushes extra IDs (color button
+        // etc.) so a narrowly scoped IsPopupOpen("##Picker") won't match.
+        bool const anyPopupOpen = ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId);
+        if (deactivatedAfterEdit || (m_editorLayer.HasPendingColorEdit() && !anyPopupOpen)) {
             m_editorLayer.EndEditColor();
         }
     }
