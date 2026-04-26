@@ -210,7 +210,7 @@ void EditorLayer::DrawMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
-                m_layerStack->FireEvent(moth_graphics::EventRequestQuit{});
+                FireEvent(moth_graphics::EventRequestQuit{});
             }
             ImGui::EndMenu();
         }
@@ -1184,7 +1184,7 @@ void EditorLayer::Shutdown() {
     }
     DeleteCrashRecovery();
     SaveConfig();
-    m_layerStack->FireEvent(moth_graphics::EventQuit());
+    FireEvent(moth_graphics::EventQuit());
 }
 
 void EditorLayer::AddRecentFile(std::filesystem::path const& path) {

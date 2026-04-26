@@ -87,7 +87,6 @@ void EditorApplication::PostCreateWindow() {
         }
     }
 
-    auto& layerStack = m_window->GetLayerStack();
-    layerStack.SetEventListener(this);
-    layerStack.PushLayer(std::make_unique<EditorLayer>(m_window->GetMothContext(), m_window->GetGraphics(), this));
+    m_window->AddEventListener(this);
+    m_window->PushLayer(std::make_unique<EditorLayer>(m_window->GetMothContext(), m_window->GetGraphics(), this));
 }
