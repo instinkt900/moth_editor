@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
-## [1.0.0-rc.1] - 2026-04-19
+## [1.0.0-rc.1] - 2026-04-26
 ### Features
 - Add Sprite Editor tool (step 1 — view)
 - Sprite editor frame selection and editing
@@ -37,6 +37,9 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Use Ctrl+arrow for 10px nudge instead of Shift
 - Shift+drag moves node anchor along with offset
 - Add bounds tools panel with anchor presets to properties
+- Add otf to font dialog filter and prefill name from filename
+- Display color properties as hex for easier copy/paste
+- Add Copy/Paste Bounds to properties panel
 
 ### Bug Fixes
 - Sprite editor import sheet and layout corruption
@@ -58,6 +61,21 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Include serialize_utils.h in PCH before json.hpp to prevent adl_serializer ODR error
 - Use static storage for imgui IniFilename to prevent use-after-free
 - Suppress bare-key shortcuts when ImGui wants keyboard input
+- Remove spaces from NFD file filter strings
+- Replace IsItemFocused commit polling with IsItemActivated/IsItemDeactivatedAfterEdit
+- Review fixes for input commit mechanism and NFD leak
+- Use label ID as composite key for multi-sub-widget PropertiesInput tracking
+- Accumulate per-child deactivation in composite InputElement overloads
+- Preserve prior sub-field edits when composite widget cancel fires
+- Flipbook pivot editing in properties panel and canvas
+- Commit colour edit when picker popup is dismissed
+- Review findings — colour context lifecycle, pivot handle cleanup, nitpicks
+- Scope ImGui table IDs and narrow color picker popup check
+- Refresh selection mutableValue after popup clip/event edit
+- Preserve prior edits in composite PropertiesInput widgets
+- Suppress global copy/paste/undo shortcuts when ImGui has keyboard focus
+- Prevent color picker from creating per-frame undo actions
+- Live preview of pivot editing on canvas
 
 ### Refactoring
 - Update editor panels to new IFlipbook API and expand TODO
@@ -65,6 +83,8 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Tighten sprite editor — push helpers, snprintf, bounding-box cleanup
 - Move Center button to left of canvas zoom toolbar
 - Redesign bounds property inputs
+- Clean up properties panel visual layout
+- Update to new event dispatch and layer stack API
 
 ### Documentation
 - Update sprite editor TODO with canvas and packer integration detail
@@ -74,6 +94,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Updating dep versions and todo
 - Remove forwarding texture_packer.h shim
 - Removing example out into its own repo
+- Update TODO list
 
 ### Changes
 - Bump version to 1.0.0-rc.1
