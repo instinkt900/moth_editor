@@ -21,7 +21,7 @@ void DeleteKeyframeAction::Do() {
 void DeleteKeyframeAction::Undo() {
     auto& track = m_entity->m_tracks.at(m_target);
     auto& keyframe = track->GetOrCreateKeyframe(m_frameNo);
-    keyframe.m_value = m_oldValue;
+    keyframe.value = m_oldValue;
 }
 
 void DeleteKeyframeAction::OnImGui() {

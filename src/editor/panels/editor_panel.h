@@ -20,7 +20,7 @@ enum class EditorPanelType {
     Preview,
 };
 
-class EditorPanel : public moth_ui::EventListener {
+class EditorPanel : public moth_ui::IEventListener {
 public:
     EditorPanel(EditorLayer& editorLayer, std::string const& title, bool visible, bool exposed);
     ~EditorPanel() override = default;

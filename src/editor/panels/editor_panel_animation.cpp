@@ -202,7 +202,7 @@ void EditorPanelAnimation::DeleteSelections() {
         } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
             actions.push_back(std::make_unique<DeleteEventAction>(entity, *eventCtx->event));
         } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-            actions.push_back(std::make_unique<DeleteKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->current->m_value));
+            actions.push_back(std::make_unique<DeleteKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->frame, kfCtx->current->value));
         } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
             auto it = dkfCtx->entity->m_discreteTracks.find(dkfCtx->target);
             if (it != dkfCtx->entity->m_discreteTracks.end()) {
@@ -261,7 +261,7 @@ ClipContext* EditorPanelAnimation::GetSelectedClipContext(moth_ui::AnimationClip
 
 // --- Event selection ---
 
-void EditorPanelAnimation::SelectEvent(moth_ui::AnimationEvent* event) {
+void EditorPanelAnimation::SelectEvent(moth_ui::AnimationMarker* event) {
     if (!IsEventSelected(event)) {
         EventContext context;
         context.event = event;
@@ -270,7 +270,7 @@ void EditorPanelAnimation::SelectEvent(moth_ui::AnimationEvent* event) {
     }
 }
 
-void EditorPanelAnimation::DeselectEvent(moth_ui::AnimationEvent* event) {
+void EditorPanelAnimation::DeselectEvent(moth_ui::AnimationMarker* event) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* eventCtx = std::get_if<EventContext>(&context)) {
             return eventCtx->event == event;
@@ -282,11 +282,11 @@ void EditorPanelAnimation::DeselectEvent(moth_ui::AnimationEvent* event) {
     }
 }
 
-bool EditorPanelAnimation::IsEventSelected(moth_ui::AnimationEvent* event) {
+bool EditorPanelAnimation::IsEventSelected(moth_ui::AnimationMarker* event) {
     return GetSelectedEventContext(event) != nullptr;
 }
 
-EventContext* EditorPanelAnimation::GetSelectedEventContext(moth_ui::AnimationEvent* event) {
+EventContext* EditorPanelAnimation::GetSelectedEventContext(moth_ui::AnimationMarker* event) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* eventCtx = std::get_if<EventContext>(&context)) {
             return eventCtx->event == event;
@@ -317,7 +317,7 @@ void EditorPanelAnimation::SelectKeyframe(std::shared_ptr<LayoutEntity> entity, 
 void EditorPanelAnimation::DeselectKeyframe(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-            return kfCtx->entity == entity && kfCtx->target == target && kfCtx->current->m_frame == frameNo;
+            return kfCtx->entity == entity && kfCtx->target == target && kfCtx->current->frame == frameNo;
         }
         return false;
     });
@@ -333,7 +333,7 @@ bool EditorPanelAnimation::IsKeyframeSelected(std::shared_ptr<LayoutEntity> enti
 KeyframeContext* EditorPanelAnimation::GetSelectedKeyframeContext(std::shared_ptr<LayoutEntity> entity, AnimationTrack::Target target, int frameNo) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-            return kfCtx->entity == entity && kfCtx->target == target && kfCtx->current->m_frame == frameNo;
+            return kfCtx->entity == entity && kfCtx->target == target && kfCtx->current->frame == frameNo;
         }
         return false;
     });
@@ -350,7 +350,7 @@ void EditorPanelAnimation::FilterKeyframeSelections(std::shared_ptr<LayoutEntity
         auto& context = *it;
         bool keep = false;
         if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-            keep = kfCtx->entity == entity && kfCtx->current->m_frame == frameNo;
+            keep = kfCtx->entity == entity && kfCtx->current->frame == frameNo;
         } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {
             keep = dkfCtx->entity == entity && dkfCtx->frame == frameNo;
         }
@@ -548,7 +548,7 @@ bool EditorPanelAnimation::DrawClipPopup() {
     if (ImGui::BeginPopup(ClipPopupName)) {
         auto layout = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const it = ranges::find_if(layout->m_clips, [&](auto const& clip) {
-            return clip->m_startFrame <= m_clickedFrame && clip->m_endFrame >= m_clickedFrame;
+            return clip->startFrame <= m_clickedFrame && clip->endFrame >= m_clickedFrame;
         });
 
         ClipContext* clipContext = nullptr;
@@ -559,9 +559,9 @@ bool EditorPanelAnimation::DrawClipPopup() {
         if (m_selections.empty() && ImGui::MenuItem("Add")) {
             auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
             auto newClip = moth_ui::AnimationClip();
-            newClip.m_name = "New Clip";
-            newClip.m_startFrame = m_clickedFrame;
-            newClip.m_endFrame = newClip.m_startFrame + 10;
+            newClip.name = "New Clip";
+            newClip.startFrame = m_clickedFrame;
+            newClip.endFrame = newClip.startFrame + 10;
             auto action = std::make_unique<AddClipAction>(entity, newClip);
             m_editorLayer.PerformEditAction(std::move(action));
         }
@@ -574,28 +574,28 @@ bool EditorPanelAnimation::DrawClipPopup() {
             if (!m_pendingClipEdit.has_value()) {
                 m_pendingClipEdit = EditContext<AnimationClip>(clipContext->clip);
                 // Initialise buffer once so ImGui owns it during editing.
-                ImFormatString(nameBuf, IM_ARRAYSIZE(nameBuf), "%s", m_pendingClipEdit->mutableValue.m_name.c_str());
+                ImFormatString(nameBuf, IM_ARRAYSIZE(nameBuf), "%s", m_pendingClipEdit->mutableValue.name.c_str());
             }
 
             if (ImGui::InputText("Name", nameBuf, sizeof(nameBuf))) {
-                m_pendingClipEdit->mutableValue.m_name = std::string(nameBuf);
+                m_pendingClipEdit->mutableValue.name = std::string(nameBuf);
             }
             // Sync on any deactivation: Escape reverts nameBuf via ImGui so this
             // correctly cancels (HasChanged becomes false); Tab/click-away commits.
             if (ImGui::IsItemDeactivated()) {
-                m_pendingClipEdit->mutableValue.m_name = std::string(nameBuf);
+                m_pendingClipEdit->mutableValue.name = std::string(nameBuf);
             }
 
-            ImGui::InputFloat("FPS", &m_pendingClipEdit->mutableValue.m_fps);
+            ImGui::InputFloat("FPS", &m_pendingClipEdit->mutableValue.fps);
 
-            std::string preview = std::string(magic_enum::enum_name(m_pendingClipEdit->mutableValue.m_loopType));
+            std::string preview = std::string(magic_enum::enum_name(m_pendingClipEdit->mutableValue.loopType));
             if (ImGui::BeginCombo("Loop Type", preview.c_str())) {
                 for (size_t n = 0; n < magic_enum::enum_count<AnimationClip::LoopType>(); n++) {
                     auto const enumValue = magic_enum::enum_value<AnimationClip::LoopType>(n);
                     std::string enumName = std::string(magic_enum::enum_name(enumValue));
-                    const bool isSelected = m_pendingClipEdit->mutableValue.m_loopType == enumValue;
+                    const bool isSelected = m_pendingClipEdit->mutableValue.loopType == enumValue;
                     if (ImGui::Selectable(enumName.c_str(), isSelected)) {
-                        m_pendingClipEdit->mutableValue.m_loopType = enumValue;
+                        m_pendingClipEdit->mutableValue.loopType = enumValue;
                     }
                     if (isSelected) {
                         ImGui::SetItemDefaultFocus();
@@ -655,8 +655,8 @@ void EditorPanelAnimation::DrawClipRow() {
 
         auto& clipValues = (m_mouseDragging && selected) ? GetSelectedClipContext(clip.get())->mutableValue : *clip; // NOLINT(clang-analyzer-core.NullDereference)
 
-        float const clipStartOffset = static_cast<float>(clipValues.m_startFrame) * m_framePixelWidth;
-        float const clipEndOffset = static_cast<float>(clipValues.m_endFrame + 1) * m_framePixelWidth;
+        float const clipStartOffset = static_cast<float>(clipValues.startFrame) * m_framePixelWidth;
+        float const clipEndOffset = static_cast<float>(clipValues.endFrame + 1) * m_framePixelWidth;
         ImVec2 const clipBoundsMin{ trackStartOffsetX + clipStartOffset, trackStartOffsetY + 2.0f };
         ImVec2 const clipBoundsMax{ trackStartOffsetX + clipEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
 
@@ -671,7 +671,7 @@ void EditorPanelAnimation::DrawClipRow() {
         // Alt-drag duplicates: show the original clip in place.
         if (io.KeyAlt) {
             DrawOriginalPositionGhost(m_drawList, trackStartOffsetX, trackStartOffsetY, m_rowHeight,
-                                      clip->m_startFrame, clip->m_endFrame, m_framePixelWidth, slotColor, 2.0f);
+                                      clip->startFrame, clip->endFrame, m_framePixelWidth, slotColor, 2.0f);
         }
 
         // The clip has three interactive regions: left edge, right edge, and center body.
@@ -721,9 +721,9 @@ void EditorPanelAnimation::DrawClipRow() {
             }
         }
 
-        ImVec2 const textSize = ImGui::CalcTextSize(clip->m_name.c_str());
+        ImVec2 const textSize = ImGui::CalcTextSize(clip->name.c_str());
         ImVec2 const textPos(clipBoundsMin.x + ((clipBoundsMax.x - clipBoundsMin.x - textSize.x) / 2), clipBoundsMin.y + ((clipBoundsMax.y - clipBoundsMin.y - textSize.y) / 2));
-        m_drawList->AddText(textPos, kColorTextPrimary, clip->m_name.c_str());
+        m_drawList->AddText(textPos, kColorTextPrimary, clip->name.c_str());
     }
 
     m_drawList->PopClipRect();
@@ -743,7 +743,7 @@ bool EditorPanelAnimation::DrawEventPopup() {
     if (ImGui::BeginPopup(EventPopupName)) {
         auto layout = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const it = ranges::find_if(layout->m_events, [&](auto const& event) {
-            return event->m_frame == m_clickedFrame;
+            return event->frame == m_clickedFrame;
         });
 
         EventContext* eventContext = nullptr;
@@ -765,15 +765,15 @@ bool EditorPanelAnimation::DrawEventPopup() {
         if (eventContext != nullptr && ImGui::BeginMenu("Edit")) {
             static char nameBuf[1024];
             if (!m_pendingEventEdit.has_value()) {
-                m_pendingEventEdit = EditContext<AnimationEvent>(eventContext->event);
-                ImFormatString(nameBuf, IM_ARRAYSIZE(nameBuf), "%s", eventContext->event->m_name.c_str());
+                m_pendingEventEdit = EditContext<AnimationMarker>(eventContext->event);
+                ImFormatString(nameBuf, IM_ARRAYSIZE(nameBuf), "%s", eventContext->event->name.c_str());
             }
 
             if (ImGui::InputText("Event Name", nameBuf, sizeof(nameBuf))) {
-                m_pendingEventEdit->mutableValue.m_name = std::string(nameBuf);
+                m_pendingEventEdit->mutableValue.name = std::string(nameBuf);
             }
             if (ImGui::IsItemDeactivated()) {
-                m_pendingEventEdit->mutableValue.m_name = std::string(nameBuf);
+                m_pendingEventEdit->mutableValue.name = std::string(nameBuf);
             }
             ImGui::EndMenu();
         }
@@ -825,8 +825,8 @@ void EditorPanelAnimation::DrawEventsRow() {
 
         auto& eventValues = (m_mouseDragging && selected) ? GetSelectedEventContext(event.get())->mutableValue : *event; // NOLINT(clang-analyzer-core.NullDereference)
 
-        float const eventStartOffset = static_cast<float>(eventValues.m_frame) * m_framePixelWidth;
-        float const eventEndOffset = static_cast<float>(eventValues.m_frame + 1) * m_framePixelWidth;
+        float const eventStartOffset = static_cast<float>(eventValues.frame) * m_framePixelWidth;
+        float const eventEndOffset = static_cast<float>(eventValues.frame + 1) * m_framePixelWidth;
         ImVec2 const eventBoundsMin{ trackStartOffsetX + eventStartOffset, trackStartOffsetY + 2.0f };
         ImVec2 const eventBoundsMax{ trackStartOffsetX + eventEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
         ImRect const eventBounds{ eventBoundsMin, eventBoundsMax };
@@ -841,14 +841,14 @@ void EditorPanelAnimation::DrawEventsRow() {
 
         if (eventBounds.Contains(io.MousePos)) {
             ImGui::BeginTooltip();
-            ImGui::Text("Event \"%s\"", eventValues.m_name.c_str());
+            ImGui::Text("Event \"%s\"", eventValues.name.c_str());
             ImGui::EndTooltip();
         }
 
         // Alt-drag duplicates: show the original event in place.
         if (io.KeyAlt) {
             DrawOriginalPositionGhost(m_drawList, trackStartOffsetX, trackStartOffsetY, m_rowHeight,
-                                      event->m_frame, event->m_frame, m_framePixelWidth, slotColor, 2.0f);
+                                      event->frame, event->frame, m_framePixelWidth, slotColor, 2.0f);
         }
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -1018,9 +1018,9 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
             moth_ui::InterpType selectedInterp = moth_ui::InterpType::Unknown;
             for (auto&& context : m_selections) {
                 if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-                    if (kfCtx->current->m_interpType != selectedInterp) {
+                    if (kfCtx->current->interpType != selectedInterp) {
                         if (selectedInterp == moth_ui::InterpType::Unknown) {
-                            selectedInterp = kfCtx->current->m_interpType;
+                            selectedInterp = kfCtx->current->interpType;
                         } else {
                             multipleInterps = true;
                         }
@@ -1041,7 +1041,7 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
                     auto compositeAction = std::make_unique<CompositeAction>();
                     for (auto&& context : m_selections) {
                         if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-                            auto action = MakeChangeValueAction(kfCtx->current->m_interpType, kfCtx->current->m_interpType, interpType, nullptr);
+                            auto action = MakeChangeValueAction(kfCtx->current->interpType, kfCtx->current->interpType, interpType, nullptr);
                             compositeAction->GetActions().push_back(std::move(action));
                         }
                     }
@@ -1116,10 +1116,10 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
         float const trackStartOffsetY = subTrackBounds.Min.y;
 
         for (auto& keyframe : track->Keyframes()) {
-            bool selected = IsKeyframeSelected(childEntity, target, keyframe->m_frame);
+            bool selected = IsKeyframeSelected(childEntity, target, keyframe->frame);
 
-            auto* const kfCtxDrag = (m_mouseDragging && selected) ? GetSelectedKeyframeContext(childEntity, target, keyframe->m_frame) : nullptr;
-            int const frameNumber = (kfCtxDrag != nullptr) ? kfCtxDrag->mutableFrame : keyframe->m_frame;
+            auto* const kfCtxDrag = (m_mouseDragging && selected) ? GetSelectedKeyframeContext(childEntity, target, keyframe->frame) : nullptr;
+            int const frameNumber = (kfCtxDrag != nullptr) ? kfCtxDrag->mutableFrame : keyframe->frame;
 
             float const frameStartOffset = (static_cast<float>(frameNumber) * m_framePixelWidth) + 1.0f;
             float const frameEndOffset = static_cast<float>(frameNumber + 1) * m_framePixelWidth;
@@ -1128,7 +1128,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
             ImRect const frameBounds{ frameBoundsMin, frameBoundsMax };
 
             if (m_boxSelecting && frameBounds.Overlaps(m_selectBox)) {
-                m_pendingBoxSelections.push_back(KeyframeContext{ childEntity, target, keyframe->m_frame });
+                m_pendingBoxSelections.push_back(KeyframeContext{ childEntity, target, keyframe->frame });
                 selected = true;
             }
 
@@ -1137,8 +1137,8 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
             // Alt-drag duplicates: show the original keyframe in place.
             if (io.KeyAlt) {
-                float const origStartOffset = (static_cast<float>(keyframe->m_frame) * m_framePixelWidth) + 1.0f;
-                float const origEndOffset = static_cast<float>(keyframe->m_frame + 1) * m_framePixelWidth;
+                float const origStartOffset = (static_cast<float>(keyframe->frame) * m_framePixelWidth) + 1.0f;
+                float const origEndOffset = static_cast<float>(keyframe->frame + 1) * m_framePixelWidth;
                 ImVec2 const origMin{ trackStartOffsetX + origStartOffset, trackStartOffsetY + 2.0f };
                 ImVec2 const origMax{ trackStartOffsetX + origEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
                 m_drawList->AddRectFilled(origMin, origMax, slotColor, 0.0f);
@@ -1146,19 +1146,19 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 if (m_mouseInScrollArea && frameBounds.Contains(io.MousePos)) {
-                    if (!IsKeyframeSelected(childEntity, target, keyframe->m_frame)) {
+                    if (!IsKeyframeSelected(childEntity, target, keyframe->frame)) {
                         if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
                             if (expanded) {
                                 ClearSelections();
                             } else {
                                 // When collapsed, keep sibling-track keyframes at the same frame selected
                                 // so the user can move all tracks at once.
-                                FilterKeyframeSelections(childEntity, keyframe->m_frame);
+                                FilterKeyframeSelections(childEntity, keyframe->frame);
                             }
                         }
                     }
 
-                    SelectKeyframe(childEntity, target, keyframe->m_frame);
+                    SelectKeyframe(childEntity, target, keyframe->frame);
                     m_clickConsumed = true;
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -1480,7 +1480,7 @@ void EditorPanelAnimation::AdvancePlayback() {
     auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
     AnimationClip* clip = nullptr;
     for (auto& c : entity->m_clips) {
-        if (c->m_name == m_selectedClipName) {
+        if (c->name == m_selectedClipName) {
             clip = c.get();
             break;
         }
@@ -1490,7 +1490,7 @@ void EditorPanelAnimation::AdvancePlayback() {
         return;
     }
 
-    float const fps = (clip->m_fps > 0.0f) ? clip->m_fps : AnimationClip::DefaultFPS;
+    float const fps = (clip->fps > 0.0f) ? clip->fps : AnimationClip::kDefaultFPS;
     m_playbackAccumSec += ImGui::GetIO().DeltaTime;
     float const secPerFrame = 1.0f / fps;
     int const framesToAdvance = static_cast<int>(m_playbackAccumSec / secPerFrame);
@@ -1500,19 +1500,19 @@ void EditorPanelAnimation::AdvancePlayback() {
     m_playbackAccumSec -= static_cast<float>(framesToAdvance) * secPerFrame;
 
     int newFrame = m_currentFrame + framesToAdvance;
-    if (newFrame > clip->m_endFrame) {
-        switch (clip->m_loopType) {
+    if (newFrame > clip->endFrame) {
+        switch (clip->loopType) {
             case AnimationClip::LoopType::Loop: {
                 int const len = clip->FrameCount();
-                newFrame = clip->m_startFrame + ((newFrame - clip->m_startFrame) % len);
+                newFrame = clip->startFrame + ((newFrame - clip->startFrame) % len);
                 break;
             }
             case AnimationClip::LoopType::Stop:
-                newFrame = clip->m_endFrame;
+                newFrame = clip->endFrame;
                 m_playing = false;
                 break;
             case AnimationClip::LoopType::Reset:
-                newFrame = clip->m_startFrame;
+                newFrame = clip->startFrame;
                 m_playing = false;
                 break;
         }
@@ -1531,11 +1531,11 @@ void EditorPanelAnimation::TogglePlayback() {
     }
     auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
     for (auto const& c : entity->m_clips) {
-        if (c->m_name == m_selectedClipName) {
-            bool const outsideRange = m_currentFrame < c->m_startFrame || m_currentFrame > c->m_endFrame;
-            bool const stoppedAtEnd = c->m_loopType == AnimationClip::LoopType::Stop && m_currentFrame == c->m_endFrame;
+        if (c->name == m_selectedClipName) {
+            bool const outsideRange = m_currentFrame < c->startFrame || m_currentFrame > c->endFrame;
+            bool const stoppedAtEnd = c->loopType == AnimationClip::LoopType::Stop && m_currentFrame == c->endFrame;
             if (outsideRange || stoppedAtEnd) {
-                m_currentFrame = c->m_startFrame;
+                m_currentFrame = c->startFrame;
                 m_editorLayer.SetSelectedFrame(m_currentFrame);
             }
             break;
@@ -1551,7 +1551,7 @@ void EditorPanelAnimation::DrawPlaybackControls() {
 
     // Validate that the selected clip name still refers to an existing clip.
     bool const clipExists = !m_selectedClipName.empty() &&
-        std::any_of(clips.begin(), clips.end(), [&](auto const& c) { return c->m_name == m_selectedClipName; });
+        std::any_of(clips.begin(), clips.end(), [&](auto const& c) { return c->name == m_selectedClipName; });
     if (!clipExists && !m_selectedClipName.empty()) {
         m_selectedClipName.clear();
         m_playing = false;
@@ -1571,9 +1571,9 @@ void EditorPanelAnimation::DrawPlaybackControls() {
             ImGui::SetItemDefaultFocus();
         }
         for (auto const& c : clips) {
-            bool const isSelected = c->m_name == m_selectedClipName;
-            if (ImGui::Selectable(c->m_name.c_str(), isSelected)) {
-                m_selectedClipName = c->m_name;
+            bool const isSelected = c->name == m_selectedClipName;
+            if (ImGui::Selectable(c->name.c_str(), isSelected)) {
+                m_selectedClipName = c->name;
                 m_playing = false;
                 m_playbackAccumSec = 0.0f;
             }
@@ -1812,7 +1812,7 @@ void EditorPanelAnimation::CommitDragActions() {
 
     for (auto& context : m_selections) {
         if (auto* clipCtx = std::get_if<ClipContext>(&context)) {
-            bool const changed = clipCtx->clip->m_startFrame != clipCtx->mutableValue.m_startFrame || clipCtx->clip->m_endFrame != clipCtx->mutableValue.m_endFrame;
+            bool const changed = clipCtx->clip->startFrame != clipCtx->mutableValue.startFrame || clipCtx->clip->endFrame != clipCtx->mutableValue.endFrame;
             if (changed) {
                 actions.push_back(std::make_unique<ModifyClipAction>(groupEntity, *clipCtx->clip, clipCtx->mutableValue));
                 // Alt-drag: duplicate the original clip at its old position.
@@ -1821,17 +1821,17 @@ void EditorPanelAnimation::CommitDragActions() {
                 }
             }
         } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
-            if (eventCtx->event->m_frame != eventCtx->mutableValue.m_frame) {
+            if (eventCtx->event->frame != eventCtx->mutableValue.frame) {
                 actions.push_back(std::make_unique<ModifyEventAction>(groupEntity, *eventCtx->event, eventCtx->mutableValue));
                 if (m_altDrag) {
-                    actions.push_back(std::make_unique<AddEventAction>(groupEntity, eventCtx->event->m_frame, eventCtx->event->m_name));
+                    actions.push_back(std::make_unique<AddEventAction>(groupEntity, eventCtx->event->frame, eventCtx->event->name));
                 }
             }
         } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-            if (kfCtx->current->m_frame != kfCtx->mutableFrame) {
-                actions.push_back(std::make_unique<MoveKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->mutableFrame));
+            if (kfCtx->current->frame != kfCtx->mutableFrame) {
+                actions.push_back(std::make_unique<MoveKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->frame, kfCtx->mutableFrame));
                 if (m_altDrag) {
-                    actions.push_back(std::make_unique<AddKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->m_frame, kfCtx->current->m_value, kfCtx->current->m_interpType));
+                    actions.push_back(std::make_unique<AddKeyframeAction>(kfCtx->entity, kfCtx->target, kfCtx->current->frame, kfCtx->current->value, kfCtx->current->interpType));
                 }
             }
         }
@@ -1892,13 +1892,13 @@ void EditorPanelAnimation::UpdateMouseDragging() {
         if (auto* clipCtx = std::get_if<ClipContext>(&context)) {
             // Single clip: the drag handle determines whether we move the left edge, right edge, or both.
             if (m_selections.size() == 1) {
-                int& l = clipCtx->mutableValue.m_startFrame;
-                int& r = clipCtx->mutableValue.m_endFrame;
+                int& l = clipCtx->mutableValue.startFrame;
+                int& r = clipCtx->mutableValue.endFrame;
                 if ((m_clipDragHandle & kClipHandleLeft) != 0) {
-                    l = clipCtx->clip->m_startFrame + frameDelta;
+                    l = clipCtx->clip->startFrame + frameDelta;
                 }
                 if ((m_clipDragHandle & kClipHandleRight) != 0) {
-                    r = clipCtx->clip->m_endFrame + frameDelta;
+                    r = clipCtx->clip->endFrame + frameDelta;
                 }
                 if (l < 0) {
                     if ((m_clipDragHandle & kClipHandleRight) != 0) {
@@ -1913,22 +1913,22 @@ void EditorPanelAnimation::UpdateMouseDragging() {
                     r = l;
                 }
             } else {
-                int start = clipCtx->clip->m_startFrame + frameDelta;
-                int end = clipCtx->clip->m_endFrame + frameDelta;
+                int start = clipCtx->clip->startFrame + frameDelta;
+                int end = clipCtx->clip->endFrame + frameDelta;
                 if (start < 0) {
                     int const shift = -start;
                     start += shift;
                     end += shift;
                 }
-                clipCtx->mutableValue.m_startFrame = start;
-                clipCtx->mutableValue.m_endFrame = end;
+                clipCtx->mutableValue.startFrame = start;
+                clipCtx->mutableValue.endFrame = end;
             }
         } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
-            int frame = eventCtx->event->m_frame + frameDelta;
+            int frame = eventCtx->event->frame + frameDelta;
             frame = std::max(frame, 0);
-            eventCtx->mutableValue.m_frame = frame;
+            eventCtx->mutableValue.frame = frame;
         } else if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-            int frame = kfCtx->current->m_frame + frameDelta;
+            int frame = kfCtx->current->frame + frameDelta;
             frame = std::max(frame, 0);
             kfCtx->mutableFrame = frame;
         } else if (auto* dkfCtx = std::get_if<DiscreteKeyframeContext>(&context)) {

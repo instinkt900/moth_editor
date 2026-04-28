@@ -3,7 +3,7 @@
 #include "editor_panel.h"
 #include "moth_ui/animation/animation_track.h"
 #include "moth_ui/animation/animation_clip.h"
-#include "moth_ui/animation/animation_event.h"
+#include "moth_ui/animation/animation_marker.h"
 #include "imgui_internal.h"
 
 #include <memory>
@@ -21,8 +21,8 @@ struct ClipContext {
 };
 
 struct EventContext {
-    moth_ui::AnimationEvent* event = nullptr;
-    moth_ui::AnimationEvent mutableValue;
+    moth_ui::AnimationMarker* event = nullptr;
+    moth_ui::AnimationMarker mutableValue;
 };
 
 struct KeyframeContext {
@@ -97,7 +97,7 @@ private:
     std::vector<KeyframeContext> m_pendingBoxSelections;
     std::vector<DiscreteKeyframeContext> m_pendingDiscreteBoxSelections;
     std::vector<moth_ui::AnimationClip*> m_pendingClipBoxSelections;
-    std::vector<moth_ui::AnimationEvent*> m_pendingEventBoxSelections;
+    std::vector<moth_ui::AnimationMarker*> m_pendingEventBoxSelections;
 
     void ClearSelections();
 
@@ -106,10 +106,10 @@ private:
     bool IsClipSelected(moth_ui::AnimationClip* clip);
     ClipContext* GetSelectedClipContext(moth_ui::AnimationClip* clip);
 
-    void SelectEvent(moth_ui::AnimationEvent* event);
-    void DeselectEvent(moth_ui::AnimationEvent* event);
-    bool IsEventSelected(moth_ui::AnimationEvent* event);
-    EventContext* GetSelectedEventContext(moth_ui::AnimationEvent* event);
+    void SelectEvent(moth_ui::AnimationMarker* event);
+    void DeselectEvent(moth_ui::AnimationMarker* event);
+    bool IsEventSelected(moth_ui::AnimationMarker* event);
+    EventContext* GetSelectedEventContext(moth_ui::AnimationMarker* event);
 
     void SelectKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
     void DeselectKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
@@ -135,7 +135,7 @@ private:
     };
 
     std::optional<EditContext<moth_ui::AnimationClip>> m_pendingClipEdit;
-    std::optional<EditContext<moth_ui::AnimationEvent>> m_pendingEventEdit;
+    std::optional<EditContext<moth_ui::AnimationMarker>> m_pendingEventEdit;
 
     bool DrawClipPopup();
     bool DrawEventPopup();

@@ -26,16 +26,16 @@ void ModifyKeyframeAction::Do() {
     auto& track = m_entity->m_tracks.at(m_target);
     auto* keyframe = track->GetKeyframe(m_frameNo);
     if (keyframe == nullptr) { return; }
-    keyframe->m_value = m_newValue;
-    keyframe->m_interpType = m_newInterp;
+    keyframe->value = m_newValue;
+    keyframe->interpType = m_newInterp;
 }
 
 void ModifyKeyframeAction::Undo() {
     auto& track = m_entity->m_tracks.at(m_target);
     auto* keyframe = track->GetKeyframe(m_frameNo);
     if (keyframe == nullptr) { return; }
-    keyframe->m_value = m_oldValue;
-    keyframe->m_interpType = m_oldInterp;
+    keyframe->value = m_oldValue;
+    keyframe->interpType = m_oldInterp;
 }
 
 void ModifyKeyframeAction::OnImGui() {

@@ -22,7 +22,7 @@ void MoveKeyframeAction::Do() {
         m_replacedKeyframe = *replacedKeyframe;
         track->DeleteKeyframe(m_finalFrame);
     }
-    keyframe->m_frame = m_finalFrame;
+    keyframe->frame = m_finalFrame;
     track->SortKeyframes();
 }
 
@@ -31,7 +31,7 @@ void MoveKeyframeAction::Undo() {
     auto& track = m_entity->m_tracks.at(m_target);
     auto* keyframe = track->GetKeyframe(m_finalFrame);
     if (keyframe == nullptr) { return; }
-    keyframe->m_frame = m_initialFrame;
+    keyframe->frame = m_initialFrame;
     if (m_replacedKeyframe.has_value()) {
         auto& replacedKeyframe = track->GetOrCreateKeyframe(m_finalFrame);
         replacedKeyframe = m_replacedKeyframe.value();

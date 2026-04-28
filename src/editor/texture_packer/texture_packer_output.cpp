@@ -40,8 +40,8 @@ void TexturePacker::DoPack() {
     opts.packType      = m_flipbookMode ? moth_packer::PackType::Flipbook
                                         : moth_packer::PackType::Atlas;
     if (m_flipbookMode) {
-        opts.fps      = m_fps;
-        opts.loop     = m_loopType;
+        opts.fps      = fps;
+        opts.loop     = loopType;
         opts.clipName = m_clipName;
     }
     m_lastPackOpts = opts;

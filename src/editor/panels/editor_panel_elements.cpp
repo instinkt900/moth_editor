@@ -48,8 +48,7 @@ namespace {
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
                     NFD_Free(outPath);
-                    std::shared_ptr<moth_ui::Layout> referencedLayout;
-                    auto const loadResult = moth_ui::Layout::Load(filePath, &referencedLayout);
+                    auto [referencedLayout, loadResult] = moth_ui::Layout::Load(filePath);
                     if (loadResult == moth_ui::Layout::LoadResult::Success) {
                         moth_ui::LayoutRect bounds;
                         bounds.anchor.topLeft = { 0, 0 };

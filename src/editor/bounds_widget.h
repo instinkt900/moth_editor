@@ -10,7 +10,7 @@ class EditorPanelCanvas;
 class PivotBoundsHandle;
 class RotationBoundsHandle;
 
-class BoundsWidget : public moth_ui::EventListener {
+class BoundsWidget : public moth_ui::IEventListener {
 public:
     BoundsWidget(EditorPanelCanvas& canvasPanel);
     ~BoundsWidget() override;

@@ -54,8 +54,8 @@ private:
 
     // Flipbook options
     bool m_flipbookMode = false;
-    int  m_fps          = 12;
-    moth_packer::LoopType m_loopType = moth_packer::LoopType::Loop;
+    int  fps          = 12;
+    moth_packer::LoopType loopType = moth_packer::LoopType::Loop;
     char m_clipName[64] = {"default"};
 
     // Last options used for pack — reused verbatim by Save (with outputPath/filename swapped)

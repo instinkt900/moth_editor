@@ -7,7 +7,7 @@ AddDiscreteKeyframeAction::AddDiscreteKeyframeAction(std::shared_ptr<moth_ui::La
     : m_entity(entity)
     , m_target(target)
     , m_frameNo(frameNo)
-    , m_value(std::move(value)) {
+    , value(std::move(value)) {
 }
 
 AddDiscreteKeyframeAction::~AddDiscreteKeyframeAction() = default;
@@ -26,7 +26,7 @@ void AddDiscreteKeyframeAction::Do() {
         m_hadPrevious = false;
         m_previousValue.clear();
     }
-    it->second.GetOrCreateKeyframe(m_frameNo) = m_value;
+    it->second.GetOrCreateKeyframe(m_frameNo) = value;
 }
 
 void AddDiscreteKeyframeAction::Undo() {
@@ -44,6 +44,6 @@ void AddDiscreteKeyframeAction::Undo() {
 void AddDiscreteKeyframeAction::OnImGui() {
     if (ImGui::CollapsingHeader("AddDiscreteKeyframeAction")) {
         ImGui::LabelText("Frame", "%d", m_frameNo);
-        ImGui::LabelText("Value", "%s", m_value.c_str());
+        ImGui::LabelText("Value", "%s", value.c_str());
     }
 }

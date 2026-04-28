@@ -11,11 +11,11 @@ ModifyClipAction::ModifyClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> g
 void ModifyClipAction::Do() {
     auto const it = ranges::find_if(m_group->m_clips, [&](auto const& clip) {
         // clang-format off
-        return clip->m_startFrame == m_initialValues.m_startFrame
-            && clip->m_endFrame == m_initialValues.m_endFrame
-            && clip->m_name == m_initialValues.m_name 
-            && clip->m_loopType == m_initialValues.m_loopType
-            && clip->m_fps == m_initialValues.m_fps;
+        return clip->startFrame == m_initialValues.startFrame
+            && clip->endFrame == m_initialValues.endFrame
+            && clip->name == m_initialValues.name 
+            && clip->loopType == m_initialValues.loopType
+            && clip->fps == m_initialValues.fps;
         // clang-format on
     });
     
@@ -27,11 +27,11 @@ void ModifyClipAction::Do() {
 void ModifyClipAction::Undo() {
     auto const it = ranges::find_if(m_group->m_clips, [&](auto const& clip) {
         // clang-format off
-        return clip->m_startFrame == m_finalValues.m_startFrame
-            && clip->m_endFrame == m_finalValues.m_endFrame
-            && clip->m_name == m_finalValues.m_name
-            && clip->m_loopType == m_finalValues.m_loopType
-            && clip->m_fps == m_finalValues.m_fps;
+        return clip->startFrame == m_finalValues.startFrame
+            && clip->endFrame == m_finalValues.endFrame
+            && clip->name == m_finalValues.name
+            && clip->loopType == m_finalValues.loopType
+            && clip->fps == m_finalValues.fps;
         // clang-format on
     });
 

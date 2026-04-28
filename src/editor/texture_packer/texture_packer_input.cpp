@@ -275,18 +275,18 @@ void TexturePacker::DrawInputPanel() {
             ImGui::TextUnformatted("FPS");
             ImGui::SameLine();
             ImGui::SetNextItemWidth(60.0f);
-            ImGui::InputInt("##fps", &m_fps, 0, 0);
-            m_fps = std::max(m_fps, 1);
+            ImGui::InputInt("##fps", &fps, 0, 0);
+            fps = std::max(fps, 1);
         }
         {
             ImGui::SameLine();
             ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted("Loop");
             ImGui::SameLine();
-            int loopIdx = static_cast<int>(m_loopType);
+            int loopIdx = static_cast<int>(loopType);
             ImGui::SetNextItemWidth(80.0f);
             if (ImGui::Combo("##loop_type", &loopIdx, kLoopTypeItems, 3)) {
-                m_loopType = static_cast<moth_packer::LoopType>(loopIdx);
+                loopType = static_cast<moth_packer::LoopType>(loopIdx);
             }
         }
         {

@@ -12,7 +12,7 @@ struct BoundsHandleAnchor {
     bool Right = false;
 };
 
-class BoundsHandle : public moth_ui::EventListener {
+class BoundsHandle : public moth_ui::IEventListener {
 public:
     BoundsHandle(BoundsWidget& widget, BoundsHandleAnchor const& anchor);
     ~BoundsHandle() override;

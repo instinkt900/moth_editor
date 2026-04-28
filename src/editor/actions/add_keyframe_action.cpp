@@ -7,7 +7,7 @@ AddKeyframeAction::AddKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> enti
     : m_entity(entity)
     , m_target(target)
     , m_frameNo(frameNo)
-    , m_value(value)
+    , value(value)
     , m_interp(interp) {
 }
 
@@ -17,8 +17,8 @@ AddKeyframeAction::~AddKeyframeAction() {
 void AddKeyframeAction::Do() {
     auto& track = m_entity->m_tracks.at(m_target);
     auto& keyframe = track->GetOrCreateKeyframe(m_frameNo);
-    keyframe.m_value = m_value;
-    keyframe.m_interpType = m_interp;
+    keyframe.value = value;
+    keyframe.interpType = m_interp;
 }
 
 void AddKeyframeAction::Undo() {
@@ -29,6 +29,6 @@ void AddKeyframeAction::Undo() {
 void AddKeyframeAction::OnImGui() {
     if (ImGui::CollapsingHeader("AddKeyframeAction")) {
         ImGui::LabelText("Frame", "%d", m_frameNo);
-        ImGui::LabelText("Value", "%f", m_value);
+        ImGui::LabelText("Value", "%f", value);
     }
 }

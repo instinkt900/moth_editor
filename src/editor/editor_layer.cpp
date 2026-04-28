@@ -414,8 +414,7 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
         m_confirmPrompt.SetCancelAction(nullptr);
         m_confirmPrompt.Open();
     } else {
-        std::shared_ptr<moth_ui::Layout> newLayout;
-        auto const loadResult = moth_ui::Layout::Load(path, &newLayout);
+        auto [newLayout, loadResult] = moth_ui::Layout::Load(path);
         if (loadResult == moth_ui::Layout::LoadResult::Success) {
             m_rootLayout = newLayout;
             m_currentLayoutPath = path;
@@ -575,7 +574,7 @@ void EditorLayer::CheckCrashRecovery() {
     m_confirmPrompt.SetCancelText("");
     m_confirmPrompt.SetPositiveAction([this, recoveryPath]() {
         std::shared_ptr<moth_ui::Layout> recoveredLayout;
-        if (moth_ui::Layout::Load(recoveryPath, &recoveredLayout) == moth_ui::Layout::LoadResult::Success) {
+        if (moth_ui::Layout::Load(recoveryPath).second == moth_ui::Layout::LoadResult::Success) {
             std::filesystem::path originalPath;
             auto& extraData = recoveredLayout->GetExtraData();
             if (extraData.contains("crash_recovery_original_path")) {
@@ -638,7 +637,7 @@ void EditorLayer::SyncCrashRecovery() {
 }
 
 void EditorLayer::Rebuild() {
-    m_root = std::make_unique<moth_ui::Group>(m_context, m_rootLayout);
+    m_root = moth_ui::Group::Create(m_context, m_rootLayout);
 }
 
 void EditorLayer::MoveSelectionUp() {
@@ -651,7 +650,7 @@ void EditorLayer::MoveSelectionUp() {
         }
 
         auto* parent = node->GetParent();
-        auto& children = parent->GetChildren();
+        auto const& children = parent->GetChildren();
         auto const it = ranges::find_if(children, [&](auto const& child) { return child == node; });
         auto const oldIndex = static_cast<int>(it - std::begin(children));
 
@@ -680,7 +679,7 @@ void EditorLayer::MoveSelectionDown() {
         }
 
         auto* parent = node->GetParent();
-        auto& children = parent->GetChildren();
+        auto const& children = parent->GetChildren();
         auto const it = ranges::find_if(children, [&](auto const& child) { return child == node; });
         auto const oldIndex = static_cast<int>(it - std::begin(children));
 
@@ -1001,13 +1000,13 @@ void EditorLayer::EndEditBounds() {
             auto& track = tracks.at(target);
             if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
                 // keyframe exists
-                auto const oldValue = keyframePtr->m_value;
-                keyframePtr->m_value = value;
-                editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->m_interpType, keyframePtr->m_interpType));
+                auto const oldValue = keyframePtr->value;
+                keyframePtr->value = value;
+                editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->interpType, keyframePtr->interpType));
             } else {
                 // no keyframe
                 auto& keyframe = track->GetOrCreateKeyframe(frameNo);
-                keyframe.m_value = value;
+                keyframe.value = value;
                 editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth_ui::InterpType::Linear));
             }
         };
@@ -1096,13 +1095,13 @@ void EditorLayer::EndEditColor() {
         auto& track = tracks.at(target);
         if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
             // keyframe exists
-            auto const oldValue = keyframePtr->m_value;
-            keyframePtr->m_value = value;
-            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->m_interpType, keyframePtr->m_interpType));
+            auto const oldValue = keyframePtr->value;
+            keyframePtr->value = value;
+            editAction->GetActions().push_back(std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, oldValue, value, keyframePtr->interpType, keyframePtr->interpType));
         } else {
             // no keyframe
             auto& keyframe = track->GetOrCreateKeyframe(frameNo);
-            keyframe.m_value = value;
+            keyframe.value = value;
             editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth_ui::InterpType::Linear));
         }
     };
@@ -1159,12 +1158,12 @@ void EditorLayer::EndEditRotation() {
         auto& track = tracks.at(moth_ui::AnimationTrack::Target::Rotation);
         std::unique_ptr<IEditorAction> editAction;
         if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
-            auto const oldValue = keyframePtr->m_value;
-            keyframePtr->m_value = newRotation;
-            editAction = std::make_unique<ModifyKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, oldValue, newRotation, keyframePtr->m_interpType, keyframePtr->m_interpType);
+            auto const oldValue = keyframePtr->value;
+            keyframePtr->value = newRotation;
+            editAction = std::make_unique<ModifyKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, oldValue, newRotation, keyframePtr->interpType, keyframePtr->interpType);
         } else {
             auto& keyframe = track->GetOrCreateKeyframe(frameNo);
-            keyframe.m_value = newRotation;
+            keyframe.value = newRotation;
             editAction = std::make_unique<AddKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, newRotation, moth_ui::InterpType::Linear);
         }
         AddEditAction(std::move(editAction));

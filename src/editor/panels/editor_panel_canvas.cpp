@@ -264,8 +264,7 @@ void EditorPanelCanvas::EndPanel() {
 
         if (auto const* const payload = ImGui::AcceptDragDropPayload("layout_path", 0)) {
             std::string* layoutPath = static_cast<std::string*>(payload->Data);
-            std::shared_ptr<moth_ui::Layout> newLayout;
-            auto loadResult = moth_ui::Layout::Load(layoutPath->c_str(), &newLayout);
+            auto [newLayout, loadResult] = moth_ui::Layout::Load(layoutPath->c_str());
             if (loadResult == moth_ui::Layout::LoadResult::Success) {
                 moth_ui::LayoutRect bounds;
                 bounds.anchor.topLeft = { 0, 0 };

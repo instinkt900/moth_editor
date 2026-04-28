@@ -19,6 +19,6 @@ protected:
     std::shared_ptr<moth_ui::LayoutEntity> m_entity;
     moth_ui::AnimationTrack::Target m_target;
     int m_frameNo;
-    moth_ui::KeyframeValue m_value;
+    moth_ui::KeyframeValue value;
     moth_ui::InterpType m_interp;
 };

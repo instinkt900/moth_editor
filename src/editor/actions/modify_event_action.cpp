@@ -2,7 +2,7 @@
 #include "modify_event_action.h"
 #include "moth_ui/layout/layout_entity_group.h"
 
-ModifyEventAction::ModifyEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationEvent const& oldValues, moth_ui::AnimationEvent const& newValues)
+ModifyEventAction::ModifyEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationMarker const& oldValues, moth_ui::AnimationMarker const& newValues)
     : m_group(group)
     , m_initialValues(oldValues)
     , m_finalValues(newValues) {
@@ -13,17 +13,17 @@ ModifyEventAction::~ModifyEventAction() {
 
 void ModifyEventAction::Do() {
     auto const it = ranges::find_if(m_group->m_events, [&](auto const& event) {
-        return event->m_frame == m_initialValues.m_frame;
+        return event->frame == m_initialValues.frame;
     });
 
     if (it == ranges::end(m_group->m_events)) {
         return;
     }
-    moth_ui::AnimationEvent* targetEvent = it->get();
+    moth_ui::AnimationMarker* targetEvent = it->get();
 
-    if (m_initialValues.m_frame != m_finalValues.m_frame) {
+    if (m_initialValues.frame != m_finalValues.frame) {
         auto const replaceIt = ranges::find_if(m_group->m_events, [&](auto const& event) {
-            return event->m_frame == m_finalValues.m_frame;
+            return event->frame == m_finalValues.frame;
         });
         if (std::end(m_group->m_events) != replaceIt) {
             m_replacedEvent = **replaceIt;
@@ -36,16 +36,16 @@ void ModifyEventAction::Do() {
 
 void ModifyEventAction::Undo() {
     auto const it = ranges::find_if(m_group->m_events, [&](auto const& event) {
-        return event->m_frame == m_finalValues.m_frame;
+        return event->frame == m_finalValues.frame;
     });
     if (it == ranges::end(m_group->m_events)) {
         return;
     }
-    moth_ui::AnimationEvent* targetEvent = it->get();
+    moth_ui::AnimationMarker* targetEvent = it->get();
     *targetEvent = m_initialValues;
 
     if (m_replacedEvent.has_value()) {
-        m_group->m_events.push_back(std::make_unique<moth_ui::AnimationEvent>(m_replacedEvent.value()));
+        m_group->m_events.push_back(std::make_unique<moth_ui::AnimationMarker>(m_replacedEvent.value()));
     }
 }
 

@@ -126,9 +126,9 @@ namespace imgui_ext {
     inline void Inspect(char const* label, moth_ui::Keyframe& keyframe) {
         ImGui::PushID(label);
         if (ImGui::CollapsingHeader(label)) {
-            Inspect("Frame", keyframe.m_frame);
-            Inspect("Value", keyframe.m_value);
-            Inspect("Interp", keyframe.m_interpType);
+            Inspect("Frame", keyframe.frame);
+            Inspect("Value", keyframe.value);
+            Inspect("Interp", keyframe.interpType);
         }
         ImGui::PopID();
     }

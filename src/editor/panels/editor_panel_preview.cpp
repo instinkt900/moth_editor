@@ -14,11 +14,11 @@ EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
 }
 
 void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
-    auto group = std::make_shared<moth_ui::Group>(m_editorLayer.GetContext(), layout);
+    auto group = moth_ui::Group::Create(m_editorLayer.GetContext(), layout);
     auto const& clips = layout->m_clips;
     m_clipNames.clear();
     for (auto&& clip : clips) {
-        m_clipNames.push_back(clip->m_name);
+        m_clipNames.push_back(clip->name);
     }
     // Reset selection if the previously selected clip no longer exists in the new layout.
     auto const it = std::find(m_clipNames.begin(), m_clipNames.end(), m_selectedClip);
