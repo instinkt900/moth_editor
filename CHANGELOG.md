@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
-## [1.0.0-rc.1] - 2026-04-26
+## [1.0.0-rc.1] - 2026-04-28
 ### Features
 - Add Sprite Editor tool (step 1 — view)
 - Sprite editor frame selection and editing
@@ -85,6 +85,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Redesign bounds property inputs
 - Clean up properties panel visual layout
 - Update to new event dispatch and layer stack API
+- Update to moth_ui AnimationMarker and IEventListener renames
 
 ### Documentation
 - Update sprite editor TODO with canvas and packer integration detail
