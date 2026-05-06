@@ -136,13 +136,13 @@ void SpriteEditor::DrawPreview() {
         return;
     }
 
-    auto const* image = m_spriteSheet->GetImage().get();
-    if (image == nullptr) {
+    auto const& image = m_spriteSheet->GetImage();
+    if (!image) {
         return;
     }
 
-    float const imgW = static_cast<float>(image->GetWidth());
-    float const imgH = static_cast<float>(image->GetHeight());
+    float const imgW = static_cast<float>(image.GetWidth());
+    float const imgH = static_cast<float>(image.GetHeight());
 
     // Auto-fit on first draw after a load
     ImVec2 const totalAvail = ImGui::GetContentRegionAvail();
@@ -199,7 +199,7 @@ void SpriteEditor::DrawPreview() {
     // Draw the atlas image, then overlay an InvisibleButton at the same position so
     // ImGui owns all left-button interactions (drag, cursor changes) on the canvas.
     ImVec2 const imagePos = ImGui::GetCursorScreenPos();
-    image->ImGui({ static_cast<int>(displayW), static_cast<int>(displayH) });
+    image.DrawImGui({ static_cast<int>(displayW), static_cast<int>(displayH) });
     ImGui::SetCursorScreenPos(imagePos);
     ImGui::InvisibleButton("##canvas_interact", ImVec2{ displayW, displayH });
 

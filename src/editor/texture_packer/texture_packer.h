@@ -5,7 +5,6 @@
 
 #include <array>
 #include <filesystem>
-#include <memory>
 #include <vector>
 
 class EditorLayer;
@@ -37,7 +36,7 @@ private:
     // ---- Input state ----
     std::vector<moth_packer::ImageDetails> m_inputImages;
     int m_selectedInput = -1;
-    std::shared_ptr<moth_graphics::graphics::IImage> m_inputPreview;
+    moth_graphics::graphics::Image m_inputPreview;
     float m_inputZoom = 0.0f;  // 0 = fit-to-window; >0 = absolute scale
 
     // Pack options (persisted across pack/save)
@@ -64,7 +63,7 @@ private:
     // ---- Output state ----
     struct AtlasPreview {
         std::filesystem::path tempPath;
-        std::shared_ptr<moth_graphics::graphics::IImage> image;
+        moth_graphics::graphics::Image image;
         int width  = 0;
         int height = 0;
         std::vector<std::string>          imageNames;

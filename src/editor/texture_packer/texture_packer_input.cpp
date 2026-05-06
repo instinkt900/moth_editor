@@ -37,7 +37,10 @@ void TexturePacker::DrawInputPanel() {
                     // Load preview image
                     auto& assetContext = m_editorLayer.GetGraphics()
                         .GetSurfaceContext().GetAssetContext();
-                    m_inputPreview = assetContext.ImageFromFile(img.path);
+                    {
+                        std::shared_ptr<moth_graphics::graphics::ITexture> tex(assetContext.TextureFromFile(img.path));
+                        m_inputPreview = tex ? moth_graphics::graphics::Image{ tex } : moth_graphics::graphics::Image{};
+                    }
                 }
             }
             ImGui::SameLine(ImGui::GetContentRegionAvail().x - 16.0f);
@@ -45,7 +48,7 @@ void TexturePacker::DrawInputPanel() {
                 m_inputImages.erase(m_inputImages.begin() + i);
                 if (m_selectedInput == i) {
                     m_selectedInput = -1;
-                    m_inputPreview.reset();
+                    m_inputPreview = moth_graphics::graphics::Image{};
                 } else if (m_selectedInput > i) {
                     --m_selectedInput;
                 }
@@ -75,8 +78,8 @@ void TexturePacker::DrawInputPanel() {
         if (ImGui::SmallButton("Fit##in")) { m_inputZoom = 0.0f; }
         ImGui::SameLine();
         if (ImGui::SmallButton("+##in")) {
-            float const srcW = static_cast<float>(m_inputPreview->GetWidth());
-            float const srcH = static_cast<float>(m_inputPreview->GetHeight());
+            float const srcW = static_cast<float>(m_inputPreview.GetWidth());
+            float const srcH = static_cast<float>(m_inputPreview.GetHeight());
             float const avW  = ImGui::GetContentRegionAvail().x;
             float const avH  = ImGui::GetContentRegionAvail().y * 0.30f;
             float fitScale = 1.0f;
@@ -88,8 +91,8 @@ void TexturePacker::DrawInputPanel() {
         }
         ImGui::SameLine();
         if (ImGui::SmallButton("-##in")) {
-            float const srcW = static_cast<float>(m_inputPreview->GetWidth());
-            float const srcH = static_cast<float>(m_inputPreview->GetHeight());
+            float const srcW = static_cast<float>(m_inputPreview.GetWidth());
+            float const srcH = static_cast<float>(m_inputPreview.GetHeight());
             float const avW  = ImGui::GetContentRegionAvail().x;
             float const avH  = ImGui::GetContentRegionAvail().y * 0.30f;
             float fitScale = 1.0f;
@@ -112,8 +115,8 @@ void TexturePacker::DrawInputPanel() {
 
             float const avW  = ImGui::GetContentRegionAvail().x;
             float const avH  = ImGui::GetContentRegionAvail().y;
-            float const srcW = static_cast<float>(m_inputPreview->GetWidth());
-            float const srcH = static_cast<float>(m_inputPreview->GetHeight());
+            float const srcW = static_cast<float>(m_inputPreview.GetWidth());
+            float const srcH = static_cast<float>(m_inputPreview.GetHeight());
             float fitScale = 1.0f;
             if (srcW > 0.0f && srcH > 0.0f) {
                 fitScale = std::min({ avW / srcW, avH / srcH, 1.0f });
@@ -130,7 +133,7 @@ void TexturePacker::DrawInputPanel() {
             }
 
             float const scale = (m_inputZoom <= 0.0f) ? fitScale : m_inputZoom;
-            m_inputPreview->ImGui({
+            m_inputPreview.DrawImGui({
                 static_cast<int>(srcW * scale),
                 static_cast<int>(srcH * scale) });
         } else {
@@ -180,7 +183,7 @@ void TexturePacker::DrawInputPanel() {
     if (ImGui::Button("Clear All") && !m_inputImages.empty()) {
         m_inputImages.clear();
         m_selectedInput = -1;
-        m_inputPreview.reset();
+        m_inputPreview = moth_graphics::graphics::Image{};
         m_hasPacked = false;
         m_previewAtlases.clear();
         m_selectedOutput = -1;

@@ -43,7 +43,7 @@ void SpriteEditor::DrawClipsPane() {
 
         // Draw the current frame, pivot-anchored
         auto const* image = (m_spriteSheet && m_spriteSheet->GetImage())
-                            ? m_spriteSheet->GetImage().get() : nullptr;
+                            ? &m_spriteSheet->GetImage() : nullptr;
         if (clip.desc.frames.empty()) {
             ImGui::TextDisabled("(no steps)");
         } else if (image != nullptr) {
@@ -113,7 +113,7 @@ void SpriteEditor::DrawClipsPane() {
                         ImGui::SetCursorScreenPos({
                             anchorX - (static_cast<float>(fr.pivot.x) * zoom),
                             anchorY - (static_cast<float>(fr.pivot.y) * zoom) });
-                        image->ImGui({ static_cast<int>(fw), static_cast<int>(fh) }, uv0, uv1);
+                        image->DrawImGui({ static_cast<int>(fw), static_cast<int>(fh) }, uv0, uv1);
                     }
                 }
 

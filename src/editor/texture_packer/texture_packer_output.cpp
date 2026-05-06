@@ -82,10 +82,13 @@ void TexturePacker::DoPack() {
         if (!atlasFilename.empty()) {
             AtlasPreview preview;
             preview.tempPath = tmpDir / atlasFilename;
-            preview.image    = assetCtx.ImageFromFile(preview.tempPath);
+            {
+                std::shared_ptr<moth_graphics::graphics::ITexture> tex(assetCtx.TextureFromFile(preview.tempPath));
+                preview.image = tex ? moth_graphics::graphics::Image{ tex } : moth_graphics::graphics::Image{};
+            }
             if (preview.image) {
-                preview.width  = preview.image->GetWidth();
-                preview.height = preview.image->GetHeight();
+                preview.width  = preview.image.GetWidth();
+                preview.height = preview.image.GetHeight();
             }
             int frameIdx = 0;
             for (auto const& frameEntry : descriptor.value("frames", nlohmann::json::array())) {
@@ -107,10 +110,13 @@ void TexturePacker::DoPack() {
                 continue;
             }
             preview.tempPath = tmpDir / atlasFilename;
-            preview.image    = assetCtx.ImageFromFile(preview.tempPath);
+            {
+                std::shared_ptr<moth_graphics::graphics::ITexture> tex(assetCtx.TextureFromFile(preview.tempPath));
+                preview.image = tex ? moth_graphics::graphics::Image{ tex } : moth_graphics::graphics::Image{};
+            }
             if (preview.image) {
-                preview.width  = preview.image->GetWidth();
-                preview.height = preview.image->GetHeight();
+                preview.width  = preview.image.GetWidth();
+                preview.height = preview.image.GetHeight();
             }
 
             for (auto const& imgEntry : atlasEntry.value("images", nlohmann::json::array())) {
@@ -266,7 +272,7 @@ void TexturePacker::DrawOutputPanel() {
             }
 
             float const scale = (m_outputZoom <= 0.0f) ? fitScale : m_outputZoom;
-            atlas.image->ImGui({
+            atlas.image.DrawImGui({
                 static_cast<int>(srcW * scale),
                 static_cast<int>(srcH * scale) });
         } else {

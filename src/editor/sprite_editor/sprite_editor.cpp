@@ -77,7 +77,7 @@ void SpriteEditor::Draw() {
                     m_clipElapsedMs   = 0.0f;
                     m_zoom            = 1.0f;
                     m_spriteSheet     = std::make_shared<moth_graphics::graphics::SpriteSheet>(
-                        nullptr,
+                        moth_graphics::graphics::Image{},
                         std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry>{},
                         std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry>{});
                 }

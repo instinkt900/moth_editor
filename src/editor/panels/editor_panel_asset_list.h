@@ -10,7 +10,7 @@
 #include <memory>
 
 namespace moth_graphics::graphics {
-    class IImage;
+    class Image;
 }
 
 class EditorPanelAssetList : public EditorPanel {
@@ -24,7 +24,7 @@ public:
 private:
     ContentList m_contentList;
     std::filesystem::file_time_type m_lastDirWriteTime;
-    std::unordered_map<std::string, std::unique_ptr<moth_graphics::graphics::IImage>> m_imageCache;
+    std::unordered_map<std::string, moth_graphics::graphics::Image> m_imageCache;
 
     void DrawContents() override;
 };

@@ -59,9 +59,9 @@ namespace imgui_ext {
         ImGui::Text("%s", label);
     }
 
-    void Image(moth_graphics::graphics::IImage const* image, int width, int height) {
-        if (image != nullptr) {
-            image->ImGui({ width, height });
+    void Image(moth_graphics::graphics::Image const& image, int width, int height) {
+        if (image) {
+            image.DrawImGui({ width, height });
         }
     }
 
@@ -69,7 +69,7 @@ namespace imgui_ext {
         if (image != nullptr) {
             auto const* mothImage = dynamic_cast<moth_graphics::graphics::MothImage const*>(image);
             if (mothImage != nullptr) {
-                mothImage->GetImage()->ImGui({ width, height });
+                mothImage->GetImage().DrawImGui({ width, height });
             }
         }
     }

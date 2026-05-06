@@ -48,9 +48,9 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
 
     m_frames.reserve(static_cast<size_t>(m_spriteSheet->GetFrameCount()));
     for (int i = 0; i < m_spriteSheet->GetFrameCount(); ++i) {
-        moth_graphics::graphics::SpriteSheet::FrameEntry entry;
-        m_spriteSheet->GetFrameDesc(i, entry);
-        m_frames.push_back(entry);
+        if (auto entry = m_spriteSheet->GetFrameDesc(i)) {
+            m_frames.push_back(*entry);
+        }
     }
 
     m_clips.clear();
@@ -59,18 +59,21 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
     for (int i = 0; i < clipCount; ++i) {
         moth_graphics::graphics::SpriteSheet::ClipEntry entry;
         entry.name = m_spriteSheet->GetClipName(i);
-        m_spriteSheet->GetClipDesc(entry.name, entry.desc);
+        if (auto desc = m_spriteSheet->GetClipDesc(entry.name)) {
+            entry.desc = *desc;
+        }
         m_clips.push_back(std::move(entry));
     }
 }
 
 void SpriteEditor::ImportSheet(std::filesystem::path const& imagePath) {
     auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
-    auto image = assetContext.ImageFromFile(imagePath);
-    if (!image) {
+    std::shared_ptr<moth_graphics::graphics::ITexture> texture(assetContext.TextureFromFile(imagePath));
+    if (!texture) {
         spdlog::error("SpriteEditor: failed to load image '{}'", imagePath.string());
         return;
     }
+    moth_graphics::graphics::Image image{ texture };
 
     ClearSpriteActions();
 
@@ -79,7 +82,7 @@ void SpriteEditor::ImportSheet(std::filesystem::path const& imagePath) {
     m_imagePathBuffer[sizeof(m_imagePathBuffer) - 1] = '\0';
 
     m_spriteSheet = std::make_shared<moth_graphics::graphics::SpriteSheet>(
-        std::shared_ptr<moth_graphics::graphics::IImage>(std::move(image)),
+        std::move(image),
         m_frames,
         m_clips);
     m_zoom = -1.0f;    // re-fit to new image dimensions

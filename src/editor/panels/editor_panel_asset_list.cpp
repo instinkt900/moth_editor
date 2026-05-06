@@ -6,7 +6,7 @@
 #include "moth_graphics/graphics/igraphics.h"
 #include "moth_graphics/graphics/surface_context.h"
 #include "moth_graphics/graphics/asset_context.h"
-#include "moth_graphics/graphics/image_factory.h"
+#include "moth_graphics/graphics/texture_factory.h"
 
 static std::string DragDropString;
 
@@ -72,17 +72,22 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
         if (IsImageExtension(path.extension().string()) && ImGui::IsItemHovered()) {
             auto const key = path.string();
             if (m_imageCache.count(key) == 0) {
-                auto& factory = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext().GetImageFactory();
-                m_imageCache[key] = factory.GetImage(path);
+                auto& factory = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext().GetTextureFactory();
+                auto texture = factory.GetTexture(path);
+                if (texture) {
+                    m_imageCache[key] = moth_graphics::graphics::Image{ texture, factory.GetTextureRect(path) };
+                } else {
+                    m_imageCache[key] = moth_graphics::graphics::Image{};
+                }
             }
-            auto const* image = m_imageCache.at(key).get();
-            if (image != nullptr) {
+            auto const& image = m_imageCache.at(key);
+            if (image) {
                 static constexpr int MaxTooltipDim = 256;
                 float const scale = std::min(
-                    static_cast<float>(MaxTooltipDim) / static_cast<float>(image->GetWidth()),
-                    static_cast<float>(MaxTooltipDim) / static_cast<float>(image->GetHeight()));
-                int const w = std::max(1, static_cast<int>(static_cast<float>(image->GetWidth()) * scale));
-                int const h = std::max(1, static_cast<int>(static_cast<float>(image->GetHeight()) * scale));
+                    static_cast<float>(MaxTooltipDim) / static_cast<float>(image.GetWidth()),
+                    static_cast<float>(MaxTooltipDim) / static_cast<float>(image.GetHeight()));
+                int const w = std::max(1, static_cast<int>(static_cast<float>(image.GetWidth()) * scale));
+                int const h = std::max(1, static_cast<int>(static_cast<float>(image.GetHeight()) * scale));
                 ImGui::BeginTooltip();
                 imgui_ext::Image(image, w, h);
                 ImGui::EndTooltip();

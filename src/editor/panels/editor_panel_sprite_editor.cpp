@@ -30,11 +30,11 @@ void EditorPanelSpriteEditor::DrawContents() {
     // ---- Left pane: sprite sheet preview ----
     ImGui::BeginChild("##sprite_preview", ImVec2(leftWidth, 0), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
     if (m_spriteSheet) {
-        auto const* image = m_spriteSheet->GetImage().get();
-        if (image != nullptr) {
+        auto const& image = m_spriteSheet->GetImage();
+        if (image) {
             ImVec2 const avail = ImGui::GetContentRegionAvail();
-            float const imgW = static_cast<float>(image->GetWidth());
-            float const imgH = static_cast<float>(image->GetHeight());
+            float const imgW = static_cast<float>(image.GetWidth());
+            float const imgH = static_cast<float>(image.GetHeight());
 
             float displayW = avail.x;
             float displayH = (imgW > 0.0f) ? (displayW * imgH / imgW) : avail.y;
@@ -44,7 +44,7 @@ void EditorPanelSpriteEditor::DrawContents() {
             }
 
             ImVec2 const imagePos = ImGui::GetCursorScreenPos();
-            image->ImGui({ static_cast<int>(displayW), static_cast<int>(displayH) });
+            image.DrawImGui({ static_cast<int>(displayW), static_cast<int>(displayH) });
 
             // Overlay a yellow rect for each defined frame
             ImDrawList* const drawList = ImGui::GetWindowDrawList();
@@ -52,12 +52,11 @@ void EditorPanelSpriteEditor::DrawContents() {
             float const scaleY = (imgH > 0.0f) ? (displayH / imgH) : 1.0f;
 
             for (int i = 0; i < m_spriteSheet->GetFrameCount(); ++i) {
-                moth_graphics::graphics::SpriteSheet::FrameEntry frame;
-                if (m_spriteSheet->GetFrameDesc(i, frame)) {
-                    float const x0 = imagePos.x + (static_cast<float>(frame.rect.x()) * scaleX);
-                    float const y0 = imagePos.y + (static_cast<float>(frame.rect.y()) * scaleY);
-                    float const x1 = imagePos.x + (static_cast<float>(frame.rect.right()) * scaleX);
-                    float const y1 = imagePos.y + (static_cast<float>(frame.rect.bottom()) * scaleY);
+                if (auto frame = m_spriteSheet->GetFrameDesc(i)) {
+                    float const x0 = imagePos.x + (static_cast<float>(frame->rect.x()) * scaleX);
+                    float const y0 = imagePos.y + (static_cast<float>(frame->rect.y()) * scaleY);
+                    float const x1 = imagePos.x + (static_cast<float>(frame->rect.right()) * scaleX);
+                    float const y1 = imagePos.y + (static_cast<float>(frame->rect.bottom()) * scaleY);
                     drawList->AddRect({ x0, y0 }, { x1, y1 }, IM_COL32(255, 255, 0, 255));
                 }
             }
@@ -112,14 +111,13 @@ void EditorPanelSpriteEditor::DrawContents() {
                 ImGui::TableHeadersRow();
 
                 for (int i = 0; i < frameCount; ++i) {
-                    moth_graphics::graphics::SpriteSheet::FrameEntry frame;
-                    if (m_spriteSheet->GetFrameDesc(i, frame)) {
+                    if (auto frame = m_spriteSheet->GetFrameDesc(i)) {
                         ImGui::TableNextRow();
                         ImGui::TableSetColumnIndex(0); ImGui::Text("%d", i);
-                        ImGui::TableSetColumnIndex(1); ImGui::Text("%d", frame.rect.x());
-                        ImGui::TableSetColumnIndex(2); ImGui::Text("%d", frame.rect.y());
-                        ImGui::TableSetColumnIndex(3); ImGui::Text("%d", frame.rect.w());
-                        ImGui::TableSetColumnIndex(4); ImGui::Text("%d", frame.rect.h());
+                        ImGui::TableSetColumnIndex(1); ImGui::Text("%d", frame->rect.x());
+                        ImGui::TableSetColumnIndex(2); ImGui::Text("%d", frame->rect.y());
+                        ImGui::TableSetColumnIndex(3); ImGui::Text("%d", frame->rect.w());
+                        ImGui::TableSetColumnIndex(4); ImGui::Text("%d", frame->rect.h());
                     }
                 }
                 ImGui::EndTable();
@@ -134,23 +132,23 @@ void EditorPanelSpriteEditor::DrawContents() {
         if (ImGui::CollapsingHeader("Clips", ImGuiTreeNodeFlags_DefaultOpen)) {
             for (int c = 0; c < clipCount; ++c) {
                 auto const clipName = m_spriteSheet->GetClipName(c);
-                moth_graphics::graphics::SpriteSheet::ClipDesc clipDesc;
-                if (!m_spriteSheet->GetClipDesc(clipName, clipDesc)) {
+                auto clipDesc = m_spriteSheet->GetClipDesc(clipName);
+                if (!clipDesc) {
                     continue;
                 }
 
-                std::string const nodeLabel = fmt::format("{} ({} steps)###clip_{}", clipName, clipDesc.frames.size(), c);
+                std::string const nodeLabel = fmt::format("{} ({} steps)###clip_{}", clipName, clipDesc->frames.size(), c);
                 if (ImGui::TreeNode(nodeLabel.c_str())) {
                     char const* loopStr = nullptr;
-                    switch (clipDesc.loop) {
+                    switch (clipDesc->loop) {
                     case moth_graphics::graphics::SpriteSheet::LoopType::Stop:  loopStr = "stop";  break;
                     case moth_graphics::graphics::SpriteSheet::LoopType::Reset: loopStr = "reset"; break;
                     case moth_graphics::graphics::SpriteSheet::LoopType::Loop:  loopStr = "loop";  break;
                     }
                     ImGui::Text("Loop: %s", loopStr);
 
-                    if (!clipDesc.frames.empty()) {
-                        ImGui::Text("Frame duration: %d ms", clipDesc.frames[0].durationMs);
+                    if (!clipDesc->frames.empty()) {
+                        ImGui::Text("Frame duration: %d ms", clipDesc->frames[0].durationMs);
                     }
 
                     if (ImGui::BeginTable("##clip_steps", 2,
@@ -159,10 +157,10 @@ void EditorPanelSpriteEditor::DrawContents() {
                         ImGui::TableSetupColumn("Frame", ImGuiTableColumnFlags_WidthStretch);
                         ImGui::TableHeadersRow();
 
-                        for (int f = 0; f < static_cast<int>(clipDesc.frames.size()); ++f) {
+                        for (int f = 0; f < static_cast<int>(clipDesc->frames.size()); ++f) {
                             ImGui::TableNextRow();
                             ImGui::TableSetColumnIndex(0); ImGui::Text("%d", f);
-                            ImGui::TableSetColumnIndex(1); ImGui::Text("%d", clipDesc.frames[f].frameIndex);
+                            ImGui::TableSetColumnIndex(1); ImGui::Text("%d", clipDesc->frames[f].frameIndex);
                         }
                         ImGui::EndTable();
                     }

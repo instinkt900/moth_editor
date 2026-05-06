@@ -74,7 +74,7 @@ void EditorApplication::PostCreateWindow() {
         auto& assetContext = m_window->GetSurfaceContext().GetAssetContext();
         if (auto texture = assetContext.TextureFromPixels(kSize, kSize, pixels.data())) {
             texture->SetFilter(moth_graphics::graphics::TextureFilter::Nearest, moth_graphics::graphics::TextureFilter::Nearest);
-            m_window->GetImageFactory().SetFallbackImage(std::shared_ptr<moth_graphics::graphics::ITexture>(std::move(texture)));
+            m_window->GetTextureFactory().SetFallbackTexture(std::move(texture));
         }
     }
 

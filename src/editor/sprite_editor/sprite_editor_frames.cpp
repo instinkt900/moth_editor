@@ -104,7 +104,7 @@ void SpriteEditor::DrawFramesPane() {
             // ---- Selected frame mini-preview (with pivot drag) ----
             ImGui::TableSetColumnIndex(1);
             auto const* image = (m_spriteSheet && m_spriteSheet->GetImage())
-                                ? m_spriteSheet->GetImage().get() : nullptr;
+                                ? &m_spriteSheet->GetImage() : nullptr;
             if (image != nullptr && m_selectedFrame >= 0 && m_selectedFrame < static_cast<int>(m_frames.size())) {
                 auto& fr = m_frames[m_selectedFrame];
                 float const imgW = static_cast<float>(image->GetWidth());
@@ -138,7 +138,7 @@ void SpriteEditor::DrawFramesPane() {
                         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
                     ImVec2 const childMin = ImGui::GetWindowPos();
 
-                    image->ImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
+                    image->DrawImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
 
                     // InvisibleButton over the whole area so ImGui owns the left-button press
                     // and the parent window cannot start a drag.
