@@ -16,6 +16,7 @@ class TexturePacker;
 #include "moth_ui/events/event_mouse.h"
 #include "moth_ui/events/event_key.h"
 
+#include "moth_graphics/graphics/asset_context.h"
 #include "moth_graphics/graphics/igraphics.h"
 #include "moth_graphics/events/event_window.h"
 
@@ -28,10 +29,11 @@ class EditorApplication;
 
 class EditorLayer : public moth_ui::Layer {
 public:
-    EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app);
+    EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, moth_graphics::graphics::AssetContext& assetContext, EditorApplication* app);
     ~EditorLayer() override;
 
     moth_graphics::graphics::IGraphics& GetGraphics() const { return m_graphics; }
+    moth_graphics::graphics::AssetContext& GetAssetContext() const { return m_assetContext; }
 
     bool OnEvent(moth_ui::Event const& event) override;
 
@@ -141,6 +143,7 @@ private:
     EditorApplication* m_app = nullptr;
     moth_ui::Context& m_context;
     moth_graphics::graphics::IGraphics& m_graphics;
+    moth_graphics::graphics::AssetContext& m_assetContext;
 
     EditorConfig m_config;
 

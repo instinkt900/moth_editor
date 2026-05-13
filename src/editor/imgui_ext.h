@@ -2,7 +2,7 @@
 
 #include "moth_ui/moth_ui_fwd.h"
 #include "moth_ui/utils/vector.h"
-#include "moth_graphics/graphics/iimage.h"
+#include "moth_graphics/graphics/image.h"
 
 #include <string>
 

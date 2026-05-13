@@ -88,5 +88,5 @@ void EditorApplication::PostCreateWindow() {
     }
 
     m_window->AddEventListener(this);
-    m_window->PushLayer(std::make_unique<EditorLayer>(m_window->GetMothContext(), m_window->GetGraphics(), this));
+    m_window->PushLayer(std::make_unique<EditorLayer>(m_window->GetMothContext(), m_window->GetGraphics(), m_window->GetSurfaceContext().GetAssetContext(), this));
 }

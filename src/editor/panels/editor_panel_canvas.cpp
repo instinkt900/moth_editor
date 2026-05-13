@@ -15,7 +15,6 @@
 #include "../actions/composite_action.h"
 #include "editor_application.h"
 #include "moth_ui/graphics/itarget.h"
-#include "moth_graphics/graphics/moth_ui/utils.h"
 #include "moth_ui/utils/transform.h"
 
 #include <cmath>

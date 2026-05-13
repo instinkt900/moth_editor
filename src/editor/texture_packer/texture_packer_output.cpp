@@ -74,7 +74,7 @@ void TexturePacker::DoPack() {
         return;
     }
 
-    auto& assetCtx = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
+    auto& assetCtx = m_editorLayer.GetAssetContext();
 
     if (m_flipbookMode) {
         // Flipbook descriptor: { "image": "preview.png", "frames": [...], "clips": [...] }

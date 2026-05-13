@@ -35,8 +35,7 @@ void TexturePacker::DrawInputPanel() {
                     m_selectedInput = i;
                     m_inputZoom = 0.0f;
                     // Load preview image
-                    auto& assetContext = m_editorLayer.GetGraphics()
-                        .GetSurfaceContext().GetAssetContext();
+                    auto& assetContext = m_editorLayer.GetAssetContext();
                     {
                         std::shared_ptr<moth_graphics::graphics::ITexture> tex(assetContext.TextureFromFile(img.path));
                         m_inputPreview = tex ? moth_graphics::graphics::Image{ tex } : moth_graphics::graphics::Image{};

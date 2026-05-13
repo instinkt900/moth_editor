@@ -48,10 +48,11 @@
 
 EditorLayer::~EditorLayer() = default;
 
-EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, EditorApplication* app)
+EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, moth_graphics::graphics::AssetContext& assetContext, EditorApplication* app)
     : m_app(app)
     , m_context(context)
-    , m_graphics(graphics) {
+    , m_graphics(graphics)
+    , m_assetContext(assetContext) {
 #if defined(_WIN32)
     m_crashRecoveryPath = std::filesystem::temp_directory_path() / fmt::format("moth_editor_recovery_{}.moth", _getpid());
 #else

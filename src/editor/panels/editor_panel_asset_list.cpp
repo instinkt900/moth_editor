@@ -2,7 +2,7 @@
 #include "editor_panel_asset_list.h"
 #include "../editor_layer.h"
 #include "moth_ui/layout/layout.h"
-#include "moth_graphics/graphics/iimage.h"
+#include "moth_graphics/graphics/image.h"
 #include "moth_graphics/graphics/igraphics.h"
 #include "moth_graphics/graphics/surface_context.h"
 #include "moth_graphics/graphics/asset_context.h"
@@ -72,7 +72,7 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
         if (IsImageExtension(path.extension().string()) && ImGui::IsItemHovered()) {
             auto const key = path.string();
             if (m_imageCache.count(key) == 0) {
-                auto& factory = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext().GetTextureFactory();
+                auto& factory = m_editorLayer.GetAssetContext().GetTextureFactory();
                 auto texture = factory.GetTexture(path);
                 if (texture) {
                     m_imageCache[key] = moth_graphics::graphics::Image{ texture, factory.GetTextureRect(path) };

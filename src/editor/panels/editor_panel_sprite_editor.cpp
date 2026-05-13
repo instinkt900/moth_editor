@@ -15,7 +15,7 @@ EditorPanelSpriteEditor::EditorPanelSpriteEditor(EditorLayer& editorLayer, bool 
 }
 
 void EditorPanelSpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
-    auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
+    auto& assetContext = m_editorLayer.GetAssetContext();
     m_spriteSheet = assetContext.GetSpriteSheetFactory().GetSpriteSheet(path);
     if (!m_spriteSheet) {
         spdlog::error("Failed to load sprite sheet: {}", path.string());

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "moth_packer/packer.h"
-#include "moth_graphics/graphics/iimage.h"
+#include "moth_graphics/graphics/image.h"
 
 #include <array>
 #include <filesystem>

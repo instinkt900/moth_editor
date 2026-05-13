@@ -10,7 +10,7 @@
 void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
     // Load and validate before touching any editor state so a failed load
     // leaves the current document intact.
-    auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
+    auto& assetContext = m_editorLayer.GetAssetContext();
     auto newSheet = assetContext.GetSpriteSheetFactory().GetSpriteSheet(path);
     if (!newSheet) {
         spdlog::error("Failed to load sprite sheet: {}", path.string());
@@ -67,7 +67,7 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
 }
 
 void SpriteEditor::ImportSheet(std::filesystem::path const& imagePath) {
-    auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
+    auto& assetContext = m_editorLayer.GetAssetContext();
     std::shared_ptr<moth_graphics::graphics::ITexture> texture(assetContext.TextureFromFile(imagePath));
     if (!texture) {
         spdlog::error("SpriteEditor: failed to load image '{}'", imagePath.string());
@@ -186,6 +186,6 @@ void SpriteEditor::SaveSpriteSheet() {
     }
 
     // Flush the factory cache so a subsequent load picks up the new data
-    auto& assetContext = m_editorLayer.GetGraphics().GetSurfaceContext().GetAssetContext();
+    auto& assetContext = m_editorLayer.GetAssetContext();
     assetContext.GetSpriteSheetFactory().FlushCache();
 }
