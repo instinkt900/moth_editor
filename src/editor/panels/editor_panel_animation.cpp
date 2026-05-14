@@ -70,6 +70,37 @@ namespace {
         drawList->AddRectFilled(boundsMin, boundsMax, color, rounding);
     }
 
+    // Rectangles describing a clip's interactive regions on the timeline.
+    // Left/right edges are resize handles; bounds is the full clip body.
+    struct ClipGeometry {
+        ImRect bounds;
+        ImRect leftEdge;
+        ImRect rightEdge;
+    };
+
+    ClipGeometry ComputeClipGeometry(int startFrame, int endFrame, float framePixelWidth,
+                                     float trackStartOffsetX, float trackStartOffsetY, float rowHeight) {
+        float const startOffset = static_cast<float>(startFrame) * framePixelWidth;
+        float const endOffset = static_cast<float>(endFrame + 1) * framePixelWidth;
+        float const edgeWidth = framePixelWidth / 2.0f;
+        ImVec2 const minP{ trackStartOffsetX + startOffset, trackStartOffsetY + 2.0f };
+        ImVec2 const maxP{ trackStartOffsetX + endOffset, trackStartOffsetY + rowHeight - 2.0f };
+        return ClipGeometry{
+            ImRect{ minP, maxP },
+            ImRect{ minP, ImVec2{ minP.x + edgeWidth, maxP.y } },
+            ImRect{ ImVec2{ maxP.x - edgeWidth, minP.y }, maxP }
+        };
+    }
+
+    // Returns kClipHandleLeft/Right/Center for the region under mousePos, or
+    // kClipHandleNone if outside. Edges take priority over the body.
+    int HitTestClip(ClipGeometry const& geom, ImVec2 const& mousePos) {
+        if (geom.leftEdge.Contains(mousePos))  { return kClipHandleLeft; }
+        if (geom.rightEdge.Contains(mousePos)) { return kClipHandleRight; }
+        if (geom.bounds.Contains(mousePos))    { return kClipHandleCenter; }
+        return kClipHandleNone;
+    }
+
     // Reserves space in the scrolling panel so ImGui knows how big the content is.
     void AddScrollPanelItem(ImVec2 const& size_arg) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -655,18 +686,16 @@ void EditorPanelAnimation::DrawClipRow() {
 
         auto& clipValues = (m_mouseDragging && selected) ? GetSelectedClipContext(clip.get())->mutableValue : *clip; // NOLINT(clang-analyzer-core.NullDereference)
 
-        float const clipStartOffset = static_cast<float>(clipValues.startFrame) * m_framePixelWidth;
-        float const clipEndOffset = static_cast<float>(clipValues.endFrame + 1) * m_framePixelWidth;
-        ImVec2 const clipBoundsMin{ trackStartOffsetX + clipStartOffset, trackStartOffsetY + 2.0f };
-        ImVec2 const clipBoundsMax{ trackStartOffsetX + clipEndOffset, trackStartOffsetY + m_rowHeight - 2.0f };
+        ClipGeometry const geom = ComputeClipGeometry(clipValues.startFrame, clipValues.endFrame,
+                                                      m_framePixelWidth, trackStartOffsetX, trackStartOffsetY, m_rowHeight);
 
-        if (m_boxSelecting && ImRect{ clipBoundsMin, clipBoundsMax }.Overlaps(m_selectBox)) {
+        if (m_boxSelecting && geom.bounds.Overlaps(m_selectBox)) {
             m_pendingClipBoxSelections.push_back(clip.get());
             selected = true;
         }
 
         unsigned int const slotColor = selected ? kColorClipSelected : kColorClip;
-        m_drawList->AddRectFilled(clipBoundsMin, clipBoundsMax, slotColor, 2.0f);
+        m_drawList->AddRectFilled(geom.bounds.Min, geom.bounds.Max, slotColor, 2.0f);
 
         // Alt-drag duplicates: show the original clip in place.
         if (io.KeyAlt) {
@@ -674,55 +703,41 @@ void EditorPanelAnimation::DrawClipRow() {
                                       clip->startFrame, clip->endFrame, m_framePixelWidth, slotColor, 2.0f);
         }
 
-        // The clip has three interactive regions: left edge, right edge, and center body.
-        // Left/right edges resize; center moves the whole clip.
-        float const clipEdgeWidth = m_framePixelWidth / 2.0f;
-        ImRect const hitRegions[3] = {
-            ImRect{ clipBoundsMin, ImVec2{ clipBoundsMin.x + clipEdgeWidth, clipBoundsMax.y } },
-            ImRect{ ImVec2{ clipBoundsMax.x - clipEdgeWidth, clipBoundsMin.y }, clipBoundsMax },
-            ImRect{ clipBoundsMin, clipBoundsMax }
-        };
-
-        unsigned int const hoverColor[] = { kColorTextPrimary, kColorTextPrimary, slotColor };
         if (!m_mouseDragging && m_scrollingPanelBounds.Contains(io.MousePos)) {
-            // Draw hover highlight (check center last so edges take priority).
-            for (int i = 2; i >= 0; --i) {
-                if (hitRegions[i].Contains(io.MousePos)) {
-                    m_drawList->AddRectFilled(hitRegions[i].Min, hitRegions[i].Max, hoverColor[i], 2.0f);
-                }
+            // Draw hover highlight: body first, edges on top so edge tint shows over the body.
+            if (geom.bounds.Contains(io.MousePos)) {
+                m_drawList->AddRectFilled(geom.bounds.Min, geom.bounds.Max, slotColor, 2.0f);
+            }
+            if (geom.rightEdge.Contains(io.MousePos)) {
+                m_drawList->AddRectFilled(geom.rightEdge.Min, geom.rightEdge.Max, kColorTextPrimary, 2.0f);
+            }
+            if (geom.leftEdge.Contains(io.MousePos)) {
+                m_drawList->AddRectFilled(geom.leftEdge.Min, geom.leftEdge.Max, kColorTextPrimary, 2.0f);
             }
 
-            if (io.MousePos.x >= rowDimensions.trackBounds.Min.x && io.MousePos.x <= rowDimensions.trackBounds.Max.x) {
-                // Check hit regions for click (edges first so they take priority over center).
-                for (int j = 0; j < 3; j++) {
-                    if (!m_mouseInScrollArea || !hitRegions[j].Contains(io.MousePos)) {
-                        continue;
+            if (m_mouseInScrollArea && io.MousePos.x >= rowDimensions.trackBounds.Min.x && io.MousePos.x <= rowDimensions.trackBounds.Max.x) {
+                int const hit = HitTestClip(geom, io.MousePos);
+                if (hit != kClipHandleNone && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right))) {
+                    if (!IsClipSelected(clip.get())) {
+                        if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
+                            ClearSelections();
+                        }
                     }
 
-                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                        if (!IsClipSelected(clip.get())) {
-                            if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
-                                ClearSelections();
-                            }
-                        }
+                    SelectClip(clip.get());
+                    m_clickConsumed = true;
 
-                        SelectClip(clip.get());
-                        m_clickConsumed = true;
-
-                        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                            m_mouseDragging = true;
-                            m_mouseDragStartX = io.MousePos.x;
-                            static constexpr int kHandleForRegion[3] = { kClipHandleLeft, kClipHandleRight, kClipHandleCenter };
-                            m_clipDragHandle = kHandleForRegion[j];
-                            break;
-                        }
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                        m_mouseDragging = true;
+                        m_mouseDragStartX = io.MousePos.x;
+                        m_clipDragHandle = hit;
                     }
                 }
             }
         }
 
         ImVec2 const textSize = ImGui::CalcTextSize(clip->name.c_str());
-        ImVec2 const textPos(clipBoundsMin.x + ((clipBoundsMax.x - clipBoundsMin.x - textSize.x) / 2), clipBoundsMin.y + ((clipBoundsMax.y - clipBoundsMin.y - textSize.y) / 2));
+        ImVec2 const textPos(geom.bounds.Min.x + ((geom.bounds.Max.x - geom.bounds.Min.x - textSize.x) / 2), geom.bounds.Min.y + ((geom.bounds.Max.y - geom.bounds.Min.y - textSize.y) / 2));
         m_drawList->AddText(textPos, kColorTextPrimary, clip->name.c_str());
     }
 

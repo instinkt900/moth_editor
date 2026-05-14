@@ -39,6 +39,10 @@ struct DiscreteKeyframeContext {
     int mutableFrame = -1;
 };
 
+// Stored as int in m_clipDragHandle; Center is the bitwise OR of Left|Right so
+// resize math can test "left edge held?" / "right edge held?" independently.
+enum ClipDragHandle { kClipHandleNone = 0, kClipHandleLeft = 1, kClipHandleRight = 2, kClipHandleCenter = kClipHandleLeft | kClipHandleRight };
+
 class EditorPanelAnimation : public EditorPanel {
 public:
     EditorPanelAnimation(EditorLayer& editorLayer, bool visible);
@@ -172,8 +176,6 @@ private:
     float const m_labelColumnWidth = 200;               // width of the label column in pixels on the left side
     float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
     float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
-
-    enum ClipDragHandle { kClipHandleNone = 0, kClipHandleLeft = 1, kClipHandleRight = 2, kClipHandleCenter = kClipHandleLeft | kClipHandleRight };
 
     bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
     float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
