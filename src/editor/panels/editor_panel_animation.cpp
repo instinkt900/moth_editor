@@ -663,7 +663,7 @@ bool EditorPanelAnimation::DrawClipPopup() {
 // Clip row
 // ---------------------------------------------------------------------------
 
-void EditorPanelAnimation::DrawClipRow() {
+void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
     RowDimensions const rowDimensions = AddRow("Clips", RowOptions().ColorOverride(kColorRowSpecial));
 
     ImGuiIO const& io = ImGui::GetIO();
@@ -672,13 +672,18 @@ void EditorPanelAnimation::DrawClipRow() {
 
     // Cancel pending selection clear if we click in a popup.
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
-        m_clickConsumed = true;
+        intents.emplace_back(anim_intent::ConsumeClick{});
     }
 
     m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max, true);
 
     float const trackStartOffsetX = rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset;
     float const trackStartOffsetY = rowDimensions.trackBounds.Min.y;
+
+    // Original code mutated m_mouseDragging inline, which gated subsequent
+    // clips in this loop from entering the click block. Intents defer the
+    // mutation, so we replicate that gate locally for overlapping clips.
+    bool dragIntentEmitted = false;
 
     auto& animationClips = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->m_clips;
     for (auto&& clip : animationClips) {
@@ -703,7 +708,7 @@ void EditorPanelAnimation::DrawClipRow() {
                                       clip->startFrame, clip->endFrame, m_framePixelWidth, slotColor, 2.0f);
         }
 
-        if (!m_mouseDragging && m_scrollingPanelBounds.Contains(io.MousePos)) {
+        if (!m_mouseDragging && !dragIntentEmitted && m_scrollingPanelBounds.Contains(io.MousePos)) {
             // Draw hover highlight: body first, edges on top so edge tint shows over the body.
             if (geom.bounds.Contains(io.MousePos)) {
                 m_drawList->AddRectFilled(geom.bounds.Min, geom.bounds.Max, slotColor, 2.0f);
@@ -718,19 +723,12 @@ void EditorPanelAnimation::DrawClipRow() {
             if (m_mouseInScrollArea && io.MousePos.x >= rowDimensions.trackBounds.Min.x && io.MousePos.x <= rowDimensions.trackBounds.Max.x) {
                 int const hit = HitTestClip(geom, io.MousePos);
                 if (hit != kClipHandleNone && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right))) {
-                    if (!IsClipSelected(clip.get())) {
-                        if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
-                            ClearSelections();
-                        }
-                    }
-
-                    SelectClip(clip.get());
-                    m_clickConsumed = true;
+                    intents.emplace_back(anim_intent::ClickClip{ clip.get(), (io.KeyMods & ImGuiModFlags_Ctrl) != 0 });
+                    intents.emplace_back(anim_intent::ConsumeClick{});
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                        m_mouseDragging = true;
-                        m_mouseDragStartX = io.MousePos.x;
-                        m_clipDragHandle = hit;
+                        intents.emplace_back(anim_intent::BeginClipDrag{ hit, io.MousePos.x });
+                        dragIntentEmitted = true;
                     }
                 }
             }
@@ -745,7 +743,24 @@ void EditorPanelAnimation::DrawClipRow() {
 
     // Right-click opens clip context menu.
     if (m_mouseInScrollArea && rowDimensions.trackBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-        m_clickedFrame = MousePosToFrame(io.MousePos.x, rowDimensions.trackBounds.Min.x);
+        intents.emplace_back(anim_intent::OpenClipPopup{ MousePosToFrame(io.MousePos.x, rowDimensions.trackBounds.Min.x) });
+    }
+}
+
+void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
+    if (auto const* c = std::get_if<anim_intent::ClickClip>(&intent)) {
+        if (!IsClipSelected(c->clip) && !c->additive) {
+            ClearSelections();
+        }
+        SelectClip(c->clip);
+    } else if (std::holds_alternative<anim_intent::ConsumeClick>(intent)) {
+        m_clickConsumed = true;
+    } else if (auto const* d = std::get_if<anim_intent::BeginClipDrag>(&intent)) {
+        m_mouseDragging = true;
+        m_mouseDragStartX = d->mouseX;
+        m_clipDragHandle = d->handle;
+    } else if (auto const* p = std::get_if<anim_intent::OpenClipPopup>(&intent)) {
+        m_clickedFrame = p->atFrame;
         ImGui::OpenPopup(ClipPopupName);
     }
 }
@@ -1747,7 +1762,14 @@ void EditorPanelAnimation::DrawWidget() {
     m_pendingClipBoxSelections.clear();
     m_pendingEventBoxSelections.clear();
 
-    DrawClipRow();
+    std::vector<AnimationIntent> intents;
+    DrawClipRow(intents);
+    // Drain before subsequent rows: DrawEventsRow/DrawTrackRows read
+    // m_mouseDragging/m_clickConsumed and must observe this row's mutations.
+    for (auto const& intent : intents) {
+        Apply(intent);
+    }
+
     DrawEventsRow();
     DrawTrackRows();
 

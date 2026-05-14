@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor_panel.h"
+#include "animation_intent.h"
 #include "moth_ui/animation/animation_track.h"
 #include "moth_ui/animation/animation_clip.h"
 #include "moth_ui/animation/animation_marker.h"
@@ -9,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <variant>
+#include <vector>
 
 class IEditorAction;
 
@@ -147,7 +149,7 @@ private:
 
     RowDimensions AddRow(char const* label, RowOptions const& rowOptions);
     void DrawFrameNumberRibbon();
-    void DrawClipRow();
+    void DrawClipRow(std::vector<AnimationIntent>& intents);
     void DrawEventsRow();
     void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child);
     void DrawTrackRows();
@@ -160,6 +162,10 @@ private:
     void DrawWidget();
     char const* GetChildLabel(int index) const;
     static char const* GetTrackLabel(moth_ui::AnimationTrack::Target target);
+
+    // Applies an intent emitted by a Draw function. Single place where clip
+    // click/drag/popup gestures mutate panel state.
+    void Apply(AnimationIntent const& intent);
 
     int m_minFrame = 0;             // first visible frame
     int m_maxFrame = 100;           // last visible frame
