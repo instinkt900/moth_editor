@@ -150,7 +150,7 @@ private:
     RowDimensions AddRow(char const* label, RowOptions const& rowOptions);
     void DrawFrameNumberRibbon();
     void DrawClipRow(std::vector<AnimationIntent>& intents);
-    void DrawEventsRow();
+    void DrawEventsRow(std::vector<AnimationIntent>& intents);
     void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child);
     void DrawTrackRows();
     void DrawHorizScrollBar();

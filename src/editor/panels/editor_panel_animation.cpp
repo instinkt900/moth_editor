@@ -753,15 +753,26 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
             ClearSelections();
         }
         SelectClip(c->clip);
+    } else if (auto const* e = std::get_if<anim_intent::ClickEvent>(&intent)) {
+        if (!e->additive) {
+            ClearSelections();
+        }
+        SelectEvent(e->event);
     } else if (std::holds_alternative<anim_intent::ConsumeClick>(intent)) {
         m_clickConsumed = true;
     } else if (auto const* d = std::get_if<anim_intent::BeginClipDrag>(&intent)) {
         m_mouseDragging = true;
         m_mouseDragStartX = d->mouseX;
         m_clipDragHandle = d->handle;
+    } else if (auto const* d = std::get_if<anim_intent::BeginEventDrag>(&intent)) {
+        m_mouseDragging = true;
+        m_mouseDragStartX = d->mouseX;
     } else if (auto const* p = std::get_if<anim_intent::OpenClipPopup>(&intent)) {
         m_clickedFrame = p->atFrame;
         ImGui::OpenPopup(ClipPopupName);
+    } else if (auto const* p = std::get_if<anim_intent::OpenEventPopup>(&intent)) {
+        m_clickedFrame = p->atFrame;
+        ImGui::OpenPopup(EventPopupName);
     }
 }
 
@@ -834,14 +845,14 @@ bool EditorPanelAnimation::DrawEventPopup() {
 // Events row
 // ---------------------------------------------------------------------------
 
-void EditorPanelAnimation::DrawEventsRow() {
+void EditorPanelAnimation::DrawEventsRow(std::vector<AnimationIntent>& intents) {
     ImGuiIO const& io = ImGui::GetIO();
     RowDimensions const rowDimensions = AddRow("Events", RowOptions().ColorOverride(kColorRowSpecial));
 
     bool const popupShown = DrawEventPopup();
 
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
-        m_clickConsumed = true;
+        intents.emplace_back(anim_intent::ConsumeClick{});
     }
 
     m_drawList->PushClipRect(rowDimensions.trackBounds.Min, rowDimensions.trackBounds.Max, true);
@@ -883,16 +894,11 @@ void EditorPanelAnimation::DrawEventsRow() {
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             if (m_mouseInScrollArea && eventBounds.Contains(io.MousePos)) {
-                if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
-                    ClearSelections();
-                }
-
-                SelectEvent(event.get());
-                m_clickConsumed = true;
+                intents.emplace_back(anim_intent::ClickEvent{ event.get(), (io.KeyMods & ImGuiModFlags_Ctrl) != 0 });
+                intents.emplace_back(anim_intent::ConsumeClick{});
 
                 if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                    m_mouseDragging = true;
-                    m_mouseDragStartX = io.MousePos.x;
+                    intents.emplace_back(anim_intent::BeginEventDrag{ io.MousePos.x });
                 }
             }
         }
@@ -903,8 +909,7 @@ void EditorPanelAnimation::DrawEventsRow() {
     // Right-click opens event context menu.
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         if (m_mouseInScrollArea && rowDimensions.trackBounds.Contains(io.MousePos)) {
-            m_clickedFrame = MousePosToFrame(io.MousePos.x, rowDimensions.trackBounds.Min.x);
-            ImGui::OpenPopup(EventPopupName);
+            intents.emplace_back(anim_intent::OpenEventPopup{ MousePosToFrame(io.MousePos.x, rowDimensions.trackBounds.Min.x) });
         }
     }
 }
@@ -1762,15 +1767,20 @@ void EditorPanelAnimation::DrawWidget() {
     m_pendingClipBoxSelections.clear();
     m_pendingEventBoxSelections.clear();
 
+    // Each row emits intents, drained before the next row runs so subsequent
+    // rows observe this row's state mutations (e.g. m_mouseDragging).
     std::vector<AnimationIntent> intents;
-    DrawClipRow(intents);
-    // Drain before subsequent rows: DrawEventsRow/DrawTrackRows read
-    // m_mouseDragging/m_clickConsumed and must observe this row's mutations.
-    for (auto const& intent : intents) {
-        Apply(intent);
-    }
+    auto drain = [&] {
+        for (auto const& intent : intents) {
+            Apply(intent);
+        }
+        intents.clear();
+    };
 
-    DrawEventsRow();
+    DrawClipRow(intents);
+    drain();
+    DrawEventsRow(intents);
+    drain();
     DrawTrackRows();
 
     // Box selection: start tracking on unhandled click in the track area.
