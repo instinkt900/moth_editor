@@ -33,6 +33,24 @@ namespace anim_intent {
 
     // Open the event right-click context menu, anchored at the given frame.
     struct OpenEventPopup { int atFrame; };
+
+    // Adds a new clip starting at the given frame. Apply fills in the default
+    // name/length so the intent stays a pure user-gesture record.
+    struct AddClip { int atFrame; };
+
+    // Adds a new empty-named event marker at the given frame.
+    struct AddEvent { int atFrame; };
+
+    // Deletes whatever is currently in the selection set (clips, events, or
+    // keyframes — routed through EditorPanelAnimation::DeleteSelections).
+    struct DeleteSelections {};
+
+    // Commits an in-progress clip edit (from the popup's Edit menu) as a
+    // ModifyClipAction. `reference` must still exist in m_clips when applied.
+    struct CommitClipEdit { moth_ui::AnimationClip* reference; moth_ui::AnimationClip newValue; };
+
+    // Commits an in-progress event edit as a ModifyEventAction.
+    struct CommitEventEdit { moth_ui::AnimationMarker* reference; moth_ui::AnimationMarker newValue; };
 }
 
 using AnimationIntent = std::variant<
@@ -42,5 +60,10 @@ using AnimationIntent = std::variant<
     anim_intent::BeginClipDrag,
     anim_intent::BeginEventDrag,
     anim_intent::OpenClipPopup,
-    anim_intent::OpenEventPopup
+    anim_intent::OpenEventPopup,
+    anim_intent::AddClip,
+    anim_intent::AddEvent,
+    anim_intent::DeleteSelections,
+    anim_intent::CommitClipEdit,
+    anim_intent::CommitEventEdit
 >;

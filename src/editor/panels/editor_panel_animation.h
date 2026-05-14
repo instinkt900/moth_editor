@@ -143,8 +143,8 @@ private:
     std::optional<EditContext<moth_ui::AnimationClip>> m_pendingClipEdit;
     std::optional<EditContext<moth_ui::AnimationMarker>> m_pendingEventEdit;
 
-    bool DrawClipPopup();
-    bool DrawEventPopup();
+    bool DrawClipPopup(std::vector<AnimationIntent>& intents);
+    bool DrawEventPopup(std::vector<AnimationIntent>& intents);
     bool DrawKeyframePopup();
 
     RowDimensions AddRow(char const* label, RowOptions const& rowOptions);

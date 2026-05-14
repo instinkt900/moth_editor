@@ -575,7 +575,7 @@ void EditorPanelAnimation::DrawFrameNumberRibbon() {
 // Clip popup (right-click context menu on clips row)
 // ---------------------------------------------------------------------------
 
-bool EditorPanelAnimation::DrawClipPopup() {
+bool EditorPanelAnimation::DrawClipPopup(std::vector<AnimationIntent>& intents) {
     if (ImGui::BeginPopup(ClipPopupName)) {
         auto layout = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const it = ranges::find_if(layout->m_clips, [&](auto const& clip) {
@@ -588,16 +588,10 @@ bool EditorPanelAnimation::DrawClipPopup() {
         }
 
         if (m_selections.empty() && ImGui::MenuItem("Add")) {
-            auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
-            auto newClip = moth_ui::AnimationClip();
-            newClip.name = "New Clip";
-            newClip.startFrame = m_clickedFrame;
-            newClip.endFrame = newClip.startFrame + 10;
-            auto action = std::make_unique<AddClipAction>(entity, newClip);
-            m_editorLayer.PerformEditAction(std::move(action));
+            intents.emplace_back(anim_intent::AddClip{ m_clickedFrame });
         }
         if (!m_selections.empty() && ImGui::MenuItem("Delete")) {
-            DeleteSelections();
+            intents.emplace_back(anim_intent::DeleteSelections{});
         }
 
         if (clipContext != nullptr && ImGui::BeginMenu("Edit")) {
@@ -641,17 +635,15 @@ bool EditorPanelAnimation::DrawClipPopup() {
         return true;
     }
 
-    // Popup just closed — commit any pending edits if the clip still exists and changed.
+    // Popup just closed — emit a commit intent if the clip still exists and the
+    // pending edit actually changed. m_pendingClipEdit is view state owned by
+    // this function, so we reset it here regardless of commit eligibility.
     if (m_pendingClipEdit.has_value()) {
         auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const& clips = groupEntity->m_clips;
         bool const stillExists = std::any_of(clips.begin(), clips.end(), [&](auto const& c) { return c.get() == m_pendingClipEdit->reference; });
         if (stillExists && m_pendingClipEdit->HasChanged()) {
-            auto action = std::make_unique<ModifyClipAction>(groupEntity, *m_pendingClipEdit->reference, m_pendingClipEdit->mutableValue);
-            m_editorLayer.PerformEditAction(std::move(action));
-            if (auto* selCtx = GetSelectedClipContext(m_pendingClipEdit->reference)) {
-                selCtx->mutableValue = m_pendingClipEdit->mutableValue;
-            }
+            intents.emplace_back(anim_intent::CommitClipEdit{ m_pendingClipEdit->reference, m_pendingClipEdit->mutableValue });
         }
         m_pendingClipEdit.reset();
     }
@@ -668,7 +660,7 @@ void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
 
     ImGuiIO const& io = ImGui::GetIO();
 
-    bool const popupShown = DrawClipPopup();
+    bool const popupShown = DrawClipPopup(intents);
 
     // Cancel pending selection clear if we click in a popup.
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
@@ -773,6 +765,32 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
     } else if (auto const* p = std::get_if<anim_intent::OpenEventPopup>(&intent)) {
         m_clickedFrame = p->atFrame;
         ImGui::OpenPopup(EventPopupName);
+    } else if (auto const* a = std::get_if<anim_intent::AddClip>(&intent)) {
+        auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+        AnimationClip newClip;
+        newClip.name = "New Clip";
+        newClip.startFrame = a->atFrame;
+        newClip.endFrame = newClip.startFrame + 10;
+        m_editorLayer.PerformEditAction(std::make_unique<AddClipAction>(entity, newClip));
+    } else if (auto const* a = std::get_if<anim_intent::AddEvent>(&intent)) {
+        auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+        std::unique_ptr<IEditorAction> action = std::make_unique<AddEventAction>(entity, a->atFrame, "");
+        action->Do();
+        m_editorLayer.AddEditAction(std::move(action));
+    } else if (std::holds_alternative<anim_intent::DeleteSelections>(intent)) {
+        DeleteSelections();
+    } else if (auto const* c = std::get_if<anim_intent::CommitClipEdit>(&intent)) {
+        auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+        m_editorLayer.PerformEditAction(std::make_unique<ModifyClipAction>(entity, *c->reference, c->newValue));
+        if (auto* selCtx = GetSelectedClipContext(c->reference)) {
+            selCtx->mutableValue = c->newValue;
+        }
+    } else if (auto const* e = std::get_if<anim_intent::CommitEventEdit>(&intent)) {
+        auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
+        m_editorLayer.PerformEditAction(std::make_unique<ModifyEventAction>(entity, *e->reference, e->newValue));
+        if (auto* selCtx = GetSelectedEventContext(e->reference)) {
+            selCtx->mutableValue = e->newValue;
+        }
     }
 }
 
@@ -780,7 +798,7 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
 // Event popup (right-click context menu on events row)
 // ---------------------------------------------------------------------------
 
-bool EditorPanelAnimation::DrawEventPopup() {
+bool EditorPanelAnimation::DrawEventPopup(std::vector<AnimationIntent>& intents) {
     if (ImGui::BeginPopup(EventPopupName)) {
         auto layout = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const it = ranges::find_if(layout->m_events, [&](auto const& event) {
@@ -793,14 +811,11 @@ bool EditorPanelAnimation::DrawEventPopup() {
         }
 
         if (eventContext == nullptr && ImGui::MenuItem("Add")) {
-            auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
-            std::unique_ptr<IEditorAction> action = std::make_unique<AddEventAction>(groupEntity, m_clickedFrame, "");
-            action->Do();
-            m_editorLayer.AddEditAction(std::move(action));
+            intents.emplace_back(anim_intent::AddEvent{ m_clickedFrame });
         }
 
         if (!m_selections.empty() && ImGui::MenuItem("Delete")) {
-            DeleteSelections();
+            intents.emplace_back(anim_intent::DeleteSelections{});
         }
 
         if (eventContext != nullptr && ImGui::BeginMenu("Edit")) {
@@ -829,11 +844,7 @@ bool EditorPanelAnimation::DrawEventPopup() {
         auto const& events = groupEntity->m_events;
         bool const stillExists = std::any_of(events.begin(), events.end(), [&](auto const& e) { return e.get() == m_pendingEventEdit->reference; });
         if (stillExists && m_pendingEventEdit->HasChanged()) {
-            auto action = std::make_unique<ModifyEventAction>(groupEntity, *m_pendingEventEdit->reference, m_pendingEventEdit->mutableValue);
-            m_editorLayer.PerformEditAction(std::move(action));
-            if (auto* selCtx = GetSelectedEventContext(m_pendingEventEdit->reference)) {
-                selCtx->mutableValue = m_pendingEventEdit->mutableValue;
-            }
+            intents.emplace_back(anim_intent::CommitEventEdit{ m_pendingEventEdit->reference, m_pendingEventEdit->mutableValue });
         }
         m_pendingEventEdit.reset();
     }
@@ -849,7 +860,7 @@ void EditorPanelAnimation::DrawEventsRow(std::vector<AnimationIntent>& intents) 
     ImGuiIO const& io = ImGui::GetIO();
     RowDimensions const rowDimensions = AddRow("Events", RowOptions().ColorOverride(kColorRowSpecial));
 
-    bool const popupShown = DrawEventPopup();
+    bool const popupShown = DrawEventPopup(intents);
 
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
         intents.emplace_back(anim_intent::ConsumeClick{});
