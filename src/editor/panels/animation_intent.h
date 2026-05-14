@@ -2,8 +2,15 @@
 
 #include "moth_ui/animation/animation_clip.h"
 #include "moth_ui/animation/animation_marker.h"
+#include "moth_ui/animation/animation_track.h"
 
+#include <memory>
 #include <variant>
+
+namespace moth_ui {
+    class Node;
+    class LayoutEntity;
+}
 
 namespace anim_intent {
     // Selects a clip. If additive (Ctrl held), preserves existing selection;
@@ -51,6 +58,31 @@ namespace anim_intent {
 
     // Commits an in-progress event edit as a ModifyEventAction.
     struct CommitEventEdit { moth_ui::AnimationMarker* reference; moth_ui::AnimationMarker newValue; };
+
+    // Click on a child label in the track header column: toggles entity
+    // selection (and clears prior selection when !additive). The label-drag
+    // source bookkeeping (m_labelDragSourceIdx) stays direct view state.
+    struct ClickChildLabel { std::shared_ptr<moth_ui::Node> child; bool additive; };
+
+    // Select a continuous-track keyframe. The expanded flag selects between
+    // ClearSelections (expanded) and FilterKeyframeSelections (collapsed) when
+    // the keyframe wasn't already selected and !additive.
+    struct ClickKeyframe { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; bool additive; bool expanded; };
+
+    // Same as ClickKeyframe but for discrete-track keyframes.
+    struct ClickDiscreteKeyframe { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; bool additive; bool expanded; };
+
+    // Start dragging the current keyframe selection. altDrag seeds the
+    // duplicate-on-drag flag with the alt-modifier state at gesture start.
+    struct BeginKeyframeDrag { float mouseX; bool altDrag; };
+
+    // Open the keyframe right-click context menu. isDiscrete picks the discrete
+    // vs continuous branch inside the popup; target == Unknown means the click
+    // hit a collapsed main row.
+    struct OpenKeyframePopup { int childIndex; moth_ui::AnimationTrack::Target target; bool isDiscrete; int atFrame; };
+
+    // Commit a child-label drag-to-reorder gesture as a ChangeIndexAction.
+    struct CommitLabelReorder { std::shared_ptr<moth_ui::Node> node; int sourceIdx; int newIndex; };
 }
 
 using AnimationIntent = std::variant<
@@ -65,5 +97,11 @@ using AnimationIntent = std::variant<
     anim_intent::AddEvent,
     anim_intent::DeleteSelections,
     anim_intent::CommitClipEdit,
-    anim_intent::CommitEventEdit
+    anim_intent::CommitEventEdit,
+    anim_intent::ClickChildLabel,
+    anim_intent::ClickKeyframe,
+    anim_intent::ClickDiscreteKeyframe,
+    anim_intent::BeginKeyframeDrag,
+    anim_intent::OpenKeyframePopup,
+    anim_intent::CommitLabelReorder
 >;

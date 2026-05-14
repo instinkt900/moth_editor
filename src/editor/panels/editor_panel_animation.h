@@ -151,8 +151,8 @@ private:
     void DrawFrameNumberRibbon();
     void DrawClipRow(std::vector<AnimationIntent>& intents);
     void DrawEventsRow(std::vector<AnimationIntent>& intents);
-    void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child);
-    void DrawTrackRows();
+    void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child, std::vector<AnimationIntent>& intents);
+    void DrawTrackRows(std::vector<AnimationIntent>& intents);
     void DrawHorizScrollBar();
     void DrawCursor();
     int CalcNumRows() const;

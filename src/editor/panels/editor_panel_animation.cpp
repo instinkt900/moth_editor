@@ -791,6 +791,49 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
         if (auto* selCtx = GetSelectedEventContext(e->reference)) {
             selCtx->mutableValue = e->newValue;
         }
+    } else if (auto const* l = std::get_if<anim_intent::ClickChildLabel>(&intent)) {
+        if (!l->additive) {
+            m_editorLayer.ClearSelection();
+        }
+        if (m_editorLayer.IsSelected(l->child)) {
+            m_editorLayer.RemoveSelection(l->child);
+        } else {
+            m_editorLayer.AddSelection(l->child);
+        }
+    } else if (auto const* k = std::get_if<anim_intent::ClickKeyframe>(&intent)) {
+        if (!IsKeyframeSelected(k->entity, k->target, k->frame)) {
+            if (!k->additive) {
+                if (k->expanded) {
+                    ClearSelections();
+                } else {
+                    FilterKeyframeSelections(k->entity, k->frame);
+                }
+            }
+        }
+        SelectKeyframe(k->entity, k->target, k->frame);
+    } else if (auto const* k = std::get_if<anim_intent::ClickDiscreteKeyframe>(&intent)) {
+        if (!IsDiscreteKeyframeSelected(k->entity, k->target, k->frame)) {
+            if (!k->additive) {
+                if (k->expanded) {
+                    ClearSelections();
+                } else {
+                    FilterKeyframeSelections(k->entity, k->frame);
+                }
+            }
+        }
+        SelectDiscreteKeyframe(k->entity, k->target, k->frame);
+    } else if (auto const* d = std::get_if<anim_intent::BeginKeyframeDrag>(&intent)) {
+        m_mouseDragging = true;
+        m_mouseDragStartX = d->mouseX;
+        m_altDrag = d->altDrag;
+    } else if (auto const* p = std::get_if<anim_intent::OpenKeyframePopup>(&intent)) {
+        m_clickedChildIdx = p->childIndex;
+        m_clickedChildTarget = p->target;
+        m_clickedTargetIsDiscrete = p->isDiscrete;
+        m_clickedFrame = p->atFrame;
+        ImGui::OpenPopup(KeyframePopupName);
+    } else if (auto const* r = std::get_if<anim_intent::CommitLabelReorder>(&intent)) {
+        m_editorLayer.PerformEditAction(std::make_unique<ChangeIndexAction>(r->node, r->sourceIdx, r->newIndex));
     }
 }
 
@@ -1109,7 +1152,7 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
 // Child track (keyframe rows for one child entity)
 // ---------------------------------------------------------------------------
 
-void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> child) {
+void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> child, std::vector<AnimationIntent>& intents) {
     ImGuiIO const& io = ImGui::GetIO();
 
     auto const childEntity = child->GetLayoutEntity();
@@ -1125,23 +1168,21 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
     }
     RowDimensions const rowDimensions = AddRow(GetChildLabel(childIndex), rowOptions);
 
-    // Toggle expand/collapse.
+    // Toggle expand/collapse. Kept as a direct view-state mutation — it's
+    // per-panel UI state with no undo/external coupling, and the local
+    // `expanded` value gates this-frame sub-row rendering below.
     if (m_mouseInScrollArea && rowDimensions.buttonBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         expanded = !expanded;
     }
     SetExpanded(child, expanded);
 
     // Click on label to select the entity in the editor (also starts a potential drag).
+    // m_labelDragSourceIdx is per-frame drag bookkeeping that the post-loop
+    // logic in DrawTrackRows reads, so it stays direct; the editor-selection
+    // mutation is the part that goes through Apply.
     if (m_mouseInScrollArea && rowDimensions.labelBounds.Contains(io.MousePos) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
         m_labelDragSourceIdx = childIndex;
-        if (!io.KeyCtrl) {
-            m_editorLayer.ClearSelection();
-        }
-        if (m_editorLayer.IsSelected(child)) {
-            m_editorLayer.RemoveSelection(child);
-        } else {
-            m_editorLayer.AddSelection(child);
-        }
+        intents.emplace_back(anim_intent::ClickChildLabel{ child, io.KeyCtrl });
     }
 
     // Shared across the continuous and discrete track loops: set to true when any
@@ -1192,35 +1233,21 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 if (m_mouseInScrollArea && frameBounds.Contains(io.MousePos)) {
-                    if (!IsKeyframeSelected(childEntity, target, keyframe->frame)) {
-                        if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
-                            if (expanded) {
-                                ClearSelections();
-                            } else {
-                                // When collapsed, keep sibling-track keyframes at the same frame selected
-                                // so the user can move all tracks at once.
-                                FilterKeyframeSelections(childEntity, keyframe->frame);
-                            }
-                        }
-                    }
-
-                    SelectKeyframe(childEntity, target, keyframe->frame);
-                    m_clickConsumed = true;
+                    intents.emplace_back(anim_intent::ClickKeyframe{ childEntity, target, keyframe->frame, (io.KeyMods & ImGuiModFlags_Ctrl) != 0, expanded });
+                    intents.emplace_back(anim_intent::ConsumeClick{});
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                        m_mouseDragging = true;
-                        m_mouseDragStartX = io.MousePos.x;
-                        m_altDrag = io.KeyAlt;
+                        intents.emplace_back(anim_intent::BeginKeyframeDrag{ io.MousePos.x, io.KeyAlt });
                     }
                 }
 
                 if (!handledRightClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
-                        m_clickedChildIdx = childIndex;
-                        m_clickedChildTarget = expanded ? target : AnimationTrack::Target::Unknown;
-                        m_clickedTargetIsDiscrete = false;
-                        m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
-                        ImGui::OpenPopup(KeyframePopupName);
+                        intents.emplace_back(anim_intent::OpenKeyframePopup{
+                            childIndex,
+                            expanded ? target : AnimationTrack::Target::Unknown,
+                            false,
+                            MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x) });
                         handledRightClick = true;
                     }
                 }
@@ -1267,48 +1294,34 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 if (m_mouseInScrollArea && frameBounds.Contains(io.MousePos)) {
-                    if (!IsDiscreteKeyframeSelected(childEntity, target, frame)) {
-                        if ((io.KeyMods & ImGuiModFlags_Ctrl) == 0) {
-                            if (expanded) {
-                                ClearSelections();
-                            } else {
-                                // When collapsed, keep sibling discrete-track keyframes at the same
-                                // frame selected so the user can move all tracks at once.
-                                FilterKeyframeSelections(childEntity, frame);
-                            }
-                        }
-                    }
-                    SelectDiscreteKeyframe(childEntity, target, frame);
-                    m_clickConsumed = true;
+                    intents.emplace_back(anim_intent::ClickDiscreteKeyframe{ childEntity, target, frame, (io.KeyMods & ImGuiModFlags_Ctrl) != 0, expanded });
+                    intents.emplace_back(anim_intent::ConsumeClick{});
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                        m_mouseDragging = true;
-                        m_mouseDragStartX = io.MousePos.x;
-                        m_altDrag = io.KeyAlt;
+                        intents.emplace_back(anim_intent::BeginKeyframeDrag{ io.MousePos.x, io.KeyAlt });
                     }
                 }
 
                 if (!handledRightClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
-                        m_clickedChildIdx = childIndex;
-                        m_clickedChildTarget = target;
-                        m_clickedTargetIsDiscrete = true;
-                        m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
-                        ImGui::OpenPopup(KeyframePopupName);
+                        intents.emplace_back(anim_intent::OpenKeyframePopup{
+                            childIndex, target, true,
+                            MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x) });
                         handledRightClick = true;
                     }
                 }
             }
         }
 
-        // Right-click on empty space in discrete track row (no keyframe hit)
+        // Right-click on empty space in discrete track row (no keyframe hit).
+        // Note: original did NOT set handledRightClick here, so when collapsed
+        // (all iterations share subTrackBounds) every track emits an intent and
+        // Apply replays them — last one wins, matching original mutation order.
         if (!handledRightClick && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             if (m_mouseInScrollArea && subTrackBounds.Contains(io.MousePos)) {
-                m_clickedChildIdx = childIndex;
-                m_clickedChildTarget = target;
-                m_clickedTargetIsDiscrete = true;
-                m_clickedFrame = MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x);
-                ImGui::OpenPopup(KeyframePopupName);
+                intents.emplace_back(anim_intent::OpenKeyframePopup{
+                    childIndex, target, true,
+                    MousePosToFrame(io.MousePos.x, subTrackBounds.Min.x) });
             }
         }
 
@@ -1316,11 +1329,11 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
     }
 }
 
-void EditorPanelAnimation::DrawTrackRows() {
+void EditorPanelAnimation::DrawTrackRows(std::vector<AnimationIntent>& intents) {
     bool const popupShown = DrawKeyframePopup();
 
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
-        m_clickConsumed = true;
+        intents.emplace_back(anim_intent::ConsumeClick{});
     }
 
     ImGuiIO const& io = ImGui::GetIO();
@@ -1345,7 +1358,7 @@ void EditorPanelAnimation::DrawTrackRows() {
             m_labelDropLineY = mainRowTopY;
         }
 
-        DrawChildTrack(childIndex, children[childIndex]);
+        DrawChildTrack(childIndex, children[childIndex], intents);
     }
 
     // Mouse is below all rows — drop at the bottom.
@@ -1372,7 +1385,9 @@ void EditorPanelAnimation::DrawTrackRows() {
         m_drawList->AddLine({ x0, m_labelDropLineY }, { x1, m_labelDropLineY }, kColorClipSelected, 2.0f);
     }
 
-    // Update drag state and commit on release.
+    // Update drag state and commit on release. m_labelDragging /
+    // m_labelDragSourceIdx are direct view state; only the ChangeIndexAction
+    // (model-mutating) goes through Apply.
     if (m_labelDragSourceIdx >= 0) {
         if (!m_labelDragging && ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f)) {
             m_labelDragging = true;
@@ -1381,9 +1396,7 @@ void EditorPanelAnimation::DrawTrackRows() {
             if (m_labelDragging && m_labelDragTargetIdx >= 0) {
                 int const newIndex = computeNewIndex();
                 if (newIndex != m_labelDragSourceIdx) {
-                    auto node = children[m_labelDragSourceIdx];
-                    auto action = std::make_unique<ChangeIndexAction>(node, m_labelDragSourceIdx, newIndex);
-                    m_editorLayer.PerformEditAction(std::move(action));
+                    intents.emplace_back(anim_intent::CommitLabelReorder{ children[m_labelDragSourceIdx], m_labelDragSourceIdx, newIndex });
                 }
             }
             m_labelDragSourceIdx = -1;
@@ -1792,7 +1805,8 @@ void EditorPanelAnimation::DrawWidget() {
     drain();
     DrawEventsRow(intents);
     drain();
-    DrawTrackRows();
+    DrawTrackRows(intents);
+    drain();
 
     // Box selection: start tracking on unhandled click in the track area.
     if (m_mouseInScrollArea && !m_clickConsumed) {
