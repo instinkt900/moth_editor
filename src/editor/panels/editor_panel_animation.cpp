@@ -101,6 +101,74 @@ namespace {
         return kClipHandleNone;
     }
 
+    struct FrameRange {
+        int start;
+        int end;
+    };
+
+    // Drag math for a single-clip selection. handle is the ClipDragHandle
+    // bitmask captured at drag start; only the edges named by the bitmask are
+    // moved by frameDelta. The other edge keeps its origin value. Clamping
+    // rules: start cannot go below 0 (right edge shifts to preserve width if
+    // both edges move); start cannot exceed end and vice versa per the active
+    // edge.
+    FrameRange ApplyClipDragSingle(int handle, int origStart, int origEnd, int frameDelta) {
+        int l = origStart;
+        int r = origEnd;
+        if ((handle & kClipHandleLeft) != 0) {
+            l = origStart + frameDelta;
+        }
+        if ((handle & kClipHandleRight) != 0) {
+            r = origEnd + frameDelta;
+        }
+        if (l < 0) {
+            if ((handle & kClipHandleRight) != 0) {
+                r -= l; // l is negative, so r shifts right
+            }
+            l = 0;
+        }
+        if ((handle & kClipHandleLeft) != 0 && l > r) {
+            l = r;
+        }
+        if ((handle & kClipHandleRight) != 0 && r < l) {
+            r = l;
+        }
+        return { l, r };
+    }
+
+    // Drag math for a multi-clip selection: rigid translation by frameDelta.
+    // If the result would have start < 0, shift both edges right by -start so
+    // the clip's width is preserved at the left boundary.
+    FrameRange ApplyClipDragMulti(int origStart, int origEnd, int frameDelta) {
+        int start = origStart + frameDelta;
+        int end = origEnd + frameDelta;
+        if (start < 0) {
+            int const shift = -start;
+            start += shift;
+            end += shift;
+        }
+        return { start, end };
+    }
+
+    // Sort discrete-keyframe move records to avoid clobbering when multiple
+    // moves on the same track go the same direction: when moving right,
+    // process highest source-frame first; when moving left, lowest first.
+    // This ensures each action reads its source before any later action
+    // overwrites that slot.
+    void SortDiscreteMovesForCommit(std::vector<DiscreteKeyframeContext const*>& moves) {
+        if (moves.empty()) { return; }
+        bool const movingRight = moves.front()->mutableFrame > moves.front()->frame;
+        if (movingRight) {
+            std::sort(moves.begin(), moves.end(), [](auto const* a, auto const* b) {
+                return a->frame > b->frame;
+            });
+        } else {
+            std::sort(moves.begin(), moves.end(), [](auto const* a, auto const* b) {
+                return a->frame < b->frame;
+            });
+        }
+    }
+
     // Reserves space in the scrolling panel so ImGui knows how big the content is.
     void AddScrollPanelItem(ImVec2 const& size_arg) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -1935,16 +2003,7 @@ void EditorPanelAnimation::CommitDragActions() {
         }
     }
     if (!discreteMoveCtxs.empty()) {
-        bool const movingRight = discreteMoveCtxs.front()->mutableFrame > discreteMoveCtxs.front()->frame;
-        if (movingRight) {
-            std::sort(discreteMoveCtxs.begin(), discreteMoveCtxs.end(), [](auto const* a, auto const* b) {
-                return a->frame > b->frame;
-            });
-        } else {
-            std::sort(discreteMoveCtxs.begin(), discreteMoveCtxs.end(), [](auto const* a, auto const* b) {
-                return a->frame < b->frame;
-            });
-        }
+        SortDiscreteMovesForCommit(discreteMoveCtxs);
         for (auto const* dkfCtx : discreteMoveCtxs) {
             auto it = dkfCtx->entity->m_discreteTracks.find(dkfCtx->target);
             auto* val = it->second.GetKeyframe(dkfCtx->frame);
@@ -1970,39 +2029,11 @@ void EditorPanelAnimation::UpdateMouseDragging() {
 
     for (auto& context : m_selections) {
         if (auto* clipCtx = std::get_if<ClipContext>(&context)) {
-            // Single clip: the drag handle determines whether we move the left edge, right edge, or both.
-            if (m_selections.size() == 1) {
-                int& l = clipCtx->mutableValue.startFrame;
-                int& r = clipCtx->mutableValue.endFrame;
-                if ((m_clipDragHandle & kClipHandleLeft) != 0) {
-                    l = clipCtx->clip->startFrame + frameDelta;
-                }
-                if ((m_clipDragHandle & kClipHandleRight) != 0) {
-                    r = clipCtx->clip->endFrame + frameDelta;
-                }
-                if (l < 0) {
-                    if ((m_clipDragHandle & kClipHandleRight) != 0) {
-                        r -= l;
-                    }
-                    l = 0;
-                }
-                if ((m_clipDragHandle & kClipHandleLeft) != 0 && l > r) {
-                    l = r;
-                }
-                if ((m_clipDragHandle & kClipHandleRight) != 0 && r < l) {
-                    r = l;
-                }
-            } else {
-                int start = clipCtx->clip->startFrame + frameDelta;
-                int end = clipCtx->clip->endFrame + frameDelta;
-                if (start < 0) {
-                    int const shift = -start;
-                    start += shift;
-                    end += shift;
-                }
-                clipCtx->mutableValue.startFrame = start;
-                clipCtx->mutableValue.endFrame = end;
-            }
+            FrameRange const range = (m_selections.size() == 1)
+                ? ApplyClipDragSingle(m_clipDragHandle, clipCtx->clip->startFrame, clipCtx->clip->endFrame, frameDelta)
+                : ApplyClipDragMulti(clipCtx->clip->startFrame, clipCtx->clip->endFrame, frameDelta);
+            clipCtx->mutableValue.startFrame = range.start;
+            clipCtx->mutableValue.endFrame = range.end;
         } else if (auto* eventCtx = std::get_if<EventContext>(&context)) {
             int frame = eventCtx->event->frame + frameDelta;
             frame = std::max(frame, 0);
