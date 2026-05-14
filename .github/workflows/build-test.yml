@@ -19,7 +19,7 @@ jobs:
       matrix:
         include:
           - os: windows
-            runs_on: windows-latest
+            runs_on: windows-2022
             configure_preset: conan-default
           - os: linux
             runs_on: ubuntu-latest
