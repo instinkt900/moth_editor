@@ -145,7 +145,7 @@ private:
 
     bool DrawClipPopup(std::vector<AnimationIntent>& intents);
     bool DrawEventPopup(std::vector<AnimationIntent>& intents);
-    bool DrawKeyframePopup();
+    bool DrawKeyframePopup(std::vector<AnimationIntent>& intents);
 
     RowDimensions AddRow(char const* label, RowOptions const& rowOptions);
     void DrawFrameNumberRibbon();

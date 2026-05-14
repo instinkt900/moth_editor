@@ -3,8 +3,10 @@
 #include "moth_ui/animation/animation_clip.h"
 #include "moth_ui/animation/animation_marker.h"
 #include "moth_ui/animation/animation_track.h"
+#include "moth_ui/utils/interp.h"
 
 #include <memory>
+#include <string>
 #include <variant>
 
 namespace moth_ui {
@@ -83,6 +85,23 @@ namespace anim_intent {
 
     // Commit a child-label drag-to-reorder gesture as a ChangeIndexAction.
     struct CommitLabelReorder { std::shared_ptr<moth_ui::Node> node; int sourceIdx; int newIndex; };
+
+    // Add a new discrete keyframe at the popup's frame. Apply re-reads the
+    // track to seed the value from whatever was active there.
+    struct AddDiscreteKeyframe { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; };
+
+    // Add one or more continuous keyframes. target == Unknown means the click
+    // was on a collapsed main row — Apply expands it to every continuous
+    // target without an existing keyframe at this frame.
+    struct AddContinuousKeyframes { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; };
+
+    // Replace a discrete keyframe's value (uses AddDiscreteKeyframeAction —
+    // the action overwrites when a keyframe already exists at the frame).
+    struct SetDiscreteKeyframeValue { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; std::string value; };
+
+    // Change the interpType of every continuous keyframe in the current
+    // selection set, as one composite undoable action.
+    struct CommitInterpChange { moth_ui::InterpType interpType; };
 }
 
 using AnimationIntent = std::variant<
@@ -103,5 +122,9 @@ using AnimationIntent = std::variant<
     anim_intent::ClickDiscreteKeyframe,
     anim_intent::BeginKeyframeDrag,
     anim_intent::OpenKeyframePopup,
-    anim_intent::CommitLabelReorder
+    anim_intent::CommitLabelReorder,
+    anim_intent::AddDiscreteKeyframe,
+    anim_intent::AddContinuousKeyframes,
+    anim_intent::SetDiscreteKeyframeValue,
+    anim_intent::CommitInterpChange
 >;

@@ -834,6 +834,48 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
         ImGui::OpenPopup(KeyframePopupName);
     } else if (auto const* r = std::get_if<anim_intent::CommitLabelReorder>(&intent)) {
         m_editorLayer.PerformEditAction(std::make_unique<ChangeIndexAction>(r->node, r->sourceIdx, r->newIndex));
+    } else if (auto const* a = std::get_if<anim_intent::AddDiscreteKeyframe>(&intent)) {
+        auto& discreteTracks = a->entity->m_discreteTracks;
+        auto dtIt = discreteTracks.find(a->target);
+        std::string seedValue;
+        if (dtIt != discreteTracks.end()) {
+            seedValue = dtIt->second.GetValueAtFrame(a->frame);
+        }
+        m_editorLayer.PerformEditAction(std::make_unique<AddDiscreteKeyframeAction>(a->entity, a->target, a->frame, std::move(seedValue)));
+    } else if (auto const* a = std::get_if<anim_intent::AddContinuousKeyframes>(&intent)) {
+        auto& childTracks = a->entity->m_tracks;
+        if (a->target != AnimationTrack::Target::Unknown) {
+            auto* trackPtr = childTracks.at(a->target).get();
+            auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(a->frame));
+            std::unique_ptr<IEditorAction> action = std::make_unique<AddKeyframeAction>(a->entity, a->target, a->frame, currentValue, moth_ui::InterpType::Linear);
+            action->Do();
+            m_editorLayer.AddEditAction(std::move(action));
+        } else {
+            std::unique_ptr<CompositeAction> compositeAction = std::make_unique<CompositeAction>();
+            for (auto&& target : AnimationTrack::ContinuousTargets) {
+                auto* trackPtr = childTracks.at(target).get();
+                if (nullptr == trackPtr->GetKeyframe(a->frame)) {
+                    auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(a->frame));
+                    auto action = std::make_unique<AddKeyframeAction>(a->entity, target, a->frame, currentValue, moth_ui::InterpType::Linear);
+                    action->Do();
+                    compositeAction->GetActions().push_back(std::move(action));
+                }
+            }
+            m_editorLayer.AddEditAction(std::move(compositeAction));
+        }
+    } else if (auto const* s = std::get_if<anim_intent::SetDiscreteKeyframeValue>(&intent)) {
+        m_editorLayer.PerformEditAction(std::make_unique<AddDiscreteKeyframeAction>(s->entity, s->target, s->frame, s->value));
+    } else if (auto const* i = std::get_if<anim_intent::CommitInterpChange>(&intent)) {
+        auto compositeAction = std::make_unique<CompositeAction>();
+        for (auto&& context : m_selections) {
+            if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
+                auto action = MakeChangeValueAction(kfCtx->current->interpType, kfCtx->current->interpType, i->interpType, nullptr);
+                compositeAction->GetActions().push_back(std::move(action));
+            }
+        }
+        if (!compositeAction->GetActions().empty()) {
+            m_editorLayer.PerformEditAction(std::move(compositeAction));
+        }
     }
 }
 
@@ -972,7 +1014,7 @@ void EditorPanelAnimation::DrawEventsRow(std::vector<AnimationIntent>& intents) 
 // Keyframe popup (right-click context menu on keyframe tracks)
 // ---------------------------------------------------------------------------
 
-bool EditorPanelAnimation::DrawKeyframePopup() {
+bool EditorPanelAnimation::DrawKeyframePopup(std::vector<AnimationIntent>& intents) {
     if (ImGui::BeginPopup(KeyframePopupName)) {
         auto const child = m_group->GetChildren()[m_clickedChildIdx];
         auto const childEntity = child->GetLayoutEntity();
@@ -984,16 +1026,11 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
             bool keyframeAtFrame = (dtIt != discreteTracks.end()) && (dtIt->second.GetKeyframe(m_clickedFrame) != nullptr);
 
             if (!keyframeAtFrame && ImGui::MenuItem("Add")) {
-                std::string seedValue;
-                if (dtIt != discreteTracks.end()) {
-                    seedValue = dtIt->second.GetValueAtFrame(m_clickedFrame);
-                }
-                auto action = std::make_unique<AddDiscreteKeyframeAction>(childEntity, m_clickedChildTarget, m_clickedFrame, std::move(seedValue));
-                m_editorLayer.PerformEditAction(std::move(action));
+                intents.emplace_back(anim_intent::AddDiscreteKeyframe{ childEntity, m_clickedChildTarget, m_clickedFrame });
             }
 
             if (!m_selections.empty() && ImGui::MenuItem("Delete")) {
-                DeleteSelections();
+                intents.emplace_back(anim_intent::DeleteSelections{});
             }
 
             // Edit value for the selected discrete keyframe.
@@ -1045,8 +1082,7 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
                         }
 
                         if (valueChanged) {
-                            auto addAction = std::make_unique<AddDiscreteKeyframeAction>(childEntity, m_clickedChildTarget, dkfCtx->frame, std::move(newValue));
-                            m_editorLayer.PerformEditAction(std::move(addAction));
+                            intents.emplace_back(anim_intent::SetDiscreteKeyframeValue{ childEntity, m_clickedChildTarget, dkfCtx->frame, std::move(newValue) });
                             ImGui::CloseCurrentPopup();
                         }
                     }
@@ -1075,30 +1111,11 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
         }
 
         if (!keyframeAtFrame && ImGui::MenuItem("Add")) {
-            if (m_clickedChildTarget != AnimationTrack::Target::Unknown) {
-                // Clicked on a specific sub-track: add one keyframe.
-                auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(m_clickedFrame));
-                std::unique_ptr<IEditorAction> action = std::make_unique<AddKeyframeAction>(childEntity, m_clickedChildTarget, m_clickedFrame, currentValue, moth_ui::InterpType::Linear);
-                action->Do();
-                m_editorLayer.AddEditAction(std::move(action));
-            } else {
-                // Clicked on the collapsed main track: add keyframes on all continuous targets.
-                std::unique_ptr<CompositeAction> compositeAction = std::make_unique<CompositeAction>();
-                for (auto&& target : AnimationTrack::ContinuousTargets) {
-                    trackPtr = childTracks.at(target).get();
-                    if (nullptr == trackPtr->GetKeyframe(m_clickedFrame)) {
-                        auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(m_clickedFrame));
-                        auto action = std::make_unique<AddKeyframeAction>(childEntity, target, m_clickedFrame, currentValue, moth_ui::InterpType::Linear);
-                        action->Do();
-                        compositeAction->GetActions().push_back(std::move(action));
-                    }
-                }
-                m_editorLayer.AddEditAction(std::move(compositeAction));
-            }
+            intents.emplace_back(anim_intent::AddContinuousKeyframes{ childEntity, m_clickedChildTarget, m_clickedFrame });
         }
 
         if (!m_selections.empty() && ImGui::MenuItem("Delete")) {
-            DeleteSelections();
+            intents.emplace_back(anim_intent::DeleteSelections{});
         }
 
         if (!m_selections.empty() && ImGui::BeginMenu("Interp")) {
@@ -1127,16 +1144,7 @@ bool EditorPanelAnimation::DrawKeyframePopup() {
                 std::string const interpName(magic_enum::enum_name(interpType));
                 bool checked = selectedInterp == interpType;
                 if (ImGui::RadioButton(interpName.c_str(), checked)) {
-                    auto compositeAction = std::make_unique<CompositeAction>();
-                    for (auto&& context : m_selections) {
-                        if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
-                            auto action = MakeChangeValueAction(kfCtx->current->interpType, kfCtx->current->interpType, interpType, nullptr);
-                            compositeAction->GetActions().push_back(std::move(action));
-                        }
-                    }
-                    if (!compositeAction->GetActions().empty()) {
-                        m_editorLayer.PerformEditAction(std::move(compositeAction));
-                    }
+                    intents.emplace_back(anim_intent::CommitInterpChange{ interpType });
                 }
             }
             ImGui::EndMenu();
@@ -1330,7 +1338,7 @@ void EditorPanelAnimation::DrawChildTrack(int childIndex, std::shared_ptr<Node> 
 }
 
 void EditorPanelAnimation::DrawTrackRows(std::vector<AnimationIntent>& intents) {
-    bool const popupShown = DrawKeyframePopup();
+    bool const popupShown = DrawKeyframePopup(intents);
 
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && popupShown) {
         intents.emplace_back(anim_intent::ConsumeClick{});
