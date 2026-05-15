@@ -809,12 +809,12 @@ void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
 
 void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
     if (auto const* c = std::get_if<anim_intent::ClickClip>(&intent)) {
-        if (!c->additive) {
+        if (!IsClipSelected(c->clip) && !c->additive) {
             ClearSelections();
         }
         SelectClip(c->clip);
     } else if (auto const* e = std::get_if<anim_intent::ClickEvent>(&intent)) {
-        if (!e->additive) {
+        if (!IsEventSelected(e->event) && !e->additive) {
             ClearSelections();
         }
         SelectEvent(e->event);
@@ -869,20 +869,24 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
             m_editorLayer.AddSelection(l->child);
         }
     } else if (auto const* k = std::get_if<anim_intent::ClickKeyframe>(&intent)) {
-        if (!k->additive) {
-            if (k->expanded) {
-                ClearSelections();
-            } else {
-                FilterKeyframeSelections(k->entity, k->frame);
+        if (!IsKeyframeSelected(k->entity, k->target, k->frame)) {
+            if (!k->additive) {
+                if (k->expanded) {
+                    ClearSelections();
+                } else {
+                    FilterKeyframeSelections(k->entity, k->frame);
+                }
             }
         }
         SelectKeyframe(k->entity, k->target, k->frame);
     } else if (auto const* k = std::get_if<anim_intent::ClickDiscreteKeyframe>(&intent)) {
-        if (!k->additive) {
-            if (k->expanded) {
-                ClearSelections();
-            } else {
-                FilterKeyframeSelections(k->entity, k->frame);
+        if (!IsDiscreteKeyframeSelected(k->entity, k->target, k->frame)) {
+            if (!k->additive) {
+                if (k->expanded) {
+                    ClearSelections();
+                } else {
+                    FilterKeyframeSelections(k->entity, k->frame);
+                }
             }
         }
         SelectDiscreteKeyframe(k->entity, k->target, k->frame);
@@ -1052,7 +1056,7 @@ void EditorPanelAnimation::DrawEventsRow(std::vector<AnimationIntent>& intents) 
                                       event->frame, event->frame, m_framePixelWidth, slotColor, 2.0f);
         }
 
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+        if (!m_mouseDragging && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right))) {
             if (m_mouseInScrollArea && eventBounds.Contains(io.MousePos)) {
                 intents.emplace_back(anim_intent::ClickEvent{ event.get(), (io.KeyMods & ImGuiModFlags_Ctrl) != 0 });
                 intents.emplace_back(anim_intent::ConsumeClick{});
@@ -1067,7 +1071,7 @@ void EditorPanelAnimation::DrawEventsRow(std::vector<AnimationIntent>& intents) 
     m_drawList->PopClipRect();
 
     // Right-click opens event context menu.
-    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+    if (!m_mouseDragging && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         if (m_mouseInScrollArea && rowDimensions.trackBounds.Contains(io.MousePos)) {
             intents.emplace_back(anim_intent::OpenEventPopup{ MousePosToFrame(io.MousePos.x, rowDimensions.trackBounds.Min.x) });
         }
