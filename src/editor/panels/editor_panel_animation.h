@@ -1,6 +1,7 @@
 #pragma once
 
 #include "editor_panel.h"
+#include "animation_intent.h"
 #include "moth_ui/animation/animation_track.h"
 #include "moth_ui/animation/animation_clip.h"
 #include "moth_ui/animation/animation_marker.h"
@@ -9,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <variant>
+#include <vector>
 
 class IEditorAction;
 
@@ -38,6 +40,10 @@ struct DiscreteKeyframeContext {
     int frame = -1;
     int mutableFrame = -1;
 };
+
+// Stored as int in m_clipDragHandle; Center is the bitwise OR of Left|Right so
+// resize math can test "left edge held?" / "right edge held?" independently.
+enum ClipDragHandle { kClipHandleNone = 0, kClipHandleLeft = 1, kClipHandleRight = 2, kClipHandleCenter = kClipHandleLeft | kClipHandleRight };
 
 class EditorPanelAnimation : public EditorPanel {
 public:
@@ -137,16 +143,16 @@ private:
     std::optional<EditContext<moth_ui::AnimationClip>> m_pendingClipEdit;
     std::optional<EditContext<moth_ui::AnimationMarker>> m_pendingEventEdit;
 
-    bool DrawClipPopup();
-    bool DrawEventPopup();
-    bool DrawKeyframePopup();
+    bool DrawClipPopup(std::vector<AnimationIntent>& intents);
+    bool DrawEventPopup(std::vector<AnimationIntent>& intents);
+    bool DrawKeyframePopup(std::vector<AnimationIntent>& intents);
 
     RowDimensions AddRow(char const* label, RowOptions const& rowOptions);
     void DrawFrameNumberRibbon();
-    void DrawClipRow();
-    void DrawEventsRow();
-    void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child);
-    void DrawTrackRows();
+    void DrawClipRow(std::vector<AnimationIntent>& intents);
+    void DrawEventsRow(std::vector<AnimationIntent>& intents);
+    void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child, std::vector<AnimationIntent>& intents);
+    void DrawTrackRows(std::vector<AnimationIntent>& intents);
     void DrawHorizScrollBar();
     void DrawCursor();
     int CalcNumRows() const;
@@ -156,6 +162,11 @@ private:
     void DrawWidget();
     char const* GetChildLabel(int index) const;
     static char const* GetTrackLabel(moth_ui::AnimationTrack::Target target);
+
+    // Applies an intent emitted by a Draw function. Single place where
+    // click/drag/popup/edit gestures mutate panel state — all selection
+    // changes, undo actions, and drag-state flags route through here.
+    void Apply(AnimationIntent const& intent);
 
     int m_minFrame = 0;             // first visible frame
     int m_maxFrame = 100;           // last visible frame
@@ -173,14 +184,12 @@ private:
     float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
     float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
 
-    enum ClipDragHandle { kClipHandleNone = 0, kClipHandleLeft = 1, kClipHandleRight = 2, kClipHandleCenter = kClipHandleLeft | kClipHandleRight };
-
     bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
     float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
     bool m_altDrag = false;                 // alt was held at any point during the current drag (for duplicate-on-drag)
     int m_clipDragHandle = kClipHandleNone; // section of the clip we're dragging
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
-    bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
+    bool m_clickConsumed = false;           // set to true when a track element handled the current click
     bool m_grabbedCurrentFrame = false;     // dragging the current frame indicator
     bool m_mouseInScrollArea = false;       // true when the mouse is within the scrolling tracks area
 
