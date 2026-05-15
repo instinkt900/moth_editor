@@ -809,15 +809,23 @@ void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
 
 void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
     if (auto const* c = std::get_if<anim_intent::ClickClip>(&intent)) {
-        if (!IsClipSelected(c->clip) && !c->additive) {
-            ClearSelections();
+        if (c->additive && IsClipSelected(c->clip)) {
+            DeselectClip(c->clip);
+        } else if (!IsClipSelected(c->clip)) {
+            if (!c->additive) {
+                ClearSelections();
+            }
+            SelectClip(c->clip);
         }
-        SelectClip(c->clip);
     } else if (auto const* e = std::get_if<anim_intent::ClickEvent>(&intent)) {
-        if (!IsEventSelected(e->event) && !e->additive) {
-            ClearSelections();
+        if (e->additive && IsEventSelected(e->event)) {
+            DeselectEvent(e->event);
+        } else if (!IsEventSelected(e->event)) {
+            if (!e->additive) {
+                ClearSelections();
+            }
+            SelectEvent(e->event);
         }
-        SelectEvent(e->event);
     } else if (std::holds_alternative<anim_intent::ConsumeClick>(intent)) {
         m_clickConsumed = true;
     } else if (auto const* d = std::get_if<anim_intent::BeginClipDrag>(&intent)) {
@@ -869,7 +877,9 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
             m_editorLayer.AddSelection(l->child);
         }
     } else if (auto const* k = std::get_if<anim_intent::ClickKeyframe>(&intent)) {
-        if (!IsKeyframeSelected(k->entity, k->target, k->frame)) {
+        if (k->additive && IsKeyframeSelected(k->entity, k->target, k->frame)) {
+            DeselectKeyframe(k->entity, k->target, k->frame);
+        } else if (!IsKeyframeSelected(k->entity, k->target, k->frame)) {
             if (!k->additive) {
                 if (k->expanded) {
                     ClearSelections();
@@ -877,10 +887,12 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
                     FilterKeyframeSelections(k->entity, k->frame);
                 }
             }
+            SelectKeyframe(k->entity, k->target, k->frame);
         }
-        SelectKeyframe(k->entity, k->target, k->frame);
     } else if (auto const* k = std::get_if<anim_intent::ClickDiscreteKeyframe>(&intent)) {
-        if (!IsDiscreteKeyframeSelected(k->entity, k->target, k->frame)) {
+        if (k->additive && IsDiscreteKeyframeSelected(k->entity, k->target, k->frame)) {
+            DeselectDiscreteKeyframe(k->entity, k->target, k->frame);
+        } else if (!IsDiscreteKeyframeSelected(k->entity, k->target, k->frame)) {
             if (!k->additive) {
                 if (k->expanded) {
                     ClearSelections();
@@ -888,8 +900,8 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
                     FilterKeyframeSelections(k->entity, k->frame);
                 }
             }
+            SelectDiscreteKeyframe(k->entity, k->target, k->frame);
         }
-        SelectDiscreteKeyframe(k->entity, k->target, k->frame);
     } else if (auto const* d = std::get_if<anim_intent::BeginKeyframeDrag>(&intent)) {
         m_mouseDragging = true;
         m_mouseDragStartX = d->mouseX;
