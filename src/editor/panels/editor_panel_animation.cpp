@@ -740,10 +740,9 @@ void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
     float const trackStartOffsetX = rowDimensions.trackBounds.Min.x + rowDimensions.trackOffset;
     float const trackStartOffsetY = rowDimensions.trackBounds.Min.y;
 
-    // Original code mutated m_mouseDragging inline, which gated subsequent
-    // clips in this loop from entering the click block. Intents defer the
-    // mutation, so we replicate that gate locally for overlapping clips.
-    bool dragIntentEmitted = false;
+    // Gate subsequent clip iterations from also firing on the same click
+    // (relevant when clips overlap). Left and right clicks both consume.
+    bool clickIntentEmitted = false;
 
     auto& animationClips = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity())->m_clips;
     for (auto&& clip : animationClips) {
@@ -768,7 +767,7 @@ void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
                                       clip->startFrame, clip->endFrame, m_framePixelWidth, slotColor, 2.0f);
         }
 
-        if (!m_mouseDragging && !dragIntentEmitted && m_scrollingPanelBounds.Contains(io.MousePos)) {
+        if (!m_mouseDragging && !clickIntentEmitted && m_scrollingPanelBounds.Contains(io.MousePos)) {
             // Draw hover highlight: body first, edges on top so edge tint shows over the body.
             if (geom.bounds.Contains(io.MousePos)) {
                 m_drawList->AddRectFilled(geom.bounds.Min, geom.bounds.Max, slotColor, 2.0f);
@@ -785,10 +784,10 @@ void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
                 if (hit != kClipHandleNone && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right))) {
                     intents.emplace_back(anim_intent::ClickClip{ clip.get(), (io.KeyMods & ImGuiModFlags_Ctrl) != 0 });
                     intents.emplace_back(anim_intent::ConsumeClick{});
+                    clickIntentEmitted = true;
 
                     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
                         intents.emplace_back(anim_intent::BeginClipDrag{ hit, io.MousePos.x });
-                        dragIntentEmitted = true;
                     }
                 }
             }
