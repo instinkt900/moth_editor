@@ -809,7 +809,7 @@ void EditorPanelAnimation::DrawClipRow(std::vector<AnimationIntent>& intents) {
 
 void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
     if (auto const* c = std::get_if<anim_intent::ClickClip>(&intent)) {
-        if (!IsClipSelected(c->clip) && !c->additive) {
+        if (!c->additive) {
             ClearSelections();
         }
         SelectClip(c->clip);
@@ -869,24 +869,20 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
             m_editorLayer.AddSelection(l->child);
         }
     } else if (auto const* k = std::get_if<anim_intent::ClickKeyframe>(&intent)) {
-        if (!IsKeyframeSelected(k->entity, k->target, k->frame)) {
-            if (!k->additive) {
-                if (k->expanded) {
-                    ClearSelections();
-                } else {
-                    FilterKeyframeSelections(k->entity, k->frame);
-                }
+        if (!k->additive) {
+            if (k->expanded) {
+                ClearSelections();
+            } else {
+                FilterKeyframeSelections(k->entity, k->frame);
             }
         }
         SelectKeyframe(k->entity, k->target, k->frame);
     } else if (auto const* k = std::get_if<anim_intent::ClickDiscreteKeyframe>(&intent)) {
-        if (!IsDiscreteKeyframeSelected(k->entity, k->target, k->frame)) {
-            if (!k->additive) {
-                if (k->expanded) {
-                    ClearSelections();
-                } else {
-                    FilterKeyframeSelections(k->entity, k->frame);
-                }
+        if (!k->additive) {
+            if (k->expanded) {
+                ClearSelections();
+            } else {
+                FilterKeyframeSelections(k->entity, k->frame);
             }
         }
         SelectDiscreteKeyframe(k->entity, k->target, k->frame);
@@ -1857,8 +1853,9 @@ void EditorPanelAnimation::DrawWidget() {
     trackAreaBounds.Min = { m_scrollingPanelBounds.Min.x + m_labelColumnWidth, m_scrollingPanelBounds.Min.y };
     trackAreaBounds.Max = m_scrollingPanelBounds.Max;
 
-    bool const leftClickInTrackArea = m_mouseInScrollArea && trackAreaBounds.Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-    m_clickConsumed = !leftClickInTrackArea;
+    bool const clickInTrackArea = m_mouseInScrollArea && trackAreaBounds.Contains(ImGui::GetMousePos())
+        && (ImGui::IsMouseClicked(ImGuiMouseButton_Left) || ImGui::IsMouseClicked(ImGuiMouseButton_Right));
+    m_clickConsumed = !clickInTrackArea;
 
     m_drawList = ImGui::GetWindowDrawList();
 
