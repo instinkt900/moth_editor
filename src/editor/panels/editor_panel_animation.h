@@ -163,8 +163,9 @@ private:
     char const* GetChildLabel(int index) const;
     static char const* GetTrackLabel(moth_ui::AnimationTrack::Target target);
 
-    // Applies an intent emitted by a Draw function. Single place where clip
-    // click/drag/popup gestures mutate panel state.
+    // Applies an intent emitted by a Draw function. Single place where
+    // click/drag/popup/edit gestures mutate panel state — all selection
+    // changes, undo actions, and drag-state flags route through here.
     void Apply(AnimationIntent const& intent);
 
     int m_minFrame = 0;             // first visible frame
@@ -188,7 +189,7 @@ private:
     bool m_altDrag = false;                 // alt was held at any point during the current drag (for duplicate-on-drag)
     int m_clipDragHandle = kClipHandleNone; // section of the clip we're dragging
     int m_clickedFrame = -1;                // frame number clicked on, for popups etc
-    bool m_clickConsumed = false;           // false if we clicked and nothing responded to it
+    bool m_clickConsumed = false;           // set to true when a track element handled the current click
     bool m_grabbedCurrentFrame = false;     // dragging the current frame indicator
     bool m_mouseInScrollArea = false;       // true when the mouse is within the scrolling tracks area
 
