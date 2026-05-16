@@ -15,6 +15,7 @@
 #include "../actions/composite_action.h"
 #include "editor_application.h"
 #include "moth_ui/graphics/itarget.h"
+#include "moth_graphics/graphics/texture_factory.h"
 #include "moth_ui/utils/transform.h"
 
 #include <cmath>
@@ -174,6 +175,34 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
         canvasRect.bottomRight = canvasSize;
         auto const rect = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect);
         graphics.DrawFillRectF(rect);
+    }
+
+    // reference image overlay
+    {
+        auto const& config = m_editorLayer.GetConfig();
+        if (m_referenceImagePath != config.ReferenceImagePath) {
+            m_referenceImagePath = config.ReferenceImagePath;
+            if (m_referenceImagePath.empty()) {
+                m_referenceImage = moth_graphics::graphics::Image{};
+            } else {
+                auto& textures = m_editorLayer.GetAssetContext().GetTextureFactory();
+                std::filesystem::path const path = m_referenceImagePath;
+                if (auto texture = textures.GetTexture(path)) {
+                    m_referenceImage = moth_graphics::graphics::Image{ texture, textures.GetTextureRect(path) };
+                } else {
+                    m_referenceImage = moth_graphics::graphics::Image{};
+                }
+            }
+        }
+        if (m_referenceImage && config.ReferenceImageVisible && config.ReferenceImageOpacity > 0.0f) {
+            graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
+            graphics.SetColor(moth_ui::Color{ 1.0f, 1.0f, 1.0f, config.ReferenceImageOpacity });
+            moth_ui::IntRect canvasRect;
+            canvasRect.topLeft = { 0, 0 };
+            canvasRect.bottomRight = canvasSize;
+            auto const destRect = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, int>(canvasRect);
+            graphics.DrawImage(m_referenceImage, destRect);
+        }
     }
 
     // grid lines

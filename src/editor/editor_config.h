@@ -27,6 +27,10 @@ struct EditorConfig {
     int CanvasGridSpacing = 10;
     int CanvasGridMajorFactor = 8;
 
+    std::string ReferenceImagePath;
+    float ReferenceImageOpacity = 0.5f;
+    bool ReferenceImageVisible = true;
+
     int MinAnimationFrame = 0;
     int MaxAnimationFrame = 100;
     int TotalAnimationFrames = 300;
@@ -81,6 +85,9 @@ inline void to_json(nlohmann::json& j, EditorConfig const& config) {
     j["CanvasSize"] = config.CanvasSize;
     j["CanvasGridSpacing"] = config.CanvasGridSpacing;
     j["CanvasGridMajorFactor"] = config.CanvasGridMajorFactor;
+    j["ReferenceImagePath"] = config.ReferenceImagePath;
+    j["ReferenceImageOpacity"] = config.ReferenceImageOpacity;
+    j["ReferenceImageVisible"] = config.ReferenceImageVisible;
     j["SelectionColor"] = config.SelectionColor;
     j["SelectionSliceColor"] = config.SelectionSliceColor;
     j["PreviewSourceRectColor"] = config.PreviewSourceRectColor;
@@ -116,6 +123,9 @@ inline void from_json(nlohmann::json j, EditorConfig& config) {
     config.CanvasSize = { std::max(1, rawSize.x), std::max(1, rawSize.y) };
     config.CanvasGridSpacing = std::max(j.value("CanvasGridSpacing", config.CanvasGridSpacing), 1);
     config.CanvasGridMajorFactor = std::max(j.value("CanvasGridMajorFactor", config.CanvasGridMajorFactor), 1);
+    config.ReferenceImagePath = j.value("ReferenceImagePath", config.ReferenceImagePath);
+    config.ReferenceImageOpacity = std::clamp(j.value("ReferenceImageOpacity", config.ReferenceImageOpacity), 0.0f, 1.0f);
+    config.ReferenceImageVisible = j.value("ReferenceImageVisible", config.ReferenceImageVisible);
     config.SelectionColor = j.value("SelectionColor", config.SelectionColor);
     config.SelectionSliceColor = j.value("SelectionSliceColor", config.SelectionSliceColor);
     config.PreviewSourceRectColor = j.value("PreviewSourceRectColor", config.PreviewSourceRectColor);

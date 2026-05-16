@@ -79,6 +79,7 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
     m_texturePacker = std::make_unique<TexturePacker>(*this);
     m_spriteEditor = std::make_unique<SpriteEditor>(*this);
     m_fontDialog = std::make_unique<EditorPanelFonts>(*this);
+    m_referenceImageDialog = std::make_unique<EditorPanelReferenceImage>(*this);
 }
 
 bool EditorLayer::OnEvent(moth_ui::Event const& event) {
@@ -188,6 +189,7 @@ void EditorLayer::Draw() {
     m_texturePacker->Draw();
     m_spriteEditor->Draw();
     m_fontDialog->Draw();
+    m_referenceImageDialog->Draw();
 }
 
 void EditorLayer::DrawMainMenu() {
@@ -265,6 +267,9 @@ void EditorLayer::DrawMainMenu() {
                 if (ImGui::MenuItem("Preview", "Ctrl+P", preview->m_visible)) {
                     preview->m_visible = !preview->m_visible;
                 }
+            }
+            if (ImGui::MenuItem("Reference Image...")) {
+                m_referenceImageDialog->Open();
             }
             ImGui::Separator();
             if (ImGui::BeginMenu("Panels")) {

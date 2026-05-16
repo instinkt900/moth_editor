@@ -2,6 +2,7 @@
 
 #include "editor_panel.h"
 #include "../editor_layer.h"
+#include "moth_graphics/graphics/image.h"
 
 class BoundsWidget;
 
@@ -116,6 +117,8 @@ private:
     int m_canvasZoom = 100;
 
     std::shared_ptr<moth_graphics::graphics::ITarget> m_displayTexture;
+    moth_graphics::graphics::Image m_referenceImage;
+    std::string m_referenceImagePath;
     moth_ui::FloatVec2 m_initialCanvasOffset;
     bool m_draggingCanvas = false;
     moth_ui::IntVec2 m_lastMousePos;
