@@ -245,6 +245,15 @@ void EditorPanelAnimation::DrawContents() {
         AdvancePlayback();
     }
 
+    if (!ImGui::GetIO().WantCaptureKeyboard) {
+        int frameStep = 0;
+        if (ImGui::IsKeyPressed(ImGuiKey_Comma, true)) { frameStep -= 1; }
+        if (ImGui::IsKeyPressed(ImGuiKey_Period, true)) { frameStep += 1; }
+        if (frameStep != 0) {
+            m_currentFrame = std::clamp(m_currentFrame + frameStep, m_minFrame, m_maxFrame);
+        }
+    }
+
     bool const wasPlaying = m_playing;
     int const frameBeforeWidget = m_currentFrame;
     DrawWidget();
