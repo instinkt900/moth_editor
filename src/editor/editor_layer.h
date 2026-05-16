@@ -192,6 +192,7 @@ private:
     std::string m_lastErrorMsg;
     bool m_errorPending = false;
     bool m_aboutPending = false;
+    bool m_shortcutsPending = false;
 
     static constexpr int MaxRecentFiles = 10;
     std::vector<std::filesystem::path> m_recentFiles;
@@ -199,6 +200,7 @@ private:
 
     void DrawMainMenu();
     void DrawAboutPopup();
+    void DrawShortcutsPopup();
 
     void UndoEditAction();
     void RedoEditAction();
@@ -225,6 +227,8 @@ private:
     void CopyEntity();
     void CutEntity();
     void PasteEntity();
+    void DuplicateEntity();
+    void SelectAll();
 
     void ResetCanvas();
 

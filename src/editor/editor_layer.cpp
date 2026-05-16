@@ -166,6 +166,7 @@ void EditorLayer::Draw() {
 
     DrawMainMenu();
     DrawAboutPopup();
+    DrawShortcutsPopup();
 
     for (auto& [type, panel] : m_panels) {
         panel->Draw();
@@ -228,8 +229,18 @@ void EditorLayer::DrawMainMenu() {
             if (ImGui::MenuItem("Paste", "Ctrl+V", nullptr, !m_copiedEntities.empty())) {
                 PasteEntity();
             }
+            if (ImGui::MenuItem("Duplicate", "Ctrl+D", nullptr, !m_selection.empty())) {
+                DuplicateEntity();
+            }
             if (ImGui::MenuItem("Delete", "Del", nullptr, !m_copiedEntities.empty())) {
                 DeleteEntity();
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Select All", "Ctrl+A")) {
+                SelectAll();
+            }
+            if (ImGui::MenuItem("Deselect", "Esc", nullptr, !m_selection.empty())) {
+                ClearSelection();
             }
             ImGui::Separator();
             ImGui::MenuItem("Snap to Grid", nullptr, &m_config.SnapToGrid);
@@ -280,6 +291,10 @@ void EditorLayer::DrawMainMenu() {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("Shortcuts...")) {
+                m_shortcutsPending = true;
+            }
+            ImGui::Separator();
             if (ImGui::MenuItem("About")) {
                 m_aboutPending = true;
             }
@@ -320,6 +335,92 @@ void EditorLayer::DrawAboutPopup() {
     if (m_aboutPending) {
         ImGui::OpenPopup("About moth_editor");
         m_aboutPending = false;
+    }
+}
+
+void EditorLayer::DrawShortcutsPopup() {
+    struct Shortcut {
+        char const* keys;
+        char const* action;
+    };
+    struct Section {
+        char const* title;
+        std::vector<Shortcut> entries;
+    };
+    static std::vector<Section> const sections = {
+        { "File", {
+            { "Ctrl+N",        "New layout" },
+            { "Ctrl+O",        "Open layout" },
+            { "Ctrl+S",        "Save layout" },
+            { "Ctrl+Shift+S",  "Save layout as" },
+        } },
+        { "Edit", {
+            { "Ctrl+Z",        "Undo" },
+            { "Ctrl+Y",        "Redo" },
+            { "Ctrl+X",        "Cut selection" },
+            { "Ctrl+C",        "Copy selection" },
+            { "Ctrl+V",        "Paste" },
+            { "Ctrl+D",        "Duplicate selection" },
+            { "Delete",        "Delete selection or keyframe" },
+            { "H",             "Toggle visibility of selection" },
+            { "Page Up",       "Move selection up in z-order" },
+            { "Page Down",     "Move selection down in z-order" },
+        } },
+        { "Selection", {
+            { "Ctrl+A",        "Select all top-level nodes" },
+            { "Esc",           "Clear selection" },
+        } },
+        { "Canvas", {
+            { "F",             "Reset / fit canvas" },
+            { "Mouse Wheel",   "Zoom canvas" },
+            { "Ctrl+Wheel",    "Pan canvas" },
+            { "Middle Drag",   "Pan canvas" },
+            { "Arrow Keys",    "Nudge selection 1 px" },
+            { "Ctrl+Arrow",    "Nudge selection 10 px" },
+            { "Shift+Drag",    "Edit anchors instead of bounds" },
+        } },
+        { "Animation", {
+            { "Space",         "Play / pause" },
+            { ",",             "Step one frame back" },
+            { ".",             "Step one frame forward" },
+        } },
+        { "View", {
+            { "Ctrl+P",        "Toggle Preview window" },
+        } },
+    };
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(480.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
+    if (ImGui::BeginPopupModal("Keyboard Shortcuts", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        for (size_t i = 0; i < sections.size(); ++i) {
+            auto const& section = sections[i];
+            ImGui::TextUnformatted(section.title);
+            ImGui::Separator();
+            if (ImGui::BeginTable(section.title, 2, ImGuiTableFlags_SizingFixedFit)) {
+                ImGui::TableSetupColumn("Keys", ImGuiTableColumnFlags_WidthFixed, 130.0f);
+                ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch);
+                for (auto const& entry : section.entries) {
+                    ImGui::TableNextRow();
+                    ImGui::TableSetColumnIndex(0);
+                    ImGui::TextUnformatted(entry.keys);
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::TextUnformatted(entry.action);
+                }
+                ImGui::EndTable();
+            }
+            if (i + 1 < sections.size()) {
+                ImGui::Spacing();
+            }
+        }
+        ImGui::Spacing();
+        ImVec2 const button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
+        if (ImGui::Button("Close", button_size)) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    if (m_shortcutsPending) {
+        ImGui::OpenPopup("Keyboard Shortcuts");
+        m_shortcutsPending = false;
     }
 }
 
@@ -808,6 +909,41 @@ void EditorLayer::PasteEntity() {
     }
 }
 
+void EditorLayer::DuplicateEntity() {
+    if (m_selection.empty()) {
+        return;
+    }
+    auto compAction = std::make_unique<CompositeAction>();
+    std::vector<std::shared_ptr<moth_ui::Node>> newNodes;
+    newNodes.reserve(m_selection.size());
+    for (auto&& node : m_selection) {
+        auto clonedEntity = node->GetLayoutEntity()->Clone(moth_ui::LayoutEntity::CloneType::Deep);
+        auto copyInstance = clonedEntity->Instantiate(m_context);
+        newNodes.push_back(copyInstance);
+        auto addAction = std::make_unique<AddAction>(std::move(copyInstance), m_root);
+        compAction->GetActions().push_back(std::move(addAction));
+    }
+    PerformEditAction(std::move(compAction));
+    m_root->RecalculateBounds();
+
+    ClearSelection();
+    for (auto&& node : newNodes) {
+        AddSelection(node);
+    }
+}
+
+void EditorLayer::SelectAll() {
+    if (m_root == nullptr) {
+        return;
+    }
+    ClearSelection();
+    for (auto&& child : m_root->GetChildren()) {
+        if (!IsLocked(child)) {
+            AddSelection(child);
+        }
+    }
+}
+
 void EditorLayer::DeleteEntity() {
     auto compAction = std::make_unique<CompositeAction>();
     for (auto&& node : m_selection) {
@@ -905,6 +1041,21 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
         case moth_ui::Key::V:
             if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
                 PasteEntity();
+            }
+            return true;
+        case moth_ui::Key::A:
+            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                SelectAll();
+            }
+            return true;
+        case moth_ui::Key::D:
+            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+                DuplicateEntity();
+            }
+            return true;
+        case moth_ui::Key::Escape:
+            if (!wantKeyboard) {
+                ClearSelection();
             }
             return true;
         case moth_ui::Key::Pageup:
