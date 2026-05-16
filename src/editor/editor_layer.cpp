@@ -34,6 +34,8 @@
 
 #include "editor/texture_packer/texture_packer.h"
 
+#include "version.h"
+
 #include <nfd.h>
 #include <ctime>
 #if defined(_WIN32)
@@ -163,6 +165,7 @@ void EditorLayer::Draw() {
     m_confirmPrompt.Draw();
 
     DrawMainMenu();
+    DrawAboutPopup();
 
     for (auto& [type, panel] : m_panels) {
         panel->Draw();
@@ -276,7 +279,47 @@ void EditorLayer::DrawMainMenu() {
             }
             ImGui::EndMenu();
         }
+        if (ImGui::BeginMenu("Help")) {
+            if (ImGui::MenuItem("About")) {
+                m_aboutPending = true;
+            }
+            ImGui::EndMenu();
+        }
         ImGui::EndMainMenuBar();
+    }
+}
+
+void EditorLayer::DrawAboutPopup() {
+    static constexpr char const* kGitHubUrl = "https://github.com/instinkt900/moth_editor";
+
+    ImGui::SetNextWindowSizeConstraints(ImVec2(420.0f, 0.0f), ImVec2(FLT_MAX, FLT_MAX));
+    if (ImGui::BeginPopupModal("About moth_editor", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("moth_editor");
+        ImGui::Text("Version %s", moth_editor::Version);
+        ImGui::Separator();
+        ImGui::TextWrapped("A Flash-like visual layout and animation editor for moth_ui data.");
+        ImGui::Spacing();
+        ImGui::Text("Created by Matthew Cotton (instinkt900)");
+        ImGui::Spacing();
+        ImGui::TextUnformatted("GitHub:");
+        ImGui::SameLine();
+        ImGui::TextUnformatted(kGitHubUrl);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        }
+        if (ImGui::IsItemClicked()) {
+            ImGui::SetClipboardText(kGitHubUrl);
+        }
+        ImGui::Spacing();
+        ImVec2 const button_size(ImGui::GetFontSize() * 7.0f, 0.0f);
+        if (ImGui::Button("OK", button_size)) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    if (m_aboutPending) {
+        ImGui::OpenPopup("About moth_editor");
+        m_aboutPending = false;
     }
 }
 

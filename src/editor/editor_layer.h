@@ -191,12 +191,14 @@ private:
 
     std::string m_lastErrorMsg;
     bool m_errorPending = false;
+    bool m_aboutPending = false;
 
     static constexpr int MaxRecentFiles = 10;
     std::vector<std::filesystem::path> m_recentFiles;
     void AddRecentFile(std::filesystem::path const& path);
 
     void DrawMainMenu();
+    void DrawAboutPopup();
 
     void UndoEditAction();
     void RedoEditAction();

@@ -6,6 +6,11 @@ string(REGEX REPLACE "[-+].*$" "" MOTH_EDITOR_VERSION "${MOTH_EDITOR_VERSION_FUL
 
 project(moth_editor VERSION ${MOTH_EDITOR_VERSION} DESCRIPTION "An editor for Moth UI data")
 
+configure_file(
+    src/version.h.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/version.h
+)
+
 message("Building with CMake version: ${CMAKE_VERSION}")
 
 set(CMAKE_CXX_STANDARD 17)
