@@ -30,6 +30,11 @@
 using namespace moth_ui;
 
 namespace {
+    // Minimum number of frames between m_minFrame and m_maxFrame; also acts as
+    // the floor for m_totalFrames. Enforced in DrawWidget sanitization and in
+    // the scrollbar drag clamps so the view can never collapse below it.
+    constexpr int kMinViewSize = 10;
+
     // Row backgrounds
     constexpr ImU32 kColorRowOdd = 0xFF3A3636;
     constexpr ImU32 kColorRowEven = 0xFF413D3D;
@@ -207,9 +212,17 @@ void EditorPanelAnimation::OnLayoutLoaded() {
     auto& extraData = layout->GetExtraData();
     m_persistentLayoutConfig = &extraData["animation_panel"];
     if (!m_persistentLayoutConfig->is_null()) {
-        (*m_persistentLayoutConfig)["m_maxFrame"].get_to(m_maxFrame);
-        (*m_persistentLayoutConfig)["m_totalFrames"].get_to(m_totalFrames);
+        if (m_persistentLayoutConfig->contains("m_maxFrame")) {
+            (*m_persistentLayoutConfig)["m_maxFrame"].get_to(m_maxFrame);
+        }
+        if (m_persistentLayoutConfig->contains("m_totalFrames")) {
+            (*m_persistentLayoutConfig)["m_totalFrames"].get_to(m_totalFrames);
+        }
     }
+    // Recovery clamp for files saved during the auto-total bug (could be in the millions).
+    constexpr int kMaxReasonableFrame = 100000;
+    m_maxFrame = std::clamp(m_maxFrame, 1, kMaxReasonableFrame);
+    m_totalFrames = std::clamp(m_totalFrames, m_maxFrame, kMaxReasonableFrame);
     m_currentFrame = 0;
     m_minFrame = 0;
     m_editorLayer.SetSelectedFrame(0);
@@ -1499,14 +1512,54 @@ void EditorPanelAnimation::DrawTrackRows(std::vector<AnimationIntent>& intents) 
 void EditorPanelAnimation::DrawHorizScrollBar() {
     ImGuiIO const& io = ImGui::GetIO();
     float const scrollingPanelWidth = m_scrollingPanelBounds.GetWidth();
-    ImGui::InvisibleButton("scrollBar", { scrollingPanelWidth, m_horizontalScrollbarHeight - 4.0f });
+
+    // Recompute handle factors from authoritative min/max/total every frame and
+    // clamp into [0,1]. Without this, paths that mutate total below maxFrame
+    // (e.g. typing a smaller Total) leave factor.y stale at >1.0 until the user
+    // re-edits Max, putting the right handle visually off the track.
+    {
+        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
+        m_hScrollFactors.x = std::clamp(static_cast<float>(m_minFrame) / totalFramesF, 0.0f, 1.0f);
+        m_hScrollFactors.y = std::clamp(static_cast<float>(m_maxFrame) / totalFramesF, 0.0f, 1.0f);
+    }
+
+    // Range inputs occupy the label-column area to the left of the scroll track.
+    ImVec2 const stripStart = ImGui::GetCursorScreenPos();
+    constexpr float kRangeInputWidth = 56.0f;
+    ImGui::AlignTextToFramePadding();
+    ImGui::TextUnformatted("Min/Max");
+    ImGui::SameLine();
+    // Min / Max commit on focus loss (no step buttons, so typing is the only path).
+    int displayMin = m_minFrame;
+    ImGui::SetNextItemWidth(kRangeInputWidth);
+    ImGui::InputInt("##min_frame_footer", &displayMin, 0, 0);
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        m_minFrame = displayMin;
+        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
+        m_hScrollFactors.x = static_cast<float>(m_minFrame) / totalFramesF;
+    }
+    ImGui::SameLine(0.0f, 4.0f);
+    int displayMax = m_maxFrame;
+    ImGui::SetNextItemWidth(kRangeInputWidth);
+    ImGui::InputInt("##max_frame_footer", &displayMax, 0, 0);
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        m_maxFrame = displayMax;
+        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
+        m_hScrollFactors.y = static_cast<float>(m_maxFrame) / totalFramesF;
+    }
+
+    // Put the scrollbar to the right of the inputs, aligned with the track column above.
+    ImGui::SameLine();
+    ImGui::SetCursorScreenPos(ImVec2{ stripStart.x + m_labelColumnWidth, stripStart.y });
+    float const trackAreaWidth = scrollingPanelWidth - m_labelColumnWidth;
+    ImGui::InvisibleButton("scrollBar", { trackAreaWidth, m_horizontalScrollbarHeight - 4.0f });
     ImVec2 const elementBoundsMin = ImGui::GetItemRectMin();
     ImVec2 const elementBoundsMax = ImGui::GetItemRectMax();
     ImRect const elementBounds{ elementBoundsMin, elementBoundsMax };
 
     // Scroll track (the full-width background).
-    ImVec2 const scrollTrackMin{ elementBounds.Min.x + m_labelColumnWidth, elementBounds.Min.y - 2 };
-    ImVec2 const scrollTrackMax{ elementBounds.Min.x + scrollingPanelWidth, elementBounds.Max.y - 1 };
+    ImVec2 const scrollTrackMin{ elementBounds.Min.x, elementBounds.Min.y - 2 };
+    ImVec2 const scrollTrackMax{ elementBounds.Max.x, elementBounds.Max.y - 1 };
     ImRect const scrollTrackBounds{ scrollTrackMin, scrollTrackMax };
 
     // Scroll handle (the draggable bar within the track).
@@ -1531,44 +1584,63 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     if (trackWidth <= 0.0f) {
         return;
     }
-    float const separationFactor = 3.0f * handleWidth / trackWidth;
+
+    // Frame-space drag math. Factor-based math (delta = px / trackWidth,
+    // then maxFrame = int(total * factor.y)) loses up to ~1 frame per drag step
+    // to int truncation, which the centralized factor recompute then "locks in"
+    // by reading the truncated maxFrame back into factor.y. The result feels
+    // sluggish — the handle lags the cursor by a fraction of a frame each tick.
+    // Computing the integer frame delta directly from the mouse delta avoids
+    // the round-trip entirely, and m_hScrollDragAccum carries the sub-frame
+    // remainder forward so slow drags (where mouse_px * framesPerPixel < 1) still
+    // register motion after enough mouse travel.
+    bool const dragging = m_hScrollGrabbedLeft || m_hScrollGrabbedRight || m_hScrollGrabbedBar;
+    if (!dragging) {
+        m_hScrollDragAccum = 0.0f;
+    } else {
+        float const framesPerPixel = static_cast<float>(m_totalFrames) / trackWidth;
+        m_hScrollDragAccum += io.MouseDelta.x * framesPerPixel;
+    }
+    int const frameDelta = static_cast<int>(m_hScrollDragAccum);
+    m_hScrollDragAccum -= static_cast<float>(frameDelta);
 
     if (m_hScrollGrabbedLeft) {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedLeft = false;
-        } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-            float const delta = io.MouseDelta.x / trackWidth;
-            m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + delta, 0.0f, m_hScrollFactors.y - separationFactor);
-            m_minFrame = std::min(m_maxFrame, static_cast<int>(static_cast<float>(m_totalFrames) * m_hScrollFactors.x));
+        } else if (frameDelta != 0) {
+            int const target = m_minFrame + frameDelta;
+            int const newMin = std::clamp(target, 0, m_maxFrame - kMinViewSize);
+            if (newMin != target) {
+                m_hScrollDragAccum = 0.0f;
+            }
+            m_minFrame = newMin;
         }
     } else if (m_hScrollGrabbedRight) {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedRight = false;
-        } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-            float const delta = io.MouseDelta.x / trackWidth;
-            m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + delta, m_hScrollFactors.x + separationFactor, 1.0f);
-            m_maxFrame = std::max(m_minFrame, static_cast<int>(static_cast<float>(m_totalFrames) * m_hScrollFactors.y));
+        } else if (frameDelta != 0) {
+            int const target = m_maxFrame + frameDelta;
+            int const newMax = std::clamp(target, m_minFrame + kMinViewSize, m_totalFrames);
+            if (newMax != target) {
+                m_hScrollDragAccum = 0.0f;
+            }
+            m_maxFrame = newMax;
         }
     } else if (m_hScrollGrabbedBar) {
         if (!io.MouseDown[ImGuiMouseButton_Left]) {
             m_hScrollGrabbedBar = false;
-        } else if (fabsf(io.MouseDelta.x) > FLT_EPSILON) {
-            float const delta = io.MouseDelta.x / trackWidth;
-            ImVec2 const newScrollFactors = m_hScrollFactors + ImVec2{ delta, delta };
-            if (newScrollFactors.x < 0.0f) {
-                float const clampedMove = m_hScrollFactors.x;
-                m_hScrollFactors.x = 0.0f;
-                m_hScrollFactors.y -= clampedMove;
-            } else if (newScrollFactors.y > 1.0f) {
-                float const clampedMove = m_hScrollFactors.y - 1.0f;
-                m_hScrollFactors.x += clampedMove;
-                m_hScrollFactors.y = 1.0f;
+        } else if (frameDelta != 0) {
+            int clamped = frameDelta;
+            if (clamped < 0) {
+                clamped = -std::min(-clamped, m_minFrame);
             } else {
-                m_hScrollFactors.x = std::clamp(m_hScrollFactors.x + delta, 0.0f, 1.0f);
-                m_hScrollFactors.y = std::clamp(m_hScrollFactors.y + delta, 0.0f, 1.0f);
+                clamped = std::min(clamped, m_totalFrames - m_maxFrame);
             }
-            m_minFrame = static_cast<int>(static_cast<float>(m_totalFrames) * m_hScrollFactors.x);
-            m_maxFrame = static_cast<int>(static_cast<float>(m_totalFrames) * m_hScrollFactors.y);
+            if (clamped != frameDelta) {
+                m_hScrollDragAccum = 0.0f;
+            }
+            m_minFrame += clamped;
+            m_maxFrame += clamped;
         }
     } else {
         // Not currently grabbing anything — check for new grabs.
@@ -1691,6 +1763,17 @@ void EditorPanelAnimation::TogglePlayback() {
     m_playbackAccumSec = 0.0f;
 }
 
+namespace {
+    constexpr float kGroupSpacing = 24.0f;
+    constexpr float kFrameInputWidth = 90.0f;
+
+    void LeadingLabel(char const* text) {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted(text);
+        ImGui::SameLine();
+    }
+}
+
 void EditorPanelAnimation::DrawPlaybackControls() {
     auto entity = std::static_pointer_cast<LayoutEntityGroup>(m_group->GetLayoutEntity());
     auto const& clips = entity->m_clips;
@@ -1703,9 +1786,9 @@ void EditorPanelAnimation::DrawPlaybackControls() {
         m_playing = false;
     }
 
-    // Clip dropdown
+    LeadingLabel("Clip");
     char const* previewName = m_selectedClipName.empty() ? "(none)" : m_selectedClipName.c_str();
-    ImGui::PushItemWidth(150);
+    ImGui::SetNextItemWidth(160);
     if (ImGui::BeginCombo("##clip_select", previewName)) {
         bool const noneSelected = m_selectedClipName.empty();
         if (ImGui::Selectable("(none)", noneSelected)) {
@@ -1729,7 +1812,7 @@ void EditorPanelAnimation::DrawPlaybackControls() {
         }
         ImGui::EndCombo();
     }
-    ImGui::PopItemWidth();
+
     ImGui::SameLine();
 
     // Play / Pause button
@@ -1737,43 +1820,46 @@ void EditorPanelAnimation::DrawPlaybackControls() {
     if (!canPlay) {
         ImGui::BeginDisabled();
     }
-    if (m_playing) {
-        if (ImGui::Button("Pause")) {
-            TogglePlayback();
-        }
-    } else {
-        if (ImGui::Button("Play ")) {
-            TogglePlayback();
-        }
+    char const* const playLabel = m_playing ? "Pause" : "Play";
+    if (ImGui::Button(playLabel, ImVec2(60.0f, 0.0f))) {
+        TogglePlayback();
     }
     if (!canPlay) {
         ImGui::EndDisabled();
     }
-    ImGui::SameLine();
 }
 
 void EditorPanelAnimation::DrawFrameRangeSettings() {
     DrawPlaybackControls();
-    ImGui::PushItemWidth(130);
-    ImGui::InputInt("Current Frame ", &m_currentFrame);
-    ImGui::SameLine();
-    if (ImGui::InputInt("Min Frame", &m_minFrame)) {
-        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
-        m_hScrollFactors.x = static_cast<float>(m_minFrame) / totalFramesF;
-    }
-    ImGui::SameLine();
 
-    if (ImGui::InputInt("Max Frame", &m_maxFrame)) {
-        float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
-        m_hScrollFactors.y = static_cast<float>(m_maxFrame) / totalFramesF;
-    }
+    ImGui::SameLine(0.0f, kGroupSpacing);
+    LeadingLabel("Frame");
+    ImGui::SetNextItemWidth(kFrameInputWidth);
+    ImGui::InputInt("##current_frame", &m_currentFrame);
+
+    // Total — right-aligned within the toolbar.
+    // Width accounts for: "Total" label + spacing + input field (kFrameInputWidth)
+    // + step buttons (~50px).
+    constexpr float kTotalGroupWidth = 200.0f;
     ImGui::SameLine();
-    if (ImGui::InputInt("Total Frames", &m_totalFrames)) {
+    float const targetX = ImGui::GetContentRegionMax().x - kTotalGroupWidth;
+    if (ImGui::GetCursorPosX() < targetX) {
+        ImGui::SetCursorPosX(targetX);
+    }
+    LeadingLabel("Total");
+    ImGui::SetNextItemWidth(kFrameInputWidth);
+    // Commit on focus loss / Enter / step button — not per keystroke. Avoids
+    // intermediate typing values (e.g. 6 → 60 → 600) clamping m_maxFrame down
+    // destructively via the DrawWidget sanitization pass.
+    int displayTotal = m_totalFrames;
+    bool const totalChanged = ImGui::InputInt("##total_frames", &displayTotal);
+    bool const totalCommit = ImGui::IsItemDeactivatedAfterEdit() || (totalChanged && !ImGui::IsItemActive());
+    if (totalCommit) {
+        m_totalFrames = displayTotal;
         float const totalFramesF = static_cast<float>(std::max(1, m_totalFrames));
         m_hScrollFactors.x = static_cast<float>(m_minFrame) / totalFramesF;
         m_hScrollFactors.y = static_cast<float>(m_maxFrame) / totalFramesF;
     }
-    ImGui::PopItemWidth();
 }
 
 // Adapted from https://github.com/ocornut/imgui/issues/3379 (thanks ocornut).
@@ -1832,8 +1918,16 @@ void EditorPanelAnimation::DrawWidget() {
 
     m_rowCounter = 0;
 
+    // Invariants for the frame range: total >= maxFrame, maxFrame - minFrame >= kMinViewSize.
+    // Enforced every frame so any path that mutates these (input, scrollbar, pan) stays sane.
     m_minFrame = std::max(0, m_minFrame);
-    m_currentFrame = std::min(m_totalFrames, m_currentFrame);
+    m_totalFrames = std::max(kMinViewSize, m_totalFrames);
+    m_maxFrame = std::max(m_maxFrame, m_minFrame + kMinViewSize);
+    if (m_maxFrame > m_totalFrames) {
+        m_maxFrame = m_totalFrames;
+        m_minFrame = std::max(0, std::min(m_minFrame, m_maxFrame - kMinViewSize));
+    }
+    m_currentFrame = std::clamp(m_currentFrame, 0, m_totalFrames);
 
     // Persist frame range to layout file so it survives editor restarts.
     if (m_persistentLayoutConfig != nullptr) {

@@ -178,11 +178,12 @@ private:
     bool m_hScrollGrabbedBar = false;       // currently dragging the scrollbar around
     bool m_hScrollGrabbedRight = false;     // currently dragging the right edge of the horizontal scroll bar
     bool m_hScrollGrabbedLeft = false;      // currently dragging the left edge of the horizontal scroll bar
+    float m_hScrollDragAccum = 0.0f;        // fractional frame accumulator for scroll bar drags so sub-frame mouse motion isn't lost to int truncation
 
     float const m_rowHeight = 20;                       // height of each track row in pixels
     float const m_labelColumnWidth = 200;               // width of the label column in pixels on the left side
     float const m_verticalScrollbarWidth = 18.0f;       // width of the vertical scrollbar area in pixels on the right side
-    float const m_horizontalScrollbarHeight = 18.0f;    // height of the horizontal scrollbar area in pixels on the bottom side
+    float const m_horizontalScrollbarHeight = 28.0f;    // height of the bottom strip (scroll bar + range inputs)
 
     bool m_mouseDragging = false;           // currently dragging a clip/event/keyframe with the mouse
     float m_mouseDragStartX = 0.0f;         // pixel position of the mouse drag action start
