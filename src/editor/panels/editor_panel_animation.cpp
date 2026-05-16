@@ -1549,9 +1549,14 @@ void EditorPanelAnimation::DrawHorizScrollBar() {
     }
 
     // Put the scrollbar to the right of the inputs, aligned with the track column above.
+    // Bail if the panel is narrower than the label column — InvisibleButton asserts
+    // on non-positive size.
+    float const trackAreaWidth = std::max(0.0f, scrollingPanelWidth - m_labelColumnWidth);
+    if (trackAreaWidth <= 0.0f) {
+        return;
+    }
     ImGui::SameLine();
     ImGui::SetCursorScreenPos(ImVec2{ stripStart.x + m_labelColumnWidth, stripStart.y });
-    float const trackAreaWidth = scrollingPanelWidth - m_labelColumnWidth;
     ImGui::InvisibleButton("scrollBar", { trackAreaWidth, m_horizontalScrollbarHeight - 4.0f });
     ImVec2 const elementBoundsMin = ImGui::GetItemRectMin();
     ImVec2 const elementBoundsMax = ImGui::GetItemRectMax();
