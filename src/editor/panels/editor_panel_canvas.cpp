@@ -499,19 +499,19 @@ void EditorPanelCanvas::UpdateInput() {
 
         auto const io = ImGui::GetIO();
         if (io.KeyCtrl) {
-            // Ctrl+scroll zooms
-            if (io.MouseWheel != 0.0f) {
-                m_canvasZoom += static_cast<int>(std::lround(io.MouseWheel * 6.0f * scaleFactor));
-                m_canvasZoom = std::clamp(m_canvasZoom, s_minZoom, s_maxZoom);
-            }
-        } else {
-            // Scroll pans — works with trackpad two-finger swipe and mouse wheel
+            // Ctrl+scroll pans — works with trackpad two-finger swipe and mouse wheel
             constexpr float kPanSpeed = 20.0f;
             if (io.MouseWheel != 0.0f) {
                 m_canvasOffset.y += io.MouseWheel * kPanSpeed;
             }
             if (io.MouseWheelH != 0.0f) {
                 m_canvasOffset.x += io.MouseWheelH * kPanSpeed;
+            }
+        } else {
+            // Scroll zooms
+            if (io.MouseWheel != 0.0f) {
+                m_canvasZoom += static_cast<int>(std::lround(io.MouseWheel * 6.0f * scaleFactor));
+                m_canvasZoom = std::clamp(m_canvasZoom, s_minZoom, s_maxZoom);
             }
         }
 
