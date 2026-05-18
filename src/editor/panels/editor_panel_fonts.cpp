@@ -1,13 +1,26 @@
 #include "common.h"
 #include "editor_panel_fonts.h"
 #include "moth_ui/context.h"
+#include "moth_graphics/graphics/asset_context.h"
+#include "moth_graphics/graphics/font_factory.h"
+#include "moth_graphics/graphics/igraphics.h"
+#include "moth_graphics/graphics/itarget.h"
 #include "../editor_layer.h"
+#include "../imgui_ext.h"
 
 #include <nfd.h>
+
+namespace {
+    constexpr int kPreviewFontSize = 36;
+    constexpr float kPreviewHeight = 80.0f;
+    constexpr char const* kPreviewSampleText = "AaBbCc 0123";
+}
 
 EditorPanelFonts::EditorPanelFonts(EditorLayer& editorLayer)
     : m_editorLayer(editorLayer) {
 }
+
+EditorPanelFonts::~EditorPanelFonts() = default;
 
 void EditorPanelFonts::Draw() {
     if (!m_open) {
@@ -53,8 +66,10 @@ void EditorPanelFonts::Draw() {
     ImGui::Separator();
 
     // ── List + side buttons ──────────────────────────────────────────────────
-    // Reserve bottom area: path label + path text + separator + close button
-    float const bottomReserve = (ImGui::GetFrameHeightWithSpacing() * 3.0f) + ImGui::GetStyle().ItemSpacing.y;
+    // Reserve bottom area: separator + path + preview label + preview image + close
+    float const bottomReserve = (ImGui::GetFrameHeightWithSpacing() * 4.0f)
+                                + kPreviewHeight
+                                + (ImGui::GetStyle().ItemSpacing.y * 2.0f);
     float const listHeight = ImGui::GetContentRegionAvail().y - bottomReserve;
 
     float const sideButtonW = 110.0f;
@@ -102,13 +117,54 @@ void EditorPanelFonts::Draw() {
 
     // ── Path display ─────────────────────────────────────────────────────────
     ImGui::Separator();
-    if (m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(fontNames.size())) {
+    bool const hasSelection = m_selectedIndex >= 0 && m_selectedIndex < static_cast<int>(fontNames.size());
+    if (hasSelection) {
         std::string const path = fontFactory.GetFontPath(fontNames[m_selectedIndex]).string();
         ImGui::TextUnformatted("Path:");
         ImGui::SameLine();
         ImGui::TextWrapped("%s", path.c_str());
     } else {
         ImGui::TextDisabled("No font selected.");
+    }
+
+    // ── Preview ──────────────────────────────────────────────────────────────
+    ImGui::TextUnformatted("Preview:");
+    float const previewW = ImGui::GetContentRegionAvail().x;
+    moth_ui::IntVec2 const previewSize{
+        std::max(1, static_cast<int>(previewW)),
+        static_cast<int>(kPreviewHeight),
+    };
+
+    auto& graphics = m_editorLayer.GetGraphics();
+    if (!m_previewTarget || m_previewTargetSize != previewSize) {
+        m_previewTarget = graphics.CreateTarget(previewSize.x, previewSize.y);
+        m_previewTargetSize = previewSize;
+    }
+
+    if (m_previewTarget) {
+        graphics.SetTarget(m_previewTarget.get());
+        graphics.SetBlendMode(moth_ui::BlendMode::Replace);
+        graphics.SetColor(moth_ui::Color{ 0.12f, 0.12f, 0.12f, 1.0f });
+        graphics.Clear();
+
+        if (hasSelection) {
+            auto const fontPath = fontFactory.GetFontPath(fontNames[m_selectedIndex]);
+            auto previewFont = m_editorLayer.GetAssetContext().GetFontFactory().GetFont(fontPath.string(), kPreviewFontSize);
+            if (previewFont) {
+                graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
+                graphics.SetColor(moth_ui::Color{ 1.0f, 1.0f, 1.0f, 1.0f });
+                moth_ui::IntRect textRect;
+                textRect.topLeft = { 8, 0 };
+                textRect.bottomRight = { previewSize.x - 8, previewSize.y };
+                graphics.DrawText(kPreviewSampleText, *previewFont, textRect,
+                                  moth_ui::TextHorizAlignment::Left,
+                                  moth_ui::TextVertAlignment::Middle);
+            }
+        }
+
+        graphics.SetTarget(nullptr);
+
+        imgui_ext::Image(m_previewTarget->GetImage(), previewSize.x, previewSize.y);
     }
 
     // ── Close button (bottom-right) ───────────────────────────────────────────
