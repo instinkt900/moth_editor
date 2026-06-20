@@ -153,9 +153,7 @@ void EditorPanelFonts::Draw() {
             if (previewFont) {
                 graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
                 graphics.SetColor(moth_ui::Color{ 1.0f, 1.0f, 1.0f, 1.0f });
-                moth_ui::IntRect textRect;
-                textRect.topLeft = { 8, 0 };
-                textRect.bottomRight = { previewSize.x - 8, previewSize.y };
+                moth_ui::IntRect const textRect{ { 8, 0 }, { previewSize.x - 8, previewSize.y } };
                 graphics.DrawText(kPreviewSampleText, *previewFont, textRect,
                                   moth_ui::TextHorizAlignment::Left,
                                   moth_ui::TextVertAlignment::Middle);

@@ -18,6 +18,7 @@
 #include "../actions/modify_keyframe_action.h"
 #include "../actions/composite_action.h"
 #include "moth_ui/animation/animation_track.h"
+#include "moth_ui/utils/transform.h"
 #include "moth_ui/animation/keyframe.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/node_rect.h"
@@ -752,17 +753,16 @@ void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::Node
     // Storage is in radians; the editor exposes degrees to match the
     // convention used by node rotation. Convert on display and on commit.
     PropertiesInput<float>(
-        "Angle (deg)", current.angle * (180.0f / 3.14159265358979323846f),
+        "Angle (deg)", current.angle * moth_ui::kRadToDeg,
         [node](float changedValueDeg) {
             auto g = node->GetGradient();
-            g.angle = changedValueDeg * (3.14159265358979323846f / 180.0f);
+            g.angle = changedValueDeg * moth_ui::kDegToRad;
             node->SetGradient(g);
         },
         [commitScalar](float oldValueDeg, float newValueDeg) {
-            constexpr float kDegToRad = 3.14159265358979323846f / 180.0f;
             commitScalar(moth_ui::AnimationTarget::GradientAngle,
-                         oldValueDeg * kDegToRad,
-                         newValueDeg * kDegToRad);
+                         oldValueDeg * moth_ui::kDegToRad,
+                         newValueDeg * moth_ui::kDegToRad);
         });
 
     PropertiesInput<float>(
