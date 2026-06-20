@@ -6,11 +6,11 @@
 
 **Effort:** Small–Medium
 
-Animation events can be placed on the timeline and fire as named callbacks at runtime, but there
-is no way to attach a data payload in the editor. The `AnimationEvent` type in moth_ui needs to
-be checked for parameter support first — if it exists, the editor just needs a small addition to
-the event edit popup. If it doesn't, the type and serialisation need extending before the editor
-work can begin.
+Animation markers can be placed on the timeline and fire as named callbacks at runtime, but
+there is no way to attach a data payload in the editor. `moth_ui::AnimationMarker` currently
+stores only `frame` + `name` — the type and its serialisation need extending (e.g. a string→value
+map) before the editor work can begin. Once that exists, the event edit popup gains a small
+key/value list editor.
 
 ---
 
@@ -26,20 +26,15 @@ and evaluate keyframe easing.
 
 ---
 
-### Font Previews
+### Font Picker on Text Nodes
 
 **Effort:** Small–Medium
 
-Font names alone give no visual feedback. Two related improvements:
-
-1. **Fonts dialog preview.** The Fonts dialog (`Edit > Fonts`) should display a rendered sample of
-   the currently selected font (e.g. "AaBbCc 0123") below or beside the font list.
-
-2. **Font picker on text nodes.** The font dropdown in the properties panel for text nodes shows
-   only font names. Ideally each entry would render in its own typeface (requires custom
-   `ImGui::Selectable` drawing with per-item font push/pop, which is non-trivial). As an
-   alternative, a "Browse…" button could open a font picker popup that shows a rendered sample for
-   each registered font, letting the user pick visually rather than by name.
+The font dropdown in the properties panel for text nodes shows only font names. Ideally each
+entry would render in its own typeface (requires custom `ImGui::Selectable` drawing with per-item
+font push/pop, which is non-trivial). As an alternative, a "Browse…" button could open a font
+picker popup that shows a rendered sample for each registered font (same render-to-target
+approach used by the Fonts dialog preview), letting the user pick visually rather than by name.
 
 ---
 
