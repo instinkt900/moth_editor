@@ -12,12 +12,20 @@
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout_entity_ref.h"
 #include "moth_ui/layout/layout_entity_flipbook.h"
+#include "moth_ui/layout/layout_entity_gradient.h"
 #include "../actions/add_discrete_keyframe_action.h"
+#include "../actions/add_keyframe_action.h"
+#include "../actions/modify_keyframe_action.h"
+#include "../actions/composite_action.h"
+#include "moth_ui/animation/animation_track.h"
+#include "moth_ui/utils/transform.h"
+#include "moth_ui/animation/keyframe.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/node_rect.h"
 #include "moth_ui/nodes/node_image.h"
 #include "moth_ui/nodes/node_text.h"
 #include "moth_ui/nodes/node_flipbook.h"
+#include "moth_ui/nodes/node_gradient.h"
 #include "moth_ui/nodes/group.h"
 #include "moth_ui/context.h"
 
@@ -86,6 +94,9 @@ void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> no
         break;
     case moth_ui::LayoutEntityType::Flipbook:
         DrawFlipbookProperties(std::static_pointer_cast<moth_ui::NodeFlipbook>(node));
+        break;
+    case moth_ui::LayoutEntityType::Gradient:
+        DrawGradientProperties(std::static_pointer_cast<moth_ui::NodeGradient>(node));
         break;
     case moth_ui::LayoutEntityType::Ref:
         DrawRefProperties(std::static_pointer_cast<moth_ui::Group>(node), recurseChildren);
@@ -635,6 +646,137 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
     }
 }
 
+void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::NodeGradient> node) {
+    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityGradient>(node->GetLayoutEntity());
+
+    ImGui::SeparatorText("Gradient");
+
+    int const frameNo = m_editorLayer.GetSelectedFrame();
+    auto const current = entity->GetGradientAtFrame(static_cast<float>(frameNo));
+
+    // Push a keyframe at the current selected frame for one of the gradient's
+    // scalar tracks; if a keyframe already exists at the frame, modify it.
+    auto setTrackKeyframe = [entity, frameNo](moth_ui::AnimationTrack::Target target, float newValue) -> std::unique_ptr<IEditorAction> {
+        auto& track = entity->m_tracks.at(target);
+        if (auto* kf = track->GetKeyframe(frameNo)) {
+            if (kf->value == newValue) {
+                return nullptr;
+            }
+            return std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, kf->value, newValue, kf->interpType, kf->interpType);
+        }
+        return std::make_unique<AddKeyframeAction>(entity, target, frameNo, newValue, moth_ui::InterpType::Linear);
+    };
+
+    auto commitColor = [this, node, setTrackKeyframe](moth_ui::Color const& oldColor, moth_ui::Color const& newColor,
+                                                       moth_ui::AnimationTarget rTarget, moth_ui::AnimationTarget gTarget,
+                                                       moth_ui::AnimationTarget bTarget, moth_ui::AnimationTarget aTarget) {
+        auto composite = std::make_unique<CompositeAction>();
+        auto add = [&](moth_ui::AnimationTarget t, float oldV, float newV) {
+            if (oldV == newV) { return; }
+            if (auto action = setTrackKeyframe(t, newV)) {
+                composite->GetActions().push_back(std::move(action));
+            }
+        };
+        add(rTarget, oldColor.r, newColor.r);
+        add(gTarget, oldColor.g, newColor.g);
+        add(bTarget, oldColor.b, newColor.b);
+        add(aTarget, oldColor.a, newColor.a);
+        if (!composite->GetActions().empty()) {
+            m_editorLayer.PerformEditAction(std::move(composite));
+            node->ReloadEntity();
+        }
+    };
+
+    auto commitScalar = [this, node, setTrackKeyframe](moth_ui::AnimationTarget target, float oldValue, float newValue) {
+        if (oldValue == newValue) { return; }
+        if (auto action = setTrackKeyframe(target, newValue)) {
+            m_editorLayer.PerformEditAction(std::move(action));
+            node->ReloadEntity();
+        }
+    };
+
+    PropertiesInput<moth_ui::Color>(
+        "Start Color", current.startColor,
+        [node](moth_ui::Color changedValue) {
+            auto g = node->GetGradient();
+            g.startColor = changedValue;
+            node->SetGradient(g);
+        },
+        [commitColor](moth_ui::Color oldValue, moth_ui::Color newValue) {
+            commitColor(oldValue, newValue,
+                        moth_ui::AnimationTarget::GradientStartRed,
+                        moth_ui::AnimationTarget::GradientStartGreen,
+                        moth_ui::AnimationTarget::GradientStartBlue,
+                        moth_ui::AnimationTarget::GradientStartAlpha);
+        });
+
+    PropertiesInput<moth_ui::Color>(
+        "End Color", current.endColor,
+        [node](moth_ui::Color changedValue) {
+            auto g = node->GetGradient();
+            g.endColor = changedValue;
+            node->SetGradient(g);
+        },
+        [commitColor](moth_ui::Color oldValue, moth_ui::Color newValue) {
+            commitColor(oldValue, newValue,
+                        moth_ui::AnimationTarget::GradientEndRed,
+                        moth_ui::AnimationTarget::GradientEndGreen,
+                        moth_ui::AnimationTarget::GradientEndBlue,
+                        moth_ui::AnimationTarget::GradientEndAlpha);
+        });
+
+    PropertiesInput<moth_ui::FloatVec2>(
+        "Midpoint", current.midpoint,
+        [node](moth_ui::FloatVec2 changedValue) {
+            auto g = node->GetGradient();
+            g.midpoint = changedValue;
+            node->SetGradient(g);
+        },
+        [this, node, setTrackKeyframe](moth_ui::FloatVec2 oldValue, moth_ui::FloatVec2 newValue) {
+            auto composite = std::make_unique<CompositeAction>();
+            if (oldValue.x != newValue.x) {
+                if (auto action = setTrackKeyframe(moth_ui::AnimationTarget::GradientMidpointX, newValue.x)) {
+                    composite->GetActions().push_back(std::move(action));
+                }
+            }
+            if (oldValue.y != newValue.y) {
+                if (auto action = setTrackKeyframe(moth_ui::AnimationTarget::GradientMidpointY, newValue.y)) {
+                    composite->GetActions().push_back(std::move(action));
+                }
+            }
+            if (!composite->GetActions().empty()) {
+                m_editorLayer.PerformEditAction(std::move(composite));
+                node->ReloadEntity();
+            }
+        });
+
+    // Storage is in radians; the editor exposes degrees to match the
+    // convention used by node rotation. Convert on display and on commit.
+    PropertiesInput<float>(
+        "Angle (deg)", current.angle * moth_ui::kRadToDeg,
+        [node](float changedValueDeg) {
+            auto g = node->GetGradient();
+            g.angle = changedValueDeg * moth_ui::kDegToRad;
+            node->SetGradient(g);
+        },
+        [commitScalar](float oldValueDeg, float newValueDeg) {
+            commitScalar(moth_ui::AnimationTarget::GradientAngle,
+                         oldValueDeg * moth_ui::kDegToRad,
+                         newValueDeg * moth_ui::kDegToRad);
+        });
+
+    PropertiesInput<float>(
+        "Transition", current.transitionLength,
+        [node](float changedValue) {
+            auto g = node->GetGradient();
+            g.transitionLength = changedValue;
+            node->SetGradient(g);
+        },
+        [commitScalar](float oldValue, float newValue) {
+            commitScalar(moth_ui::AnimationTarget::GradientTransition, oldValue, newValue);
+        });
+}
+
 char const* GetChildName(std::shared_ptr<moth_ui::LayoutEntity> entity) {
     switch (entity->GetType()) {
     case moth_ui::LayoutEntityType::Entity:
@@ -650,6 +792,8 @@ char const* GetChildName(std::shared_ptr<moth_ui::LayoutEntity> entity) {
         return "Text";
     case moth_ui::LayoutEntityType::Flipbook:
         return "Flipbook";
+    case moth_ui::LayoutEntityType::Gradient:
+        return "Gradient";
     case moth_ui::LayoutEntityType::Ref:
         return "Ref";
     default:
