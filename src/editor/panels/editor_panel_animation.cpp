@@ -954,7 +954,13 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
         } else {
             std::unique_ptr<CompositeAction> compositeAction = std::make_unique<CompositeAction>();
             for (auto&& target : AnimationTrack::ContinuousTargets) {
-                auto* trackPtr = childTracks.at(target).get();
+                auto trackIt = childTracks.find(target);
+                if (trackIt == childTracks.end()) {
+                    // Not all continuous targets exist on every entity (e.g. gradient
+                    // targets only live on LayoutEntityGradient).
+                    continue;
+                }
+                auto* trackPtr = trackIt->second.get();
                 if (nullptr == trackPtr->GetKeyframe(a->frame)) {
                     auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(a->frame));
                     auto action = std::make_unique<AddKeyframeAction>(a->entity, target, a->frame, currentValue, moth_ui::InterpType::Linear);

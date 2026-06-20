@@ -7,6 +7,7 @@
 #include "moth_ui/layout/layout_entity_clip.h"
 #include "moth_ui/layout/layout_entity_text.h"
 #include "moth_ui/layout/layout_entity_flipbook.h"
+#include "moth_ui/layout/layout_entity_gradient.h"
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
 #include "../element_utils.h"
@@ -73,6 +74,10 @@ namespace {
         {
             "Clip Rect",
             [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityClip>(editorLayer); },
+        },
+        {
+            "Gradient",
+            [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityGradient>(editorLayer); },
         },
         {
             "Flipbook",
