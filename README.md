@@ -67,6 +67,12 @@ pip install conan
 
 **C++17 is required.** A `.conan/profile` is provided that sets `compiler.cppstd=17` and configures Conan to install system packages automatically (`tools.system.package_manager:mode=install`). This profile is used in CI and can be used directly or as a reference when building locally.
 
+moth_editor depends on `moth_ui`, `moth_graphics`, and `moth_packer`, which are published to an Artifactory remote rather than Conan Center. Register the remote once before installing (it is publicly readable, so no login is required):
+
+```bash
+conan remote add moth https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
+```
+
 ### Linux
 
 Several system packages are required on Linux. GTK3 is needed by nativefiledialog; SDL2, GLFW, FreeType, and HarfBuzz are pulled in transitively via moth_graphics (see the [moth_graphics README](https://github.com/instinkt900/moth_graphics#linux) for background on why these must come from the system).
