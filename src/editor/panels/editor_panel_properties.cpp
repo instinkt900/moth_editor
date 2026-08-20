@@ -1,4 +1,5 @@
 #include "common.h"
+#include "../image_identity.h"
 #include "editor_panel_properties.h"
 
 #include "../properties_elements.h"
@@ -419,11 +420,11 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    auto const& layoutPath = m_editorLayer.GetCurrentLayoutPath();
-    auto const imageBase = layoutPath.empty() ? std::filesystem::current_path() : layoutPath.parent_path();
-    std::error_code ec;
-    auto rel = std::filesystem::relative(entity->m_imagePath, imageBase, ec);
-    std::string imagePath = ec ? entity->m_imagePath.string() : rel.string();
+    // The identity is shown exactly as the layout stores it. This used to make the
+    // path relative for display, because moth_ui made every stored path absolute
+    // and an absolute path told an author nothing about what the file would hold.
+    // moth_ui carries the value unchanged now, so what is shown is what is saved.
+    std::string imagePath = entity->m_imageId.str();
     ImGui::InputText("Image Path", imagePath.data(), imagePath.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
     if (node->GetImage() != nullptr) {
@@ -479,9 +480,9 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             std::filesystem::path filePath = outPath;
             NFD_Free(outPath);
             auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(node->GetLayoutEntity());
-            auto const oldPath = targetImageEntity->m_imagePath;
-            auto const newPath = filePath;
-            auto action = MakeChangeValueAction(entity->m_imagePath, oldPath, newPath, [node]() { node->ReloadEntity(); });
+            auto const oldPath = targetImageEntity->m_imageId;
+            auto const newPath = MakeImageId(filePath, m_editorLayer.GetCurrentLayoutPath());
+            auto action = MakeChangeValueAction(entity->m_imageId, oldPath, newPath, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         }
     }

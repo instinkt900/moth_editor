@@ -19,9 +19,16 @@ class MothUIEditor(ConanFile):
             self.version = load(self, "version.txt").strip()
 
     def requirements(self):
-        self.requires("moth_ui/1.1.0")
-        self.requires("moth_graphics/1.1.0")
-        self.requires("moth_packer/1.0.0-rc.2")
+        self.requires("moth_ui/[>=1.8 <2]")
+        self.requires("moth_graphics/[>=1.3 <2]")
+        self.requires("moth_packer/1.0.0-rc.3")
+
+        # moth_ui accepts fmt 10 through 12, because the Camina engine gets
+        # fmt 12 through a newer spdlog. moth_graphics and moth_packer take
+        # spdlog 1.14, which pins fmt 10.2.1. This graph holds both, so the
+        # range floats to 12 and conflicts with that pin. moth_editor is the
+        # only place the two meet, so it is where the choice belongs.
+        self.requires("fmt/10.2.1", override=True)
 
     def system_requirements(self):
         if self.settings.os == "Linux":

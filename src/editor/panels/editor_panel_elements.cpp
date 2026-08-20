@@ -11,6 +11,7 @@
 #include "moth_ui/layout/layout.h"
 #include "moth_ui/nodes/group.h"
 #include "../element_utils.h"
+#include "../image_identity.h"
 
 #include <nfd.h>
 
@@ -35,7 +36,9 @@ namespace {
                     bounds.anchor.bottomRight = { 0, 0 };
                     bounds.offset.topLeft = { 0, 0 };
                     bounds.offset.bottomRight = { 100, 100 };
-                    AddEntityWithBounds<moth_ui::LayoutEntityImage>(editorLayer, bounds, filePath);
+                    AddEntityWithBounds<moth_ui::LayoutEntityImage>(
+                        editorLayer, bounds,
+                        MakeImageId(filePath, editorLayer.GetCurrentLayoutPath()));
                 }
             },
         },
