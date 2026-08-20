@@ -8,7 +8,9 @@
 #include "moth_ui/events/event_mouse.h"
 #include "imgui_internal.h"
 #include "../element_utils.h"
+#include "../image_identity.h"
 #include "moth_ui/layout/layout_entity_ref.h"
+#include "moth_ui/asset_id.h"
 #include "moth_ui/layout/layout_entity_image.h"
 #include "moth_ui/layout/layout_entity_flipbook.h"
 #include "moth_ui/layout/layout.h"
@@ -308,7 +310,8 @@ void EditorPanelCanvas::EndPanel() {
             bounds.anchor.bottomRight = { 0, 0 };
             bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
             bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
-            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds, imagePath->c_str());
+            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds,
+                                                           MakeImageId(*imagePath, m_editorLayer.GetCurrentLayoutPath()));
         } else if (auto const* const payload = ImGui::AcceptDragDropPayload("flipbook_path", 0)) {
             std::string* flipbookPath = static_cast<std::string*>(payload->Data);
             std::filesystem::path const flipbookFsPath{ *flipbookPath };
