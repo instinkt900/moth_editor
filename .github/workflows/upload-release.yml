@@ -88,7 +88,12 @@ jobs:
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan create . -pr .conan/profile -s build_type=Release --build=missing --version develop
+        # --update on every Conan call in CI. This job restores a Conan cache
+        # keyed only on the Conan version and the OS, so it survives every
+        # dependency change. Conan resolves a version range against that cache
+        # and never asks the remote whether something newer matches, which
+        # silently pins an old version. See instinkt900/moth_editor#30.
+        conan create . -pr .conan/profile -s build_type=Release --build=missing --version develop --update
         conan upload "moth_editor/develop:*" --confirm --remote artifactory
 
     - name: Build package and upload (release)
@@ -96,7 +101,7 @@ jobs:
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan create . -pr .conan/profile -s build_type=Release --build=missing
+        conan create . -pr .conan/profile -s build_type=Release --build=missing --update
         conan upload "moth_editor/${{ needs.check-version.outputs.version }}:*" --confirm --remote artifactory
 
   build-release:
@@ -145,7 +150,7 @@ jobs:
     - name: Configure and build
       shell: bash
       run: |
-        conan install . -pr .conan/profile -s build_type=${{ matrix.build_type }} --build=missing
+        conan install . -pr .conan/profile -s build_type=${{ matrix.build_type }} --build=missing --update
         cmake --preset ${{ matrix.configure_preset }}
         cmake --build --preset ${{ matrix.build_preset }} --config ${{ matrix.build_type }}
 
