@@ -29,7 +29,7 @@ class MothUIEditor(ConanFile):
         self.requires("spdlog/[~1.17]")
         self.requires("moth_ui/[>=1.8 <2]")
         self.requires("moth_graphics/[>=1.3 <2]")
-        self.requires("moth_packer/1.0.0-rc.3")
+        self.requires("moth_packer/[>=1 <2]")
 
     def system_requirements(self):
         if self.settings.os == "Linux":
