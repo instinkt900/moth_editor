@@ -37,7 +37,13 @@ class MothUIEditor(ConanFile):
             apt.install(["libgtk-3-dev"])
 
     def build_requirements(self):
-        self.tool_requires("cmake/3.27.0")
+        # A range, not an exact version. GitHub moved windows-latest to a
+        # VS 2026 image, Conan then asks for the "Visual Studio 18 2026"
+        # generator, and CMake 3.27 has no such generator: its list stops
+        # at Visual Studio 17 2022. An exact pin here means a new runner
+        # image breaks the build with nothing in this repository having
+        # changed. See instinkt900/moth_packer, the 2026-08-24 upload run.
+        self.tool_requires("cmake/[>=3.27.0]")
 
     def layout(self):
         cmake_layout(self)

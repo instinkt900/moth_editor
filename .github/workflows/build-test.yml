@@ -36,6 +36,7 @@ jobs:
         cache_packages: true
 
     - name: Add private artifactory
+      shell: bash
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
         conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
