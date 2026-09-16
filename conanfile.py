@@ -32,7 +32,7 @@ class MothUIEditor(ConanFile):
         self.requires("moth_ui/[>=2 <3]")
         self.requires("moth_graphics/[>=2 <3]")
         self.requires("moth_bridge/[>=0.1 <1]")
-        self.requires("moth_packer/[>=1 <2]")
+        self.requires("moth_packer/[>=2 <3]")
 
     def configure(self):
         # The texture packer panel collects images by walking moth::ui layout files,
