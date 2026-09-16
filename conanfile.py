@@ -8,7 +8,7 @@ class MothUIEditor(ConanFile):
 
     license = "MIT"
     url = "https://github.com/instinkt900/moth_editor"
-    description = "A visual layout and animation editor for moth_ui"
+    description = "A visual layout and animation editor for the moth_toolkit UI module"
 
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
