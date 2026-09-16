@@ -118,21 +118,11 @@ jobs:
             runs_on: windows-2022
             configure_preset: conan-default
             build_preset: conan-release
-          - os: windows
-            build_type: Debug
-            runs_on: windows-2022
-            configure_preset: conan-default
-            build_preset: conan-debug
           - os: linux
             build_type: Release
             runs_on: ubuntu-latest
             configure_preset: conan-release
             build_preset: conan-release
-          - os: linux
-            build_type: Debug
-            runs_on: ubuntu-latest
-            configure_preset: conan-debug
-            build_preset: conan-debug
 
     steps:
     - uses: actions/checkout@v4
