@@ -11,9 +11,9 @@ public:
 
 private:
     float m_size = 12.0f;
-    moth_ui::FloatVec2 m_prevDragWorldPos;
+    moth::ui::FloatVec2 m_prevDragWorldPos;
     bool m_dragActive = false;
 
-    bool IsInBounds(moth_ui::IntVec2 const& pos) const override;
-    void UpdatePosition(moth_ui::IntVec2 const& position) override;
+    bool IsInBounds(moth::ui::IntVec2 const& pos) const override;
+    void UpdatePosition(moth::ui::IntVec2 const& position) override;
 };

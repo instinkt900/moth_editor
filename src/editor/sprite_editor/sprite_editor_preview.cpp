@@ -19,7 +19,7 @@ namespace {
     // Map a mouse screen position to a drag operation for the given frame rect.
     // Returns FrameDragOp::None when the mouse is not on or near the rect.
     FrameDragOp HitTestFrame(ImVec2 mouse, ImVec2 imagePos, float zoom,
-                             moth_ui::IntRect const& rect) {
+                             moth::ui::IntRect const& rect) {
         float const x0 = imagePos.x + (static_cast<float>(rect.left())   * zoom);
         float const y0 = imagePos.y + (static_cast<float>(rect.top())    * zoom);
         float const x1 = imagePos.x + (static_cast<float>(rect.right())  * zoom);
@@ -72,7 +72,7 @@ namespace {
 
     // Apply (dx, dy) image-space pixel delta to rect according to op.
     // Enforces minimum frame size and clamps to the atlas dimensions.
-    void ApplyFrameDelta(moth_ui::IntRect& rect, FrameDragOp op,
+    void ApplyFrameDelta(moth::ui::IntRect& rect, FrameDragOp op,
                          int dx, int dy, int imgW, int imgH) {
         switch (op) {
         case FrameDragOp::Move: {
@@ -199,7 +199,7 @@ void SpriteEditor::DrawPreview() {
     // Draw the atlas image, then overlay an InvisibleButton at the same position so
     // ImGui owns all left-button interactions (drag, cursor changes) on the canvas.
     ImVec2 const imagePos = ImGui::GetCursorScreenPos();
-    image.DrawImGui({ static_cast<int>(displayW), static_cast<int>(displayH) });
+    imgui_ext::Image(image, static_cast<int>(displayW), static_cast<int>(displayH));
     ImGui::SetCursorScreenPos(imagePos);
     ImGui::InvisibleButton("##canvas_interact", ImVec2{ displayW, displayH });
 
@@ -259,7 +259,7 @@ void SpriteEditor::DrawPreview() {
         int const dy = static_cast<int>(std::round(totalDelta.y / m_zoom));
         if (m_selectedFrame >= 0 &&
             m_selectedFrame < static_cast<int>(m_frameDrag->snapshot.size())) {
-            moth_ui::IntRect r = m_frameDrag->snapshot[m_selectedFrame].rect;
+            moth::ui::IntRect r = m_frameDrag->snapshot[m_selectedFrame].rect;
             ApplyFrameDelta(r, static_cast<FrameDragOp>(m_frameDrag->op), dx, dy, imgWi, imgHi);
             m_frames[m_selectedFrame].rect = r;
         }
@@ -287,7 +287,7 @@ void SpriteEditor::DrawPreview() {
     // -----------------------------------------------------------------------
     ImDrawList* const drawList = ImGui::GetWindowDrawList();
     auto const& cfg = m_editorLayer.GetConfig();
-    auto const toU32 = [](moth_ui::Color const& c) {
+    auto const toU32 = [](moth::ui::Color const& c) {
         return ImGui::ColorConvertFloat4ToU32(
             ImVec4{ c.data[0], c.data[1], c.data[2], c.data[3] });
     };

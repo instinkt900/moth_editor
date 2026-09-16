@@ -1,9 +1,9 @@
 #include "common.h"
 #include "delete_keyframe_action.h"
-#include "moth_ui/layout/layout_entity.h"
-#include "moth_ui/animation/keyframe.h"
+#include "moth/ui/layout/layout_entity.h"
+#include "moth/ui/animation/keyframe.h"
 
-DeleteKeyframeAction::DeleteKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue oldValue)
+DeleteKeyframeAction::DeleteKeyframeAction(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo, moth::ui::KeyframeValue oldValue)
     : m_entity(entity)
     , m_target(target)
     , m_frameNo(frameNo)

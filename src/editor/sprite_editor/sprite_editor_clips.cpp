@@ -21,7 +21,7 @@ void SpriteEditor::DrawClipsPane() {
                 if (next < static_cast<int>(clip.desc.frames.size())) {
                     m_clipCurrentStep = next;
                 } else {
-                    using LoopType = moth_graphics::graphics::SpriteSheet::LoopType;
+                    using LoopType = moth::gfx::SpriteSheet::LoopType;
                     switch (clip.desc.loop) {
                     case LoopType::Stop:
                         m_clipCurrentStep = static_cast<int>(clip.desc.frames.size()) - 1;
@@ -58,7 +58,7 @@ void SpriteEditor::DrawClipsPane() {
             int minOY = 0;
             int maxOY = 1;
             if (maxFrameIdx >= 0) {
-                auto const expand = [&](moth_graphics::graphics::SpriteSheet::FrameEntry const& f) {
+                auto const expand = [&](moth::gfx::SpriteSheet::FrameEntry const& f) {
                     minOX = std::min(minOX, -f.pivot.x);
                     maxOX = std::max(maxOX, f.rect.w() - f.pivot.x);
                     minOY = std::min(minOY, -f.pivot.y);
@@ -101,10 +101,10 @@ void SpriteEditor::DrawClipsPane() {
                     auto const& fr = m_frames[frameIdx];
                     float const imgW = static_cast<float>(image->GetWidth());
                     float const imgH = static_cast<float>(image->GetHeight());
-                    moth_graphics::FloatVec2 const uv0{
+                    moth::gfx::FloatVec2 const uv0{
                         static_cast<float>(fr.rect.x())     / imgW,
                         static_cast<float>(fr.rect.y())     / imgH };
-                    moth_graphics::FloatVec2 const uv1{
+                    moth::gfx::FloatVec2 const uv1{
                         static_cast<float>(fr.rect.right()) / imgW,
                         static_cast<float>(fr.rect.bottom())/ imgH };
                     float const fw = static_cast<float>(fr.rect.w()) * zoom;
@@ -113,7 +113,7 @@ void SpriteEditor::DrawClipsPane() {
                         ImGui::SetCursorScreenPos({
                             anchorX - (static_cast<float>(fr.pivot.x) * zoom),
                             anchorY - (static_cast<float>(fr.pivot.y) * zoom) });
-                        image->DrawImGui({ static_cast<int>(fw), static_cast<int>(fh) }, uv0, uv1);
+                        imgui_ext::Image(*image, static_cast<int>(fw), static_cast<int>(fh), uv0, uv1);
                     }
                 }
 
@@ -144,7 +144,7 @@ void SpriteEditor::DrawClipsPane() {
             if (next < totalSteps) {
                 m_clipCurrentStep = next;
             } else {
-                using LoopType = moth_graphics::graphics::SpriteSheet::LoopType;
+                using LoopType = moth::gfx::SpriteSheet::LoopType;
                 m_clipCurrentStep = (clip.desc.loop == LoopType::Stop) ? m_clipCurrentStep : 0;
             }
         }
@@ -162,9 +162,9 @@ void SpriteEditor::DrawClipsPane() {
         if (ImGui::Button("+ Clip") && m_newClipNameBuffer[0] != '\0') {
             auto before = m_clips;
             int const beforeSel = m_selectedClip;
-            moth_graphics::graphics::SpriteSheet::ClipEntry newClip;
+            moth::gfx::SpriteSheet::ClipEntry newClip;
             newClip.name = m_newClipNameBuffer;
-            newClip.desc.loop = moth_graphics::graphics::SpriteSheet::LoopType::Stop;
+            newClip.desc.loop = moth::gfx::SpriteSheet::LoopType::Stop;
             m_clips.push_back(std::move(newClip));
             m_newClipNameBuffer[0] = '\0';
             m_selectedClip = static_cast<int>(m_clips.size()) - 1;
@@ -215,7 +215,7 @@ void SpriteEditor::DrawClipsPane() {
                 ImGui::SetNextItemWidth(-FLT_MIN);
                 if (ImGui::Combo("##loop", &loopIdx, kLoopItems, 3)) {
                     auto before = m_clips;
-                    clip.desc.loop = static_cast<moth_graphics::graphics::SpriteSheet::LoopType>(loopIdx);
+                    clip.desc.loop = static_cast<moth::gfx::SpriteSheet::LoopType>(loopIdx);
                     PushClipAction(std::move(before), m_selectedClip, m_selectedClip);
                 }
 
@@ -295,7 +295,7 @@ void SpriteEditor::DrawClipsPane() {
                 // Add step — defaults to the currently selected frame (or 0)
                 if (ImGui::Button("+ Step")) {
                     auto before = m_clips;
-                    moth_graphics::graphics::SpriteSheet::ClipFrame newStep;
+                    moth::gfx::SpriteSheet::ClipFrame newStep;
                     newStep.frameIndex = (m_selectedFrame >= 0 && maxFrameIdx >= 0)
                         ? std::clamp(m_selectedFrame, 0, maxFrameIdx) : 0;
                     newStep.durationMs = clip.desc.frames.empty() ? 100 : clip.desc.frames.back().durationMs;

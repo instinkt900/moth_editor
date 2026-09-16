@@ -3,10 +3,10 @@
 #include "bounds_widget.h"
 #include "editor_layer.h"
 #include "panels/editor_panel_canvas.h"
-#include "moth_ui/events/event_dispatch.h"
-#include "moth_ui/layout/layout_entity.h"
-#include "moth_ui/nodes/node.h"
-#include "moth_ui/utils/transform.h"
+#include "moth/ui/events/event_dispatch.h"
+#include "moth/ui/layout/layout_entity.h"
+#include "moth/ui/nodes/node.h"
+#include "moth/ui/utils/transform.h"
 
 #include <cmath>
 
@@ -17,8 +17,8 @@ PivotBoundsHandle::PivotBoundsHandle(BoundsWidget& widget)
 PivotBoundsHandle::~PivotBoundsHandle() {
 }
 
-bool PivotBoundsHandle::OnEvent(moth_ui::Event const& event) {
-    moth_ui::EventDispatch dispatch(event);
+bool PivotBoundsHandle::OnEvent(moth::ui::Event const& event) {
+    moth::ui::EventDispatch dispatch(event);
     dispatch.Dispatch(this, &PivotBoundsHandle::OnMouseDown);
     dispatch.Dispatch(this, &PivotBoundsHandle::OnMouseUp);
     dispatch.Dispatch(this, &PivotBoundsHandle::OnMouseMove);
@@ -31,8 +31,8 @@ void PivotBoundsHandle::Draw() {
     }
 
     auto const& screenRect = m_target->GetScreenRect();
-    auto const bounds = static_cast<moth_ui::FloatRect>(screenRect);
-    auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+    auto const bounds = static_cast<moth::ui::FloatRect>(screenRect);
+    auto const dims = moth::ui::FloatVec2{ bounds.w(), bounds.h() };
     auto const pivot = m_target->GetPivot();
 
     m_position = bounds.topLeft + dims * pivot;
@@ -40,14 +40,14 @@ void PivotBoundsHandle::Draw() {
     auto& canvasPanel = m_widget.GetCanvasPanel();
     auto* const drawList = ImGui::GetWindowDrawList();
     auto const drawPos = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
-    auto const color = moth_ui::ToABGR(canvasPanel.GetEditorLayer().GetConfig().SelectionColor);
+    auto const color = moth::ui::ToABGR(canvasPanel.GetEditorLayer().GetConfig().SelectionColor);
 
     drawList->AddCircle(ImVec2{ drawPos.x, drawPos.y }, m_radius, color, 0, 2.0f);
     drawList->AddLine(ImVec2{ drawPos.x - m_radius, drawPos.y }, ImVec2{ drawPos.x + m_radius, drawPos.y }, color, 1.0f);
     drawList->AddLine(ImVec2{ drawPos.x, drawPos.y - m_radius }, ImVec2{ drawPos.x, drawPos.y + m_radius }, color, 1.0f);
 }
 
-bool PivotBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
+bool PivotBoundsHandle::IsInBounds(moth::ui::IntVec2 const& pos) const {
     auto& canvasPanel = m_widget.GetCanvasPanel();
     auto const drawPos = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
     auto const dx = static_cast<float>(pos.x) - drawPos.x;
@@ -55,10 +55,10 @@ bool PivotBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
     return ((dx * dx) + (dy * dy)) <= (m_radius * m_radius);
 }
 
-void PivotBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
+void PivotBoundsHandle::UpdatePosition(moth::ui::IntVec2 const& position) {
     auto const& screenRect = m_target->GetScreenRect();
-    auto const bounds = static_cast<moth_ui::FloatRect>(screenRect);
-    auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+    auto const bounds = static_cast<moth::ui::FloatRect>(screenRect);
+    auto const dims = moth::ui::FloatVec2{ bounds.w(), bounds.h() };
 
     if (dims.x == 0.0f || dims.y == 0.0f) {
         return;
@@ -69,7 +69,7 @@ void PivotBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
         return;
     }
 
-    float const rotation = m_target->GetRotation() * moth_ui::kDegToRad;
+    float const rotation = m_target->GetRotation();
     float const c = std::cos(rotation);
     float const s = std::sin(rotation);
 
@@ -79,9 +79,9 @@ void PivotBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
 
     // Back-rotate the mouse-from-pivot vector into the node's local (unrotated)
     // space to get how far the pivot should move in local coordinates.
-    auto const mousePos = static_cast<moth_ui::FloatVec2>(position);
+    auto const mousePos = static_cast<moth::ui::FloatVec2>(position);
     auto const mouseFromPivot = mousePos - pivotWorldOld;
-    auto const deltaLocal = moth_ui::FloatVec2{
+    auto const deltaLocal = moth::ui::FloatVec2{
         (c * mouseFromPivot.x) + (s * mouseFromPivot.y),
         (-s * mouseFromPivot.x) + (c * mouseFromPivot.y)
     };
@@ -97,7 +97,7 @@ void PivotBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     // Solving for new TL such that corners are unchanged gives:
     //   deltaTranslation = (R(θ) - I) * actualDeltaLocal
     auto const actualDelta = newPivotLocal - pivotLocalOld;
-    auto const deltaTranslation = moth_ui::FloatVec2{
+    auto const deltaTranslation = moth::ui::FloatVec2{
         ((c - 1.0f) * actualDelta.x) - (s * actualDelta.y),
         (s * actualDelta.x) + ((c - 1.0f) * actualDelta.y)
     };
@@ -113,11 +113,11 @@ void PivotBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
     m_target->RecalculateBounds();
 }
 
-bool PivotBoundsHandle::OnMouseDown(moth_ui::EventMouseDown const& event) {
+bool PivotBoundsHandle::OnMouseDown(moth::ui::EventMouseDown const& event) {
     if (m_target == nullptr) {
         return false;
     }
-    if (event.GetButton() != moth_ui::MouseButton::Left) {
+    if (event.GetButton() != moth::ui::MouseButton::Left) {
         return false;
     }
     if (IsInBounds(event.GetPosition())) {
@@ -128,8 +128,8 @@ bool PivotBoundsHandle::OnMouseDown(moth_ui::EventMouseDown const& event) {
     return false;
 }
 
-bool PivotBoundsHandle::OnMouseUp(moth_ui::EventMouseUp const& event) {
-    if (event.GetButton() != moth_ui::MouseButton::Left) {
+bool PivotBoundsHandle::OnMouseUp(moth::ui::EventMouseUp const& event) {
+    if (event.GetButton() != moth::ui::MouseButton::Left) {
         return false;
     }
     if (m_holding) {
@@ -139,7 +139,7 @@ bool PivotBoundsHandle::OnMouseUp(moth_ui::EventMouseUp const& event) {
     return false;
 }
 
-bool PivotBoundsHandle::OnMouseMove(moth_ui::EventMouseMove const& event) {
+bool PivotBoundsHandle::OnMouseMove(moth::ui::EventMouseMove const& event) {
     if (m_target == nullptr) {
         return false;
     }

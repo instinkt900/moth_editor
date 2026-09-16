@@ -1,11 +1,11 @@
 #include "common.h"
 #include "editor_panel_preview.h"
-#include "moth_ui/context.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/animation/animation_clip.h"
-#include "moth_ui/nodes/group.h"
-#include "moth_ui/layout/layout.h"
-#include "moth_ui/graphics/itarget.h"
+#include "moth/ui/context.h"
+#include "moth/ui/layout/layout_entity_group.h"
+#include "moth/ui/animation/animation_clip.h"
+#include "moth/ui/nodes/group.h"
+#include "moth/ui/layout/layout.h"
+#include "moth/ui/graphics/itarget.h"
 #include "../editor_layer.h"
 #include "editor_application.h"
 
@@ -13,8 +13,8 @@ EditorPanelPreview::EditorPanelPreview(EditorLayer& editorLayer, bool visible)
     : EditorPanel(editorLayer, "Preview", visible, true) {
 }
 
-void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
-    auto group = moth_ui::Group::Create(m_editorLayer.GetContext(), layout);
+void EditorPanelPreview::SetLayout(std::shared_ptr<moth::ui::Layout> layout) {
+    auto group = moth::ui::Group::Create(m_editorLayer.GetContext(), layout);
     auto const& clips = layout->m_clips;
     m_clipNames.clear();
     for (auto&& clip : clips) {
@@ -28,7 +28,7 @@ void EditorPanelPreview::SetLayout(std::shared_ptr<moth_ui::Layout> layout) {
     m_root = std::move(group);
 }
 
-bool EditorPanelPreview::OnEvent(moth_ui::Event const& event) {
+bool EditorPanelPreview::OnEvent(moth::ui::Event const& event) {
     return false;
 }
 
@@ -71,11 +71,11 @@ void EditorPanelPreview::DrawContents() {
 
         auto const windowRegionMax = ImGui::GetContentRegionAvail();
         if (windowRegionMax.x > 0 && windowRegionMax.y > 0) {
-            moth_ui::IntVec2 const previewSize{ static_cast<int>(windowRegionMax.x), static_cast<int>(windowRegionMax.y) };
+            moth::ui::IntVec2 const previewSize{ static_cast<int>(windowRegionMax.x), static_cast<int>(windowRegionMax.y) };
             UpdateRenderSurface(previewSize);
             m_editorLayer.GetGraphics().SetTarget(m_renderSurface.get());
 
-            moth_ui::IntRect displayRect;
+            moth::ui::IntRect displayRect;
             displayRect.topLeft = { 0, 0 };
             displayRect.bottomRight = previewSize;
             m_root->SetScreenRect(displayRect);
@@ -88,10 +88,10 @@ void EditorPanelPreview::DrawContents() {
     }
 }
 
-void EditorPanelPreview::UpdateRenderSurface(moth_ui::IntVec2 surfaceSize) {
+void EditorPanelPreview::UpdateRenderSurface(moth::ui::IntVec2 surfaceSize) {
     if (!m_renderSurface || m_currentSurfaceSize != surfaceSize) {
         m_currentSurfaceSize = surfaceSize;
-        m_renderSurface = m_editorLayer.GetGraphics().CreateTarget(m_currentSurfaceSize.x, m_currentSurfaceSize.y);
+        m_renderSurface = m_editorLayer.GetDevice().CreateTarget(m_currentSurfaceSize.x, m_currentSurfaceSize.y);
         auto& graphics = m_editorLayer.GetGraphics();
         graphics.SetTarget(m_renderSurface.get());
         graphics.SetColor({ 0, 0, 0, 255 });

@@ -1,9 +1,9 @@
 #include "common.h"
 #include "move_discrete_keyframe_action.h"
-#include "moth_ui/layout/layout_entity.h"
-#include "moth_ui/animation/discrete_animation_track.h"
+#include "moth/ui/layout/layout_entity.h"
+#include "moth/ui/animation/discrete_animation_track.h"
 
-MoveDiscreteKeyframeAction::MoveDiscreteKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int initialFrame, int finalFrame)
+MoveDiscreteKeyframeAction::MoveDiscreteKeyframeAction(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int initialFrame, int finalFrame)
     : m_entity(entity)
     , m_target(target)
     , m_initialFrame(initialFrame)

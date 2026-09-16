@@ -58,8 +58,8 @@ void SpriteEditor::DrawFramesPane() {
             }
 
             if (ImGui::Button("+ Frame")) {
-                moth_graphics::graphics::SpriteSheet::FrameEntry newFrame;
-                newFrame.rect  = moth_graphics::MakeRect(0, 0, 32, 32);
+                moth::gfx::SpriteSheet::FrameEntry newFrame;
+                newFrame.rect  = moth::gfx::MakeRect(0, 0, 32, 32);
                 newFrame.pivot = { 0, 0 };
                 auto before = m_frames;
                 int const beforeSel = m_selectedFrame;
@@ -111,10 +111,10 @@ void SpriteEditor::DrawFramesPane() {
                 float const imgH = static_cast<float>(image->GetHeight());
                 // Clamp UVs so the preview shows a valid region even when the frame rect
                 // extends beyond the imported image.
-                moth_graphics::FloatVec2 const uv0{
+                moth::gfx::FloatVec2 const uv0{
                     std::clamp(static_cast<float>(fr.rect.x())      / imgW, 0.0f, 1.0f),
                     std::clamp(static_cast<float>(fr.rect.y())      / imgH, 0.0f, 1.0f) };
-                moth_graphics::FloatVec2 const uv1{
+                moth::gfx::FloatVec2 const uv1{
                     std::clamp(static_cast<float>(fr.rect.right())  / imgW, 0.0f, 1.0f),
                     std::clamp(static_cast<float>(fr.rect.bottom()) / imgH, 0.0f, 1.0f) };
 
@@ -138,7 +138,7 @@ void SpriteEditor::DrawFramesPane() {
                         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
                     ImVec2 const childMin = ImGui::GetWindowPos();
 
-                    image->DrawImGui({ static_cast<int>(dispW), static_cast<int>(dispH) }, uv0, uv1);
+                    imgui_ext::Image(*image, static_cast<int>(dispW), static_cast<int>(dispH), uv0, uv1);
 
                     // InvisibleButton over the whole area so ImGui owns the left-button press
                     // and the parent window cannot start a drag.
@@ -233,7 +233,7 @@ void SpriteEditor::DrawFramesPane() {
 
                 w = std::max(w, 1);
                 h = std::max(h, 1);
-                fr.rect  = moth_graphics::MakeRect(x, y, w, h);
+                fr.rect  = moth::gfx::MakeRect(x, y, w, h);
                 fr.pivot = { pivotX, pivotY };
 
                 if (anyActivated && !m_pendingFrameSnapshot.has_value()) {

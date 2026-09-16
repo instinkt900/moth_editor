@@ -2,9 +2,9 @@
 
 #include "editor_panel.h"
 #include "animation_intent.h"
-#include "moth_ui/animation/animation_track.h"
-#include "moth_ui/animation/animation_clip.h"
-#include "moth_ui/animation/animation_marker.h"
+#include "moth/ui/animation/animation_track.h"
+#include "moth/ui/animation/animation_clip.h"
+#include "moth/ui/animation/animation_marker.h"
 #include "imgui_internal.h"
 
 #include <memory>
@@ -18,25 +18,25 @@ class IEditorAction;
 // https://github.com/CedricGuillemet/ImGuizmo
 
 struct ClipContext {
-    moth_ui::AnimationClip* clip = nullptr;
-    moth_ui::AnimationClip mutableValue;
+    moth::ui::AnimationClip* clip = nullptr;
+    moth::ui::AnimationClip mutableValue;
 };
 
 struct EventContext {
-    moth_ui::AnimationMarker* event = nullptr;
-    moth_ui::AnimationMarker mutableValue;
+    moth::ui::AnimationMarker* event = nullptr;
+    moth::ui::AnimationMarker mutableValue;
 };
 
 struct KeyframeContext {
-    std::shared_ptr<moth_ui::LayoutEntity> entity;
-    moth_ui::AnimationTrack::Target target = moth_ui::AnimationTrack::Target::Unknown;
+    std::shared_ptr<moth::ui::LayoutEntity> entity;
+    moth::ui::AnimationTrack::Target target = moth::ui::AnimationTrack::Target::Unknown;
     int mutableFrame = -1;
-    moth_ui::Keyframe* current = nullptr;
+    moth::ui::Keyframe* current = nullptr;
 };
 
 struct DiscreteKeyframeContext {
-    std::shared_ptr<moth_ui::LayoutEntity> entity;
-    moth_ui::AnimationTrack::Target target = moth_ui::AnimationTrack::Target::Unknown;
+    std::shared_ptr<moth::ui::LayoutEntity> entity;
+    moth::ui::AnimationTrack::Target target = moth::ui::AnimationTrack::Target::Unknown;
     int frame = -1;
     int mutableFrame = -1;
 };
@@ -61,7 +61,7 @@ public:
 private:
     void DrawContents() override;
 
-    std::shared_ptr<moth_ui::Group> m_group = nullptr;
+    std::shared_ptr<moth::ui::Group> m_group = nullptr;
 
     struct RowOptions {
         bool expandable = false;
@@ -102,31 +102,31 @@ private:
     std::vector<ElementContext> m_selections;
     std::vector<KeyframeContext> m_pendingBoxSelections;
     std::vector<DiscreteKeyframeContext> m_pendingDiscreteBoxSelections;
-    std::vector<moth_ui::AnimationClip*> m_pendingClipBoxSelections;
-    std::vector<moth_ui::AnimationMarker*> m_pendingEventBoxSelections;
+    std::vector<moth::ui::AnimationClip*> m_pendingClipBoxSelections;
+    std::vector<moth::ui::AnimationMarker*> m_pendingEventBoxSelections;
 
     void ClearSelections();
 
-    void SelectClip(moth_ui::AnimationClip* clip);
-    void DeselectClip(moth_ui::AnimationClip* clip);
-    bool IsClipSelected(moth_ui::AnimationClip* clip);
-    ClipContext* GetSelectedClipContext(moth_ui::AnimationClip* clip);
+    void SelectClip(moth::ui::AnimationClip* clip);
+    void DeselectClip(moth::ui::AnimationClip* clip);
+    bool IsClipSelected(moth::ui::AnimationClip* clip);
+    ClipContext* GetSelectedClipContext(moth::ui::AnimationClip* clip);
 
-    void SelectEvent(moth_ui::AnimationMarker* event);
-    void DeselectEvent(moth_ui::AnimationMarker* event);
-    bool IsEventSelected(moth_ui::AnimationMarker* event);
-    EventContext* GetSelectedEventContext(moth_ui::AnimationMarker* event);
+    void SelectEvent(moth::ui::AnimationMarker* event);
+    void DeselectEvent(moth::ui::AnimationMarker* event);
+    bool IsEventSelected(moth::ui::AnimationMarker* event);
+    EventContext* GetSelectedEventContext(moth::ui::AnimationMarker* event);
 
-    void SelectKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
-    void DeselectKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
-    bool IsKeyframeSelected(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
-    KeyframeContext* GetSelectedKeyframeContext(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
-    void FilterKeyframeSelections(std::shared_ptr<moth_ui::LayoutEntity> entity, int frameNo);
+    void SelectKeyframe(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
+    void DeselectKeyframe(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
+    bool IsKeyframeSelected(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
+    KeyframeContext* GetSelectedKeyframeContext(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
+    void FilterKeyframeSelections(std::shared_ptr<moth::ui::LayoutEntity> entity, int frameNo);
 
-    void SelectDiscreteKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
-    void DeselectDiscreteKeyframe(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
-    bool IsDiscreteKeyframeSelected(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
-    DiscreteKeyframeContext* GetSelectedDiscreteKeyframeContext(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo);
+    void SelectDiscreteKeyframe(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
+    void DeselectDiscreteKeyframe(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
+    bool IsDiscreteKeyframeSelected(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
+    DiscreteKeyframeContext* GetSelectedDiscreteKeyframeContext(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo);
 
     void UpdateMouseDragging();
 
@@ -140,8 +140,8 @@ private:
         T* reference;
     };
 
-    std::optional<EditContext<moth_ui::AnimationClip>> m_pendingClipEdit;
-    std::optional<EditContext<moth_ui::AnimationMarker>> m_pendingEventEdit;
+    std::optional<EditContext<moth::ui::AnimationClip>> m_pendingClipEdit;
+    std::optional<EditContext<moth::ui::AnimationMarker>> m_pendingEventEdit;
 
     bool DrawClipPopup(std::vector<AnimationIntent>& intents);
     bool DrawEventPopup(std::vector<AnimationIntent>& intents);
@@ -151,7 +151,7 @@ private:
     void DrawFrameNumberRibbon();
     void DrawClipRow(std::vector<AnimationIntent>& intents);
     void DrawEventsRow(std::vector<AnimationIntent>& intents);
-    void DrawChildTrack(int childIndex, std::shared_ptr<moth_ui::Node> child, std::vector<AnimationIntent>& intents);
+    void DrawChildTrack(int childIndex, std::shared_ptr<moth::ui::Node> child, std::vector<AnimationIntent>& intents);
     void DrawTrackRows(std::vector<AnimationIntent>& intents);
     void DrawHorizScrollBar();
     void DrawCursor();
@@ -161,7 +161,7 @@ private:
 
     void DrawWidget();
     char const* GetChildLabel(int index) const;
-    static char const* GetTrackLabel(moth_ui::AnimationTrack::Target target);
+    static char const* GetTrackLabel(moth::ui::AnimationTrack::Target target);
 
     // Applies an intent emitted by a Draw function. Single place where
     // click/drag/popup/edit gestures mutate panel state — all selection
@@ -195,7 +195,7 @@ private:
     bool m_mouseInScrollArea = false;       // true when the mouse is within the scrolling tracks area
 
     int m_clickedChildIdx = -1;
-    moth_ui::AnimationTrack::Target m_clickedChildTarget = moth_ui::AnimationTrack::Target::Unknown;
+    moth::ui::AnimationTrack::Target m_clickedChildTarget = moth::ui::AnimationTrack::Target::Unknown;
     bool m_clickedTargetIsDiscrete = false;
 
     // Label drag-to-reorder state
@@ -217,13 +217,13 @@ private:
     static inline char const* const EventPopupName = "event_popup";
 
     struct TrackMetadata {
-        std::weak_ptr<moth_ui::Node> ptr;
+        std::weak_ptr<moth::ui::Node> ptr;
         bool expanded;
     };
-    std::map<moth_ui::Node*, TrackMetadata> m_trackMetadata;
+    std::map<moth::ui::Node*, TrackMetadata> m_trackMetadata;
 
-    bool IsExpanded(std::shared_ptr<moth_ui::Node> child) const;
-    void SetExpanded(std::shared_ptr<moth_ui::Node> child, bool expanded);
+    bool IsExpanded(std::shared_ptr<moth::ui::Node> child) const;
+    void SetExpanded(std::shared_ptr<moth::ui::Node> child, bool expanded);
     void SanitizeExtraData();
 
     void ScrollWhenDraggingOnVoid(const ImVec2& delta, ImGuiMouseButton mouse_button);

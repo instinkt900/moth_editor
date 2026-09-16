@@ -1,11 +1,11 @@
 #pragma once
 
-#include "moth_ui/utils/vector.h"
+#include "moth/ui/utils/vector.h"
 
 #include <filesystem>
 #include <memory>
 
-namespace moth_graphics::graphics {
+namespace moth::gfx {
     class ITarget;
 }
 
@@ -26,6 +26,6 @@ private:
     int m_selectedIndex = -1;
     std::filesystem::path m_pendingFontPath;
 
-    std::unique_ptr<moth_graphics::graphics::ITarget> m_previewTarget;
-    moth_ui::IntVec2 m_previewTargetSize{ 0, 0 };
+    std::unique_ptr<moth::gfx::ITarget> m_previewTarget;
+    moth::ui::IntVec2 m_previewTargetSize{ 0, 0 };
 };

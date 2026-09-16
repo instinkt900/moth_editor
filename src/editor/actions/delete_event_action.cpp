@@ -1,8 +1,8 @@
 #include "common.h"
 #include "delete_event_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
+#include "moth/ui/layout/layout_entity_group.h"
 
-DeleteEventAction::DeleteEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationMarker const& event)
+DeleteEventAction::DeleteEventAction(std::shared_ptr<moth::ui::LayoutEntityGroup> group, moth::ui::AnimationMarker const& event)
     : m_group(group)
     , m_event(event) {
 }
@@ -20,7 +20,7 @@ void DeleteEventAction::Do() {
 }
 
 void DeleteEventAction::Undo() {
-    m_group->m_events.push_back(std::make_unique<moth_ui::AnimationMarker>(m_event));
+    m_group->m_events.push_back(std::make_unique<moth::ui::AnimationMarker>(m_event));
 }
 
 void DeleteEventAction::OnImGui() {

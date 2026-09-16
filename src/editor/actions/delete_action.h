@@ -4,7 +4,7 @@
 
 class DeleteAction : public IEditorAction {
 public:
-    DeleteAction(std::shared_ptr<moth_ui::Node> deletedNode, std::shared_ptr<moth_ui::Group> parentNode);
+    DeleteAction(std::shared_ptr<moth::ui::Node> deletedNode, std::shared_ptr<moth::ui::Group> parentNode);
     ~DeleteAction() override;
 
     void Do() override;
@@ -13,7 +13,7 @@ public:
     void OnImGui() override;
 
 protected:
-    std::shared_ptr<moth_ui::Node> m_deletedNode;
-    std::shared_ptr<moth_ui::Group> m_parentNode;
+    std::shared_ptr<moth::ui::Node> m_deletedNode;
+    std::shared_ptr<moth::ui::Group> m_parentNode;
     int m_originalIndex = 0;
 };

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "moth_packer/packer.h"
-#include "moth_graphics/graphics/image.h"
+#include "moth/packer/packer.h"
+#include "moth/graphics/graphics/image.h"
 
 #include <array>
 #include <filesystem>
@@ -34,9 +34,9 @@ private:
     bool m_open = false;
 
     // ---- Input state ----
-    std::vector<moth_packer::ImageDetails> m_inputImages;
+    std::vector<moth::packer::ImageDetails> m_inputImages;
     int m_selectedInput = -1;
-    moth_graphics::graphics::Image m_inputPreview;
+    moth::gfx::Image m_inputPreview;
     float m_inputZoom = 0.0f;  // 0 = fit-to-window; >0 = absolute scale
 
     // Pack options (persisted across pack/save)
@@ -45,25 +45,25 @@ private:
     int m_maxWidth   = 4096;
     int m_maxHeight  = 4096;
     int m_padding    = 0;
-    moth_packer::PaddingType  m_paddingType   = moth_packer::PaddingType::Color;
+    moth::packer::PaddingType  m_paddingType   = moth::packer::PaddingType::Color;
     uint32_t                  m_paddingColor  = 0x00000000;  // RRGGBBAA
     char m_paddingColorHex[9] = {"00000000"};  // persistent edit buffer for the hex InputText
-    moth_packer::AtlasFormat  m_outputFormat  = moth_packer::AtlasFormat::PNG;
+    moth::packer::AtlasFormat  m_outputFormat  = moth::packer::AtlasFormat::PNG;
     int m_jpegQuality = 90;
 
     // Flipbook options
     bool m_flipbookMode = false;
     int  fps          = 12;
-    moth_packer::LoopType loopType = moth_packer::LoopType::Loop;
+    moth::packer::LoopType loopType = moth::packer::LoopType::Loop;
     char m_clipName[64] = {"default"};
 
     // Last options used for pack — reused verbatim by Save (with outputPath/filename swapped)
-    moth_packer::PackOptions m_lastPackOpts;
+    moth::packer::PackOptions m_lastPackOpts;
 
     // ---- Output state ----
     struct AtlasPreview {
         std::filesystem::path tempPath;
-        moth_graphics::graphics::Image image;
+        moth::gfx::Image image;
         int width  = 0;
         int height = 0;
         std::vector<std::string>          imageNames;

@@ -1,24 +1,22 @@
 #include "common.h"
 #include "editor_panel_canvas.h"
 #include "editor/editor_layer.h"
-#include "moth_ui/nodes/group.h"
-#include "moth_ui/nodes/node.h"
-#include "moth_ui/layout/layout_entity.h"
+#include "moth/ui/nodes/group.h"
+#include "moth/ui/nodes/node.h"
+#include "moth/ui/layout/layout_entity.h"
 #include "editor/bounds_widget.h"
-#include "moth_ui/events/event_mouse.h"
+#include "moth/ui/events/event_mouse.h"
 #include "imgui_internal.h"
 #include "../element_utils.h"
-#include "../image_identity.h"
-#include "moth_ui/layout/layout_entity_ref.h"
-#include "moth_ui/asset_id.h"
-#include "moth_ui/layout/layout_entity_image.h"
-#include "moth_ui/layout/layout_entity_flipbook.h"
-#include "moth_ui/layout/layout.h"
+#include "moth/ui/layout/layout_entity_ref.h"
+#include "moth/ui/layout/layout_entity_image.h"
+#include "moth/ui/layout/layout_entity_flipbook.h"
+#include "moth/ui/layout/layout.h"
 #include "../actions/composite_action.h"
 #include "editor_application.h"
-#include "moth_ui/graphics/itarget.h"
-#include "moth_graphics/graphics/texture_factory.h"
-#include "moth_ui/utils/transform.h"
+#include "moth/ui/graphics/itarget.h"
+#include "moth/graphics/graphics/texture_factory.h"
+#include "moth/ui/utils/transform.h"
 
 #include <cmath>
 
@@ -27,28 +25,27 @@ namespace {
     int constexpr s_maxZoom = 800;
 
     // Rotate point around the node's pivot point (in world/screen space)
-    moth_ui::FloatVec2 RotateAroundPivot(moth_ui::FloatVec2 const& point, moth_ui::FloatVec2 const& pivot, float angleDeg) {
-        float const rad = angleDeg * moth_ui::kDegToRad;
-        float const c = std::cos(rad);
-        float const s = std::sin(rad);
+    moth::ui::FloatVec2 RotateAroundPivot(moth::ui::FloatVec2 const& point, moth::ui::FloatVec2 const& pivot, float angleRad) {
+        float const c = std::cos(angleRad);
+        float const s = std::sin(angleRad);
         auto const offset = point - pivot;
-        return pivot + moth_ui::FloatVec2{ (c * offset.x) - (s * offset.y), (s * offset.x) + (c * offset.y) };
+        return pivot + moth::ui::FloatVec2{ (c * offset.x) - (s * offset.y), (s * offset.x) + (c * offset.y) };
     }
 
-    moth_ui::FloatVec2 GetNodePivotWorld(moth_ui::Node const& node) {
-        auto const bounds = static_cast<moth_ui::FloatRect>(node.GetScreenRect());
-        auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+    moth::ui::FloatVec2 GetNodePivotWorld(moth::ui::Node const& node) {
+        auto const bounds = static_cast<moth::ui::FloatRect>(node.GetScreenRect());
+        auto const dims = moth::ui::FloatVec2{ bounds.w(), bounds.h() };
         auto const pivot = node.GetPivot();
         return bounds.topLeft + dims * pivot;
     }
 
     // Returns true if worldPoint lies within the (possibly rotated) node bounds
-    bool IsInNodeBounds(moth_ui::Node const& node, moth_ui::FloatVec2 const& worldPoint) {
+    bool IsInNodeBounds(moth::ui::Node const& node, moth::ui::FloatVec2 const& worldPoint) {
         auto const pivotWorld = GetNodePivotWorld(node);
         // Rotate the point backward to unrotated space
         auto const unrotatedPoint = RotateAroundPivot(worldPoint, pivotWorld, -node.GetRotation());
         auto const screenRect = node.GetScreenRect();
-        return moth_ui::IsInRect(static_cast<moth_ui::IntVec2>(unrotatedPoint), screenRect);
+        return moth::ui::IsInRect(static_cast<moth::ui::IntVec2>(unrotatedPoint), screenRect);
     }
 }
 
@@ -92,9 +89,9 @@ void EditorPanelCanvas::DrawContents() {
 
     // Record canvas origin here so ConvertSpace reflects where the image actually starts
     ImVec2 const imageOrigin = ImGui::GetCursorScreenPos();
-    m_canvasWindowPos = moth_ui::IntVec2{ static_cast<int>(imageOrigin.x), static_cast<int>(imageOrigin.y) };
+    m_canvasWindowPos = moth::ui::IntVec2{ static_cast<int>(imageOrigin.x), static_cast<int>(imageOrigin.y) };
 
-    moth_ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
+    moth::ui::IntVec2 const windowRegionSize{ static_cast<int>(ImGui::GetContentRegionAvail().x), static_cast<int>(ImGui::GetContentRegionAvail().y) };
 
     UpdateDisplayTexture(windowRegionSize);
     imgui_ext::Image(m_displayTexture->GetImage(), windowRegionSize.x, windowRegionSize.y);
@@ -106,10 +103,10 @@ void EditorPanelCanvas::DrawContents() {
         auto const& selection = m_editorLayer.GetSelection();
         for (auto&& node : selection) {
             if (node->IsVisible() && node->GetParent() != nullptr) {
-                auto const srf = static_cast<moth_ui::FloatRect>(node->GetScreenRect());
+                auto const srf = static_cast<moth::ui::FloatRect>(node->GetScreenRect());
                 auto const pivotWorld = GetNodePivotWorld(*node);
                 float const rot = node->GetRotation();
-                std::array<moth_ui::FloatVec2, 4> const worldCorners = {
+                std::array<moth::ui::FloatVec2, 4> const worldCorners = {
                     RotateAroundPivot(srf.topLeft, pivotWorld, rot),
                     RotateAroundPivot({ srf.bottomRight.x, srf.topLeft.y }, pivotWorld, rot),
                     RotateAroundPivot(srf.bottomRight, pivotWorld, rot),
@@ -149,11 +146,11 @@ void EditorPanelCanvas::DrawContents() {
     UpdateInput();
 }
 
-void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize) {
+void EditorPanelCanvas::UpdateDisplayTexture(moth::ui::IntVec2 const& displaySize) {
     auto& graphics = m_editorLayer.GetGraphics();
 
     if (!m_displayTexture || m_canvasWindowSize != displaySize) {
-        m_displayTexture = graphics.CreateTarget(displaySize.x, displaySize.y);
+        m_displayTexture = m_editorLayer.GetDevice().CreateTarget(displaySize.x, displaySize.y);
     }
 
     m_canvasWindowSize = displaySize;
@@ -172,7 +169,7 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
     // clear the canvas area
     {
         graphics.SetColor(m_editorLayer.GetConfig().CanvasColor);
-        moth_ui::IntRect canvasRect;
+        moth::ui::IntRect canvasRect;
         canvasRect.topLeft = { 0, 0 };
         canvasRect.bottomRight = canvasSize;
         auto const rect = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect);
@@ -185,21 +182,21 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
         if (m_referenceImagePath != config.ReferenceImagePath) {
             m_referenceImagePath = config.ReferenceImagePath;
             if (m_referenceImagePath.empty()) {
-                m_referenceImage = moth_graphics::graphics::Image{};
+                m_referenceImage = moth::gfx::Image{};
             } else {
                 auto& textures = m_editorLayer.GetAssetContext().GetTextureFactory();
                 std::filesystem::path const path = m_referenceImagePath;
                 if (auto texture = textures.GetTexture(path)) {
-                    m_referenceImage = moth_graphics::graphics::Image{ texture, textures.GetTextureRect(path) };
+                    m_referenceImage = moth::gfx::Image{ texture, textures.GetTextureRect(path) };
                 } else {
-                    m_referenceImage = moth_graphics::graphics::Image{};
+                    m_referenceImage = moth::gfx::Image{};
                 }
             }
         }
         if (m_referenceImage && config.ReferenceImageVisible && config.ReferenceImageOpacity > 0.0f) {
-            graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
-            graphics.SetColor(moth_ui::Color{ 1.0f, 1.0f, 1.0f, config.ReferenceImageOpacity });
-            moth_ui::IntRect canvasRect;
+            graphics.SetBlendMode(moth::ui::BlendMode::Alpha);
+            graphics.SetColor(moth::ui::Color{ 1.0f, 1.0f, 1.0f, config.ReferenceImageOpacity });
+            moth::ui::IntRect canvasRect;
             canvasRect.topLeft = { 0, 0 };
             canvasRect.bottomRight = canvasSize;
             auto const destRect = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, int>(canvasRect);
@@ -209,14 +206,14 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
 
     // grid lines
     {
-        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
+        graphics.SetBlendMode(moth::ui::BlendMode::Alpha);
         auto const& gridSpacing = m_editorLayer.GetConfig().CanvasGridSpacing;
         auto const& gridMajorFactor = m_editorLayer.GetConfig().CanvasGridMajorFactor;
         if (gridSpacing > 0) {
             int i = 1;
             for (int x = gridSpacing; x < canvasSize.x; x += gridSpacing, ++i) {
-                moth_ui::IntVec2 const p0{ x, 0 };
-                moth_ui::IntVec2 const p1{ x, canvasSize.y };
+                moth::ui::IntVec2 const p0{ x, 0 };
+                moth::ui::IntVec2 const p1{ x, canvasSize.y };
                 auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
                 auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
                 if ((i % gridMajorFactor) == 0) {
@@ -228,8 +225,8 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
             }
             i = 1;
             for (int y = gridSpacing; y < canvasSize.y; y += gridSpacing, ++i) {
-                moth_ui::IntVec2 const p0{ 0, y };
-                moth_ui::IntVec2 const p1{ canvasSize.x, y };
+                moth::ui::IntVec2 const p0{ 0, y };
+                moth::ui::IntVec2 const p1{ canvasSize.x, y };
                 auto const p0Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p0);
                 auto const p1Scaled = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(p1);
                 if ((i % gridMajorFactor) == 0) {
@@ -244,9 +241,9 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
 
     // outline the canvas
     {
-        graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
+        graphics.SetBlendMode(moth::ui::BlendMode::Alpha);
         graphics.SetColor(m_editorLayer.GetConfig().CanvasOutlineColor);
-        moth_ui::IntRect canvasRect;
+        moth::ui::IntRect canvasRect;
         canvasRect.topLeft = { 0, 0 };
         canvasRect.bottomRight = canvasSize;
         auto const rect = ConvertSpace<CoordSpace::CanvasSpace, CoordSpace::WorldSpace, float>(canvasRect);
@@ -261,22 +258,22 @@ void EditorPanelCanvas::UpdateDisplayTexture(moth_ui::IntVec2 const& displaySize
         auto const newRenderOffsetX = static_cast<int>(static_cast<float>(m_canvasOffset.x) / scaleFactor);
         auto const newRenderOffsetY = static_cast<int>(static_cast<float>(m_canvasOffset.y) / scaleFactor);
 
-        graphics.SetBlendMode(moth_ui::BlendMode::Replace);
-        graphics.SetLogicalSize(moth_graphics::IntVec2{ newRenderWidth, newRenderHeight });
+        graphics.SetBlendMode(moth::ui::BlendMode::Replace);
+        graphics.SetLogicalSize(moth::gfx::IntVec2{ newRenderWidth, newRenderHeight });
         {
 
             if (auto const root = m_editorLayer.GetRoot()) {
-                moth_ui::IntRect const guideRect = moth_ui::MakeRect(
+                moth::ui::IntRect const guideRect = moth::ui::MakeRect(
                     newRenderOffsetX + ((newRenderWidth - canvasSize.x) / 2),
                     newRenderOffsetY + ((newRenderHeight - canvasSize.y) / 2),
                     canvasSize.x,
                     canvasSize.y);
                 root->SetScreenRect(guideRect);
                 root->Draw();
-                graphics.SetBlendMode(moth_ui::BlendMode::Replace); // reset after tree draw
+                graphics.SetBlendMode(moth::ui::BlendMode::Replace); // reset after tree draw
             }
         }
-        graphics.SetLogicalSize(moth_graphics::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
+        graphics.SetLogicalSize(moth::gfx::IntVec2{ m_canvasWindowSize.x, m_canvasWindowSize.y }); // reset logical sizing
     }
 
     graphics.SetTarget(nullptr);
@@ -289,41 +286,41 @@ void EditorPanelCanvas::EndPanel() {
     auto const windowID = ImGui::GetCurrentWindow()->ID;
 
     if (ImGui::BeginDragDropTargetCustom(windowContentRect, windowID)) {
-        auto const mousePos = moth_ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+        auto const mousePos = moth::ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
         auto const canvasPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::CanvasSpace, int>(mousePos);
 
         if (auto const* const payload = ImGui::AcceptDragDropPayload("layout_path", 0)) {
             std::string* layoutPath = static_cast<std::string*>(payload->Data);
-            auto [newLayout, loadResult] = moth_ui::Layout::Load(layoutPath->c_str());
-            if (loadResult == moth_ui::Layout::LoadResult::Success) {
-                moth_ui::LayoutRect bounds;
+            auto [newLayout, loadResult] = moth::ui::Layout::Load(layoutPath->c_str());
+            if (loadResult == moth::ui::Layout::LoadResult::Success) {
+                moth::ui::LayoutRect bounds;
                 bounds.anchor.topLeft = { 0, 0 };
                 bounds.anchor.bottomRight = { 0, 0 };
                 bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
                 bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
-                AddEntityWithBounds<moth_ui::LayoutEntityRef>(m_editorLayer, bounds, *newLayout);
+                AddEntityWithBounds<moth::ui::LayoutEntityRef>(m_editorLayer, bounds, *newLayout);
             }
         } else if (auto const* const payload = ImGui::AcceptDragDropPayload("image_path", 0)) {
             std::string* imagePath = static_cast<std::string*>(payload->Data);
-            moth_ui::LayoutRect bounds;
+            moth::ui::LayoutRect bounds;
             bounds.anchor.topLeft = { 0, 0 };
             bounds.anchor.bottomRight = { 0, 0 };
             bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
             bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
-            AddEntityWithBounds<moth_ui::LayoutEntityImage>(m_editorLayer, bounds,
-                                                           MakeImageId(*imagePath, m_editorLayer.GetCurrentLayoutPath()));
+            AddEntityWithBounds<moth::ui::LayoutEntityImage>(m_editorLayer, bounds,
+                                                           std::filesystem::path{ *imagePath });
         } else if (auto const* const payload = ImGui::AcceptDragDropPayload("flipbook_path", 0)) {
             std::string* flipbookPath = static_cast<std::string*>(payload->Data);
             std::filesystem::path const flipbookFsPath{ *flipbookPath };
             auto* factory = m_editorLayer.GetContext().GetFlipbookFactory();
             bool const valid = factory != nullptr && factory->GetFlipbook(flipbookFsPath) != nullptr;
             if (valid) {
-                moth_ui::LayoutRect bounds;
+                moth::ui::LayoutRect bounds;
                 bounds.anchor.topLeft = { 0, 0 };
                 bounds.anchor.bottomRight = { 0, 0 };
                 bounds.offset.topLeft = { canvasPosition.x, canvasPosition.y };
                 bounds.offset.bottomRight = { canvasPosition.x + 100, canvasPosition.y + 100 };
-                AddEntityWithBounds<moth_ui::LayoutEntityFlipbook>(m_editorLayer, bounds, flipbookFsPath);
+                AddEntityWithBounds<moth::ui::LayoutEntityFlipbook>(m_editorLayer, bounds, flipbookFsPath);
             } else {
                 m_editorLayer.ShowError(fmt::format("Failed to load flipbook: {}", flipbookFsPath.filename().string()));
             }
@@ -334,7 +331,7 @@ void EditorPanelCanvas::EndPanel() {
     ImGui::End();
 }
 
-moth_ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth_ui::IntVec2 const& original) {
+moth::ui::IntVec2 EditorPanelCanvas::SnapToGrid(moth::ui::IntVec2 const& original) {
     auto const& config = m_editorLayer.GetConfig();
     if (!config.SnapToGrid) {
         return original;
@@ -354,7 +351,7 @@ void EditorPanelCanvas::ResetView() {
     m_canvasZoom = 100;
 }
 
-void EditorPanelCanvas::BeginSelectionGrab(moth_ui::IntVec2 const& worldPosition) {
+void EditorPanelCanvas::BeginSelectionGrab(moth::ui::IntVec2 const& worldPosition) {
     m_holdingSelection = true;
     m_grabPosition = SnapToGrid(worldPosition);
     m_editorLayer.BeginEditBounds();
@@ -365,8 +362,8 @@ void EditorPanelCanvas::EndSelectionGrab() {
     m_holdingSelection = false;
 }
 
-void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
-    bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseDown(moth_ui::MouseButton::Left, appPosition));
+void EditorPanelCanvas::OnMouseClicked(moth::ui::IntVec2 const& appPosition) {
+    bool handled = m_boundsWidget->OnEvent(moth::ui::EventMouseDown(moth::ui::MouseButton::Left, appPosition));
 
     if (!handled && !m_holdingSelection) {
         auto const worldPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(appPosition);
@@ -388,7 +385,7 @@ void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
             // next see if we clicked on an existing selection
             auto const selection = m_editorLayer.GetSelection();
             for (auto&& node : selection) {
-                if (IsInNodeBounds(*node, static_cast<moth_ui::FloatVec2>(worldPosition))) {
+                if (IsInNodeBounds(*node, static_cast<moth::ui::FloatVec2>(worldPosition))) {
                     // clicked on an existing selection
                     clickedSelection = true;
                     break;
@@ -410,8 +407,8 @@ void EditorPanelCanvas::OnMouseClicked(moth_ui::IntVec2 const& appPosition) {
     }
 }
 
-void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
-    bool handled = m_boundsWidget->OnEvent(moth_ui::EventMouseUp(moth_ui::MouseButton::Left, appPosition));
+void EditorPanelCanvas::OnMouseReleased(moth::ui::IntVec2 const& appPosition) {
+    bool handled = m_boundsWidget->OnEvent(moth::ui::EventMouseUp(moth::ui::MouseButton::Left, appPosition));
 
     if (m_holdingSelection) {
         EndSelectionGrab();
@@ -425,9 +422,9 @@ void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
         auto const minY = std::min(m_dragSelectStart.y, m_dragSelectEnd.y);
         auto const maxY = std::max(m_dragSelectStart.y, m_dragSelectEnd.y);
 
-        moth_ui::IntRect selectionRect;
-        selectionRect.topLeft = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(moth_ui::IntVec2{ minX, minY });
-        selectionRect.bottomRight = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(moth_ui::IntVec2{ maxX, maxY });
+        moth::ui::IntRect selectionRect;
+        selectionRect.topLeft = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(moth::ui::IntVec2{ minX, minY });
+        selectionRect.bottomRight = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(moth::ui::IntVec2{ maxX, maxY });
 
         if (!ImGui::GetIO().KeyCtrl) {
             m_editorLayer.ClearSelection();
@@ -438,8 +435,8 @@ void EditorPanelCanvas::OnMouseReleased(moth_ui::IntVec2 const& appPosition) {
     m_dragSelecting = false;
 }
 
-void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
-    m_boundsWidget->OnEvent(moth_ui::EventMouseMove(appPosition, static_cast<moth_ui::FloatVec2>(appPosition - m_lastMousePos)));
+void EditorPanelCanvas::OnMouseMoved(moth::ui::IntVec2 const& appPosition) {
+    m_boundsWidget->OnEvent(moth::ui::EventMouseMove(appPosition, static_cast<moth::ui::FloatVec2>(appPosition - m_lastMousePos)));
 
     if (m_holdingSelection) {
         auto const worldPosition = ConvertSpace<CoordSpace::AppSpace, CoordSpace::WorldSpace, int>(appPosition);
@@ -447,7 +444,7 @@ void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
         auto const delta = newPosition - m_grabPosition;
         m_grabPosition = newPosition;
 
-        auto const floatDelta = static_cast<moth_ui::FloatVec2>(delta);
+        auto const floatDelta = static_cast<moth::ui::FloatVec2>(delta);
         bool const shiftHeld = ImGui::GetIO().KeyShift;
 
         auto const selection = m_editorLayer.GetSelection();
@@ -456,8 +453,8 @@ void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
             if (shiftHeld) {
                 auto const* parent = node->GetParent();
                 if (parent != nullptr) {
-                    auto const parentRect = static_cast<moth_ui::FloatRect>(parent->GetScreenRect());
-                    auto const parentDimensions = moth_ui::FloatVec2{ parentRect.w(), parentRect.h() };
+                    auto const parentRect = static_cast<moth::ui::FloatRect>(parent->GetScreenRect());
+                    auto const parentDimensions = moth::ui::FloatVec2{ parentRect.w(), parentRect.h() };
                     if (parentDimensions.x > 0.0f && parentDimensions.y > 0.0f) {
                         auto const anchorDelta = floatDelta / parentDimensions;
                         bounds.anchor.topLeft += anchorDelta;
@@ -478,9 +475,9 @@ void EditorPanelCanvas::OnMouseMoved(moth_ui::IntVec2 const& appPosition) {
     }
 }
 
-std::shared_ptr<moth_ui::Node> EditorPanelCanvas::GetAtPoint(moth_ui::IntVec2 const& selectionPoint) {
+std::shared_ptr<moth::ui::Node> EditorPanelCanvas::GetAtPoint(moth::ui::IntVec2 const& selectionPoint) {
     auto const& children = m_editorLayer.GetRoot()->GetChildren();
-    auto const worldPoint = static_cast<moth_ui::FloatVec2>(selectionPoint);
+    auto const worldPoint = static_cast<moth::ui::FloatVec2>(selectionPoint);
     for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
         auto const& child = *it;
         if (child->IsVisible() && !m_editorLayer.IsLocked(child)) {
@@ -492,13 +489,13 @@ std::shared_ptr<moth_ui::Node> EditorPanelCanvas::GetAtPoint(moth_ui::IntVec2 co
     return nullptr;
 }
 
-void EditorPanelCanvas::SelectInRect(moth_ui::IntRect const& selectionRect) {
+void EditorPanelCanvas::SelectInRect(moth::ui::IntRect const& selectionRect) {
     auto const& children = m_editorLayer.GetRoot()->GetChildren();
     for (auto it = std::rbegin(children); it != std::rend(children); ++it) {
         auto const& child = *it;
         if (child->IsVisible() && !m_editorLayer.IsLocked(child)) {
             auto const& screenRect = child->GetScreenRect();
-            if (moth_ui::Intersects(selectionRect, screenRect)) {
+            if (moth::ui::Intersects(selectionRect, screenRect)) {
                 if (m_editorLayer.IsSelected(child)) {
                     m_editorLayer.RemoveSelection(child);
                 } else {
@@ -510,7 +507,7 @@ void EditorPanelCanvas::SelectInRect(moth_ui::IntRect const& selectionRect) {
 }
 
 void EditorPanelCanvas::UpdateInput() {
-    auto const mousePos = moth_ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
+    auto const mousePos = moth::ui::IntVec2{ ImGui::GetMousePos().x, ImGui::GetMousePos().y };
 
     if (ImGui::IsWindowHovered()) {
         float const scaleFactor = static_cast<float>(m_canvasZoom) / 100.0f;
@@ -521,7 +518,7 @@ void EditorPanelCanvas::UpdateInput() {
                 m_draggingCanvas = true;
                 m_initialCanvasOffset = m_canvasOffset;
             }
-            auto const dragDelta = moth_ui::FloatVec2{
+            auto const dragDelta = moth::ui::FloatVec2{
                 ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).x,
                 ImGui::GetMouseDragDelta(ImGuiMouseButton_Middle).y };
             m_canvasOffset = m_initialCanvasOffset + dragDelta;
@@ -548,10 +545,10 @@ void EditorPanelCanvas::UpdateInput() {
         }
 
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            OnMouseClicked(moth_ui::IntVec2{ mousePos.x, mousePos.y });
+            OnMouseClicked(moth::ui::IntVec2{ mousePos.x, mousePos.y });
         }
         if (m_lastMousePos != mousePos) {
-            OnMouseMoved(moth_ui::IntVec2{ mousePos.x, mousePos.y });
+            OnMouseMoved(moth::ui::IntVec2{ mousePos.x, mousePos.y });
             m_lastMousePos = mousePos;
         }
     }
@@ -560,7 +557,7 @@ void EditorPanelCanvas::UpdateInput() {
         auto const& selection = m_editorLayer.GetSelection();
         if (!selection.empty()) {
             float const nudgeStep = ImGui::GetIO().KeyCtrl ? 10.0f : 1.0f;
-            moth_ui::FloatVec2 nudge{ 0.0f, 0.0f };
+            moth::ui::FloatVec2 nudge{ 0.0f, 0.0f };
             if (ImGui::IsKeyPressed(ImGuiKey_LeftArrow)) {
                 nudge.x = -nudgeStep;
             } else if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) {
@@ -585,6 +582,6 @@ void EditorPanelCanvas::UpdateInput() {
 
     // always want to accept released so we dont end up stuck down
     if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-        OnMouseReleased(moth_ui::IntVec2{ mousePos.x, mousePos.y });
+        OnMouseReleased(moth::ui::IntVec2{ mousePos.x, mousePos.y });
     }
 }

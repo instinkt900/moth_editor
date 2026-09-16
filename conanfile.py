@@ -19,17 +19,27 @@ class MothUIEditor(ConanFile):
             self.version = load(self, "version.txt").strip()
 
     def requirements(self):
-        # spdlog first, and declared here rather than taken through
-        # moth_graphics. It pins one fmt exactly, and moth_ui asks for a range
-        # that floats above that pin. Whichever of the two Conan resolves first
-        # wins, so a graph that meets moth_ui first picks the newest fmt and
-        # then conflicts with spdlog. Naming spdlog here puts its exact pin in
-        # the graph before any range is resolved against it. The Camina engine
-        # resolves for the same reason. See instinkt900/camina#392.
-        self.requires("spdlog/[~1.17]")
-        self.requires("moth_ui/[>=1.8 <2]")
-        self.requires("moth_graphics/[>=1.3 <2]")
+        # The toolkit modules the editor includes directly. moth_bridge pulls
+        # core/gfx/ui with transitive_headers, but they are named here too because
+        # the editor includes their headers rather than reaching them by accident.
+        #
+        # spdlog is no longer declared here. It used to be listed first to pin fmt
+        # before moth_ui's range floated above it (see instinkt900/camina#392), but
+        # moth_core now requires fmt/[~10.2] and spdlog/[~1.14] together, so the
+        # conflict is resolved inside the module and an editor-side pin would only
+        # fight it. spdlog reaches this build through moth_core.
+        self.requires("moth_core/[>=0.1 <1]")
+        self.requires("moth_ui/[>=2 <3]")
+        self.requires("moth_graphics/[>=2 <3]")
+        self.requires("moth_bridge/[>=0.1 <1]")
         self.requires("moth_packer/[>=1 <2]")
+
+    def configure(self):
+        # The texture packer panel collects images by walking moth::ui layout files,
+        # and those collectors are compiled out unless moth_packer is built with UI
+        # support (they are gated on MOTH_PACKER_HAS_UI in both the header and the
+        # library). The option defaults to False, so it has to be asked for here.
+        self.options["moth_packer"].with_ui = True
 
     def system_requirements(self):
         if self.settings.os == "Linux":

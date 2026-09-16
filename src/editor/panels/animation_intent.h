@@ -1,15 +1,15 @@
 #pragma once
 
-#include "moth_ui/animation/animation_clip.h"
-#include "moth_ui/animation/animation_marker.h"
-#include "moth_ui/animation/animation_track.h"
-#include "moth_ui/utils/interp.h"
+#include "moth/ui/animation/animation_clip.h"
+#include "moth/ui/animation/animation_marker.h"
+#include "moth/ui/animation/animation_track.h"
+#include "moth/ui/utils/interp.h"
 
 #include <memory>
 #include <string>
 #include <variant>
 
-namespace moth_ui {
+namespace moth::ui {
     class Node;
     class LayoutEntity;
 }
@@ -18,12 +18,12 @@ namespace anim_intent {
     // Selects a clip. If additive (Ctrl held), preserves existing selection;
     // otherwise clears prior selection first unless the clip was already
     // selected. Single intent so Apply owns the click-policy in one place.
-    struct ClickClip { moth_ui::AnimationClip* clip; bool additive; };
+    struct ClickClip { moth::ui::AnimationClip* clip; bool additive; };
 
     // Selects an event marker. If additive (Ctrl held), preserves existing
     // selection; otherwise clears prior selection unconditionally before
     // selecting (note: the policy differs from ClickClip).
-    struct ClickEvent { moth_ui::AnimationMarker* event; bool additive; };
+    struct ClickEvent { moth::ui::AnimationMarker* event; bool additive; };
 
     // Marks the current click as handled so the panel-level "unhandled click in
     // track area" path doesn't fall through to starting a box-select.
@@ -56,23 +56,23 @@ namespace anim_intent {
 
     // Commits an in-progress clip edit (from the popup's Edit menu) as a
     // ModifyClipAction. `reference` must still exist in m_clips when applied.
-    struct CommitClipEdit { moth_ui::AnimationClip* reference; moth_ui::AnimationClip newValue; };
+    struct CommitClipEdit { moth::ui::AnimationClip* reference; moth::ui::AnimationClip newValue; };
 
     // Commits an in-progress event edit as a ModifyEventAction.
-    struct CommitEventEdit { moth_ui::AnimationMarker* reference; moth_ui::AnimationMarker newValue; };
+    struct CommitEventEdit { moth::ui::AnimationMarker* reference; moth::ui::AnimationMarker newValue; };
 
     // Click on a child label in the track header column: toggles entity
     // selection (and clears prior selection when !additive). The label-drag
     // source bookkeeping (m_labelDragSourceIdx) stays direct view state.
-    struct ClickChildLabel { std::shared_ptr<moth_ui::Node> child; bool additive; };
+    struct ClickChildLabel { std::shared_ptr<moth::ui::Node> child; bool additive; };
 
     // Select a continuous-track keyframe. The expanded flag selects between
     // ClearSelections (expanded) and FilterKeyframeSelections (collapsed) when
     // the keyframe wasn't already selected and !additive.
-    struct ClickKeyframe { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; bool additive; bool expanded; };
+    struct ClickKeyframe { std::shared_ptr<moth::ui::LayoutEntity> entity; moth::ui::AnimationTrack::Target target; int frame; bool additive; bool expanded; };
 
     // Same as ClickKeyframe but for discrete-track keyframes.
-    struct ClickDiscreteKeyframe { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; bool additive; bool expanded; };
+    struct ClickDiscreteKeyframe { std::shared_ptr<moth::ui::LayoutEntity> entity; moth::ui::AnimationTrack::Target target; int frame; bool additive; bool expanded; };
 
     // Start dragging the current keyframe selection. altDrag seeds the
     // duplicate-on-drag flag with the alt-modifier state at gesture start.
@@ -81,27 +81,27 @@ namespace anim_intent {
     // Open the keyframe right-click context menu. isDiscrete picks the discrete
     // vs continuous branch inside the popup; target == Unknown means the click
     // hit a collapsed main row.
-    struct OpenKeyframePopup { int childIndex; moth_ui::AnimationTrack::Target target; bool isDiscrete; int atFrame; };
+    struct OpenKeyframePopup { int childIndex; moth::ui::AnimationTrack::Target target; bool isDiscrete; int atFrame; };
 
     // Commit a child-label drag-to-reorder gesture as a ChangeIndexAction.
-    struct CommitLabelReorder { std::shared_ptr<moth_ui::Node> node; int sourceIdx; int newIndex; };
+    struct CommitLabelReorder { std::shared_ptr<moth::ui::Node> node; int sourceIdx; int newIndex; };
 
     // Add a new discrete keyframe at the popup's frame. Apply re-reads the
     // track to seed the value from whatever was active there.
-    struct AddDiscreteKeyframe { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; };
+    struct AddDiscreteKeyframe { std::shared_ptr<moth::ui::LayoutEntity> entity; moth::ui::AnimationTrack::Target target; int frame; };
 
     // Add one or more continuous keyframes. target == Unknown means the click
     // was on a collapsed main row — Apply expands it to every continuous
     // target without an existing keyframe at this frame.
-    struct AddContinuousKeyframes { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; };
+    struct AddContinuousKeyframes { std::shared_ptr<moth::ui::LayoutEntity> entity; moth::ui::AnimationTrack::Target target; int frame; };
 
     // Replace a discrete keyframe's value (uses AddDiscreteKeyframeAction —
     // the action overwrites when a keyframe already exists at the frame).
-    struct SetDiscreteKeyframeValue { std::shared_ptr<moth_ui::LayoutEntity> entity; moth_ui::AnimationTrack::Target target; int frame; std::string value; };
+    struct SetDiscreteKeyframeValue { std::shared_ptr<moth::ui::LayoutEntity> entity; moth::ui::AnimationTrack::Target target; int frame; std::string value; };
 
     // Change the interpType of every continuous keyframe in the current
     // selection set, as one composite undoable action.
-    struct CommitInterpChange { moth_ui::InterpType interpType; };
+    struct CommitInterpChange { moth::ui::InterpType interpType; };
 }
 
 using AnimationIntent = std::variant<

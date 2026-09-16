@@ -1,7 +1,7 @@
 #pragma once
 
-#include "moth_ui/utils/color.h"
-#include "moth_ui/utils/vector_serialization.h"
+#include "moth/ui/utils/color.h"
+#include "moth/ui/utils/vector_serialization.h"
 
 #include <string>
 #include <vector>
@@ -13,17 +13,17 @@ struct EditorConfig {
         int height = 0;
     };
 
-    moth_ui::Color CanvasBackgroundColor = moth_ui::Color{ 0.67f, 0.67f, 0.67f, 1.0f };
-    moth_ui::Color CanvasOutlineColor = moth_ui::Color{ 0.0f, 0.0f, 0.0f, 1.0f };
-    moth_ui::Color CanvasColor = moth_ui::Color{ 1.0f, 1.0f, 1.0f, 1.0f };
-    moth_ui::Color CanvasGridColorMinor = moth_ui::Color{ 0.0f, 0.0f, 0.0f, 0.08f };
-    moth_ui::Color CanvasGridColorMajor = moth_ui::Color{ 0.0f, 0.0f, 0.0f, 0.23f };
-    moth_ui::Color SelectionColor = moth_ui::Color{ 0.0f, 0.0f, 1.0f, 1.0f };
-    moth_ui::Color SelectionSliceColor = moth_ui::Color{ 0.0f, 0.27f, 0.47f, 1.0f };
-    moth_ui::Color PreviewSourceRectColor = moth_ui::Color{ 1.0f, 1.0f, 0.0f, 1.0f };
-    moth_ui::Color PreviewImageSliceColor = moth_ui::Color{ 0.0f, 0.27f, 0.47f, 1.0f };
+    moth::ui::Color CanvasBackgroundColor = moth::ui::Color{ 0.67f, 0.67f, 0.67f, 1.0f };
+    moth::ui::Color CanvasOutlineColor = moth::ui::Color{ 0.0f, 0.0f, 0.0f, 1.0f };
+    moth::ui::Color CanvasColor = moth::ui::Color{ 1.0f, 1.0f, 1.0f, 1.0f };
+    moth::ui::Color CanvasGridColorMinor = moth::ui::Color{ 0.0f, 0.0f, 0.0f, 0.08f };
+    moth::ui::Color CanvasGridColorMajor = moth::ui::Color{ 0.0f, 0.0f, 0.0f, 0.23f };
+    moth::ui::Color SelectionColor = moth::ui::Color{ 0.0f, 0.0f, 1.0f, 1.0f };
+    moth::ui::Color SelectionSliceColor = moth::ui::Color{ 0.0f, 0.27f, 0.47f, 1.0f };
+    moth::ui::Color PreviewSourceRectColor = moth::ui::Color{ 1.0f, 1.0f, 0.0f, 1.0f };
+    moth::ui::Color PreviewImageSliceColor = moth::ui::Color{ 0.0f, 0.27f, 0.47f, 1.0f };
 
-    moth_ui::IntVec2 CanvasSize{ 640, 480 };
+    moth::ui::IntVec2 CanvasSize{ 640, 480 };
     int CanvasGridSpacing = 10;
     int CanvasGridMajorFactor = 8;
 
@@ -44,8 +44,8 @@ struct EditorConfig {
     int AutoSaveIntervalMinutes = 5;
     int AutoSaveMaxVersions = 5;
 
-    moth_ui::Color SpriteEditorNormalColor = moth_ui::Color{ 1.0f, 1.0f, 0.0f, 200.0f / 255.0f };
-    moth_ui::Color SpriteEditorSelectedColor = moth_ui::Color{ 0.0f, 1.0f, 1.0f, 1.0f };
+    moth::ui::Color SpriteEditorNormalColor = moth::ui::Color{ 1.0f, 1.0f, 0.0f, 200.0f / 255.0f };
+    moth::ui::Color SpriteEditorSelectedColor = moth::ui::Color{ 0.0f, 1.0f, 1.0f, 1.0f };
     int SpriteEditorRectThickness = 1;
 
     // clang-format off

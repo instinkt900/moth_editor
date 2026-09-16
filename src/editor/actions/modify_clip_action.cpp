@@ -1,8 +1,8 @@
 #include "common.h"
 #include "modify_clip_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
+#include "moth/ui/layout/layout_entity_group.h"
 
-ModifyClipAction::ModifyClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationClip const& oldValues, moth_ui::AnimationClip const& newValues)
+ModifyClipAction::ModifyClipAction(std::shared_ptr<moth::ui::LayoutEntityGroup> group, moth::ui::AnimationClip const& oldValues, moth::ui::AnimationClip const& newValues)
     : m_group(group)
     , m_initialValues(oldValues)
     , m_finalValues(newValues) {

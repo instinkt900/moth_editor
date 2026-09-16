@@ -22,15 +22,15 @@
 #include "editor/actions/change_index_action.h"
 #include "editor/actions/editor_action.h"
 
-#include "moth_ui/moth_ui.h"
-#include "moth_ui/layout/layout.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/layout/layout_entity_text.h"
-#include "moth_ui/nodes/group.h"
-#include "moth_ui/events/event_dispatch.h"
-#include "moth_ui/context.h"
-#include "moth_ui/animation/keyframe.h"
-#include "moth_graphics/platform/window.h"
+#include "moth/ui/moth_ui.h"
+#include "moth/ui/layout/layout.h"
+#include "moth/ui/layout/layout_entity_group.h"
+#include "moth/ui/layout/layout_entity_text.h"
+#include "moth/ui/nodes/group.h"
+#include "moth/ui/events/event_dispatch.h"
+#include "moth/ui/context.h"
+#include "moth/ui/animation/keyframe.h"
+#include "moth/graphics/platform/window.h"
 
 #include "editor/texture_packer/texture_packer.h"
 
@@ -50,10 +50,11 @@
 
 EditorLayer::~EditorLayer() = default;
 
-EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, moth_graphics::graphics::AssetContext& assetContext, EditorApplication* app)
+EditorLayer::EditorLayer(moth::ui::Context& context, moth::gfx::IGraphics& graphics, moth::gfx::IGraphicsDevice& device, moth::gfx::AssetContext& assetContext, EditorApplication* app)
     : m_app(app)
     , m_context(context)
     , m_graphics(graphics)
+    , m_device(device)
     , m_assetContext(assetContext) {
 #if defined(_WIN32)
     m_crashRecoveryPath = std::filesystem::temp_directory_path() / fmt::format("moth_editor_recovery_{}.moth", _getpid());
@@ -82,8 +83,8 @@ EditorLayer::EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGr
     m_referenceImageDialog = std::make_unique<EditorPanelReferenceImage>(*this);
 }
 
-bool EditorLayer::OnEvent(moth_ui::Event const& event) {
-    moth_ui::EventDispatch dispatch(event);
+bool EditorLayer::OnEvent(moth::ui::Event const& event) {
+    moth::ui::EventDispatch dispatch(event);
     dispatch.Dispatch(this, &EditorLayer::OnKey);
     dispatch.Dispatch(this, &EditorLayer::OnRequestQuitEvent);
     for (auto& [type, panel] : m_panels) {
@@ -217,7 +218,7 @@ void EditorLayer::DrawMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit")) {
-                FireEvent(moth_graphics::EventRequestQuit{});
+                FireEvent(moth::gfx::EventRequestQuit{});
             }
             ImGui::EndMenu();
         }
@@ -317,7 +318,7 @@ void EditorLayer::DrawAboutPopup() {
         ImGui::Text("moth_editor");
         ImGui::Text("Version %s", moth_editor::Version);
         ImGui::Separator();
-        ImGui::TextWrapped("A Flash-like visual layout and animation editor for moth_ui data.");
+        ImGui::TextWrapped("A Flash-like visual layout and animation editor for moth::ui data.");
         ImGui::Spacing();
         ImGui::Text("Created by Matthew Cotton (instinkt900)");
         ImGui::Spacing();
@@ -432,7 +433,7 @@ void EditorLayer::DrawShortcutsPopup() {
 void EditorLayer::DebugDraw() {
 }
 
-void EditorLayer::OnAddedToStack(moth_ui::LayerStack* layerStack) {
+void EditorLayer::OnAddedToStack(moth::ui::LayerStack* layerStack) {
     Layer::OnAddedToStack(layerStack);
     NewLayout();
     CheckCrashRecovery();
@@ -512,7 +513,7 @@ void EditorLayer::NewLayout(bool discard) {
         m_confirmPrompt.SetCancelAction(nullptr);
         m_confirmPrompt.Open();
     } else {
-        m_rootLayout = std::make_shared<moth_ui::Layout>();
+        m_rootLayout = std::make_shared<moth::ui::Layout>();
         m_currentLayoutPath.clear();
         m_selectedFrame = 0;
         ClearSelection();
@@ -526,19 +527,19 @@ void EditorLayer::NewLayout(bool discard) {
     }
 }
 
-static void CollectMissingFonts(moth_ui::LayoutEntityGroup const& group,
+static void CollectMissingFonts(moth::ui::LayoutEntityGroup const& group,
                                 std::vector<std::string> const& knownFonts,
                                 std::set<std::string>& missing) {
     for (auto const& child : group.m_children) {
-        if (child->GetType() == moth_ui::LayoutEntityType::Text) {
-            auto const* textEntity = dynamic_cast<moth_ui::LayoutEntityText const*>(child.get());
+        if (child->GetType() == moth::ui::LayoutEntityType::Text) {
+            auto const* textEntity = dynamic_cast<moth::ui::LayoutEntityText const*>(child.get());
             if (textEntity != nullptr && !textEntity->m_fontName.empty()) {
                 if (std::find(knownFonts.begin(), knownFonts.end(), textEntity->m_fontName) == knownFonts.end()) {
                     missing.insert(textEntity->m_fontName);
                 }
             }
-        } else if (child->GetType() == moth_ui::LayoutEntityType::Group) {
-            auto const* groupEntity = dynamic_cast<moth_ui::LayoutEntityGroup const*>(child.get());
+        } else if (child->GetType() == moth::ui::LayoutEntityType::Group) {
+            auto const* groupEntity = dynamic_cast<moth::ui::LayoutEntityGroup const*>(child.get());
             if (groupEntity != nullptr) {
                 CollectMissingFonts(*groupEntity, knownFonts, missing);
             }
@@ -564,8 +565,8 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
         m_confirmPrompt.SetCancelAction(nullptr);
         m_confirmPrompt.Open();
     } else {
-        auto [newLayout, loadResult] = moth_ui::Layout::Load(path);
-        if (loadResult == moth_ui::Layout::LoadResult::Success) {
+        auto [newLayout, loadResult] = moth::ui::Layout::Load(path);
+        if (loadResult == moth::ui::Layout::LoadResult::Success) {
             m_rootLayout = newLayout;
             m_currentLayoutPath = path;
             m_selectedFrame = 0;
@@ -591,9 +592,9 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
                 panel->OnLayoutLoaded();
             }
         } else {
-            if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
+            if (loadResult == moth::ui::Layout::LoadResult::DoesNotExist) {
                 ShowError("File not found.");
-            } else if (loadResult == moth_ui::Layout::LoadResult::IncorrectFormat) {
+            } else if (loadResult == moth::ui::Layout::LoadResult::IncorrectFormat) {
                 ShowError("File was not valid.");
             }
         }
@@ -601,7 +602,7 @@ void EditorLayer::LoadLayout(std::filesystem::path const& path, bool discard) {
 }
 
 bool EditorLayer::SaveLayout(std::filesystem::path const& path) {
-    moth_ui::Layout::SaveOptions saveOptions;
+    moth::ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = true;
     if (!m_rootLayout->Save(path, saveOptions)) {
         return false;
@@ -633,7 +634,7 @@ void EditorLayer::AutoSave() {
     auto const ext = m_currentLayoutPath.extension().string();
     auto const autosavePath = dir / (stem + ".autosave_" + timeBuf + ext);
 
-    moth_ui::Layout::SaveOptions saveOptions;
+    moth::ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = true;
     if (!m_rootLayout->Save(autosavePath, saveOptions)) {
         return;
@@ -723,8 +724,8 @@ void EditorLayer::CheckCrashRecovery() {
     m_confirmPrompt.SetNegativeText("Discard");
     m_confirmPrompt.SetCancelText("");
     m_confirmPrompt.SetPositiveAction([this, recoveryPath]() {
-        std::shared_ptr<moth_ui::Layout> recoveredLayout;
-        if (moth_ui::Layout::Load(recoveryPath).second == moth_ui::Layout::LoadResult::Success) {
+        std::shared_ptr<moth::ui::Layout> recoveredLayout;
+        if (moth::ui::Layout::Load(recoveryPath).second == moth::ui::Layout::LoadResult::Success) {
             std::filesystem::path originalPath;
             auto& extraData = recoveredLayout->GetExtraData();
             if (extraData.contains("crash_recovery_original_path")) {
@@ -763,7 +764,7 @@ void EditorLayer::SaveCrashRecovery() {
     }
     // Temporarily stash the original path in extra data so it can be restored on recovery
     m_rootLayout->GetExtraData()["crash_recovery_original_path"] = m_currentLayoutPath.string();
-    moth_ui::Layout::SaveOptions saveOptions;
+    moth::ui::Layout::SaveOptions saveOptions;
     saveOptions.pretty = false;
     if (m_rootLayout->Save(m_crashRecoveryPath, saveOptions)) {
         m_rootLayout->GetExtraData().erase("crash_recovery_original_path");
@@ -787,7 +788,7 @@ void EditorLayer::SyncCrashRecovery() {
 }
 
 void EditorLayer::Rebuild() {
-    m_root = moth_ui::Group::Create(m_context, m_rootLayout);
+    m_root = moth::ui::Group::Create(m_context, m_rootLayout);
 }
 
 void EditorLayer::MoveSelectionUp() {
@@ -855,7 +856,7 @@ void EditorLayer::MenuFuncNewLayout() {
 void EditorLayer::MenuFuncOpenLayout() {
     auto const currentPath = std::filesystem::current_path().string();
     nfdchar_t* outPath = NULL;
-    nfdresult_t result = NFD_OpenDialog(moth_ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
+    nfdresult_t result = NFD_OpenDialog(moth::ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
 
     if (result == NFD_OKAY) {
         std::filesystem::path filePath = outPath;
@@ -875,13 +876,13 @@ void EditorLayer::MenuFuncSaveLayout() {
 void EditorLayer::MenuFuncSaveLayoutAs() {
     auto const currentPath = std::filesystem::current_path().string();
     nfdchar_t* outPath = NULL;
-    nfdresult_t result = NFD_SaveDialog(moth_ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
+    nfdresult_t result = NFD_SaveDialog(moth::ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
 
     if (result == NFD_OKAY) {
         std::filesystem::path filePath = outPath;
         NFD_Free(outPath);
         if (!filePath.has_extension()) {
-            filePath.replace_extension(moth_ui::Layout::Extension);
+            filePath.replace_extension(moth::ui::Layout::Extension);
         }
         SaveLayout(filePath);
     }
@@ -890,7 +891,7 @@ void EditorLayer::MenuFuncSaveLayoutAs() {
 void EditorLayer::CopyEntity() {
     m_copiedEntities.clear();
     for (auto&& node : m_selection) {
-        m_copiedEntities.push_back(node->GetLayoutEntity()->Clone(moth_ui::LayoutEntity::CloneType::Deep));
+        m_copiedEntities.push_back(node->GetLayoutEntity()->Clone(moth::ui::LayoutEntity::CloneType::Deep));
     }
 }
 
@@ -902,7 +903,7 @@ void EditorLayer::CutEntity() {
 void EditorLayer::PasteEntity() {
     auto compAction = std::make_unique<CompositeAction>();
     for (auto&& copiedEntity : m_copiedEntities) {
-        auto clonedEntity = copiedEntity->Clone(moth_ui::LayoutEntity::CloneType::Deep);
+        auto clonedEntity = copiedEntity->Clone(moth::ui::LayoutEntity::CloneType::Deep);
         auto copyInstance = clonedEntity->Instantiate(m_context);
         auto addAction = std::make_unique<AddAction>(std::move(copyInstance), m_root);
         compAction->GetActions().push_back(std::move(addAction));
@@ -919,10 +920,10 @@ void EditorLayer::DuplicateEntity() {
         return;
     }
     auto compAction = std::make_unique<CompositeAction>();
-    std::vector<std::shared_ptr<moth_ui::Node>> newNodes;
+    std::vector<std::shared_ptr<moth::ui::Node>> newNodes;
     newNodes.reserve(m_selection.size());
     for (auto&& node : m_selection) {
-        auto clonedEntity = node->GetLayoutEntity()->Clone(moth_ui::LayoutEntity::CloneType::Deep);
+        auto clonedEntity = node->GetLayoutEntity()->Clone(moth::ui::LayoutEntity::CloneType::Deep);
         auto copyInstance = clonedEntity->Instantiate(m_context);
         newNodes.push_back(copyInstance);
         auto addAction = std::make_unique<AddAction>(std::move(copyInstance), m_root);
@@ -981,94 +982,94 @@ void EditorLayer::ResetCanvas() {
     GetEditorPanel<EditorPanelCanvas>()->ResetView();
 }
 
-bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
-    if (event.GetAction() == moth_ui::KeyAction::Up) {
+bool EditorLayer::OnKey(moth::ui::EventKey const& event) {
+    if (event.GetAction() == moth::ui::KeyAction::Up) {
         bool const wantKeyboard = ImGui::GetIO().WantCaptureKeyboard;
         switch (event.GetKey()) {
-        case moth_ui::Key::Space:
+        case moth::ui::Key::Space:
             if (!wantKeyboard) {
                 if (auto* anim = GetEditorPanel<EditorPanelAnimation>()) {
                     anim->TogglePlayback();
                 }
             }
             return true;
-        case moth_ui::Key::F:
+        case moth::ui::Key::F:
             if (!wantKeyboard) {
                 ResetCanvas();
             }
             break;
-        case moth_ui::Key::N:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::N:
+            if ((event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 MenuFuncNewLayout();
             }
             break;
-        case moth_ui::Key::P:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::P:
+            if ((event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 if (auto* preview = GetEditorPanel<EditorPanelPreview>()) {
                     preview->m_visible = !preview->m_visible;
                 }
             }
             break;
-        case moth_ui::Key::O:
-            if ((event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::O:
+            if ((event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 MenuFuncOpenLayout();
             }
             break;
-        case moth_ui::Key::S: {
-            auto const anyCtrlPressed = (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0;
-            auto const anyShiftPressed = (event.GetMods() & moth_ui::KeyMod_Shift) != 0;
+        case moth::ui::Key::S: {
+            auto const anyCtrlPressed = (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0;
+            auto const anyShiftPressed = (event.GetMods() & moth::ui::KeyMod_Shift) != 0;
             if (anyCtrlPressed && anyShiftPressed) {
                 MenuFuncSaveLayoutAs();
             } else if (anyCtrlPressed) {
                 MenuFuncSaveLayout();
             }
         } break;
-        case moth_ui::Key::Z:
-            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::Z:
+            if (!wantKeyboard && (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 UndoEditAction();
             }
             return true;
-        case moth_ui::Key::Y:
-            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::Y:
+            if (!wantKeyboard && (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 RedoEditAction();
             }
             return true;
-        case moth_ui::Key::C:
-            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::C:
+            if (!wantKeyboard && (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 CopyEntity();
             }
             return true;
-        case moth_ui::Key::X:
-            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::X:
+            if (!wantKeyboard && (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 CutEntity();
             }
             return true;
-        case moth_ui::Key::V:
-            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::V:
+            if (!wantKeyboard && (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 PasteEntity();
             }
             return true;
-        case moth_ui::Key::A:
-            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::A:
+            if (!wantKeyboard && (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 SelectAll();
             }
             return true;
-        case moth_ui::Key::D:
-            if (!wantKeyboard && (event.GetMods() & moth_ui::KeyMod_Ctrl) != 0) {
+        case moth::ui::Key::D:
+            if (!wantKeyboard && (event.GetMods() & moth::ui::KeyMod_Ctrl) != 0) {
                 DuplicateEntity();
             }
             return true;
-        case moth_ui::Key::Escape:
+        case moth::ui::Key::Escape:
             if (!wantKeyboard) {
                 ClearSelection();
             }
             return true;
-        case moth_ui::Key::Pageup:
+        case moth::ui::Key::Pageup:
             if (!wantKeyboard) {
                 MoveSelectionUp();
             }
             return true;
-        case moth_ui::Key::Pagedown:
+        case moth::ui::Key::Pagedown:
             if (!wantKeyboard) {
                 MoveSelectionDown();
             }
@@ -1080,7 +1081,7 @@ bool EditorLayer::OnKey(moth_ui::EventKey const& event) {
     return false;
 }
 
-bool EditorLayer::OnRequestQuitEvent(moth_graphics::EventRequestQuit const& event) {
+bool EditorLayer::OnRequestQuitEvent(moth::gfx::EventRequestQuit const& event) {
     if (IsWorkPending()) {
         m_confirmPrompt.SetTitle("Unsaved Changes");
         m_confirmPrompt.SetMessage("You have unsaved changes. What would you like to do?");
@@ -1120,7 +1121,7 @@ void EditorLayer::ClearSelection() {
     m_selection.clear();
 }
 
-void EditorLayer::AddSelection(std::shared_ptr<moth_ui::Node> node) {
+void EditorLayer::AddSelection(std::shared_ptr<moth::ui::Node> node) {
     if (!m_editBoundsContext.empty()) {
         EndEditBounds();
     }
@@ -1130,7 +1131,7 @@ void EditorLayer::AddSelection(std::shared_ptr<moth_ui::Node> node) {
     m_selection.insert(node);
 }
 
-void EditorLayer::RemoveSelection(std::shared_ptr<moth_ui::Node> node) {
+void EditorLayer::RemoveSelection(std::shared_ptr<moth::ui::Node> node) {
     if (!m_editBoundsContext.empty()) {
         EndEditBounds();
     }
@@ -1140,30 +1141,30 @@ void EditorLayer::RemoveSelection(std::shared_ptr<moth_ui::Node> node) {
     m_selection.erase(node);
 }
 
-bool EditorLayer::IsSelected(std::shared_ptr<moth_ui::Node> node) const {
+bool EditorLayer::IsSelected(std::shared_ptr<moth::ui::Node> node) const {
     return std::end(m_selection) != m_selection.find(node);
 }
 
-void EditorLayer::LockNode(std::shared_ptr<moth_ui::Node> node) {
+void EditorLayer::LockNode(std::shared_ptr<moth::ui::Node> node) {
     m_lockedNodes.insert(node);
 }
 
-void EditorLayer::UnlockNode(std::shared_ptr<moth_ui::Node> node) {
+void EditorLayer::UnlockNode(std::shared_ptr<moth::ui::Node> node) {
     m_lockedNodes.erase(node);
 }
 
-bool EditorLayer::IsLocked(std::shared_ptr<moth_ui::Node> node) const {
+bool EditorLayer::IsLocked(std::shared_ptr<moth::ui::Node> node) const {
     return std::end(m_lockedNodes) != m_lockedNodes.find(node);
 }
 
-void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
+void EditorLayer::BeginEditBounds(std::shared_ptr<moth::ui::Node> node) {
     if (node != nullptr) {
         if (m_editBoundsContext.empty()) {
             auto context = std::make_unique<EditBoundsContext>();
             context->node = node;
             context->entity = node->GetLayoutEntity();
             context->originalRect = node->GetLayoutRect();
-            context->originalPivot = context->entity ? context->entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
+            context->originalPivot = context->entity ? context->entity->m_pivot : moth::ui::FloatVec2{ 0.5f, 0.5f };
             m_editBoundsContext.push_back(std::move(context));
         } else {
             assert((*m_editBoundsContext.begin())->entity == node->GetLayoutEntity());
@@ -1175,7 +1176,7 @@ void EditorLayer::BeginEditBounds(std::shared_ptr<moth_ui::Node> node) {
                 context->node = selectedNode;
                 context->entity = selectedNode->GetLayoutEntity();
                 context->originalRect = selectedNode->GetLayoutRect();
-                context->originalPivot = context->entity ? context->entity->m_pivot : moth_ui::FloatVec2{ 0.5f, 0.5f };
+                context->originalPivot = context->entity ? context->entity->m_pivot : moth::ui::FloatVec2{ 0.5f, 0.5f };
                 m_editBoundsContext.push_back(std::move(context));
             }
         } else {
@@ -1196,7 +1197,7 @@ void EditorLayer::EndEditBounds() {
         auto& tracks = entity->m_tracks;
         int const frameNo = m_selectedFrame;
 
-        auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
+        auto const SetTrackValue = [&](moth::ui::AnimationTrack::Target target, float value) {
             auto& track = tracks.at(target);
             if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
                 // keyframe exists
@@ -1207,7 +1208,7 @@ void EditorLayer::EndEditBounds() {
                 // no keyframe
                 auto& keyframe = track->GetOrCreateKeyframe(frameNo);
                 keyframe.value = value;
-                editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth_ui::InterpType::Linear));
+                editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth::ui::InterpType::Linear));
             }
         };
 
@@ -1215,28 +1216,28 @@ void EditorLayer::EndEditBounds() {
         auto const rectDelta = newRect - context->originalRect;
 
         if (rectDelta.anchor.topLeft.x != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::LeftAnchor, newRect.anchor.topLeft.x);
+            SetTrackValue(moth::ui::AnimationTrack::Target::LeftAnchor, newRect.anchor.topLeft.x);
         }
         if (rectDelta.anchor.topLeft.y != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::TopAnchor, newRect.anchor.topLeft.y);
+            SetTrackValue(moth::ui::AnimationTrack::Target::TopAnchor, newRect.anchor.topLeft.y);
         }
         if (rectDelta.anchor.bottomRight.x != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::RightAnchor, newRect.anchor.bottomRight.x);
+            SetTrackValue(moth::ui::AnimationTrack::Target::RightAnchor, newRect.anchor.bottomRight.x);
         }
         if (rectDelta.anchor.bottomRight.y != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::BottomAnchor, newRect.anchor.bottomRight.y);
+            SetTrackValue(moth::ui::AnimationTrack::Target::BottomAnchor, newRect.anchor.bottomRight.y);
         }
         if (rectDelta.offset.topLeft.x != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::LeftOffset, newRect.offset.topLeft.x);
+            SetTrackValue(moth::ui::AnimationTrack::Target::LeftOffset, newRect.offset.topLeft.x);
         }
         if (rectDelta.offset.topLeft.y != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::TopOffset, newRect.offset.topLeft.y);
+            SetTrackValue(moth::ui::AnimationTrack::Target::TopOffset, newRect.offset.topLeft.y);
         }
         if (rectDelta.offset.bottomRight.x != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::RightOffset, newRect.offset.bottomRight.x);
+            SetTrackValue(moth::ui::AnimationTrack::Target::RightOffset, newRect.offset.bottomRight.x);
         }
         if (rectDelta.offset.bottomRight.y != 0) {
-            SetTrackValue(moth_ui::AnimationTrack::Target::BottomOffset, newRect.offset.bottomRight.y);
+            SetTrackValue(moth::ui::AnimationTrack::Target::BottomOffset, newRect.offset.bottomRight.y);
         }
     }
 
@@ -1271,7 +1272,7 @@ void EditorLayer::EndEditBounds() {
     m_editBoundsContext.clear();
 }
 
-void EditorLayer::BeginEditColor(std::shared_ptr<moth_ui::Node> node) {
+void EditorLayer::BeginEditColor(std::shared_ptr<moth::ui::Node> node) {
     if (m_editColorContext == nullptr && node != nullptr) {
         m_editColorContext = std::make_unique<EditColorContext>();
         m_editColorContext->node = node;
@@ -1291,7 +1292,7 @@ void EditorLayer::EndEditColor() {
     int const frameNo = m_selectedFrame;
     std::unique_ptr<CompositeAction> editAction = std::make_unique<CompositeAction>();
 
-    auto const SetTrackValue = [&](moth_ui::AnimationTrack::Target target, float value) {
+    auto const SetTrackValue = [&](moth::ui::AnimationTrack::Target target, float value) {
         auto& track = tracks.at(target);
         if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
             // keyframe exists
@@ -1302,7 +1303,7 @@ void EditorLayer::EndEditColor() {
             // no keyframe
             auto& keyframe = track->GetOrCreateKeyframe(frameNo);
             keyframe.value = value;
-            editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth_ui::InterpType::Linear));
+            editAction->GetActions().push_back(std::make_unique<AddKeyframeAction>(entity, target, frameNo, value, moth::ui::InterpType::Linear));
         }
     };
 
@@ -1314,16 +1315,16 @@ void EditorLayer::EndEditColor() {
     auto const colorDeltaA = newColor.a - m_editColorContext->originalColor.a;
 
     if (colorDeltaR != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorRed, newColor.r);
+        SetTrackValue(moth::ui::AnimationTrack::Target::ColorRed, newColor.r);
     }
     if (colorDeltaG != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorGreen, newColor.g);
+        SetTrackValue(moth::ui::AnimationTrack::Target::ColorGreen, newColor.g);
     }
     if (colorDeltaB != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorBlue, newColor.b);
+        SetTrackValue(moth::ui::AnimationTrack::Target::ColorBlue, newColor.b);
     }
     if (colorDeltaA != 0) {
-        SetTrackValue(moth_ui::AnimationTrack::Target::ColorAlpha, newColor.a);
+        SetTrackValue(moth::ui::AnimationTrack::Target::ColorAlpha, newColor.a);
     }
 
     if (!editAction->GetActions().empty()) {
@@ -1333,7 +1334,7 @@ void EditorLayer::EndEditColor() {
     m_editColorContext.reset();
 }
 
-void EditorLayer::BeginEditRotation(std::shared_ptr<moth_ui::Node> node) {
+void EditorLayer::BeginEditRotation(std::shared_ptr<moth::ui::Node> node) {
     if (m_editRotationContext == nullptr && node != nullptr) {
         m_editRotationContext = std::make_unique<EditRotationContext>();
         m_editRotationContext->node = node;
@@ -1355,16 +1356,16 @@ void EditorLayer::EndEditRotation() {
     float const delta = newRotation - m_editRotationContext->originalRotation;
 
     if (delta != 0.0f) {
-        auto& track = tracks.at(moth_ui::AnimationTrack::Target::Rotation);
+        auto& track = tracks.at(moth::ui::AnimationTrack::Target::Rotation);
         std::unique_ptr<IEditorAction> editAction;
         if (auto* keyframePtr = track->GetKeyframe(frameNo)) {
             auto const oldValue = keyframePtr->value;
             keyframePtr->value = newRotation;
-            editAction = std::make_unique<ModifyKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, oldValue, newRotation, keyframePtr->interpType, keyframePtr->interpType);
+            editAction = std::make_unique<ModifyKeyframeAction>(entity, moth::ui::AnimationTrack::Target::Rotation, frameNo, oldValue, newRotation, keyframePtr->interpType, keyframePtr->interpType);
         } else {
             auto& keyframe = track->GetOrCreateKeyframe(frameNo);
             keyframe.value = newRotation;
-            editAction = std::make_unique<AddKeyframeAction>(entity, moth_ui::AnimationTrack::Target::Rotation, frameNo, newRotation, moth_ui::InterpType::Linear);
+            editAction = std::make_unique<AddKeyframeAction>(entity, moth::ui::AnimationTrack::Target::Rotation, frameNo, newRotation, moth::ui::InterpType::Linear);
         }
         AddEditAction(std::move(editAction));
     }
@@ -1383,7 +1384,7 @@ void EditorLayer::Shutdown() {
     }
     DeleteCrashRecovery();
     SaveConfig();
-    FireEvent(moth_graphics::EventQuit());
+    FireEvent(moth::gfx::EventQuit());
 }
 
 void EditorLayer::AddRecentFile(std::filesystem::path const& path) {

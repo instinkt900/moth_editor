@@ -1,9 +1,9 @@
 #include "common.h"
 #include "change_index_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/nodes/group.h"
+#include "moth/ui/layout/layout_entity_group.h"
+#include "moth/ui/nodes/group.h"
 
-ChangeIndexAction::ChangeIndexAction(std::shared_ptr<moth_ui::Node> node, int oldIndex, int newIndex)
+ChangeIndexAction::ChangeIndexAction(std::shared_ptr<moth::ui::Node> node, int oldIndex, int newIndex)
     : m_node(node)
     , m_oldIndex(oldIndex)
     , m_newIndex(newIndex) {
@@ -22,7 +22,7 @@ void ChangeIndexAction::Do() {
     if (static_cast<size_t>(m_newIndex) >= parentNode->GetChildren().size()) { return; }
 
     if (parentNode->GetLayoutEntity() == nullptr) { return; }
-    auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
+    auto parentLayoutEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
     auto& parentEntityChildren = parentLayoutEntity->m_children;
     if (static_cast<size_t>(m_oldIndex) >= parentEntityChildren.size()) { return; }
     if (static_cast<size_t>(m_newIndex) > parentEntityChildren.size()) { return; }
@@ -43,7 +43,7 @@ void ChangeIndexAction::Undo() {
     if (static_cast<size_t>(m_oldIndex) >= parentNode->GetChildren().size()) { return; }
 
     if (parentNode->GetLayoutEntity() == nullptr) { return; }
-    auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
+    auto parentLayoutEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(parentNode->GetLayoutEntity());
     auto& parentEntityChildren = parentLayoutEntity->m_children;
     if (static_cast<size_t>(m_newIndex) >= parentEntityChildren.size()) { return; }
     if (static_cast<size_t>(m_oldIndex) > parentEntityChildren.size()) { return; }

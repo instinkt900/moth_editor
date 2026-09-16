@@ -1,8 +1,8 @@
 #include "common.h"
 #include "texture_packer.h"
 #include "editor/editor_layer.h"
-#include "moth_graphics/graphics/surface_context.h"
-#include "moth_graphics/graphics/asset_context.h"
+#include "moth/graphics/graphics/surface_context.h"
+#include "moth/graphics/graphics/asset_context.h"
 
 #include <nfd.h>
 
@@ -24,7 +24,7 @@ void TexturePacker::DoPack() {
         return;
     }
 
-    moth_packer::PackOptions opts;
+    moth::packer::PackOptions opts;
     opts.outputPath    = tmpDir;
     opts.filename      = "preview";
     opts.forceOverwrite = true;
@@ -37,8 +37,8 @@ void TexturePacker::DoPack() {
     opts.paddingColor  = m_paddingColor;
     opts.format        = m_outputFormat;
     opts.jpegQuality   = m_jpegQuality;
-    opts.packType      = m_flipbookMode ? moth_packer::PackType::Flipbook
-                                        : moth_packer::PackType::Atlas;
+    opts.packType      = m_flipbookMode ? moth::packer::PackType::Flipbook
+                                        : moth::packer::PackType::Atlas;
     if (m_flipbookMode) {
         opts.fps      = fps;
         opts.loop     = loopType;
@@ -46,7 +46,7 @@ void TexturePacker::DoPack() {
     }
     m_lastPackOpts = opts;
 
-    if (!moth_packer::Pack(m_inputImages, opts)) {
+    if (!moth::packer::Pack(m_inputImages, opts)) {
         spdlog::error("TexturePacker: packing failed.");
         m_editorLayer.ShowError("TexturePacker: packing failed.");
         return;
@@ -83,8 +83,8 @@ void TexturePacker::DoPack() {
             AtlasPreview preview;
             preview.tempPath = tmpDir / atlasFilename;
             {
-                std::shared_ptr<moth_graphics::graphics::ITexture> tex(assetCtx.TextureFromFile(preview.tempPath));
-                preview.image = tex ? moth_graphics::graphics::Image{ tex } : moth_graphics::graphics::Image{};
+                std::shared_ptr<moth::gfx::ITexture> tex(assetCtx.TextureFromFile(preview.tempPath));
+                preview.image = tex ? moth::gfx::Image{ tex } : moth::gfx::Image{};
             }
             if (preview.image) {
                 preview.width  = preview.image.GetWidth();
@@ -111,8 +111,8 @@ void TexturePacker::DoPack() {
             }
             preview.tempPath = tmpDir / atlasFilename;
             {
-                std::shared_ptr<moth_graphics::graphics::ITexture> tex(assetCtx.TextureFromFile(preview.tempPath));
-                preview.image = tex ? moth_graphics::graphics::Image{ tex } : moth_graphics::graphics::Image{};
+                std::shared_ptr<moth::gfx::ITexture> tex(assetCtx.TextureFromFile(preview.tempPath));
+                preview.image = tex ? moth::gfx::Image{ tex } : moth::gfx::Image{};
             }
             if (preview.image) {
                 preview.width  = preview.image.GetWidth();
@@ -152,12 +152,12 @@ void TexturePacker::DoSave() {
         return;
     }
 
-    moth_packer::PackOptions opts = m_lastPackOpts;
+    moth::packer::PackOptions opts = m_lastPackOpts;
     opts.outputPath    = m_saveDir;
     opts.filename      = m_saveFilename;
     opts.forceOverwrite = true;
 
-    if (!moth_packer::Pack(m_inputImages, opts)) {
+    if (!moth::packer::Pack(m_inputImages, opts)) {
         spdlog::error("TexturePacker: save failed.");
         m_editorLayer.ShowError("TexturePacker: save failed.");
     } else {
@@ -272,9 +272,9 @@ void TexturePacker::DrawOutputPanel() {
             }
 
             float const scale = (m_outputZoom <= 0.0f) ? fitScale : m_outputZoom;
-            atlas.image.DrawImGui({
-                static_cast<int>(srcW * scale),
-                static_cast<int>(srcH * scale) });
+            imgui_ext::Image(atlas.image,
+                             static_cast<int>(srcW * scale),
+                             static_cast<int>(srcH * scale));
         } else {
             ImGui::TextDisabled("Select an atlas to preview.");
         }

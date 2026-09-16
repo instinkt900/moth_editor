@@ -19,15 +19,15 @@
 #include "../actions/add_discrete_keyframe_action.h"
 #include "../actions/delete_discrete_keyframe_action.h"
 #include "../actions/move_discrete_keyframe_action.h"
-#include "moth_ui/layout/layout.h"
-#include "moth_ui/nodes/group.h"
-#include "moth_ui/nodes/node_flipbook.h"
-#include "moth_ui/layout/layout_entity_group.h"
+#include "moth/ui/layout/layout.h"
+#include "moth/ui/nodes/group.h"
+#include "moth/ui/nodes/node_flipbook.h"
+#include "moth/ui/layout/layout_entity_group.h"
 
 #undef min
 #undef max
 
-using namespace moth_ui;
+using namespace moth::ui;
 
 namespace {
     // Minimum number of frames between m_minFrame and m_maxFrame; also acts as
@@ -342,7 +342,7 @@ void EditorPanelAnimation::DeleteSelections() {
 
 // --- Clip selection ---
 
-void EditorPanelAnimation::SelectClip(moth_ui::AnimationClip* clip) {
+void EditorPanelAnimation::SelectClip(moth::ui::AnimationClip* clip) {
     if (!IsClipSelected(clip)) {
         ClipContext context;
         context.clip = clip;
@@ -351,7 +351,7 @@ void EditorPanelAnimation::SelectClip(moth_ui::AnimationClip* clip) {
     }
 }
 
-void EditorPanelAnimation::DeselectClip(moth_ui::AnimationClip* clip) {
+void EditorPanelAnimation::DeselectClip(moth::ui::AnimationClip* clip) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* clipCtx = std::get_if<ClipContext>(&context)) {
             return clipCtx->clip == clip;
@@ -363,11 +363,11 @@ void EditorPanelAnimation::DeselectClip(moth_ui::AnimationClip* clip) {
     }
 }
 
-bool EditorPanelAnimation::IsClipSelected(moth_ui::AnimationClip* clip) {
+bool EditorPanelAnimation::IsClipSelected(moth::ui::AnimationClip* clip) {
     return GetSelectedClipContext(clip) != nullptr;
 }
 
-ClipContext* EditorPanelAnimation::GetSelectedClipContext(moth_ui::AnimationClip* clip) {
+ClipContext* EditorPanelAnimation::GetSelectedClipContext(moth::ui::AnimationClip* clip) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* clipCtx = std::get_if<ClipContext>(&context)) {
             return clipCtx->clip == clip;
@@ -382,7 +382,7 @@ ClipContext* EditorPanelAnimation::GetSelectedClipContext(moth_ui::AnimationClip
 
 // --- Event selection ---
 
-void EditorPanelAnimation::SelectEvent(moth_ui::AnimationMarker* event) {
+void EditorPanelAnimation::SelectEvent(moth::ui::AnimationMarker* event) {
     if (!IsEventSelected(event)) {
         EventContext context;
         context.event = event;
@@ -391,7 +391,7 @@ void EditorPanelAnimation::SelectEvent(moth_ui::AnimationMarker* event) {
     }
 }
 
-void EditorPanelAnimation::DeselectEvent(moth_ui::AnimationMarker* event) {
+void EditorPanelAnimation::DeselectEvent(moth::ui::AnimationMarker* event) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* eventCtx = std::get_if<EventContext>(&context)) {
             return eventCtx->event == event;
@@ -403,11 +403,11 @@ void EditorPanelAnimation::DeselectEvent(moth_ui::AnimationMarker* event) {
     }
 }
 
-bool EditorPanelAnimation::IsEventSelected(moth_ui::AnimationMarker* event) {
+bool EditorPanelAnimation::IsEventSelected(moth::ui::AnimationMarker* event) {
     return GetSelectedEventContext(event) != nullptr;
 }
 
-EventContext* EditorPanelAnimation::GetSelectedEventContext(moth_ui::AnimationMarker* event) {
+EventContext* EditorPanelAnimation::GetSelectedEventContext(moth::ui::AnimationMarker* event) {
     auto const it = ranges::find_if(m_selections, [&](auto const& context) {
         if (auto* eventCtx = std::get_if<EventContext>(&context)) {
             return eventCtx->event == event;
@@ -729,7 +729,7 @@ bool EditorPanelAnimation::DrawClipPopup(std::vector<AnimationIntent>& intents) 
     // pending edit actually changed. m_pendingClipEdit is view state owned by
     // this function, so we reset it here regardless of commit eligibility.
     if (m_pendingClipEdit.has_value()) {
-        auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
+        auto groupEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const& clips = groupEntity->m_clips;
         bool const stillExists = std::any_of(clips.begin(), clips.end(), [&](auto const& c) { return c.get() == m_pendingClipEdit->reference; });
         if (stillExists && m_pendingClipEdit->HasChanged()) {
@@ -948,7 +948,7 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
         if (a->target != AnimationTrack::Target::Unknown) {
             auto* trackPtr = childTracks.at(a->target).get();
             auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(a->frame));
-            std::unique_ptr<IEditorAction> action = std::make_unique<AddKeyframeAction>(a->entity, a->target, a->frame, currentValue, moth_ui::InterpType::Linear);
+            std::unique_ptr<IEditorAction> action = std::make_unique<AddKeyframeAction>(a->entity, a->target, a->frame, currentValue, moth::ui::InterpType::Linear);
             action->Do();
             m_editorLayer.AddEditAction(std::move(action));
         } else {
@@ -963,7 +963,7 @@ void EditorPanelAnimation::Apply(AnimationIntent const& intent) {
                 auto* trackPtr = trackIt->second.get();
                 if (nullptr == trackPtr->GetKeyframe(a->frame)) {
                     auto const currentValue = trackPtr->GetValueAtFrame(static_cast<float>(a->frame));
-                    auto action = std::make_unique<AddKeyframeAction>(a->entity, target, a->frame, currentValue, moth_ui::InterpType::Linear);
+                    auto action = std::make_unique<AddKeyframeAction>(a->entity, target, a->frame, currentValue, moth::ui::InterpType::Linear);
                     action->Do();
                     compositeAction->GetActions().push_back(std::move(action));
                 }
@@ -1032,7 +1032,7 @@ bool EditorPanelAnimation::DrawEventPopup(std::vector<AnimationIntent>& intents)
 
     // Popup just closed — commit any pending edits if the event still exists and changed.
     if (m_pendingEventEdit.has_value()) {
-        auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
+        auto groupEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
         auto const& events = groupEntity->m_events;
         bool const stillExists = std::any_of(events.begin(), events.end(), [&](auto const& e) { return e.get() == m_pendingEventEdit->reference; });
         if (stillExists && m_pendingEventEdit->HasChanged()) {
@@ -1157,7 +1157,7 @@ bool EditorPanelAnimation::DrawKeyframePopup(std::vector<AnimationIntent>& inten
                             }
                         } else if (m_clickedChildTarget == AnimationTrack::Target::FlipbookClip) {
                             // Dropdown of clip names from the loaded flipbook
-                            auto* flipbookNode = dynamic_cast<moth_ui::NodeFlipbook*>(child.get());
+                            auto* flipbookNode = dynamic_cast<moth::ui::NodeFlipbook*>(child.get());
                             auto const* flipbook = (flipbookNode != nullptr) ? flipbookNode->GetFlipbook() : nullptr;
                             ImGui::SetNextItemWidth(200.0f);
                             if ((flipbook != nullptr) && ImGui::BeginCombo("##clipname", valPtr->c_str())) {
@@ -1228,11 +1228,11 @@ bool EditorPanelAnimation::DrawKeyframePopup(std::vector<AnimationIntent>& inten
         if (!m_selections.empty() && ImGui::BeginMenu("Interp")) {
             // Determine whether the selected keyframes share the same interp type.
             bool multipleInterps = false;
-            moth_ui::InterpType selectedInterp = moth_ui::InterpType::Unknown;
+            moth::ui::InterpType selectedInterp = moth::ui::InterpType::Unknown;
             for (auto&& context : m_selections) {
                 if (auto* kfCtx = std::get_if<KeyframeContext>(&context)) {
                     if (kfCtx->current->interpType != selectedInterp) {
-                        if (selectedInterp == moth_ui::InterpType::Unknown) {
+                        if (selectedInterp == moth::ui::InterpType::Unknown) {
                             selectedInterp = kfCtx->current->interpType;
                         } else {
                             multipleInterps = true;
@@ -1243,9 +1243,9 @@ bool EditorPanelAnimation::DrawKeyframePopup(std::vector<AnimationIntent>& inten
             if (multipleInterps) {
                 ImGui::RadioButton("(multiple values)", multipleInterps);
             }
-            for (size_t i = 0; i < magic_enum::enum_count<moth_ui::InterpType>(); ++i) {
-                auto const interpType = magic_enum::enum_value<moth_ui::InterpType>(i);
-                if (interpType == moth_ui::InterpType::Unknown) {
+            for (size_t i = 0; i < magic_enum::enum_count<moth::ui::InterpType>(); ++i) {
+                auto const interpType = magic_enum::enum_value<moth::ui::InterpType>(i);
+                if (interpType == moth::ui::InterpType::Unknown) {
                     continue;
                 }
                 std::string const interpName(magic_enum::enum_name(interpType));
@@ -2081,7 +2081,7 @@ void EditorPanelAnimation::DrawWidget() {
 // ---------------------------------------------------------------------------
 
 void EditorPanelAnimation::CommitDragActions() {
-    auto groupEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
+    auto groupEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(m_group->GetLayoutEntity());
     std::vector<std::unique_ptr<IEditorAction>> actions;
 
     for (auto& context : m_selections) {
@@ -2194,7 +2194,7 @@ void EditorPanelAnimation::UpdateMouseDragging() {
 // Track metadata (expand/collapse state per child node)
 // ---------------------------------------------------------------------------
 
-bool EditorPanelAnimation::IsExpanded(std::shared_ptr<moth_ui::Node> child) const {
+bool EditorPanelAnimation::IsExpanded(std::shared_ptr<moth::ui::Node> child) const {
     auto it = m_trackMetadata.find(child.get());
     if (std::end(m_trackMetadata) == it) {
         return false;
@@ -2202,7 +2202,7 @@ bool EditorPanelAnimation::IsExpanded(std::shared_ptr<moth_ui::Node> child) cons
     return it->second.expanded;
 }
 
-void EditorPanelAnimation::SetExpanded(std::shared_ptr<moth_ui::Node> child, bool expanded) {
+void EditorPanelAnimation::SetExpanded(std::shared_ptr<moth::ui::Node> child, bool expanded) {
     auto it = m_trackMetadata.find(child.get());
     if (std::end(m_trackMetadata) == it) {
         m_trackMetadata.insert(std::make_pair(child.get(), TrackMetadata{ child, expanded }));

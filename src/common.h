@@ -13,7 +13,7 @@
 #include <unordered_map>
 
 #include <fmt/format.h>
-#include <moth_ui/utils/serialize_utils.h>
+#include <moth/ui/utils/serialize_utils.h>
 #include <nlohmann/json.hpp>
 #include <imgui.h>
 #include <magic_enum.hpp>
@@ -27,8 +27,11 @@
 #include <range/v3/algorithm/find_if.hpp>
 #include <range/v3/algorithm/remove_if.hpp>
 
-#include <moth_ui/utils/rect.h>
-#include <moth_ui/moth_ui_fwd.h>
+#include <moth/core/angle.h>
+#include <moth/core/vector.h>
+#include <moth/core/vector_serialization.h>
+#include <moth/ui/utils/rect.h>
+#include <moth/ui/moth_ui_fwd.h>
 
 #include "utils.h"
 #include "editor/imgui_ext.h"

@@ -12,6 +12,6 @@ public:
 private:
     int m_size = 12;
 
-    bool IsInBounds(moth_ui::IntVec2 const& pos) const override;
-    void UpdatePosition(moth_ui::IntVec2 const& position) override;
+    bool IsInBounds(moth::ui::IntVec2 const& pos) const override;
+    void UpdatePosition(moth::ui::IntVec2 const& position) override;
 };

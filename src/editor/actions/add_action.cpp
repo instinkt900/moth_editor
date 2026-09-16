@@ -1,9 +1,9 @@
 #include "common.h"
 #include "add_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/nodes/group.h"
+#include "moth/ui/layout/layout_entity_group.h"
+#include "moth/ui/nodes/group.h"
 
-AddAction::AddAction(std::shared_ptr<moth_ui::Node> newNode, std::shared_ptr<moth_ui::Group> parentNode)
+AddAction::AddAction(std::shared_ptr<moth::ui::Node> newNode, std::shared_ptr<moth::ui::Group> parentNode)
     : m_newNode(newNode)
     , m_parentNode(parentNode) {
 }
@@ -13,7 +13,7 @@ AddAction::~AddAction() {
 
 void AddAction::Do() {
     // need to merge the layout entity trees too
-    auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
+    auto parentLayoutEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_newNode->GetLayoutEntity();
     parentLayoutEntity->m_children.push_back(layoutEntity);
     layoutEntity->m_parent = parentLayoutEntity.get();
@@ -27,7 +27,7 @@ void AddAction::Undo() {
     m_parentNode->RemoveChild(m_newNode);
 
     // separate the layout entity trees
-    auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
+    auto parentLayoutEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_newNode->GetLayoutEntity();
     auto it = std::find_if(std::begin(parentLayoutEntity->m_children), std::end(parentLayoutEntity->m_children), [&layoutEntity](auto& child) { return child == layoutEntity; });
     if (std::end(parentLayoutEntity->m_children) != it) {

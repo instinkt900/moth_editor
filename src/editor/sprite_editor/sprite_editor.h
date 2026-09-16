@@ -1,7 +1,7 @@
 #pragma once
 
 #include "editor/actions/editor_action.h"
-#include "moth_graphics/graphics/spritesheet.h"
+#include "moth/graphics/graphics/spritesheet.h"
 
 #include <filesystem>
 #include <memory>
@@ -27,8 +27,8 @@ private:
     void DrawFramesPane();
     void DrawClipsPane();
 
-    using FrameVec = std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry>;
-    using ClipVec  = std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry>;
+    using FrameVec = std::vector<moth::gfx::SpriteSheet::FrameEntry>;
+    using ClipVec  = std::vector<moth::gfx::SpriteSheet::ClipEntry>;
 
     // Undo/redo stack (independent from the main editor's stack)
     void AddSpriteAction(std::unique_ptr<IEditorAction> action);
@@ -45,9 +45,9 @@ private:
     bool m_open = false;
     char m_pathBuffer[1024] = {};
     char m_imagePathBuffer[1024] = {};
-    std::shared_ptr<moth_graphics::graphics::SpriteSheet> m_spriteSheet;
-    std::vector<moth_graphics::graphics::SpriteSheet::FrameEntry> m_frames;
-    std::vector<moth_graphics::graphics::SpriteSheet::ClipEntry> m_clips;
+    std::shared_ptr<moth::gfx::SpriteSheet> m_spriteSheet;
+    std::vector<moth::gfx::SpriteSheet::FrameEntry> m_frames;
+    std::vector<moth::gfx::SpriteSheet::ClipEntry> m_clips;
     int m_selectedFrame = -1;
     float m_zoom = 1.0f; // -1 = auto-fit on next draw
     char m_newClipNameBuffer[256] = {};

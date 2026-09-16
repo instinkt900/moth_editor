@@ -1,10 +1,10 @@
 #include "common.h"
 #include "anchor_bounds_handle.h"
-#include "moth_ui/nodes/node.h"
-#include "moth_ui/nodes/group.h"
+#include "moth/ui/nodes/node.h"
+#include "moth/ui/nodes/group.h"
 #include "bounds_widget.h"
 #include "editor_layer.h"
-#include "moth_ui/utils/interp.h"
+#include "moth/ui/utils/interp.h"
 #include "panels/editor_panel_canvas.h"
 
 template <typename T, typename U>
@@ -26,8 +26,8 @@ void AnchorBoundsHandle::Draw() {
 
     auto const& layoutRect = m_target->GetLayoutRect();
 
-    auto const parentBounds = static_cast<moth_ui::FloatRect>(m_target->GetParent()->GetScreenRect());
-    auto const parentDimensions = moth_ui::FloatVec2{ parentBounds.w(), parentBounds.h() };
+    auto const parentBounds = static_cast<moth::ui::FloatRect>(m_target->GetParent()->GetScreenRect());
+    auto const parentDimensions = moth::ui::FloatVec2{ parentBounds.w(), parentBounds.h() };
 
     float anchorX = 0.5f;
     if (m_anchor.Left) { anchorX = 0.0f; }
@@ -35,7 +35,7 @@ void AnchorBoundsHandle::Draw() {
     float anchorY = 0.5f;
     if (m_anchor.Top) { anchorY = 0.0f; }
     else if (m_anchor.Bottom) { anchorY = 1.0f; }
-    moth_ui::FloatVec2 const anchor{ anchorX, anchorY };
+    moth::ui::FloatVec2 const anchor{ anchorX, anchorY };
 
     auto const adjust = lerp(layoutRect.anchor.topLeft, layoutRect.anchor.bottomRight, anchor);
     m_position = parentBounds.topLeft + parentDimensions * adjust;
@@ -51,7 +51,7 @@ void AnchorBoundsHandle::Draw() {
     auto& canvasPanel = m_widget.GetCanvasPanel();
     auto* const drawList = ImGui::GetWindowDrawList();
     auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace>(m_position);
-    auto const color = moth_ui::ToABGR(canvasPanel.GetEditorLayer().GetConfig().SelectionColor);
+    auto const color = moth::ui::ToABGR(canvasPanel.GetEditorLayer().GetConfig().SelectionColor);
     if (!m_anchor.Top || !m_anchor.Bottom) {
         x1 = drawPosition.x - offset;
         x2 = drawPosition.x + offset;
@@ -67,14 +67,14 @@ void AnchorBoundsHandle::Draw() {
     }
 }
 
-bool AnchorBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
+bool AnchorBoundsHandle::IsInBounds(moth::ui::IntVec2 const& pos) const {
     float anchorX = 0.5f;
     if (m_anchor.Left) { anchorX = 0.0f; }
     else if (m_anchor.Right) { anchorX = 1.0f; }
     float anchorY = 0.5f;
     if (m_anchor.Top) { anchorY = 0.0f; }
     else if (m_anchor.Bottom) { anchorY = 1.0f; }
-    moth_ui::FloatVec2 const anchor{ anchorX, anchorY };
+    moth::ui::FloatVec2 const anchor{ anchorX, anchorY };
 
     int const halfSize = m_size / 2;
 
@@ -84,23 +84,23 @@ bool AnchorBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
     auto const drawPosition = canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, int>(m_position);
 
     if (!m_anchor.Top || !m_anchor.Bottom) {
-        moth_ui::IntRect r1;
+        moth::ui::IntRect r1;
         r1.topLeft.x = drawPosition.x - offset;
         r1.bottomRight.x = r1.topLeft.x + offset * 2;
         r1.topLeft.y = drawPosition.y - offset + static_cast<int>(static_cast<float>(offset) * 2.0f * anchor.y) - 3;
         r1.bottomRight.y = r1.topLeft.y + 6;
-        if (moth_ui::IsInRect(pos, r1)) {
+        if (moth::ui::IsInRect(pos, r1)) {
             return true;
         }
     }
 
     if (!m_anchor.Left || !m_anchor.Right) {
-        moth_ui::IntRect r1;
+        moth::ui::IntRect r1;
         r1.topLeft.y = drawPosition.y - offset;
         r1.bottomRight.y = r1.topLeft.y + offset * 2;
         r1.topLeft.x = drawPosition.x - offset + static_cast<int>(static_cast<float>(offset) * 2.0f * anchor.x) - 3;
         r1.bottomRight.x = r1.topLeft.x + 6;
-        if (moth_ui::IsInRect(pos, r1)) {
+        if (moth::ui::IsInRect(pos, r1)) {
             return true;
         }
     }
@@ -108,24 +108,24 @@ bool AnchorBoundsHandle::IsInBounds(moth_ui::IntVec2 const& pos) const {
     return false;
 }
 
-void AnchorBoundsHandle::UpdatePosition(moth_ui::IntVec2 const& position) {
+void AnchorBoundsHandle::UpdatePosition(moth::ui::IntVec2 const& position) {
     auto* const parent = m_target->GetParent();
     auto const& parentRect = parent->GetScreenRect();
 
-    auto const parentOffset = static_cast<moth_ui::FloatVec2>(parentRect.topLeft);
-    auto const parentDimensions = static_cast<moth_ui::FloatVec2>(parentRect.bottomRight - parentRect.topLeft);
+    auto const parentOffset = static_cast<moth::ui::FloatVec2>(parentRect.topLeft);
+    auto const parentDimensions = static_cast<moth::ui::FloatVec2>(parentRect.bottomRight - parentRect.topLeft);
 
     auto& bounds = m_target->GetLayoutRect();
 
-    auto const mousePosition = static_cast<moth_ui::FloatVec2>(position);
+    auto const mousePosition = static_cast<moth::ui::FloatVec2>(position);
     auto const newAnchorPos = mousePosition - parentOffset;
     auto const newAnchor = newAnchorPos / parentDimensions;
 
     auto const topLeftAnchorDelta = newAnchor - bounds.anchor.topLeft;
     auto const bottomRightOffsetDelta = newAnchor - bounds.anchor.bottomRight;
 
-    bounds.anchor.topLeft += topLeftAnchorDelta * moth_ui::FloatVec2{ static_cast<float>(m_anchor.Left), static_cast<float>(m_anchor.Top) };
-    bounds.anchor.bottomRight += bottomRightOffsetDelta * moth_ui::FloatVec2{ static_cast<float>(m_anchor.Right), static_cast<float>(m_anchor.Bottom) };
+    bounds.anchor.topLeft += topLeftAnchorDelta * moth::ui::FloatVec2{ static_cast<float>(m_anchor.Left), static_cast<float>(m_anchor.Top) };
+    bounds.anchor.bottomRight += bottomRightOffsetDelta * moth::ui::FloatVec2{ static_cast<float>(m_anchor.Right), static_cast<float>(m_anchor.Bottom) };
 
     auto const& screenRect = m_target->GetScreenRect();
     bounds.offset.topLeft.x = static_cast<float>(screenRect.topLeft.x) - (static_cast<float>(parentRect.w()) * bounds.anchor.topLeft.x) - static_cast<float>(parentRect.topLeft.x);

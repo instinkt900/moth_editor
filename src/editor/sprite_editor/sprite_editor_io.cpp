@@ -2,10 +2,10 @@
 #include "sprite_editor.h"
 #include "editor/editor_layer.h"
 
-#include "moth_graphics/graphics/igraphics.h"
-#include "moth_graphics/graphics/surface_context.h"
-#include "moth_graphics/graphics/asset_context.h"
-#include "moth_graphics/graphics/spritesheet_factory.h"
+#include "moth/graphics/graphics/igraphics.h"
+#include "moth/graphics/graphics/surface_context.h"
+#include "moth/graphics/graphics/asset_context.h"
+#include "moth/graphics/graphics/spritesheet_factory.h"
 
 void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
     // Load and validate before touching any editor state so a failed load
@@ -57,7 +57,7 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
     int const clipCount = m_spriteSheet->GetClipCount();
     m_clips.reserve(static_cast<size_t>(clipCount));
     for (int i = 0; i < clipCount; ++i) {
-        moth_graphics::graphics::SpriteSheet::ClipEntry entry;
+        moth::gfx::SpriteSheet::ClipEntry entry;
         entry.name = m_spriteSheet->GetClipName(i);
         if (auto desc = m_spriteSheet->GetClipDesc(entry.name)) {
             entry.desc = *desc;
@@ -68,12 +68,12 @@ void SpriteEditor::LoadSpriteSheet(std::filesystem::path const& path) {
 
 void SpriteEditor::ImportSheet(std::filesystem::path const& imagePath) {
     auto& assetContext = m_editorLayer.GetAssetContext();
-    std::shared_ptr<moth_graphics::graphics::ITexture> texture(assetContext.TextureFromFile(imagePath));
+    std::shared_ptr<moth::gfx::ITexture> texture(assetContext.TextureFromFile(imagePath));
     if (!texture) {
         spdlog::error("SpriteEditor: failed to load image '{}'", imagePath.string());
         return;
     }
-    moth_graphics::graphics::Image image{ texture };
+    moth::gfx::Image image{ texture };
 
     ClearSpriteActions();
 
@@ -81,7 +81,7 @@ void SpriteEditor::ImportSheet(std::filesystem::path const& imagePath) {
     strncpy(m_imagePathBuffer, imageStr.c_str(), sizeof(m_imagePathBuffer) - 1);
     m_imagePathBuffer[sizeof(m_imagePathBuffer) - 1] = '\0';
 
-    m_spriteSheet = std::make_shared<moth_graphics::graphics::SpriteSheet>(
+    m_spriteSheet = std::make_shared<moth::gfx::SpriteSheet>(
         std::move(image),
         m_frames,
         m_clips);
@@ -143,9 +143,9 @@ void SpriteEditor::SaveSpriteSheet() {
 
         char const* loopStr = nullptr;
         switch (entry.desc.loop) {
-        case moth_graphics::graphics::SpriteSheet::LoopType::Stop:  loopStr = "stop";  break;
-        case moth_graphics::graphics::SpriteSheet::LoopType::Reset: loopStr = "reset"; break;
-        case moth_graphics::graphics::SpriteSheet::LoopType::Loop:  loopStr = "loop";  break;
+        case moth::gfx::SpriteSheet::LoopType::Stop:  loopStr = "stop";  break;
+        case moth::gfx::SpriteSheet::LoopType::Reset: loopStr = "reset"; break;
+        case moth::gfx::SpriteSheet::LoopType::Loop:  loopStr = "loop";  break;
         default:                                                     loopStr = "stop";  break;
         }
         clipObj["loop"] = loopStr;
