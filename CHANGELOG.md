@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
+## [2.0.0] - 2026-09-16
+### Features
+- Add Help menu with About dialog
+- Swap canvas mousewheel — wheel zooms, ctrl+wheel pans
+- Step animation frames with , and . keys
+- Add shortcuts cheatsheet plus select-all, deselect, and duplicate
+- Add reference image overlay with opacity control
+- Add font preview to fonts dialog
+- Add gradient node support to the editor
+- Normalize an image identity when the editor creates one
+
+### Bug Fixes
+- Make click behaviour consistent across clips, events, and keyframes
+- Support mixed-selection drag across clips, events, and keyframes
+- Ctrl-click toggles selection, re-click preserves mixed selection
+- Stop right-click processing on first overlapping clip hit
+- Guard scrollbar trackAreaWidth against narrow panels
+- Name spdlog first and drop the fmt override
+- Bumping moth_packer dep
+
+### Refactoring
+- Update to moth_graphics IImage->Image value-type and TextureFactory APIs
+- Pass AssetContext directly to EditorLayer
+- Extract ClipGeometry and HitTestClip from DrawClipRow
+- Introduce AnimationIntent and Apply dispatcher for clip row
+- Convert DrawEventsRow to AnimationIntent pattern
+- Route clip/event popup actions through AnimationIntent
+- Convert DrawChildTrack and DrawTrackRows to AnimationIntent
+- Convert DrawKeyframePopup to AnimationIntent
+- Extract pure drag-math helpers from UpdateMouseDragging
+- Polish animation panel toolbar and scrollbar
+- Tidy gradient angle conversion and font preview rect
+- [**breaking**] Build against the moth_toolkit modules
+
+### Documentation
+- Refresh editor TODO
+- Document Artifactory remote registration for Conan
+
+### Miscellaneous
+- Bump conan dependencies
+- Update stale comments in animation panel
+- Bump moth_ui and moth_graphics to 1.1.0
+- Bump moth_packer to 1.0.0-rc.2
+- Describe the package as a moth_toolkit editor
+- Release 2.0.0 against moth_packer 2
+
 ## [1.0.0-rc.1] - 2026-04-28
 ### Features
 - Add Sprite Editor tool (step 1 — view)
