@@ -1,6 +1,6 @@
 #pragma once
 
-#include "moth_ui/events/event_listener.h"
+#include "moth/ui/events/event_listener.h"
 
 #include <string>
 #include <cstdint>
@@ -20,7 +20,7 @@ enum class EditorPanelType {
     Preview,
 };
 
-class EditorPanel : public moth_ui::IEventListener {
+class EditorPanel : public moth::ui::IEventListener {
 public:
     EditorPanel(EditorLayer& editorLayer, std::string const& title, bool visible, bool exposed);
     ~EditorPanel() override = default;
@@ -36,7 +36,7 @@ public:
 
     virtual void Refresh() {}
 
-    bool OnEvent(moth_ui::Event const& event) override { return false; }
+    bool OnEvent(moth::ui::Event const& event) override { return false; }
     virtual void Update(uint32_t ticks) {}
     void Draw();
 

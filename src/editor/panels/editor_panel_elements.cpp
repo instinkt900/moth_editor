@@ -1,17 +1,16 @@
 #include "common.h"
 #include "editor_panel_elements.h"
 #include "../editor_layer.h"
-#include "moth_ui/layout/layout_entity_rect.h"
-#include "moth_ui/layout/layout_entity_image.h"
-#include "moth_ui/layout/layout_entity_ref.h"
-#include "moth_ui/layout/layout_entity_clip.h"
-#include "moth_ui/layout/layout_entity_text.h"
-#include "moth_ui/layout/layout_entity_flipbook.h"
-#include "moth_ui/layout/layout_entity_gradient.h"
-#include "moth_ui/layout/layout.h"
-#include "moth_ui/nodes/group.h"
+#include "moth/ui/layout/layout_entity_rect.h"
+#include "moth/ui/layout/layout_entity_image.h"
+#include "moth/ui/layout/layout_entity_ref.h"
+#include "moth/ui/layout/layout_entity_clip.h"
+#include "moth/ui/layout/layout_entity_text.h"
+#include "moth/ui/layout/layout_entity_flipbook.h"
+#include "moth/ui/layout/layout_entity_gradient.h"
+#include "moth/ui/layout/layout.h"
+#include "moth/ui/nodes/group.h"
 #include "../element_utils.h"
-#include "../image_identity.h"
 
 #include <nfd.h>
 
@@ -19,7 +18,7 @@ namespace {
     std::vector<std::pair<char const*, std::function<void(EditorLayer&)>>> ElementButtons = {
         {
             "Rect",
-            [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityRect>(editorLayer); },
+            [](EditorLayer& editorLayer) { AddEntity<moth::ui::LayoutEntityRect>(editorLayer); },
         },
         {
             "Image",
@@ -31,14 +30,14 @@ namespace {
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
                     NFD_Free(outPath);
-                    moth_ui::LayoutRect bounds;
+                    moth::ui::LayoutRect bounds;
                     bounds.anchor.topLeft = { 0, 0 };
                     bounds.anchor.bottomRight = { 0, 0 };
                     bounds.offset.topLeft = { 0, 0 };
                     bounds.offset.bottomRight = { 100, 100 };
-                    AddEntityWithBounds<moth_ui::LayoutEntityImage>(
+                    AddEntityWithBounds<moth::ui::LayoutEntityImage>(
                         editorLayer, bounds,
-                        MakeImageId(filePath, editorLayer.GetCurrentLayoutPath()));
+                        filePath);
                 }
             },
         },
@@ -47,23 +46,23 @@ namespace {
             [](EditorLayer& editorLayer) {
                 auto const currentPath = std::filesystem::current_path().string();
                 nfdchar_t* outPath = NULL;
-                nfdresult_t result = NFD_OpenDialog(moth_ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
+                nfdresult_t result = NFD_OpenDialog(moth::ui::Layout::Extension.c_str(), currentPath.c_str(), &outPath);
 
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
                     NFD_Free(outPath);
-                    auto [referencedLayout, loadResult] = moth_ui::Layout::Load(filePath);
-                    if (loadResult == moth_ui::Layout::LoadResult::Success) {
-                        moth_ui::LayoutRect bounds;
+                    auto [referencedLayout, loadResult] = moth::ui::Layout::Load(filePath);
+                    if (loadResult == moth::ui::Layout::LoadResult::Success) {
+                        moth::ui::LayoutRect bounds;
                         bounds.anchor.topLeft = { 0, 0 };
                         bounds.anchor.bottomRight = { 0, 0 };
                         bounds.offset.topLeft = { 0, 0 };
                         bounds.offset.bottomRight = { 100, 100 };
-                        AddEntityWithBounds<moth_ui::LayoutEntityRef>(editorLayer, bounds, *referencedLayout);
+                        AddEntityWithBounds<moth::ui::LayoutEntityRef>(editorLayer, bounds, *referencedLayout);
                     } else {
-                        if (loadResult == moth_ui::Layout::LoadResult::DoesNotExist) {
+                        if (loadResult == moth::ui::Layout::LoadResult::DoesNotExist) {
                             editorLayer.ShowError("File not found.");
-                        } else if (loadResult == moth_ui::Layout::LoadResult::IncorrectFormat) {
+                        } else if (loadResult == moth::ui::Layout::LoadResult::IncorrectFormat) {
                             editorLayer.ShowError("File was not valid.");
                         }
                     }
@@ -72,15 +71,15 @@ namespace {
         },
         {
             "Text",
-            [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityText>(editorLayer); },
+            [](EditorLayer& editorLayer) { AddEntity<moth::ui::LayoutEntityText>(editorLayer); },
         },
         {
             "Clip Rect",
-            [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityClip>(editorLayer); },
+            [](EditorLayer& editorLayer) { AddEntity<moth::ui::LayoutEntityClip>(editorLayer); },
         },
         {
             "Gradient",
-            [](EditorLayer& editorLayer) { AddEntity<moth_ui::LayoutEntityGradient>(editorLayer); },
+            [](EditorLayer& editorLayer) { AddEntity<moth::ui::LayoutEntityGradient>(editorLayer); },
         },
         {
             "Flipbook",
@@ -92,7 +91,7 @@ namespace {
                 if (result == NFD_OKAY) {
                     std::filesystem::path filePath = outPath;
                     NFD_Free(outPath);
-                    AddEntity<moth_ui::LayoutEntityFlipbook>(editorLayer, filePath);
+                    AddEntity<moth::ui::LayoutEntityFlipbook>(editorLayer, filePath);
                 }
             },
         },

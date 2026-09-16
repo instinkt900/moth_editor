@@ -1,12 +1,12 @@
 #pragma once
 
 #include "editor_action.h"
-#include "moth_ui/moth_ui_fwd.h"
-#include "moth_ui/animation/animation_clip.h"
+#include "moth/ui/moth_ui_fwd.h"
+#include "moth/ui/animation/animation_clip.h"
 
 class DeleteClipAction : public IEditorAction {
 public:
-    DeleteClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> entity, moth_ui::AnimationClip clip);
+    DeleteClipAction(std::shared_ptr<moth::ui::LayoutEntityGroup> entity, moth::ui::AnimationClip clip);
     ~DeleteClipAction() override;
 
     void Do() override;
@@ -15,6 +15,6 @@ public:
     void OnImGui() override;
 
 protected:
-    std::shared_ptr<moth_ui::LayoutEntityGroup> m_entity;
-    moth_ui::AnimationClip m_clip;
+    std::shared_ptr<moth::ui::LayoutEntityGroup> m_entity;
+    moth::ui::AnimationClip m_clip;
 };

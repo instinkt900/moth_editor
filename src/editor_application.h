@@ -1,12 +1,12 @@
 #pragma once
 
-#include "moth_graphics/platform/application.h"
+#include "moth/bridge/application.h"
 #include <nlohmann/json.hpp>
 
-class EditorApplication : public moth_graphics::platform::Application
+class EditorApplication : public moth::bridge::Application
 {
 public:
-    EditorApplication(moth_graphics::platform::IPlatform& platform);
+    EditorApplication(moth::gfx::platform::IPlatform& platform);
     ~EditorApplication() override;
 
 
@@ -14,6 +14,9 @@ public:
 
 private:
     void PostCreateWindow() override;
+    // Captures the window geometry while the window is still alive: Application::Run
+    // destroys it after calling this, and the destructor writes the file.
+    void Shutdown() override;
 
     // Must outlive ImGui context (destroyed in base class dtor after derived members).
     // Stored as a file-scope static in editor_application.cpp.

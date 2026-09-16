@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <memory>
 
-namespace moth_graphics::graphics {
+namespace moth::gfx {
     class Image;
 }
 
@@ -24,7 +24,7 @@ public:
 private:
     ContentList m_contentList;
     std::filesystem::file_time_type m_lastDirWriteTime;
-    std::unordered_map<std::string, moth_graphics::graphics::Image> m_imageCache;
+    std::unordered_map<std::string, moth::gfx::Image> m_imageCache;
 
     void DrawContents() override;
 };

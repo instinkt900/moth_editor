@@ -1,9 +1,9 @@
 #pragma once
 
 #include "imgui_ext.h"
-#include "moth_ui/layout/layout_rect.h"
-#include "moth_ui/animation/keyframe.h"
-#include "moth_ui/utils/color.h"
+#include "moth/ui/layout/layout_rect.h"
+#include "moth/ui/animation/keyframe.h"
+#include "moth/ui/utils/color.h"
 
 #include <fmt/format.h>
 #include <imgui.h>
@@ -77,7 +77,7 @@ namespace imgui_ext {
         return changed;
     }
 
-    inline bool Inspect(char const* label, moth_ui::LayoutRect& widgetBounds) {
+    inline bool Inspect(char const* label, moth::ui::LayoutRect& widgetBounds) {
         bool changed = false;
         ImGui::PushID(label);
         if (ImGui::CollapsingHeader(label)) {
@@ -104,7 +104,7 @@ namespace imgui_ext {
         return changed;
     }
 
-    inline bool Inspect(char const* label, moth_ui::IntRect& widgetRect) {
+    inline bool Inspect(char const* label, moth::ui::IntRect& widgetRect) {
         bool changed = false;
         ImGui::PushID(label);
         if (ImGui::CollapsingHeader(label)) {
@@ -119,11 +119,11 @@ namespace imgui_ext {
         return changed;
     }
 
-    inline void Inspect(char const* label, moth_ui::Color& color) {
+    inline void Inspect(char const* label, moth::ui::Color& color) {
         ImGui::ColorEdit4(label, color.data);
     }
 
-    inline void Inspect(char const* label, moth_ui::Keyframe& keyframe) {
+    inline void Inspect(char const* label, moth::ui::Keyframe& keyframe) {
         ImGui::PushID(label);
         if (ImGui::CollapsingHeader(label)) {
             Inspect("Frame", keyframe.frame);

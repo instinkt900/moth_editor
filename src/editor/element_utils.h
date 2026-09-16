@@ -2,12 +2,12 @@
 
 #include "editor_layer.h"
 #include "actions/add_action.h"
-#include "moth_ui/context.h"
+#include "moth/ui/context.h"
 
 template <typename T, typename... Args>
-void AddEntityWithBounds(EditorLayer& editorLayer, moth_ui::LayoutRect const& bounds, Args&&... args) {
+void AddEntityWithBounds(EditorLayer& editorLayer, moth::ui::LayoutRect const& bounds, Args&&... args) {
     auto newLayoutEntity = std::make_shared<T>(bounds, std::forward<Args>(args)...);
-    auto newNode = std::shared_ptr<moth_ui::Node>(newLayoutEntity->Instantiate(editorLayer.GetContext()));
+    auto newNode = std::shared_ptr<moth::ui::Node>(newLayoutEntity->Instantiate(editorLayer.GetContext()));
     auto addAction = std::make_unique<AddAction>(newNode, editorLayer.GetRoot());
     editorLayer.PerformEditAction(std::move(addAction));
     editorLayer.GetRoot()->RecalculateBounds();
@@ -17,7 +17,7 @@ void AddEntityWithBounds(EditorLayer& editorLayer, moth_ui::LayoutRect const& bo
 
 template <typename T, typename... Args>
 void AddEntity(EditorLayer& editorLayer, Args&&... args) {
-    moth_ui::LayoutRect bounds;
+    moth::ui::LayoutRect bounds;
     bounds.anchor.topLeft = { 0.5f, 0.5f };
     bounds.anchor.bottomRight = { 0.5f, 0.5f };
     bounds.offset.topLeft = { -50, -50 };

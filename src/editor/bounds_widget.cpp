@@ -4,13 +4,13 @@
 #include "offset_bounds_handle.h"
 #include "pivot_bounds_handle.h"
 #include "rotation_bounds_handle.h"
-#include "moth_ui/events/event_dispatch.h"
-#include "moth_ui/nodes/group.h"
-#include "moth_ui/nodes/node_image.h"
-#include "moth_ui/nodes/node.h"
-#include "moth_ui/layout/layout_entity.h"
-#include "moth_ui/layout/layout_entity_image.h"
-#include "moth_ui/utils/transform.h"
+#include "moth/ui/events/event_dispatch.h"
+#include "moth/ui/nodes/group.h"
+#include "moth/ui/nodes/node_image.h"
+#include "moth/ui/nodes/node.h"
+#include "moth/ui/layout/layout_entity.h"
+#include "moth/ui/layout/layout_entity_image.h"
+#include "moth/ui/utils/transform.h"
 #include "editor_layer.h"
 #include "panels/editor_panel_canvas.h"
 
@@ -49,8 +49,8 @@ BoundsWidget::BoundsWidget(EditorPanelCanvas& canvasPanel)
 BoundsWidget::~BoundsWidget() {
 }
 
-bool BoundsWidget::OnEvent(moth_ui::Event const& event) {
-    moth_ui::EventDispatch dispatch(event);
+bool BoundsWidget::OnEvent(moth::ui::Event const& event) {
+    moth::ui::EventDispatch dispatch(event);
     dispatch.Dispatch(this, &BoundsWidget::OnMouseDown);
     dispatch.Dispatch(this, &BoundsWidget::OnMouseUp);
     dispatch.Dispatch(m_pivotHandle.get());
@@ -72,35 +72,35 @@ void BoundsWidget::EndEdit() {
     m_canvasPanel.GetEditorLayer().EndEditBounds();
 }
 
-moth_ui::FloatVec2 BoundsWidget::GetRotatedWorldPos(moth_ui::FloatVec2 const& worldPos) const {
+moth::ui::FloatVec2 BoundsWidget::GetRotatedWorldPos(moth::ui::FloatVec2 const& worldPos) const {
     if (m_node == nullptr) {
         return worldPos;
     }
-    auto const bounds = static_cast<moth_ui::FloatRect>(m_node->GetScreenRect());
-    auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+    auto const bounds = static_cast<moth::ui::FloatRect>(m_node->GetScreenRect());
+    auto const dims = moth::ui::FloatVec2{ bounds.w(), bounds.h() };
     auto const entity = m_node->GetLayoutEntity();
     auto const pivot = m_node->GetPivot();
     auto const pivotWorld = bounds.topLeft + dims * pivot;
-    float const rotation = m_node->GetRotation() * moth_ui::kDegToRad;
+    float const rotation = m_node->GetRotation();
     float const c = std::cos(rotation);
     float const s = std::sin(rotation);
     auto const offset = worldPos - pivotWorld;
-    return pivotWorld + moth_ui::FloatVec2{ (c * offset.x) - (s * offset.y), (s * offset.x) + (c * offset.y) };
+    return pivotWorld + moth::ui::FloatVec2{ (c * offset.x) - (s * offset.y), (s * offset.x) + (c * offset.y) };
 }
 
-moth_ui::FloatVec2 BoundsWidget::GetNodeAnchorWorldPos(BoundsHandleAnchor const& anchor) const {
+moth::ui::FloatVec2 BoundsWidget::GetNodeAnchorWorldPos(BoundsHandleAnchor const& anchor) const {
     if (m_node == nullptr) {
         return {};
     }
-    auto const bounds = static_cast<moth_ui::FloatRect>(m_node->GetScreenRect());
-    auto const dims = moth_ui::FloatVec2{ bounds.w(), bounds.h() };
+    auto const bounds = static_cast<moth::ui::FloatRect>(m_node->GetScreenRect());
+    auto const dims = moth::ui::FloatVec2{ bounds.w(), bounds.h() };
     float anchorX = 0.5f;
     if (anchor.Left) { anchorX = 0.0f; }
     else if (anchor.Right) { anchorX = 1.0f; }
     float anchorY = 0.5f;
     if (anchor.Top) { anchorY = 0.0f; }
     else if (anchor.Bottom) { anchorY = 1.0f; }
-    auto const unrotatedPos = bounds.topLeft + dims * moth_ui::FloatVec2{ anchorX, anchorY };
+    auto const unrotatedPos = bounds.topLeft + dims * moth::ui::FloatVec2{ anchorX, anchorY };
     return GetRotatedWorldPos(unrotatedPos);
 }
 
@@ -115,15 +115,15 @@ void BoundsWidget::Draw() {
         m_anchorButtonTL.bottomRight.y = m_anchorButtonTL.topLeft.y + static_cast<float>(m_anchorButtonSize);
 
         m_anchorButtonFill = m_anchorButtonTL;
-        m_anchorButtonFill += moth_ui::FloatVec2{ static_cast<float>(m_anchorButtonSize + m_anchorButtonSpacing), 0 };
+        m_anchorButtonFill += moth::ui::FloatVec2{ static_cast<float>(m_anchorButtonSize + m_anchorButtonSpacing), 0 };
 
         // 9 slice indicators
-        auto const sliceColor = moth_ui::ToABGR(m_canvasPanel.GetEditorLayer().GetConfig().SelectionSliceColor);
+        auto const sliceColor = moth::ui::ToABGR(m_canvasPanel.GetEditorLayer().GetConfig().SelectionSliceColor);
         auto layoutEntity = m_node->GetLayoutEntity();
-        if (layoutEntity && layoutEntity->GetType() == moth_ui::LayoutEntityType::Image) {
-            auto imageNode = std::static_pointer_cast<moth_ui::NodeImage>(m_node);
-            auto imageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(layoutEntity);
-            if (imageEntity->m_imageScaleType == moth_ui::ImageScaleType::NineSlice) {
+        if (layoutEntity && layoutEntity->GetType() == moth::ui::LayoutEntityType::Image) {
+            auto imageNode = std::static_pointer_cast<moth::ui::NodeImage>(m_node);
+            auto imageEntity = std::static_pointer_cast<moth::ui::LayoutEntityImage>(layoutEntity);
+            if (imageEntity->m_imageScaleType == moth::ui::ImageScaleType::NineSlice) {
                 auto const slice1 = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(imageNode->GetTargetSlices()[1]);
                 auto const slice2 = m_canvasPanel.ConvertSpace<EditorPanelCanvas::CoordSpace::WorldSpace, EditorPanelCanvas::CoordSpace::AppSpace, float>(imageNode->GetTargetSlices()[2]);
 
@@ -136,11 +136,11 @@ void BoundsWidget::Draw() {
 
         // overall bounds (rotated)
         auto const boundsColor = m_canvasPanel.GetEditorLayer().GetConfig().SelectionColor;
-        auto const abgrBoundsColor = moth_ui::ToABGR(boundsColor);
+        auto const abgrBoundsColor = moth::ui::ToABGR(boundsColor);
         {
             auto const& sr = m_node->GetScreenRect();
-            auto const srf = static_cast<moth_ui::FloatRect>(sr);
-            std::array<moth_ui::FloatVec2, 4> const worldCorners = {
+            auto const srf = static_cast<moth::ui::FloatRect>(sr);
+            std::array<moth::ui::FloatVec2, 4> const worldCorners = {
                 GetRotatedWorldPos(srf.topLeft),
                 GetRotatedWorldPos({ srf.bottomRight.x, srf.topLeft.y }),
                 GetRotatedWorldPos(srf.bottomRight),
@@ -154,10 +154,10 @@ void BoundsWidget::Draw() {
         }
 
         // anchor preset buttons
-        auto const buttonColor = moth_ui::Color{ boundsColor.r, boundsColor.g, boundsColor.b, 0.5f };
-        drawList->AddRectFilled(ImVec2{ m_anchorButtonTL.topLeft.x, m_anchorButtonTL.topLeft.y }, ImVec2{ m_anchorButtonTL.bottomRight.x, m_anchorButtonTL.bottomRight.y }, moth_ui::ToABGR(buttonColor));
+        auto const buttonColor = moth::ui::Color{ boundsColor.r, boundsColor.g, boundsColor.b, 0.5f };
+        drawList->AddRectFilled(ImVec2{ m_anchorButtonTL.topLeft.x, m_anchorButtonTL.topLeft.y }, ImVec2{ m_anchorButtonTL.bottomRight.x, m_anchorButtonTL.bottomRight.y }, moth::ui::ToABGR(buttonColor));
         drawList->AddRectFilled(ImVec2{ m_anchorButtonTL.topLeft.x, m_anchorButtonTL.topLeft.y }, ImVec2{ m_anchorButtonTL.topLeft.x+4, m_anchorButtonTL.topLeft.y+4 }, 0xFF000000);
-        drawList->AddRectFilled(ImVec2{ m_anchorButtonFill.topLeft.x, m_anchorButtonFill.topLeft.y }, ImVec2{ m_anchorButtonFill.bottomRight.x, m_anchorButtonFill.bottomRight.y }, moth_ui::ToABGR(buttonColor));
+        drawList->AddRectFilled(ImVec2{ m_anchorButtonFill.topLeft.x, m_anchorButtonFill.topLeft.y }, ImVec2{ m_anchorButtonFill.bottomRight.x, m_anchorButtonFill.bottomRight.y }, moth::ui::ToABGR(buttonColor));
         drawList->AddRect(ImVec2{ m_anchorButtonFill.topLeft.x+2, m_anchorButtonFill.topLeft.y+2 }, ImVec2{ m_anchorButtonFill.bottomRight.x-2, m_anchorButtonFill.bottomRight.y-2 }, 0xFF000000, 0, 0, 4);
 
         for (auto& handle : m_handles) {
@@ -170,7 +170,7 @@ void BoundsWidget::Draw() {
     }
 }
 
-void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
+void BoundsWidget::SetSelection(std::shared_ptr<moth::ui::Node> node) {
     m_node = node;
     for (auto&& handle : m_handles) {
         handle->SetTarget(m_node.get());
@@ -181,7 +181,7 @@ void BoundsWidget::SetSelection(std::shared_ptr<moth_ui::Node> node) {
     m_pivotHandle->SetTarget(m_node.get());
 }
 
-bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
+bool BoundsWidget::OnMouseDown(moth::ui::EventMouseDown const& event) {
     if (m_node == nullptr) {
         m_anchorTLPressed = false;
         m_anchorFillPressed = false;
@@ -200,7 +200,7 @@ bool BoundsWidget::OnMouseDown(moth_ui::EventMouseDown const& event) {
     return false;
 }
 
-bool BoundsWidget::OnMouseUp(moth_ui::EventMouseUp const& event) {
+bool BoundsWidget::OnMouseUp(moth::ui::EventMouseUp const& event) {
     if (m_node == nullptr) {
         m_anchorTLPressed = false;
         m_anchorFillPressed = false;

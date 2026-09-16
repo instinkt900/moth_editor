@@ -1,9 +1,9 @@
 #include "common.h"
 #include "delete_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/nodes/group.h"
+#include "moth/ui/layout/layout_entity_group.h"
+#include "moth/ui/nodes/group.h"
 
-DeleteAction::DeleteAction(std::shared_ptr<moth_ui::Node> deletedNode, std::shared_ptr<moth_ui::Group> parentNode)
+DeleteAction::DeleteAction(std::shared_ptr<moth::ui::Node> deletedNode, std::shared_ptr<moth::ui::Group> parentNode)
     : m_deletedNode(deletedNode)
     , m_parentNode(parentNode) {
 }
@@ -17,7 +17,7 @@ void DeleteAction::Do() {
     m_parentNode->RemoveChild(m_deletedNode);
 
     // separate the layout entity trees
-    auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
+    auto parentLayoutEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_deletedNode->GetLayoutEntity();
     auto it = std::find_if(std::begin(parentLayoutEntity->m_children), std::end(parentLayoutEntity->m_children), [&layoutEntity](auto& child) { return child == layoutEntity; });
     if (std::end(parentLayoutEntity->m_children) != it) {
@@ -28,7 +28,7 @@ void DeleteAction::Do() {
 
 void DeleteAction::Undo() {
     // need to merge the layout entity trees too
-    auto parentLayoutEntity = std::static_pointer_cast<moth_ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
+    auto parentLayoutEntity = std::static_pointer_cast<moth::ui::LayoutEntityGroup>(m_parentNode->GetLayoutEntity());
     auto layoutEntity = m_deletedNode->GetLayoutEntity();
     int const safeIndex = std::clamp(m_originalIndex, 0, static_cast<int>(parentLayoutEntity->m_children.size()));
     auto insertIt = std::begin(parentLayoutEntity->m_children) + static_cast<std::ptrdiff_t>(safeIndex);

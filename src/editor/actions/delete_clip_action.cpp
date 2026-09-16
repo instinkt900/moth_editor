@@ -1,8 +1,8 @@
 #include "common.h"
 #include "delete_clip_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
+#include "moth/ui/layout/layout_entity_group.h"
 
-DeleteClipAction::DeleteClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> entity, moth_ui::AnimationClip clip)
+DeleteClipAction::DeleteClipAction(std::shared_ptr<moth::ui::LayoutEntityGroup> entity, moth::ui::AnimationClip clip)
     : m_entity(entity)
     , m_clip(clip) {
 }
@@ -22,7 +22,7 @@ void DeleteClipAction::Do() {
 
 void DeleteClipAction::Undo() {
     auto& animationClips = m_entity->m_clips;
-    animationClips.push_back(std::make_unique<moth_ui::AnimationClip>(m_clip));
+    animationClips.push_back(std::make_unique<moth::ui::AnimationClip>(m_clip));
 }
 
 void DeleteClipAction::OnImGui() {

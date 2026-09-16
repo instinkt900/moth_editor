@@ -1,19 +1,19 @@
 #pragma once
 
 #include "editor_action.h"
-#include "moth_ui/moth_ui_fwd.h"
-#include "moth_ui/animation/animation_track.h"
-#include "moth_ui/utils/interp.h"
+#include "moth/ui/moth_ui_fwd.h"
+#include "moth/ui/animation/animation_track.h"
+#include "moth/ui/utils/interp.h"
 
 class ModifyKeyframeAction : public IEditorAction {
 public:
-    ModifyKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity,
-        moth_ui::AnimationTrack::Target target,
+    ModifyKeyframeAction(std::shared_ptr<moth::ui::LayoutEntity> entity,
+        moth::ui::AnimationTrack::Target target,
         int frameNo,
-        moth_ui::KeyframeValue oldValue,
-        moth_ui::KeyframeValue newValue,
-        moth_ui::InterpType oldInterp,
-        moth_ui::InterpType newInterp);
+        moth::ui::KeyframeValue oldValue,
+        moth::ui::KeyframeValue newValue,
+        moth::ui::InterpType oldInterp,
+        moth::ui::InterpType newInterp);
     ~ModifyKeyframeAction() override;
 
     void Do() override;
@@ -22,11 +22,11 @@ public:
     void OnImGui() override;
 
 protected:
-    std::shared_ptr<moth_ui::LayoutEntity> m_entity;
-    moth_ui::AnimationTrack::Target m_target;
+    std::shared_ptr<moth::ui::LayoutEntity> m_entity;
+    moth::ui::AnimationTrack::Target m_target;
     int m_frameNo;
-    moth_ui::KeyframeValue m_oldValue;
-    moth_ui::KeyframeValue m_newValue;
-    moth_ui::InterpType m_oldInterp;
-    moth_ui::InterpType m_newInterp;
+    moth::ui::KeyframeValue m_oldValue;
+    moth::ui::KeyframeValue m_newValue;
+    moth::ui::InterpType m_oldInterp;
+    moth::ui::InterpType m_newInterp;
 };

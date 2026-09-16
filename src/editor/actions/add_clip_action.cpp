@@ -1,8 +1,8 @@
 #include "common.h"
 #include "add_clip_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
+#include "moth/ui/layout/layout_entity_group.h"
 
-AddClipAction::AddClipAction(std::shared_ptr<moth_ui::LayoutEntityGroup> entity, moth_ui::AnimationClip clip)
+AddClipAction::AddClipAction(std::shared_ptr<moth::ui::LayoutEntityGroup> entity, moth::ui::AnimationClip clip)
     : m_entity(entity)
     , m_clip(clip) {
 }
@@ -12,7 +12,7 @@ AddClipAction::~AddClipAction() {
 
 void AddClipAction::Do() {
     auto& animationClips = m_entity->m_clips;
-    animationClips.push_back(std::make_unique<moth_ui::AnimationClip>(m_clip));
+    animationClips.push_back(std::make_unique<moth::ui::AnimationClip>(m_clip));
 }
 
 void AddClipAction::Undo() {

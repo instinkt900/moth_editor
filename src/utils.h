@@ -1,12 +1,12 @@
 #pragma once
 
-#include "moth_ui/graphics/text_alignment.h"
-#include "moth_ui/utils/color.h"
-#include "moth_ui/graphics/blend_mode.h"
+#include "moth/ui/graphics/text_alignment.h"
+#include "moth/ui/utils/color.h"
+#include "moth/ui/graphics/blend_mode.h"
 
 // returns a rect with the coordinates of b within a
-inline moth_ui::IntRect MergeRects(moth_ui::IntRect const& a, moth_ui::IntRect const& b) {
-    moth_ui::IntRect c;
+inline moth::ui::IntRect MergeRects(moth::ui::IntRect const& a, moth::ui::IntRect const& b) {
+    moth::ui::IntRect c;
     c.topLeft = a.topLeft + b.topLeft;
     c.bottomRight = b.bottomRight + a.topLeft;
     // contain c within a
@@ -18,7 +18,7 @@ inline moth_ui::IntRect MergeRects(moth_ui::IntRect const& a, moth_ui::IntRect c
 }
 
 struct ColorComponents {
-    explicit ColorComponents(moth_ui::Color const& color)
+    explicit ColorComponents(moth::ui::Color const& color)
         : r(static_cast<uint8_t>(255 * std::clamp(color.r, 0.0f, 1.0f)))
         , g(static_cast<uint8_t>(255 * std::clamp(color.g, 0.0f, 1.0f)))
         , b(static_cast<uint8_t>(255 * std::clamp(color.b, 0.0f, 1.0f)))

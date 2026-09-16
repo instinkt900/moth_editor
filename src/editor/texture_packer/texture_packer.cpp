@@ -40,13 +40,13 @@ void TexturePacker::Draw() {
 // ---- Input collection helpers -----------------------------------------------
 
 void TexturePacker::AddFile(std::filesystem::path const& path) {
-    std::vector<moth_packer::ImageDetails> collected;
+    std::vector<moth::packer::ImageDetails> collected;
     // CollectImagesFromFile expects a text file listing paths; for a single image
     // file we build a one-entry ImageDetails manually after validating it.
     // Re-use the glob path to stay consistent with dedup logic.
-    moth_packer::CollectImagesFromGlob(path.string(), collected);
+    moth::packer::CollectImagesFromGlob(path.string(), collected);
     for (auto& img : collected) {
-        auto const dup = [&](moth_packer::ImageDetails const& d) { return d.path == img.path; };
+        auto const dup = [&](moth::packer::ImageDetails const& d) { return d.path == img.path; };
         if (std::find_if(m_inputImages.begin(), m_inputImages.end(), dup) == m_inputImages.end()) {
             m_inputImages.push_back(std::move(img));
         }
@@ -54,13 +54,13 @@ void TexturePacker::AddFile(std::filesystem::path const& path) {
 }
 
 void TexturePacker::AddDirectory(std::filesystem::path const& dir, bool recursive) {
-    moth_packer::CollectImagesFromDir(dir, recursive, m_inputImages);
+    moth::packer::CollectImagesFromDir(dir, recursive, m_inputImages);
 }
 
 void TexturePacker::AddLayout(std::filesystem::path const& layout) {
-    moth_packer::CollectImagesFromLayout(layout, m_inputImages);
+    moth::packer::CollectImagesFromLayout(layout, m_inputImages);
 }
 
 void TexturePacker::AddLayoutDirectory(std::filesystem::path const& dir, bool recursive) {
-    moth_packer::CollectImagesFromLayoutsDir(dir, recursive, m_inputImages);
+    moth::packer::CollectImagesFromLayoutsDir(dir, recursive, m_inputImages);
 }

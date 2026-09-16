@@ -2,10 +2,10 @@
 #include "editor_panel_sprite_editor.h"
 #include "editor/editor_layer.h"
 
-#include "moth_graphics/graphics/igraphics.h"
-#include "moth_graphics/graphics/surface_context.h"
-#include "moth_graphics/graphics/asset_context.h"
-#include "moth_graphics/graphics/spritesheet_factory.h"
+#include "moth/graphics/graphics/igraphics.h"
+#include "moth/graphics/graphics/surface_context.h"
+#include "moth/graphics/graphics/asset_context.h"
+#include "moth/graphics/graphics/spritesheet_factory.h"
 
 #include <nfd.h>
 #include <spdlog/spdlog.h>
@@ -44,7 +44,7 @@ void EditorPanelSpriteEditor::DrawContents() {
             }
 
             ImVec2 const imagePos = ImGui::GetCursorScreenPos();
-            image.DrawImGui({ static_cast<int>(displayW), static_cast<int>(displayH) });
+            imgui_ext::Image(image, static_cast<int>(displayW), static_cast<int>(displayH));
 
             // Overlay a yellow rect for each defined frame
             ImDrawList* const drawList = ImGui::GetWindowDrawList();
@@ -141,9 +141,9 @@ void EditorPanelSpriteEditor::DrawContents() {
                 if (ImGui::TreeNode(nodeLabel.c_str())) {
                     char const* loopStr = nullptr;
                     switch (clipDesc->loop) {
-                    case moth_graphics::graphics::SpriteSheet::LoopType::Stop:  loopStr = "stop";  break;
-                    case moth_graphics::graphics::SpriteSheet::LoopType::Reset: loopStr = "reset"; break;
-                    case moth_graphics::graphics::SpriteSheet::LoopType::Loop:  loopStr = "loop";  break;
+                    case moth::gfx::SpriteSheet::LoopType::Stop:  loopStr = "stop";  break;
+                    case moth::gfx::SpriteSheet::LoopType::Reset: loopStr = "reset"; break;
+                    case moth::gfx::SpriteSheet::LoopType::Loop:  loopStr = "loop";  break;
                     }
                     ImGui::Text("Loop: %s", loopStr);
 

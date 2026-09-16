@@ -1,10 +1,10 @@
 #include "common.h"
 #include "editor_panel_fonts.h"
-#include "moth_ui/context.h"
-#include "moth_graphics/graphics/asset_context.h"
-#include "moth_graphics/graphics/font_factory.h"
-#include "moth_graphics/graphics/igraphics.h"
-#include "moth_graphics/graphics/itarget.h"
+#include "moth/ui/context.h"
+#include "moth/graphics/graphics/asset_context.h"
+#include "moth/graphics/graphics/font_factory.h"
+#include "moth/graphics/graphics/igraphics.h"
+#include "moth/graphics/graphics/itarget.h"
 #include "../editor_layer.h"
 #include "../imgui_ext.h"
 
@@ -130,33 +130,33 @@ void EditorPanelFonts::Draw() {
     // ── Preview ──────────────────────────────────────────────────────────────
     ImGui::TextUnformatted("Preview:");
     float const previewW = ImGui::GetContentRegionAvail().x;
-    moth_ui::IntVec2 const previewSize{
+    moth::ui::IntVec2 const previewSize{
         std::max(1, static_cast<int>(previewW)),
         static_cast<int>(kPreviewHeight),
     };
 
     auto& graphics = m_editorLayer.GetGraphics();
     if (!m_previewTarget || m_previewTargetSize != previewSize) {
-        m_previewTarget = graphics.CreateTarget(previewSize.x, previewSize.y);
+        m_previewTarget = m_editorLayer.GetDevice().CreateTarget(previewSize.x, previewSize.y);
         m_previewTargetSize = previewSize;
     }
 
     if (m_previewTarget) {
         graphics.SetTarget(m_previewTarget.get());
-        graphics.SetBlendMode(moth_ui::BlendMode::Replace);
-        graphics.SetColor(moth_ui::Color{ 0.12f, 0.12f, 0.12f, 1.0f });
+        graphics.SetBlendMode(moth::ui::BlendMode::Replace);
+        graphics.SetColor(moth::ui::Color{ 0.12f, 0.12f, 0.12f, 1.0f });
         graphics.Clear();
 
         if (hasSelection) {
             auto const fontPath = fontFactory.GetFontPath(fontNames[m_selectedIndex]);
             auto previewFont = m_editorLayer.GetAssetContext().GetFontFactory().GetFont(fontPath.string(), kPreviewFontSize);
             if (previewFont) {
-                graphics.SetBlendMode(moth_ui::BlendMode::Alpha);
-                graphics.SetColor(moth_ui::Color{ 1.0f, 1.0f, 1.0f, 1.0f });
-                moth_ui::IntRect const textRect{ { 8, 0 }, { previewSize.x - 8, previewSize.y } };
+                graphics.SetBlendMode(moth::ui::BlendMode::Alpha);
+                graphics.SetColor(moth::ui::Color{ 1.0f, 1.0f, 1.0f, 1.0f });
+                moth::ui::IntRect const textRect{ { 8, 0 }, { previewSize.x - 8, previewSize.y } };
                 graphics.DrawText(kPreviewSampleText, *previewFont, textRect,
-                                  moth_ui::TextHorizAlignment::Left,
-                                  moth_ui::TextVertAlignment::Middle);
+                                  moth::ui::TextHorizAlignment::Left,
+                                  moth::ui::TextVertAlignment::Middle);
             }
         }
 

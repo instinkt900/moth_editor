@@ -1,5 +1,4 @@
 #include "common.h"
-#include "../image_identity.h"
 #include "editor_panel_properties.h"
 
 #include "../properties_elements.h"
@@ -8,27 +7,27 @@
 #include "../utils.h"
 #include "../editor_layer.h"
 
-#include "moth_ui/layout/layout_entity_rect.h"
-#include "moth_ui/layout/layout_entity_image.h"
-#include "moth_ui/layout/layout_entity_text.h"
-#include "moth_ui/layout/layout_entity_ref.h"
-#include "moth_ui/layout/layout_entity_flipbook.h"
-#include "moth_ui/layout/layout_entity_gradient.h"
+#include "moth/ui/layout/layout_entity_rect.h"
+#include "moth/ui/layout/layout_entity_image.h"
+#include "moth/ui/layout/layout_entity_text.h"
+#include "moth/ui/layout/layout_entity_ref.h"
+#include "moth/ui/layout/layout_entity_flipbook.h"
+#include "moth/ui/layout/layout_entity_gradient.h"
 #include "../actions/add_discrete_keyframe_action.h"
 #include "../actions/add_keyframe_action.h"
 #include "../actions/modify_keyframe_action.h"
 #include "../actions/composite_action.h"
-#include "moth_ui/animation/animation_track.h"
-#include "moth_ui/utils/transform.h"
-#include "moth_ui/animation/keyframe.h"
-#include "moth_ui/layout/layout.h"
-#include "moth_ui/nodes/node_rect.h"
-#include "moth_ui/nodes/node_image.h"
-#include "moth_ui/nodes/node_text.h"
-#include "moth_ui/nodes/node_flipbook.h"
-#include "moth_ui/nodes/node_gradient.h"
-#include "moth_ui/nodes/group.h"
-#include "moth_ui/context.h"
+#include "moth/ui/animation/animation_track.h"
+#include "moth/ui/utils/transform.h"
+#include "moth/ui/animation/keyframe.h"
+#include "moth/ui/layout/layout.h"
+#include "moth/ui/nodes/node_rect.h"
+#include "moth/ui/nodes/node_image.h"
+#include "moth/ui/nodes/node_text.h"
+#include "moth/ui/nodes/node_flipbook.h"
+#include "moth/ui/nodes/node_gradient.h"
+#include "moth/ui/nodes/group.h"
+#include "moth/ui/context.h"
 
 #include <nfd.h>
 
@@ -72,45 +71,45 @@ void EditorPanelProperties::DrawContents() {
     }
 }
 
-void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth_ui::Node> node, bool recurseChildren) {
+void EditorPanelProperties::DrawNodeProperties(std::shared_ptr<moth::ui::Node> node, bool recurseChildren) {
     auto const entity = node->GetLayoutEntity();
 
-    if (entity->GetType() != moth_ui::LayoutEntityType::Layout) {
+    if (entity->GetType() != moth::ui::LayoutEntityType::Layout) {
         DrawCommonProperties(node);
     }
 
     switch (entity->GetType()) {
-    case moth_ui::LayoutEntityType::Entity:
-    case moth_ui::LayoutEntityType::Group:
+    case moth::ui::LayoutEntityType::Entity:
+    case moth::ui::LayoutEntityType::Group:
         // shouldnt get hit
         break;
-    case moth_ui::LayoutEntityType::Rect:
-        DrawRectProperties(std::static_pointer_cast<moth_ui::NodeRect>(node));
+    case moth::ui::LayoutEntityType::Rect:
+        DrawRectProperties(std::static_pointer_cast<moth::ui::NodeRect>(node));
         break;
-    case moth_ui::LayoutEntityType::Image:
-        DrawImageProperties(std::static_pointer_cast<moth_ui::NodeImage>(node));
+    case moth::ui::LayoutEntityType::Image:
+        DrawImageProperties(std::static_pointer_cast<moth::ui::NodeImage>(node));
         break;
-    case moth_ui::LayoutEntityType::Text:
-        DrawTextProperties(std::static_pointer_cast<moth_ui::NodeText>(node));
+    case moth::ui::LayoutEntityType::Text:
+        DrawTextProperties(std::static_pointer_cast<moth::ui::NodeText>(node));
         break;
-    case moth_ui::LayoutEntityType::Flipbook:
-        DrawFlipbookProperties(std::static_pointer_cast<moth_ui::NodeFlipbook>(node));
+    case moth::ui::LayoutEntityType::Flipbook:
+        DrawFlipbookProperties(std::static_pointer_cast<moth::ui::NodeFlipbook>(node));
         break;
-    case moth_ui::LayoutEntityType::Gradient:
-        DrawGradientProperties(std::static_pointer_cast<moth_ui::NodeGradient>(node));
+    case moth::ui::LayoutEntityType::Gradient:
+        DrawGradientProperties(std::static_pointer_cast<moth::ui::NodeGradient>(node));
         break;
-    case moth_ui::LayoutEntityType::Ref:
-        DrawRefProperties(std::static_pointer_cast<moth_ui::Group>(node), recurseChildren);
+    case moth::ui::LayoutEntityType::Ref:
+        DrawRefProperties(std::static_pointer_cast<moth::ui::Group>(node), recurseChildren);
         break;
-    case moth_ui::LayoutEntityType::Layout:
-        DrawLayoutProperties(std::static_pointer_cast<moth_ui::Group>(node));
+    case moth::ui::LayoutEntityType::Layout:
+        DrawLayoutProperties(std::static_pointer_cast<moth::ui::Group>(node));
         break;
     default:
         break;
     }
 }
 
-void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> node) {
+void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth::ui::Node> node) {
     auto const entity = node->GetLayoutEntity();
 
     ImGui::SeparatorText("Node");
@@ -166,7 +165,7 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         node->RecalculateBounds();
     }
     if (inputContext.Focused) {
-        OnInputFocus<moth_ui::LayoutRect>("Bounds", node->GetLayoutRect(), [this](moth_ui::LayoutRect, moth_ui::LayoutRect) {
+        OnInputFocus<moth::ui::LayoutRect>("Bounds", node->GetLayoutRect(), [this](moth::ui::LayoutRect, moth::ui::LayoutRect) {
             m_editorLayer.EndEditBounds();
         });
     }
@@ -175,23 +174,24 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
     DrawBoundsTools(node);
     ImGui::Unindent();
 
-    PropertiesInput<moth_ui::FloatVec2>(
+    PropertiesInput<moth::ui::FloatVec2>(
         "Pivot", entity->m_pivot,
-        [node](moth_ui::FloatVec2 changedValue) {
+        [node](moth::ui::FloatVec2 changedValue) {
             node->SetPivot(changedValue);
         },
-        [this, node, entity](moth_ui::FloatVec2 oldValue, moth_ui::FloatVec2 newValue) {
+        [this, node, entity](moth::ui::FloatVec2 oldValue, moth::ui::FloatVec2 newValue) {
             auto action = MakeChangeValueAction(entity->m_pivot, oldValue, newValue, [node]() {
                 node->ReloadEntity();
             });
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
+    // Storage is in radians; the editor exposes degrees.
     PropertiesInput<float>(
-        "Rotation", node->GetRotation(),
-        [&](float changedValue) {
+        "Rotation (deg)", moth::core::RadToDeg(node->GetRotation()),
+        [&](float changedValueDeg) {
             m_editorLayer.BeginEditRotation(node);
-            node->SetRotation(changedValue);
+            node->SetRotation(moth::core::DegToRad(changedValueDeg));
         },
         [this](float oldValue, float newValue) {
             m_editorLayer.EndEditRotation();
@@ -221,7 +221,7 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         }
     }
 
-    PropertiesInput<moth_ui::BlendMode>(
+    PropertiesInput<moth::ui::BlendMode>(
         "Blend Mode", node->GetBlendMode(), {},
         [&](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_blend, oldValue, newValue, [node]() { node->ReloadEntity(); });
@@ -229,7 +229,7 @@ void EditorPanelProperties::DrawCommonProperties(std::shared_ptr<moth_ui::Node> 
         });
 }
 
-void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node) {
+void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth::ui::Node> node) {
     if (!ImGui::CollapsingHeader("Tools##bounds")) {
         return;
     }
@@ -261,15 +261,15 @@ void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node)
 
     auto const& screenRect = node->GetScreenRect();
     auto const& parentRect = parent->GetScreenRect();
-    moth_ui::FloatVec2 const parentOffset = static_cast<moth_ui::FloatVec2>(parentRect.topLeft);
-    moth_ui::FloatVec2 const parentDim = static_cast<moth_ui::FloatVec2>(parentRect.bottomRight - parentRect.topLeft);
-    moth_ui::FloatVec2 const nodeTL = static_cast<moth_ui::FloatVec2>(screenRect.topLeft);
-    moth_ui::FloatVec2 const nodeBR = static_cast<moth_ui::FloatVec2>(screenRect.bottomRight);
+    moth::ui::FloatVec2 const parentOffset = static_cast<moth::ui::FloatVec2>(parentRect.topLeft);
+    moth::ui::FloatVec2 const parentDim = static_cast<moth::ui::FloatVec2>(parentRect.bottomRight - parentRect.topLeft);
+    moth::ui::FloatVec2 const nodeTL = static_cast<moth::ui::FloatVec2>(screenRect.topLeft);
+    moth::ui::FloatVec2 const nodeBR = static_cast<moth::ui::FloatVec2>(screenRect.bottomRight);
 
     // Remap anchor to a new value while keeping screen position constant.
     // From RecalculateBounds: screen = parentOffset + offset + parentDim * anchor
     // So: offset_new = screen - parentOffset - parentDim * anchor_new
-    auto applyAnchor = [&](moth_ui::FloatVec2 anchorTL, moth_ui::FloatVec2 anchorBR) {
+    auto applyAnchor = [&](moth::ui::FloatVec2 anchorTL, moth::ui::FloatVec2 anchorBR) {
         m_editorLayer.BeginEditBounds(node);
         auto& lr = node->GetLayoutRect();
         lr.anchor.topLeft = anchorTL;
@@ -282,7 +282,7 @@ void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node)
 
     // 9-point anchor preset grid — both corners anchored to the same point
     struct AnchorPreset {
-        moth_ui::FloatVec2 anchor;
+        moth::ui::FloatVec2 anchor;
         char const* label = nullptr;
         char const* tooltip = nullptr;
     };
@@ -343,8 +343,8 @@ void EditorPanelProperties::DrawBoundsTools(std::shared_ptr<moth_ui::Node> node)
     }
 }
 
-void EditorPanelProperties::DrawRectProperties(std::shared_ptr<moth_ui::NodeRect> node) {
-    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityRect>(node->GetLayoutEntity());
+void EditorPanelProperties::DrawRectProperties(std::shared_ptr<moth::ui::NodeRect> node) {
+    auto const entity = std::static_pointer_cast<moth::ui::LayoutEntityRect>(node->GetLayoutEntity());
 
     ImGui::SeparatorText("Rect");
 
@@ -357,19 +357,19 @@ void EditorPanelProperties::DrawRectProperties(std::shared_ptr<moth_ui::NodeRect
         });
 }
 
-void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeImage> node) {
-    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(node->GetLayoutEntity());
+void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth::ui::NodeImage> node) {
+    auto const entity = std::static_pointer_cast<moth::ui::LayoutEntityImage>(node->GetLayoutEntity());
 
     ImGui::SeparatorText("Image");
 
-    PropertiesInput<moth_ui::TextureFilter>(
+    PropertiesInput<moth::ui::TextureFilter>(
         "Texture Filter", entity->m_textureFilter, {},
         [&](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_textureFilter, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::ImageScaleType>(
+    PropertiesInput<moth::ui::ImageScaleType>(
         "Image Scale Type", entity->m_imageScaleType, {},
         [&](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_imageScaleType, oldValue, newValue, [node]() { node->ReloadEntity(); });
@@ -387,7 +387,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::IntRect>(
+    PropertiesInput<moth::ui::IntRect>(
         "Source Rect", entity->m_sourceRect,
         [&](auto newValue) {
             entity->m_sourceRect = newValue;
@@ -398,7 +398,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::LayoutRect>(
+    PropertiesInput<moth::ui::LayoutRect>(
         "Target Borders", entity->m_targetBorders,
         [&](auto newValue) {
             entity->m_targetBorders = newValue;
@@ -409,7 +409,7 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::IntRect>(
+    PropertiesInput<moth::ui::IntRect>(
         "Source Borders", entity->m_sourceBorders,
         [&](auto newValue) {
             entity->m_sourceBorders = newValue;
@@ -420,15 +420,22 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    // The identity is shown exactly as the layout stores it. This used to make the
-    // path relative for display, because moth_ui made every stored path absolute
-    // and an absolute path told an author nothing about what the file would hold.
-    // moth_ui carries the value unchanged now, so what is shown is what is saved.
-    std::string imagePath = entity->m_imageId.str();
+    // moth::ui holds the path absolute in memory and writes it relative to the layout
+    // file on save, so show it relative: an absolute path tells an author nothing about
+    // what the layout will hold. An unsaved layout has no directory to relativise
+    // against, so the absolute path stands in until the first save.
+    std::string imagePath = entity->m_imagePath.string();
+    if (auto const layoutPath = m_editorLayer.GetCurrentLayoutPath(); !layoutPath.empty()) {
+        std::error_code error;
+        auto const relative = std::filesystem::relative(entity->m_imagePath, layoutPath.parent_path(), error);
+        if (!error && !relative.empty()) {
+            imagePath = relative.string();
+        }
+    }
     ImGui::InputText("Image Path", imagePath.data(), imagePath.size() + 1, ImGuiInputTextFlags_ReadOnly);
 
     if (node->GetImage() != nullptr) {
-        using namespace moth_ui;
+        using namespace moth::ui;
 
         auto const dims = node->GetImage()->GetDimensions();
         if (dims.x > 0 && dims.y > 0) {
@@ -452,12 +459,12 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
             auto* drawList = ImGui::GetWindowDrawList();
 
             // source rect preview
-            auto const rectColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewSourceRectColor);
+            auto const rectColor = moth::ui::ToABGR(m_editorLayer.GetConfig().PreviewSourceRectColor);
             drawList->AddRect(ImVec2{ srcMin.x, srcMin.y }, ImVec2{ srcMax.x, srcMax.y }, rectColor);
 
             // 9 slice preview
-            auto const sliceColor = moth_ui::ToABGR(m_editorLayer.GetConfig().PreviewImageSliceColor);
-            if (node->GetImageScaleType() == moth_ui::ImageScaleType::NineSlice) {
+            auto const sliceColor = moth::ui::ToABGR(m_editorLayer.GetConfig().PreviewImageSliceColor);
+            if (node->GetImageScaleType() == moth::ui::ImageScaleType::NineSlice) {
                 FloatVec2 const slice1 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[1]));
                 FloatVec2 const slice2 = previewImageMin + ImageToPreview(static_cast<FloatVec2>(node->GetSourceSlices()[2]));
 
@@ -479,17 +486,17 @@ void EditorPanelProperties::DrawImageProperties(std::shared_ptr<moth_ui::NodeIma
         if (result == NFD_OKAY) {
             std::filesystem::path filePath = outPath;
             NFD_Free(outPath);
-            auto const targetImageEntity = std::static_pointer_cast<moth_ui::LayoutEntityImage>(node->GetLayoutEntity());
-            auto const oldPath = targetImageEntity->m_imageId;
-            auto const newPath = MakeImageId(filePath, m_editorLayer.GetCurrentLayoutPath());
-            auto action = MakeChangeValueAction(entity->m_imageId, oldPath, newPath, [node]() { node->ReloadEntity(); });
+            auto const targetImageEntity = std::static_pointer_cast<moth::ui::LayoutEntityImage>(node->GetLayoutEntity());
+            auto const oldPath = targetImageEntity->m_imagePath;
+            auto const newPath = filePath;
+            auto action = MakeChangeValueAction(entity->m_imagePath, oldPath, newPath, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         }
     }
 }
 
-void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText> node) {
-    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityText>(node->GetLayoutEntity());
+void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth::ui::NodeText> node) {
+    auto const entity = std::static_pointer_cast<moth::ui::LayoutEntityText>(node->GetLayoutEntity());
 
     ImGui::SeparatorText("Text");
 
@@ -512,14 +519,14 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::TextHorizAlignment>(
+    PropertiesInput<moth::ui::TextHorizAlignment>(
         "H Alignment", entity->m_horizontalAlignment, {},
         [&](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_horizontalAlignment, oldValue, newValue, [node]() { node->ReloadEntity(); });
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::TextVertAlignment>(
+    PropertiesInput<moth::ui::TextVertAlignment>(
         "V Alignment", entity->m_verticalAlignment, {},
         [&](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_verticalAlignment, oldValue, newValue, [node]() { node->ReloadEntity(); });
@@ -534,7 +541,7 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::IntVec2>(
+    PropertiesInput<moth::ui::IntVec2>(
         "Drop Shadow Offset", entity->m_dropShadowOffset,
         [&](auto changedValue) {
             entity->m_dropShadowOffset = changedValue;
@@ -545,7 +552,7 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
             m_editorLayer.PerformEditAction(std::move(action));
         });
 
-    PropertiesInput<moth_ui::Color>(
+    PropertiesInput<moth::ui::Color>(
         "Drop Shadow Color", entity->m_dropShadowColor,
         [&](auto changedValue) {
             entity->m_dropShadowColor = changedValue;
@@ -567,12 +574,12 @@ void EditorPanelProperties::DrawTextProperties(std::shared_ptr<moth_ui::NodeText
         });
 }
 
-void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::NodeFlipbook> node) {
-    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityFlipbook>(node->GetLayoutEntity());
+void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth::ui::NodeFlipbook> node) {
+    auto const entity = std::static_pointer_cast<moth::ui::LayoutEntityFlipbook>(node->GetLayoutEntity());
 
     ImGui::SeparatorText("Flipbook");
 
-    PropertiesInput<moth_ui::TextureFilter>(
+    PropertiesInput<moth::ui::TextureFilter>(
         "Texture Filter", entity->m_textureFilter, {},
         [&](auto oldValue, auto newValue) {
             auto action = MakeChangeValueAction(entity->m_textureFilter, oldValue, newValue, [node]() { node->ReloadEntity(); });
@@ -601,7 +608,7 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
     }
 
     // Helper: create or overwrite a discrete keyframe at the current editor frame.
-    auto setDiscreteKeyframe = [&](moth_ui::AnimationTrack::Target target, std::string newValue) {
+    auto setDiscreteKeyframe = [&](moth::ui::AnimationTrack::Target target, std::string newValue) {
         int const frame = m_editorLayer.GetSelectedFrame();
         auto action = std::make_unique<AddDiscreteKeyframeAction>(entity, target, frame, std::move(newValue));
         m_editorLayer.PerformEditAction(std::move(action));
@@ -610,7 +617,7 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
 
     // Clip name — dropdown populated from the loaded flipbook.
     {
-        auto const clipIt = entity->m_discreteTracks.find(moth_ui::AnimationTrack::Target::FlipbookClip);
+        auto const clipIt = entity->m_discreteTracks.find(moth::ui::AnimationTrack::Target::FlipbookClip);
         std::string const currentClip = (clipIt != entity->m_discreteTracks.end())
                                             ? clipIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame())
                                             : std::string{};
@@ -620,7 +627,7 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
                 auto const clipName = flipbook->GetClipName(i);
                 bool selected = (clipName == currentClip);
                 if (ImGui::Selectable(std::string(clipName).c_str(), selected)) {
-                    setDiscreteKeyframe(moth_ui::AnimationTrack::Target::FlipbookClip, std::string(clipName));
+                    setDiscreteKeyframe(moth::ui::AnimationTrack::Target::FlipbookClip, std::string(clipName));
                 }
                 if (selected) {
                     ImGui::SetItemDefaultFocus();
@@ -634,10 +641,10 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
 
     // Playing — checkbox.
     {
-        auto const playIt = entity->m_discreteTracks.find(moth_ui::AnimationTrack::Target::FlipbookPlaying);
+        auto const playIt = entity->m_discreteTracks.find(moth::ui::AnimationTrack::Target::FlipbookPlaying);
         bool playing = (playIt != entity->m_discreteTracks.end()) && (playIt->second.GetValueAtFrame(m_editorLayer.GetSelectedFrame()) == "1");
         if (ImGui::Checkbox("Playing", &playing)) {
-            setDiscreteKeyframe(moth_ui::AnimationTrack::Target::FlipbookPlaying, playing ? "1" : "0");
+            setDiscreteKeyframe(moth::ui::AnimationTrack::Target::FlipbookPlaying, playing ? "1" : "0");
         }
     }
 
@@ -647,8 +654,8 @@ void EditorPanelProperties::DrawFlipbookProperties(std::shared_ptr<moth_ui::Node
     }
 }
 
-void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::NodeGradient> node) {
-    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityGradient>(node->GetLayoutEntity());
+void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth::ui::NodeGradient> node) {
+    auto const entity = std::static_pointer_cast<moth::ui::LayoutEntityGradient>(node->GetLayoutEntity());
 
     ImGui::SeparatorText("Gradient");
 
@@ -657,7 +664,7 @@ void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::Node
 
     // Push a keyframe at the current selected frame for one of the gradient's
     // scalar tracks; if a keyframe already exists at the frame, modify it.
-    auto setTrackKeyframe = [entity, frameNo](moth_ui::AnimationTrack::Target target, float newValue) -> std::unique_ptr<IEditorAction> {
+    auto setTrackKeyframe = [entity, frameNo](moth::ui::AnimationTrack::Target target, float newValue) -> std::unique_ptr<IEditorAction> {
         auto& track = entity->m_tracks.at(target);
         if (auto* kf = track->GetKeyframe(frameNo)) {
             if (kf->value == newValue) {
@@ -665,14 +672,14 @@ void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::Node
             }
             return std::make_unique<ModifyKeyframeAction>(entity, target, frameNo, kf->value, newValue, kf->interpType, kf->interpType);
         }
-        return std::make_unique<AddKeyframeAction>(entity, target, frameNo, newValue, moth_ui::InterpType::Linear);
+        return std::make_unique<AddKeyframeAction>(entity, target, frameNo, newValue, moth::ui::InterpType::Linear);
     };
 
-    auto commitColor = [this, node, setTrackKeyframe](moth_ui::Color const& oldColor, moth_ui::Color const& newColor,
-                                                       moth_ui::AnimationTarget rTarget, moth_ui::AnimationTarget gTarget,
-                                                       moth_ui::AnimationTarget bTarget, moth_ui::AnimationTarget aTarget) {
+    auto commitColor = [this, node, setTrackKeyframe](moth::ui::Color const& oldColor, moth::ui::Color const& newColor,
+                                                       moth::ui::AnimationTarget rTarget, moth::ui::AnimationTarget gTarget,
+                                                       moth::ui::AnimationTarget bTarget, moth::ui::AnimationTarget aTarget) {
         auto composite = std::make_unique<CompositeAction>();
-        auto add = [&](moth_ui::AnimationTarget t, float oldV, float newV) {
+        auto add = [&](moth::ui::AnimationTarget t, float oldV, float newV) {
             if (oldV == newV) { return; }
             if (auto action = setTrackKeyframe(t, newV)) {
                 composite->GetActions().push_back(std::move(action));
@@ -688,7 +695,7 @@ void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::Node
         }
     };
 
-    auto commitScalar = [this, node, setTrackKeyframe](moth_ui::AnimationTarget target, float oldValue, float newValue) {
+    auto commitScalar = [this, node, setTrackKeyframe](moth::ui::AnimationTarget target, float oldValue, float newValue) {
         if (oldValue == newValue) { return; }
         if (auto action = setTrackKeyframe(target, newValue)) {
             m_editorLayer.PerformEditAction(std::move(action));
@@ -696,52 +703,52 @@ void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::Node
         }
     };
 
-    PropertiesInput<moth_ui::Color>(
+    PropertiesInput<moth::ui::Color>(
         "Start Color", current.startColor,
-        [node](moth_ui::Color changedValue) {
+        [node](moth::ui::Color changedValue) {
             auto g = node->GetGradient();
             g.startColor = changedValue;
             node->SetGradient(g);
         },
-        [commitColor](moth_ui::Color oldValue, moth_ui::Color newValue) {
+        [commitColor](moth::ui::Color oldValue, moth::ui::Color newValue) {
             commitColor(oldValue, newValue,
-                        moth_ui::AnimationTarget::GradientStartRed,
-                        moth_ui::AnimationTarget::GradientStartGreen,
-                        moth_ui::AnimationTarget::GradientStartBlue,
-                        moth_ui::AnimationTarget::GradientStartAlpha);
+                        moth::ui::AnimationTarget::GradientStartRed,
+                        moth::ui::AnimationTarget::GradientStartGreen,
+                        moth::ui::AnimationTarget::GradientStartBlue,
+                        moth::ui::AnimationTarget::GradientStartAlpha);
         });
 
-    PropertiesInput<moth_ui::Color>(
+    PropertiesInput<moth::ui::Color>(
         "End Color", current.endColor,
-        [node](moth_ui::Color changedValue) {
+        [node](moth::ui::Color changedValue) {
             auto g = node->GetGradient();
             g.endColor = changedValue;
             node->SetGradient(g);
         },
-        [commitColor](moth_ui::Color oldValue, moth_ui::Color newValue) {
+        [commitColor](moth::ui::Color oldValue, moth::ui::Color newValue) {
             commitColor(oldValue, newValue,
-                        moth_ui::AnimationTarget::GradientEndRed,
-                        moth_ui::AnimationTarget::GradientEndGreen,
-                        moth_ui::AnimationTarget::GradientEndBlue,
-                        moth_ui::AnimationTarget::GradientEndAlpha);
+                        moth::ui::AnimationTarget::GradientEndRed,
+                        moth::ui::AnimationTarget::GradientEndGreen,
+                        moth::ui::AnimationTarget::GradientEndBlue,
+                        moth::ui::AnimationTarget::GradientEndAlpha);
         });
 
-    PropertiesInput<moth_ui::FloatVec2>(
+    PropertiesInput<moth::ui::FloatVec2>(
         "Midpoint", current.midpoint,
-        [node](moth_ui::FloatVec2 changedValue) {
+        [node](moth::ui::FloatVec2 changedValue) {
             auto g = node->GetGradient();
             g.midpoint = changedValue;
             node->SetGradient(g);
         },
-        [this, node, setTrackKeyframe](moth_ui::FloatVec2 oldValue, moth_ui::FloatVec2 newValue) {
+        [this, node, setTrackKeyframe](moth::ui::FloatVec2 oldValue, moth::ui::FloatVec2 newValue) {
             auto composite = std::make_unique<CompositeAction>();
             if (oldValue.x != newValue.x) {
-                if (auto action = setTrackKeyframe(moth_ui::AnimationTarget::GradientMidpointX, newValue.x)) {
+                if (auto action = setTrackKeyframe(moth::ui::AnimationTarget::GradientMidpointX, newValue.x)) {
                     composite->GetActions().push_back(std::move(action));
                 }
             }
             if (oldValue.y != newValue.y) {
-                if (auto action = setTrackKeyframe(moth_ui::AnimationTarget::GradientMidpointY, newValue.y)) {
+                if (auto action = setTrackKeyframe(moth::ui::AnimationTarget::GradientMidpointY, newValue.y)) {
                     composite->GetActions().push_back(std::move(action));
                 }
             }
@@ -754,16 +761,16 @@ void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::Node
     // Storage is in radians; the editor exposes degrees to match the
     // convention used by node rotation. Convert on display and on commit.
     PropertiesInput<float>(
-        "Angle (deg)", current.angle * moth_ui::kRadToDeg,
+        "Angle (deg)", moth::core::RadToDeg(current.angle),
         [node](float changedValueDeg) {
             auto g = node->GetGradient();
-            g.angle = changedValueDeg * moth_ui::kDegToRad;
+            g.angle = moth::core::DegToRad(changedValueDeg);
             node->SetGradient(g);
         },
         [commitScalar](float oldValueDeg, float newValueDeg) {
-            commitScalar(moth_ui::AnimationTarget::GradientAngle,
-                         oldValueDeg * moth_ui::kDegToRad,
-                         newValueDeg * moth_ui::kDegToRad);
+            commitScalar(moth::ui::AnimationTarget::GradientAngle,
+                         moth::core::DegToRad(oldValueDeg),
+                         moth::core::DegToRad(newValueDeg));
         });
 
     PropertiesInput<float>(
@@ -774,36 +781,36 @@ void EditorPanelProperties::DrawGradientProperties(std::shared_ptr<moth_ui::Node
             node->SetGradient(g);
         },
         [commitScalar](float oldValue, float newValue) {
-            commitScalar(moth_ui::AnimationTarget::GradientTransition, oldValue, newValue);
+            commitScalar(moth::ui::AnimationTarget::GradientTransition, oldValue, newValue);
         });
 }
 
-char const* GetChildName(std::shared_ptr<moth_ui::LayoutEntity> entity) {
+char const* GetChildName(std::shared_ptr<moth::ui::LayoutEntity> entity) {
     switch (entity->GetType()) {
-    case moth_ui::LayoutEntityType::Entity:
+    case moth::ui::LayoutEntityType::Entity:
         return "Entity";
-    case moth_ui::LayoutEntityType::Group:
+    case moth::ui::LayoutEntityType::Group:
         return "Group";
         break;
-    case moth_ui::LayoutEntityType::Rect:
+    case moth::ui::LayoutEntityType::Rect:
         return "Rect";
-    case moth_ui::LayoutEntityType::Image:
+    case moth::ui::LayoutEntityType::Image:
         return "Image";
-    case moth_ui::LayoutEntityType::Text:
+    case moth::ui::LayoutEntityType::Text:
         return "Text";
-    case moth_ui::LayoutEntityType::Flipbook:
+    case moth::ui::LayoutEntityType::Flipbook:
         return "Flipbook";
-    case moth_ui::LayoutEntityType::Gradient:
+    case moth::ui::LayoutEntityType::Gradient:
         return "Gradient";
-    case moth_ui::LayoutEntityType::Ref:
+    case moth::ui::LayoutEntityType::Ref:
         return "Ref";
     default:
         return "Unknown";
     }
 }
 
-void EditorPanelProperties::DrawRefProperties(std::shared_ptr<moth_ui::Group> node, bool recurseChildren) {
-    auto const entity = std::static_pointer_cast<moth_ui::LayoutEntityRef>(node->GetLayoutEntity());
+void EditorPanelProperties::DrawRefProperties(std::shared_ptr<moth::ui::Group> node, bool recurseChildren) {
+    auto const entity = std::static_pointer_cast<moth::ui::LayoutEntityRef>(node->GetLayoutEntity());
 
     ImGui::SeparatorText("Ref");
 
@@ -826,8 +833,8 @@ void EditorPanelProperties::DrawRefProperties(std::shared_ptr<moth_ui::Group> no
     }
 }
 
-void EditorPanelProperties::DrawLayoutProperties(std::shared_ptr<moth_ui::Group> node) {
-    auto const entity = std::static_pointer_cast<moth_ui::Layout>(node->GetLayoutEntity());
+void EditorPanelProperties::DrawLayoutProperties(std::shared_ptr<moth::ui::Group> node) {
+    auto const entity = std::static_pointer_cast<moth::ui::Layout>(node->GetLayoutEntity());
 
     PropertiesInput<char const*>(
         "Class", entity->m_class.c_str(),

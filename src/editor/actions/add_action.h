@@ -4,7 +4,7 @@
 
 class AddAction : public IEditorAction {
 public:
-    AddAction(std::shared_ptr<moth_ui::Node> newNode, std::shared_ptr<moth_ui::Group> parentNode);
+    AddAction(std::shared_ptr<moth::ui::Node> newNode, std::shared_ptr<moth::ui::Group> parentNode);
     ~AddAction() override;
 
     void Do() override;
@@ -13,6 +13,6 @@ public:
     void OnImGui() override;
 
 protected:
-    std::shared_ptr<moth_ui::Node> m_newNode;
-    std::shared_ptr<moth_ui::Group> m_parentNode;
+    std::shared_ptr<moth::ui::Node> m_newNode;
+    std::shared_ptr<moth::ui::Group> m_parentNode;
 };

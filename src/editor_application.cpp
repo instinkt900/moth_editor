@@ -1,44 +1,69 @@
 #include "common.h"
 #include "editor_application.h"
 #include "editor/editor_layer.h"
-#include <moth_graphics/platform/window.h>
-#include <moth_graphics/graphics/surface_context.h>
+#include <moth/graphics/platform/window.h>
+#include <moth/graphics/platform/glfw/glfw_window.h>
+#include <moth/graphics/graphics/surface_context.h>
+
+namespace {
+    char const* const kPersistenceFile = "editor.json";
+}
 
 char const* const EditorApplication::IMGUI_FILE = "imgui.ini";
-char const* const EditorApplication::PERSISTENCE_FILE = "editor.json";
+char const* const EditorApplication::PERSISTENCE_FILE = kPersistenceFile;
 
 // Must outlive ImGui context destruction, which happens in Application::~Application()
 // (base class dtor) after EditorApplication's members are already destroyed.
 static std::string s_imguiSettingsPath;
 
-EditorApplication::EditorApplication(moth_graphics::platform::IPlatform& platform)
-    : Application(platform, "Moth UI Tool", 1920, 1080) {
+namespace {
+    int constexpr kDefaultWidth = 1920;
+    int constexpr kDefaultHeight = 1080;
+
+    // Application takes the window size as a constructor argument, which runs before
+    // the constructor body could read the file, so the state is loaded on first use.
+    nlohmann::json const& PersistedState() {
+        static nlohmann::json const state = [] {
+            nlohmann::json loaded;
+            std::ifstream file((std::filesystem::current_path() / kPersistenceFile).string());
+            if (file.is_open()) {
+                try {
+                    file >> loaded;
+                } catch (std::exception&) {
+                }
+            }
+            return loaded.is_object() ? loaded : nlohmann::json::object();
+        }();
+        return state;
+    }
+
+    int PersistedDimension(char const* key, int fallback) {
+        int const value = PersistedState().value(key, fallback);
+        return value > 0 ? value : fallback;
+    }
+}
+
+EditorApplication::EditorApplication(moth::gfx::platform::IPlatform& platform)
+    : Application(platform, "Moth UI Tool",
+                  PersistedDimension("window_width", kDefaultWidth),
+                  PersistedDimension("window_height", kDefaultHeight))
+    , m_persistentState(PersistedState()) {
     s_imguiSettingsPath = std::filesystem::absolute(std::filesystem::current_path() / IMGUI_FILE).string();
     m_persistentFilePath = std::filesystem::current_path() / PERSISTENCE_FILE;
-    std::ifstream persistenceFile(m_persistentFilePath.string());
-    if (persistenceFile.is_open()) {
-        try {
-            persistenceFile >> m_persistentState;
-        } catch (std::exception&) {
-        }
+}
 
-        if (!m_persistentState.is_null()) {
-            auto const oldPos = m_mainWindowPosition;
-            auto const oldWidth = m_mainWindowWidth;
-            auto const oldHeight = m_mainWindowHeight;
-            m_mainWindowPosition = m_persistentState.value("window_pos", m_mainWindowPosition);
-            m_mainWindowWidth = m_persistentState.value("window_width", m_mainWindowWidth);
-            m_mainWindowHeight = m_persistentState.value("window_height", m_mainWindowHeight);
-            m_mainWindowMaximized = m_persistentState.value("window_maximized", m_mainWindowMaximized);
-            if (m_mainWindowPosition.x <= 0 || m_mainWindowPosition.y <= 0) {
-                m_mainWindowPosition = oldPos;
-            }
-            if (m_mainWindowWidth <= 0) {
-                m_mainWindowWidth = oldWidth;
-            }
-            if (m_mainWindowHeight <= 0) {
-                m_mainWindowHeight = oldHeight;
-            }
+void EditorApplication::Shutdown() {
+    // The ImGui context goes with the window that Application destroys after this.
+    imgui_ext::SetImGuiContext(nullptr);
+
+    if (auto const* const uiWindow = GetUiWindow()) {
+        // A maximized window reports its maximized size, which would be restored as
+        // the un-maximized size next run, so only record a size while it is not.
+        m_persistentState["window_maximized"] = uiWindow->IsMaximized();
+        if (!uiWindow->IsMaximized()) {
+            m_persistentState["window_pos"] = uiWindow->GetPosition();
+            m_persistentState["window_width"] = uiWindow->GetWidth();
+            m_persistentState["window_height"] = uiWindow->GetHeight();
         }
     }
 }
@@ -47,16 +72,25 @@ EditorApplication::~EditorApplication() {
     std::ofstream ofile(m_persistentFilePath.string());
     if (ofile.is_open()) {
         m_persistentState["current_path"] = std::filesystem::current_path().string();
-        m_persistentState["window_pos"] = m_mainWindowPosition;
-        m_persistentState["window_width"] = m_mainWindowWidth;
-        m_persistentState["window_height"] = m_mainWindowHeight;
-        m_persistentState["window_maximized"] = m_mainWindowMaximized;
         ofile << m_persistentState;
     }
 }
 
 void EditorApplication::PostCreateWindow() {
     ImGui::GetIO().IniFilename = s_imguiSettingsPath.c_str();
+    imgui_ext::SetImGuiContext(&GetUiWindow()->GetImGuiContext());
+
+    // Application only takes a size, and moth::gfx::platform::Window exposes position
+    // and maximized state read-only, so the rest of the restore goes through GLFW.
+    if (auto* const glfwWindow = dynamic_cast<moth::gfx::platform::glfw::Window*>(GetWindow())) {
+        auto const position = m_persistentState.value("window_pos", moth::core::IntVec2{ -1, -1 });
+        if (position.x > 0 && position.y > 0) {
+            glfwSetWindowPos(glfwWindow->GetGLFWWindow(), position.x, position.y);
+        }
+        if (m_persistentState.value("window_maximized", false)) {
+            glfwMaximizeWindow(glfwWindow->GetGLFWWindow());
+        }
+    }
     {
         constexpr int kSize = 64;
         constexpr int kTile = 8;
@@ -71,10 +105,10 @@ void EditorApplication::PostCreateWindow() {
                 pixels[idx + 3] = uint8_t{ 0xFF };                              // A
             }
         }
-        auto& assetContext = m_window->GetSurfaceContext().GetAssetContext();
+        auto& assetContext = GetUiWindow()->GetSurfaceContext().GetAssetContext();
         if (auto texture = assetContext.TextureFromPixels(kSize, kSize, pixels.data())) {
-            texture->SetFilter(moth_graphics::graphics::TextureFilter::Nearest, moth_graphics::graphics::TextureFilter::Nearest);
-            m_window->GetTextureFactory().SetFallbackTexture(std::move(texture));
+            texture->SetFilter(moth::gfx::TextureFilter::Nearest, moth::gfx::TextureFilter::Nearest);
+            GetUiWindow()->GetWindow().GetTextureFactory().SetFallbackTexture(std::move(texture));
         }
     }
 
@@ -87,6 +121,7 @@ void EditorApplication::PostCreateWindow() {
         }
     }
 
-    m_window->AddEventListener(this);
-    m_window->PushLayer(std::make_unique<EditorLayer>(m_window->GetMothContext(), m_window->GetGraphics(), m_window->GetSurfaceContext().GetAssetContext(), this));
+    auto& uiWindow = *GetUiWindow();
+    uiWindow.GetWindow().AddEventListener(this);
+    uiWindow.PushLayer(std::make_unique<EditorLayer>(uiWindow.GetMothContext(), uiWindow.GetGraphics(), uiWindow.GetWindow().GetDevice(), uiWindow.GetSurfaceContext().GetAssetContext(), this));
 }

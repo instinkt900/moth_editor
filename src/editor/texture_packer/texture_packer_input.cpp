@@ -1,8 +1,8 @@
 #include "common.h"
 #include "texture_packer.h"
 #include "editor/editor_layer.h"
-#include "moth_graphics/graphics/surface_context.h"
-#include "moth_graphics/graphics/asset_context.h"
+#include "moth/graphics/graphics/surface_context.h"
+#include "moth/graphics/graphics/asset_context.h"
 
 #include <nfd.h>
 
@@ -37,8 +37,8 @@ void TexturePacker::DrawInputPanel() {
                     // Load preview image
                     auto& assetContext = m_editorLayer.GetAssetContext();
                     {
-                        std::shared_ptr<moth_graphics::graphics::ITexture> tex(assetContext.TextureFromFile(img.path));
-                        m_inputPreview = tex ? moth_graphics::graphics::Image{ tex } : moth_graphics::graphics::Image{};
+                        std::shared_ptr<moth::gfx::ITexture> tex(assetContext.TextureFromFile(img.path));
+                        m_inputPreview = tex ? moth::gfx::Image{ tex } : moth::gfx::Image{};
                     }
                 }
             }
@@ -47,7 +47,7 @@ void TexturePacker::DrawInputPanel() {
                 m_inputImages.erase(m_inputImages.begin() + i);
                 if (m_selectedInput == i) {
                     m_selectedInput = -1;
-                    m_inputPreview = moth_graphics::graphics::Image{};
+                    m_inputPreview = moth::gfx::Image{};
                 } else if (m_selectedInput > i) {
                     --m_selectedInput;
                 }
@@ -132,9 +132,9 @@ void TexturePacker::DrawInputPanel() {
             }
 
             float const scale = (m_inputZoom <= 0.0f) ? fitScale : m_inputZoom;
-            m_inputPreview.DrawImGui({
-                static_cast<int>(srcW * scale),
-                static_cast<int>(srcH * scale) });
+            imgui_ext::Image(m_inputPreview,
+                             static_cast<int>(srcW * scale),
+                             static_cast<int>(srcH * scale));
         } else {
             ImGui::TextDisabled("Select an image to preview.");
         }
@@ -182,7 +182,7 @@ void TexturePacker::DrawInputPanel() {
     if (ImGui::Button("Clear All") && !m_inputImages.empty()) {
         m_inputImages.clear();
         m_selectedInput = -1;
-        m_inputPreview = moth_graphics::graphics::Image{};
+        m_inputPreview = moth::gfx::Image{};
         m_hasPacked = false;
         m_previewAtlases.clear();
         m_selectedOutput = -1;
@@ -233,7 +233,7 @@ void TexturePacker::DrawInputPanel() {
         int paddingTypeIdx = static_cast<int>(m_paddingType);
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (ImGui::Combo("##padding_type", &paddingTypeIdx, kPaddingTypeItems, 4)) {
-            m_paddingType = static_cast<moth_packer::PaddingType>(paddingTypeIdx);
+            m_paddingType = static_cast<moth::packer::PaddingType>(paddingTypeIdx);
         }
     }
 
@@ -257,9 +257,9 @@ void TexturePacker::DrawInputPanel() {
         int fmtIdx = static_cast<int>(m_outputFormat);
         ImGui::SetNextItemWidth(100.0f);
         if (ImGui::Combo("##format", &fmtIdx, kFormatItems, 4)) {
-            m_outputFormat = static_cast<moth_packer::AtlasFormat>(fmtIdx);
+            m_outputFormat = static_cast<moth::packer::AtlasFormat>(fmtIdx);
         }
-        if (m_outputFormat == moth_packer::AtlasFormat::JPEG) {
+        if (m_outputFormat == moth::packer::AtlasFormat::JPEG) {
             ImGui::SameLine();
             ImGui::TextUnformatted("Quality");
             ImGui::SameLine();
@@ -288,7 +288,7 @@ void TexturePacker::DrawInputPanel() {
             int loopIdx = static_cast<int>(loopType);
             ImGui::SetNextItemWidth(80.0f);
             if (ImGui::Combo("##loop_type", &loopIdx, kLoopTypeItems, 3)) {
-                loopType = static_cast<moth_packer::LoopType>(loopIdx);
+                loopType = static_cast<moth::packer::LoopType>(loopIdx);
             }
         }
         {

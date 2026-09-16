@@ -4,7 +4,7 @@
 
 class ChangeIndexAction : public IEditorAction {
 public:
-    ChangeIndexAction(std::shared_ptr<moth_ui::Node> node, int oldIndex, int newIndex);
+    ChangeIndexAction(std::shared_ptr<moth::ui::Node> node, int oldIndex, int newIndex);
     ~ChangeIndexAction() override;
 
     void Do() override;
@@ -13,7 +13,7 @@ public:
     void OnImGui() override;
 
 protected:
-    std::shared_ptr<moth_ui::Node> m_node;
+    std::shared_ptr<moth::ui::Node> m_node;
     int m_oldIndex = -1;
     int m_newIndex = -1;
 };

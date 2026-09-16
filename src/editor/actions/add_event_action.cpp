@@ -1,9 +1,9 @@
 #include "common.h"
 #include "add_event_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
-#include "moth_ui/animation/animation_marker.h"
+#include "moth/ui/layout/layout_entity_group.h"
+#include "moth/ui/animation/animation_marker.h"
 
-AddEventAction::AddEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, int frame, std::string const& name)
+AddEventAction::AddEventAction(std::shared_ptr<moth::ui::LayoutEntityGroup> group, int frame, std::string const& name)
     : m_group(group)
     , m_frame(frame)
     , m_name(name) {
@@ -13,7 +13,7 @@ AddEventAction::~AddEventAction() {
 }
 
 void AddEventAction::Do() {
-    m_group->m_events.push_back(std::make_unique<moth_ui::AnimationMarker>(m_frame, m_name));
+    m_group->m_events.push_back(std::make_unique<moth::ui::AnimationMarker>(m_frame, m_name));
 }
 
 void AddEventAction::Undo() {

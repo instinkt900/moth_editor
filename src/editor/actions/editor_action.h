@@ -4,8 +4,8 @@
 #include <functional>
 #include <memory>
 
-#include <moth_ui/moth_ui_fwd.h>
-#include <moth_graphics/utils/moth_ui_format.h>
+#include <moth/ui/moth_ui_fwd.h>
+#include <moth/bridge/moth_ui_format.h>
 #include <spdlog/spdlog.h>
 
 template <>
@@ -96,6 +96,6 @@ std::unique_ptr<IEditorAction> MakeChangeValueAction(T& valueRef, T oldValue, T 
 
 class EditorLayer;
 
-//std::unique_ptr<IEditorAction> MakeVisibilityAction(std::shared_ptr<moth_ui::Node> node, bool visible);
-std::unique_ptr<IEditorAction> MakeLockAction(std::shared_ptr<moth_ui::Node> node, bool locked, EditorLayer& editorLayer);
-std::unique_ptr<IEditorAction> MakeShowBoundsAction(std::shared_ptr<moth_ui::Node> node, bool visible);
+//std::unique_ptr<IEditorAction> MakeVisibilityAction(std::shared_ptr<moth::ui::Node> node, bool visible);
+std::unique_ptr<IEditorAction> MakeLockAction(std::shared_ptr<moth::ui::Node> node, bool locked, EditorLayer& editorLayer);
+std::unique_ptr<IEditorAction> MakeShowBoundsAction(std::shared_ptr<moth::ui::Node> node, bool visible);

@@ -4,7 +4,9 @@
 [![Release](https://github.com/instinkt900/moth_editor/actions/workflows/upload-release.yml/badge.svg)](https://github.com/instinkt900/moth_editor/actions/workflows/upload-release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A visual layout and animation editor for [moth_ui](https://github.com/instinkt900/moth_ui). Design UI layouts and keyframe animations in a Flash-like authoring environment, then load them directly into your moth_ui application at runtime.
+A visual layout and animation editor for [moth::ui](https://github.com/instinkt900/moth_toolkit). Design UI layouts and keyframe animations in a Flash-like authoring environment, then load them directly into your moth::ui application at runtime.
+
+The editor is a separate application, not a toolkit one: it depends on the toolkit's modules but is not built as part of it.
 
 ![Editor Screenshot](https://github.com/instinkt900/moth_ui/assets/35185578/a8779a2b-978e-450a-b80a-b0dad4f06306)
 
@@ -67,7 +69,7 @@ pip install conan
 
 **C++17 is required.** A `.conan/profile` is provided that sets `compiler.cppstd=17` and configures Conan to install system packages automatically (`tools.system.package_manager:mode=install`). This profile is used in CI and can be used directly or as a reference when building locally.
 
-moth_editor depends on `moth_ui`, `moth_graphics`, and `moth_packer`, which are published to an Artifactory remote rather than Conan Center. Register the remote once before installing (it is publicly readable, so no login is required):
+moth_editor depends on the [moth_toolkit](https://github.com/instinkt900/moth_toolkit) modules `moth_core`, `moth_ui`, `moth_graphics`, `moth_bridge`, and `moth_packer`, which are published to an Artifactory remote rather than Conan Center. Register the remote once before installing (it is publicly readable, so no login is required):
 
 ```bash
 conan remote add moth https://artifactory.matthewcotton.net/artifactory/api/conan/conan-local
@@ -75,7 +77,7 @@ conan remote add moth https://artifactory.matthewcotton.net/artifactory/api/cona
 
 ### Linux
 
-Several system packages are required on Linux. GTK3 is needed by nativefiledialog; SDL2, GLFW, FreeType, and HarfBuzz are pulled in transitively via moth_graphics (see the [moth_graphics README](https://github.com/instinkt900/moth_graphics#linux) for background on why these must come from the system).
+Several system packages are required on Linux. GTK3 is needed by nativefiledialog; GLFW, FreeType, and HarfBuzz are pulled in transitively via `moth_graphics` (see the [moth_toolkit README](https://github.com/instinkt900/moth_toolkit) for background on why these must come from the system).
 
 Using `.conan/profile`, Conan will install these automatically via `apt`:
 
@@ -88,7 +90,7 @@ cmake --build --preset conan-release
 If you'd rather install them yourself first:
 
 ```bash
-sudo apt install libgtk-3-dev libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev libglfw3-dev libfreetype-dev libharfbuzz-dev
+sudo apt install libgtk-3-dev libglfw3-dev libfreetype-dev libharfbuzz-dev
 ```
 
 ### Windows
@@ -105,10 +107,12 @@ cmake --build --preset conan-release
 
 | Project | Description |
 |---|---|
-| [moth_ui](https://github.com/instinkt900/moth_ui) | Core UI library: node graph, keyframe animation, and event system |
-| [moth_graphics](https://github.com/instinkt900/moth_graphics) | Graphics and application framework built on moth_ui: SDL2 and Vulkan backends, window management, and a layer stack |
-| moth_editor | *(this project)* Visual layout and animation editor for creating moth_ui layout files |
-| [moth_packer](https://github.com/instinkt900/moth_packer) | Command-line texture atlas packer for images and moth_ui layouts |
+| [moth_toolkit](https://github.com/instinkt900/moth_toolkit) | The modular 2D engine toolkit this editor builds against |
+| `moth::ui` | Core UI library: node graph, keyframe animation, and event system |
+| `moth::gfx` | Vulkan-backed 2D renderer, window management, and the platform bootstrap |
+| `moth::bridge` | Adapts `moth::ui` onto `moth::gfx` and provides the application loop |
+| `moth::packer` | Texture atlas and flipbook sheet packing |
+| moth_editor | *(this project)* Visual layout and animation editor for creating `moth::ui` layout files |
 
 ---
 

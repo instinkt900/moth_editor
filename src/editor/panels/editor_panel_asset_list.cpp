@@ -1,12 +1,12 @@
 #include "common.h"
 #include "editor_panel_asset_list.h"
 #include "../editor_layer.h"
-#include "moth_ui/layout/layout.h"
-#include "moth_graphics/graphics/image.h"
-#include "moth_graphics/graphics/igraphics.h"
-#include "moth_graphics/graphics/surface_context.h"
-#include "moth_graphics/graphics/asset_context.h"
-#include "moth_graphics/graphics/texture_factory.h"
+#include "moth/ui/layout/layout.h"
+#include "moth/graphics/graphics/image.h"
+#include "moth/graphics/graphics/igraphics.h"
+#include "moth/graphics/graphics/surface_context.h"
+#include "moth/graphics/graphics/asset_context.h"
+#include "moth/graphics/graphics/texture_factory.h"
 
 static std::string DragDropString;
 
@@ -26,7 +26,7 @@ namespace {
     }
 
     bool IsSupportedFile(std::filesystem::path const& path) {
-        if (path.extension().string() == moth_ui::Layout::FullExtension) {
+        if (path.extension().string() == moth::ui::Layout::FullExtension) {
             return true;
         }
         if (IsFlipbook(path)) {
@@ -48,7 +48,7 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
     });
 
     m_contentList.SetDoubleClickAction([this](std::filesystem::path const& path) {
-        if (path.extension().string() == moth_ui::Layout::FullExtension) {
+        if (path.extension().string() == moth::ui::Layout::FullExtension) {
             m_editorLayer.LoadLayout(path);
         }
     });
@@ -56,7 +56,7 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
     m_contentList.SetPerEntryAction([this](std::filesystem::path const& path) {
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
             DragDropString = path.string();
-            if (path.extension().string() == moth_ui::Layout::FullExtension) {
+            if (path.extension().string() == moth::ui::Layout::FullExtension) {
                 ImGui::SetDragDropPayload("layout_path", &DragDropString, sizeof(std::string));
                 ImGui::Text("%s", DragDropString.c_str());
             } else if (IsFlipbook(path)) {
@@ -75,9 +75,9 @@ EditorPanelAssetList::EditorPanelAssetList(EditorLayer& editorLayer, bool visibl
                 auto& factory = m_editorLayer.GetAssetContext().GetTextureFactory();
                 auto texture = factory.GetTexture(path);
                 if (texture) {
-                    m_imageCache[key] = moth_graphics::graphics::Image{ texture, factory.GetTextureRect(path) };
+                    m_imageCache[key] = moth::gfx::Image{ texture, factory.GetTextureRect(path) };
                 } else {
-                    m_imageCache[key] = moth_graphics::graphics::Image{};
+                    m_imageCache[key] = moth::gfx::Image{};
                 }
             }
             auto const& image = m_imageCache.at(key);

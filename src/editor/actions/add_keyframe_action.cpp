@@ -1,9 +1,9 @@
 #include "common.h"
 #include "add_keyframe_action.h"
-#include "moth_ui/layout/layout_entity.h"
-#include "moth_ui/animation/keyframe.h"
+#include "moth/ui/layout/layout_entity.h"
+#include "moth/ui/animation/keyframe.h"
 
-AddKeyframeAction::AddKeyframeAction(std::shared_ptr<moth_ui::LayoutEntity> entity, moth_ui::AnimationTrack::Target target, int frameNo, moth_ui::KeyframeValue value, moth_ui::InterpType interp)
+AddKeyframeAction::AddKeyframeAction(std::shared_ptr<moth::ui::LayoutEntity> entity, moth::ui::AnimationTrack::Target target, int frameNo, moth::ui::KeyframeValue value, moth::ui::InterpType interp)
     : m_entity(entity)
     , m_target(target)
     , m_frameNo(frameNo)

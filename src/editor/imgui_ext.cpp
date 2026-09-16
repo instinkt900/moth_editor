@@ -1,12 +1,41 @@
 #include "common.h"
 #include "imgui_ext.h"
 #include "imgui_internal.h"
-#include "moth_ui/utils/vector.h"
-#include "moth_ui/graphics/iimage.h"
-#include "moth_graphics/graphics/moth_ui/moth_image.h"
+#include "moth/ui/utils/vector.h"
+#include "moth/ui/graphics/iimage.h"
+#include "moth/bridge/moth_image.h"
+#include "moth/graphics/graphics/itexture.h"
+#include "moth/graphics/platform/imgui_context.h"
+
+namespace {
+    moth::gfx::platform::ImGuiContext* s_imguiContext = nullptr;
+
+    // Reproduces the source-rect UV remapping that moth_graphics' Image::DrawImGui did,
+    // before the toolkit moved texture drawing off Image and onto the ImGui context.
+    void DrawImage(moth::gfx::Image const& image, moth::ui::IntVec2 const& size,
+                   moth::ui::FloatVec2 const& uv0, moth::ui::FloatVec2 const& uv1) {
+        auto const& texture = image.GetTexture();
+        if (s_imguiContext == nullptr || !texture) {
+            return;
+        }
+        auto const& source = image.GetSourceRect();
+        auto const texW = static_cast<float>(texture->GetWidth());
+        auto const texH = static_cast<float>(texture->GetHeight());
+        if (texW <= 0.0f || texH <= 0.0f) {
+            return;
+        }
+        auto const srcW = static_cast<float>(source.w());
+        auto const srcH = static_cast<float>(source.h());
+        auto const offX = static_cast<float>(source.topLeft.x);
+        auto const offY = static_cast<float>(source.topLeft.y);
+        s_imguiContext->Image(*texture, size,
+                              { (offX + (uv0.x * srcW)) / texW, (offY + (uv0.y * srcH)) / texH },
+                              { (offX + (uv1.x * srcW)) / texW, (offY + (uv1.y * srcH)) / texH });
+    }
+}
 
 namespace imgui_ext {
-    using namespace moth_ui;
+    using namespace moth::ui;
 
     bool InputString(char const* label, std::string* str) {
         static size_t const BufferSize = 1024;
@@ -59,17 +88,24 @@ namespace imgui_ext {
         ImGui::Text("%s", label);
     }
 
-    void Image(moth_graphics::graphics::Image const& image, int width, int height) {
-        if (image) {
-            image.DrawImGui({ width, height });
-        }
+    void SetImGuiContext(moth::gfx::platform::ImGuiContext* context) {
+        s_imguiContext = context;
     }
 
-    void Image(moth_ui::IImage const* image, int width, int height) {
+    void Image(moth::gfx::Image const& image, int width, int height) {
+        DrawImage(image, { width, height }, { 0.0f, 0.0f }, { 1.0f, 1.0f });
+    }
+
+    void Image(moth::gfx::Image const& image, int width, int height,
+               moth::ui::FloatVec2 const& uv0, moth::ui::FloatVec2 const& uv1) {
+        DrawImage(image, { width, height }, uv0, uv1);
+    }
+
+    void Image(moth::ui::IImage const* image, int width, int height) {
         if (image != nullptr) {
-            auto const* mothImage = dynamic_cast<moth_graphics::graphics::MothImage const*>(image);
+            auto const* mothImage = dynamic_cast<moth::bridge::MothImage const*>(image);
             if (mothImage != nullptr) {
-                mothImage->GetImage().DrawImGui({ width, height });
+                Image(mothImage->GetImage(), width, height);
             }
         }
     }

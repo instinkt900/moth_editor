@@ -1,6 +1,6 @@
 #pragma once
 
-#include "moth_ui/layout/layout_rect.h"
+#include "moth/ui/layout/layout_rect.h"
 
 class PropertyEditContextBase {
 public:
@@ -156,7 +156,7 @@ inline InputContext<char const*> InputElement(char const* label, InputBuffer<cha
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
-inline InputContext<moth_ui::IntVec2> InputElement(char const* label, InputBuffer<moth_ui::IntVec2> valueBuffer) {
+inline InputContext<moth::ui::IntVec2> InputElement(char const* label, InputBuffer<moth::ui::IntVec2> valueBuffer) {
     bool changed = false;
     bool focused = false;
     bool deactivatedAfterEdit = false;
@@ -186,7 +186,7 @@ inline InputContext<moth_ui::IntVec2> InputElement(char const* label, InputBuffe
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
-inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuffer<moth_ui::FloatVec2> valueBuffer) {
+inline InputContext<moth::ui::FloatVec2> InputElement(char const* label, InputBuffer<moth::ui::FloatVec2> valueBuffer) {
     bool changed = false;
     bool focused = false;
     bool deactivatedAfterEdit = false;
@@ -216,7 +216,7 @@ inline InputContext<moth_ui::FloatVec2> InputElement(char const* label, InputBuf
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
-inline InputContext<moth_ui::Color> InputElement(char const* label, InputBuffer<moth_ui::Color> valueBuffer) {
+inline InputContext<moth::ui::Color> InputElement(char const* label, InputBuffer<moth::ui::Color> valueBuffer) {
     bool changed = ImGui::ColorEdit4(label, valueBuffer.Buffer->data, ImGuiColorEditFlags_DisplayHex);
     bool focused = ImGui::IsItemFocused();
     bool deactivatedAfterEdit = ImGui::IsItemDeactivatedAfterEdit();
@@ -224,7 +224,7 @@ inline InputContext<moth_ui::Color> InputElement(char const* label, InputBuffer<
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
-inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBuffer<moth_ui::LayoutRect> valueBuffer) {
+inline InputContext<moth::ui::LayoutRect> InputElement(char const* label, InputBuffer<moth::ui::LayoutRect> valueBuffer) {
     bool changed = false;
     bool focused = false;
     bool deactivatedAfterEdit = false;
@@ -243,7 +243,7 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
         ImGui::TableSetupColumn("B##lrh", ImGuiTableColumnFlags_WidthStretch);
         ImGui::TableHeadersRow();
 
-        auto drawRow = [&](char const* rowLabel, moth_ui::FloatRect& rect) {
+        auto drawRow = [&](char const* rowLabel, moth::ui::FloatRect& rect) {
             ImGui::TableNextRow();
             ImGui::PushID(rowLabel);
 
@@ -292,7 +292,7 @@ inline InputContext<moth_ui::LayoutRect> InputElement(char const* label, InputBu
     return { changed, focused, deactivatedAfterEdit, deactivated, valueBuffer };
 }
 
-inline InputContext<moth_ui::IntRect> InputElement(char const* label, InputBuffer<moth_ui::IntRect> valueBuffer) {
+inline InputContext<moth::ui::IntRect> InputElement(char const* label, InputBuffer<moth::ui::IntRect> valueBuffer) {
     bool changed = false;
     bool focused = false;
     bool deactivatedAfterEdit = false;

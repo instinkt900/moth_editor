@@ -1,8 +1,8 @@
 #include "common.h"
 #include "modify_event_action.h"
-#include "moth_ui/layout/layout_entity_group.h"
+#include "moth/ui/layout/layout_entity_group.h"
 
-ModifyEventAction::ModifyEventAction(std::shared_ptr<moth_ui::LayoutEntityGroup> group, moth_ui::AnimationMarker const& oldValues, moth_ui::AnimationMarker const& newValues)
+ModifyEventAction::ModifyEventAction(std::shared_ptr<moth::ui::LayoutEntityGroup> group, moth::ui::AnimationMarker const& oldValues, moth::ui::AnimationMarker const& newValues)
     : m_group(group)
     , m_initialValues(oldValues)
     , m_finalValues(newValues) {
@@ -19,7 +19,7 @@ void ModifyEventAction::Do() {
     if (it == ranges::end(m_group->m_events)) {
         return;
     }
-    moth_ui::AnimationMarker* targetEvent = it->get();
+    moth::ui::AnimationMarker* targetEvent = it->get();
 
     if (m_initialValues.frame != m_finalValues.frame) {
         auto const replaceIt = ranges::find_if(m_group->m_events, [&](auto const& event) {
@@ -41,11 +41,11 @@ void ModifyEventAction::Undo() {
     if (it == ranges::end(m_group->m_events)) {
         return;
     }
-    moth_ui::AnimationMarker* targetEvent = it->get();
+    moth::ui::AnimationMarker* targetEvent = it->get();
     *targetEvent = m_initialValues;
 
     if (m_replacedEvent.has_value()) {
-        m_group->m_events.push_back(std::make_unique<moth_ui::AnimationMarker>(m_replacedEvent.value()));
+        m_group->m_events.push_back(std::make_unique<moth::ui::AnimationMarker>(m_replacedEvent.value()));
     }
 }
 

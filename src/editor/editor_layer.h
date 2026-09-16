@@ -1,8 +1,8 @@
 #pragma once
 
-#include "moth_ui/context.h"
-#include "moth_ui/layers/layer.h"
-#include "moth_ui/events/event.h"
+#include "moth/ui/context.h"
+#include "moth/ui/layers/layer.h"
+#include "moth/ui/events/event.h"
 #include "confirm_prompt.h"
 #include "editor_config.h"
 #include "editor/sprite_editor/sprite_editor.h"
@@ -13,13 +13,14 @@ class TexturePacker;
 #include "editor/panels/editor_panel_fonts.h"
 #include "editor/panels/editor_panel_reference_image.h"
 
-#include "moth_ui/layout/layout_rect.h"
-#include "moth_ui/events/event_mouse.h"
-#include "moth_ui/events/event_key.h"
+#include "moth/ui/layout/layout_rect.h"
+#include "moth/ui/events/event_mouse.h"
+#include "moth/ui/events/event_key.h"
 
-#include "moth_graphics/graphics/asset_context.h"
-#include "moth_graphics/graphics/igraphics.h"
-#include "moth_graphics/events/event_window.h"
+#include "moth/graphics/graphics/asset_context.h"
+#include "moth/graphics/graphics/igraphics.h"
+#include "moth/graphics/graphics/igraphics_device.h"
+#include "moth/graphics/events/event_window.h"
 
 #include <set>
 
@@ -28,21 +29,23 @@ class IEditorAction;
 class EditorPanel;
 class EditorApplication;
 
-class EditorLayer : public moth_ui::Layer {
+class EditorLayer : public moth::ui::Layer {
 public:
-    EditorLayer(moth_ui::Context& context, moth_graphics::graphics::IGraphics& graphics, moth_graphics::graphics::AssetContext& assetContext, EditorApplication* app);
+    EditorLayer(moth::ui::Context& context, moth::gfx::IGraphics& graphics, moth::gfx::IGraphicsDevice& device, moth::gfx::AssetContext& assetContext, EditorApplication* app);
     ~EditorLayer() override;
 
-    moth_graphics::graphics::IGraphics& GetGraphics() const { return m_graphics; }
-    moth_graphics::graphics::AssetContext& GetAssetContext() const { return m_assetContext; }
+    moth::gfx::IGraphics& GetGraphics() const { return m_graphics; }
+    // Render targets are created by the device, not by IGraphics.
+    moth::gfx::IGraphicsDevice& GetDevice() const { return m_device; }
+    moth::gfx::AssetContext& GetAssetContext() const { return m_assetContext; }
 
-    bool OnEvent(moth_ui::Event const& event) override;
+    bool OnEvent(moth::ui::Event const& event) override;
 
     void Update(uint32_t ticks) override;
     void Draw() override;
     void DebugDraw() override;
 
-    void OnAddedToStack(moth_ui::LayerStack* layerStack) override;
+    void OnAddedToStack(moth::ui::LayerStack* layerStack) override;
     void OnRemovedFromStack() override;
 
     bool UseRenderSize() const override { return false; }
@@ -51,26 +54,26 @@ public:
     int GetSelectedFrame() const { return m_selectedFrame; }
 
     void ClearSelection();
-    void AddSelection(std::shared_ptr<moth_ui::Node> node);
-    void RemoveSelection(std::shared_ptr<moth_ui::Node> node);
-    std::set<std::shared_ptr<moth_ui::Node>> const& GetSelection() const { return m_selection; }
-    bool IsSelected(std::shared_ptr<moth_ui::Node> node) const;
+    void AddSelection(std::shared_ptr<moth::ui::Node> node);
+    void RemoveSelection(std::shared_ptr<moth::ui::Node> node);
+    std::set<std::shared_ptr<moth::ui::Node>> const& GetSelection() const { return m_selection; }
+    bool IsSelected(std::shared_ptr<moth::ui::Node> node) const;
 
-    void LockNode(std::shared_ptr<moth_ui::Node> node);
-    void UnlockNode(std::shared_ptr<moth_ui::Node> node);
-    bool IsLocked(std::shared_ptr<moth_ui::Node> node) const;
+    void LockNode(std::shared_ptr<moth::ui::Node> node);
+    void UnlockNode(std::shared_ptr<moth::ui::Node> node);
+    bool IsLocked(std::shared_ptr<moth::ui::Node> node) const;
 
     void Refresh();
     void Rebuild();
 
-    void BeginEditBounds(std::shared_ptr<moth_ui::Node> node = nullptr);
+    void BeginEditBounds(std::shared_ptr<moth::ui::Node> node = nullptr);
     void EndEditBounds();
 
-    void BeginEditColor(std::shared_ptr<moth_ui::Node> node);
+    void BeginEditColor(std::shared_ptr<moth::ui::Node> node);
     void EndEditColor();
     bool HasPendingColorEdit() const { return m_editColorContext != nullptr; }
 
-    void BeginEditRotation(std::shared_ptr<moth_ui::Node> node);
+    void BeginEditRotation(std::shared_ptr<moth::ui::Node> node);
     void EndEditRotation();
 
     void PerformEditAction(std::unique_ptr<IEditorAction>&& editAction);
@@ -82,8 +85,8 @@ public:
     void NewLayout(bool discard = false);
     void LoadLayout(std::filesystem::path const& path, bool discard = false);
 
-    std::shared_ptr<moth_ui::Group> GetRoot() const { return m_root; }
-    std::shared_ptr<moth_ui::Layout> GetCurrentLayout() { return m_rootLayout; }
+    std::shared_ptr<moth::ui::Group> GetRoot() const { return m_root; }
+    std::shared_ptr<moth::ui::Layout> GetCurrentLayout() { return m_rootLayout; }
     std::filesystem::path const& GetCurrentLayoutPath() const { return m_currentLayoutPath; }
 
     template <typename T, typename... Args>
@@ -138,13 +141,14 @@ public:
     void ToggleEntityVisibility();
 
     EditorConfig& GetConfig() { return m_config; }
-    moth_ui::Context& GetContext() const { return m_context; }
+    moth::ui::Context& GetContext() const { return m_context; }
 
 private:
     EditorApplication* m_app = nullptr;
-    moth_ui::Context& m_context;
-    moth_graphics::graphics::IGraphics& m_graphics;
-    moth_graphics::graphics::AssetContext& m_assetContext;
+    moth::ui::Context& m_context;
+    moth::gfx::IGraphics& m_graphics;
+    moth::gfx::IGraphicsDevice& m_device;
+    moth::gfx::AssetContext& m_assetContext;
 
     EditorConfig m_config;
 
@@ -153,30 +157,30 @@ private:
     std::map<size_t, std::unique_ptr<EditorPanel>> m_panels;
 
     std::filesystem::path m_currentLayoutPath;
-    std::shared_ptr<moth_ui::Layout> m_rootLayout;
-    std::shared_ptr<moth_ui::Group> m_root;
-    std::set<std::shared_ptr<moth_ui::Node>> m_selection;
-    std::set<std::shared_ptr<moth_ui::Node>> m_lockedNodes;
-    std::vector<std::shared_ptr<moth_ui::LayoutEntity>> m_copiedEntities;
+    std::shared_ptr<moth::ui::Layout> m_rootLayout;
+    std::shared_ptr<moth::ui::Group> m_root;
+    std::set<std::shared_ptr<moth::ui::Node>> m_selection;
+    std::set<std::shared_ptr<moth::ui::Node>> m_lockedNodes;
+    std::vector<std::shared_ptr<moth::ui::LayoutEntity>> m_copiedEntities;
 
     int m_selectedFrame = 0;
 
     struct EditBoundsContext {
-        std::shared_ptr<moth_ui::Node> node;
-        std::shared_ptr<moth_ui::LayoutEntity> entity;
-        moth_ui::LayoutRect originalRect;
-        moth_ui::FloatVec2 originalPivot;
+        std::shared_ptr<moth::ui::Node> node;
+        std::shared_ptr<moth::ui::LayoutEntity> entity;
+        moth::ui::LayoutRect originalRect;
+        moth::ui::FloatVec2 originalPivot;
     };
 
     struct EditColorContext {
-        std::shared_ptr<moth_ui::Node> node;
-        std::shared_ptr<moth_ui::LayoutEntity> entity;
-        moth_ui::Color originalColor;
+        std::shared_ptr<moth::ui::Node> node;
+        std::shared_ptr<moth::ui::LayoutEntity> entity;
+        moth::ui::Color originalColor;
     };
 
     struct EditRotationContext {
-        std::shared_ptr<moth_ui::Node> node;
-        std::shared_ptr<moth_ui::LayoutEntity> entity;
+        std::shared_ptr<moth::ui::Node> node;
+        std::shared_ptr<moth::ui::LayoutEntity> entity;
         float originalRotation = 0.0f;
     };
 
@@ -233,8 +237,8 @@ private:
 
     void ResetCanvas();
 
-    bool OnKey(moth_ui::EventKey const& event);
-    bool OnRequestQuitEvent(moth_graphics::EventRequestQuit const& event);
+    bool OnKey(moth::ui::EventKey const& event);
+    bool OnRequestQuitEvent(moth::gfx::EventRequestQuit const& event);
 
     void Shutdown();
     void SaveConfig();
