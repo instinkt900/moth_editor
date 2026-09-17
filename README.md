@@ -119,4 +119,4 @@ cmake --build --preset conan-release
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
