@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: 'Run even if version has not changed.'
+        description: 'Release even if this version already has a tag.'
         type: boolean
         default: false
       test:
-        description: 'Test run. Will not create release or tags.'
+        description: 'Test run. Builds everything but uploads nothing and creates no release or tag.'
         type: boolean
         default: false
   push:
@@ -27,41 +27,33 @@ jobs:
   check-version:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.check.outputs.changed }}
-      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.check.outputs.release }}
+      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Check if version.txt changed
+      - name: Check whether this version is already released
         id: check
+        shell: bash
         run: |
+          # Only numbered versions are published. A version counts as released
+          # once its tag exists, and tag-and-release creates the tag only after
+          # the Conan upload and the release builds have succeeded.
+          version="$(tr -d '[:space:]' < version.txt)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
           if [[ "${{ github.event.inputs.force }}" == "true" ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          elif [[ -z "${{ github.event.before }}" ]]; then
-            # workflow_dispatch: no push range available, fall back to last-commit diff
-            if git diff HEAD^ HEAD --name-only 2>/dev/null | grep -q "^version.txt$"; then
-              echo "changed=true" >> $GITHUB_OUTPUT
-            else
-              echo "changed=false" >> $GITHUB_OUTPUT
-            fi
-          elif [[ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]]; then
-            # Initial push to branch — no previous commit to diff against, treat as changed
-            echo "changed=true" >> $GITHUB_OUTPUT
-          elif git diff "${{ github.event.before }}..${{ github.sha }}" --name-only 2>/dev/null | grep -q "^version.txt$"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Forced release of $version"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --tags origin "refs/tags/$version" >/dev/null; then
+            echo "$version is already released; nothing to do"
+            echo "release=false" >> "$GITHUB_OUTPUT"
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "$version has no tag; releasing"
+            echo "release=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Read version
-        id: version
-        shell: bash
-        run: echo "version=$(cat version.txt | tr -d '[:space:]')" >> $GITHUB_OUTPUT
-
   conan-upload:
-    if: github.repository == 'instinkt900/moth_editor'
+    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.release == 'true'
     needs: check-version
     runs-on: ${{ matrix.runs_on }}
     strategy:
@@ -89,9 +81,8 @@ jobs:
         echo 'tools.system.package_manager:mode=install' >> "$(conan config home)/global.conf"
         echo 'tools.system.package_manager:sudo=True' >> "$(conan config home)/global.conf"
 
-    - name: Build package and upload (develop)
+    - name: Build package
       shell: bash
-      if: needs.check-version.outputs.changed != 'true'
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
         conan remote login artifactory ${{ vars.ARTIFACTORY_USER }} -p ${{ secrets.ARTIFACTORY_TOKEN }}
@@ -101,21 +92,15 @@ jobs:
         # and never asks the remote whether something newer matches, which
         # silently pins an old version. See instinkt900/moth_editor#30.
         # MSVC's detected profile defaults to cppstd=14; the recipe requires 17.
-        conan create . ${{ matrix.os == 'windows' && '-s compiler.cppstd=17' || '' }} -s build_type=Release --build=missing --version develop --update
-        conan upload "moth_editor/develop:*" --confirm --remote artifactory
-
-    - name: Build package and upload (release)
-      shell: bash
-      if: needs.check-version.outputs.changed == 'true'
-      run: |
-        conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
-        conan remote login artifactory ${{ vars.ARTIFACTORY_USER }} -p ${{ secrets.ARTIFACTORY_TOKEN }}
-        # MSVC's detected profile defaults to cppstd=14; the recipe requires 17.
         conan create . ${{ matrix.os == 'windows' && '-s compiler.cppstd=17' || '' }} -s build_type=Release --build=missing --update
-        conan upload "moth_editor/${{ needs.check-version.outputs.version }}:*" --confirm --remote artifactory
+
+    - name: Upload package
+      if: github.event.inputs.test != 'true'
+      shell: bash
+      run: conan upload "moth_editor/${{ needs.check-version.outputs.version }}:*" --confirm --remote artifactory
 
   build-release:
-    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true'
+    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.release == 'true'
     needs: check-version
     runs-on: ${{ matrix.runs_on }}
     strategy:
@@ -192,8 +177,8 @@ jobs:
         retention-days: 1
 
   tag-and-release:
-    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.changed == 'true' && github.event.inputs.test != 'true'
-    needs: [check-version, build-release]
+    if: github.repository == 'instinkt900/moth_editor' && needs.check-version.outputs.release == 'true' && github.event.inputs.test != 'true'
+    needs: [check-version, conan-upload, build-release]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
