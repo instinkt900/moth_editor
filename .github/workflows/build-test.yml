@@ -9,7 +9,6 @@ on:
       - 'CMakeLists.txt'
       - 'conanfile.py'
       - 'version.txt'
-      - '.conan/**'
       - '.github/workflows/**'
 
 jobs:
@@ -35,16 +34,23 @@ jobs:
       with:
         cache_packages: true
 
+    - name: Allow Conan to install missing system packages
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo 'tools.system.package_manager:mode=install' >> "$(conan config home)/global.conf"
+        echo 'tools.system.package_manager:sudo=True' >> "$(conan config home)/global.conf"
+
     - name: Add private artifactory
       shell: bash
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
-        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
+        conan remote login artifactory ${{ vars.ARTIFACTORY_USER }} -p ${{ secrets.ARTIFACTORY_TOKEN }}
 
     - name: Configure and build
       shell: bash
       run: |
-        conan install . -pr .conan/profile -s build_type=Release --build=missing --update
+        # MSVC's detected profile defaults to cppstd=14; the recipe requires 17.
+        conan install . ${{ matrix.os == 'windows' && '-s compiler.cppstd=17' || '' }} -s build_type=Release --build=missing --update
         cmake --preset ${{ matrix.configure_preset }}
         cmake --build --preset conan-release --config Release
-

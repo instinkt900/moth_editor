@@ -67,7 +67,7 @@ python3 -m venv .venv
 pip install conan
 ```
 
-**C++17 is required.** A `.conan/profile` is provided that sets `compiler.cppstd=17` and configures Conan to install system packages automatically (`tools.system.package_manager:mode=install`). This profile is used in CI and can be used directly or as a reference when building locally.
+**C++17 is required.** The recipe checks for it. On Linux, Conan's detected profile already uses `gnu17`. On Windows, MSVC's detected profile defaults to C++14, so pass `-s compiler.cppstd=17` or set it in your Conan profile.
 
 moth_editor depends on the [moth_toolkit](https://github.com/instinkt900/moth_toolkit) modules `moth_core`, `moth_ui`, `moth_graphics`, `moth_bridge`, and `moth_packer`, which are published to an Artifactory remote rather than Conan Center. Register the remote once before installing (it is publicly readable, so no login is required):
 
@@ -79,10 +79,11 @@ conan remote add moth https://artifactory.matthewcotton.net/artifactory/api/cona
 
 Several system packages are required on Linux. GTK3 is needed by nativefiledialog; GLFW, FreeType, and HarfBuzz are pulled in transitively via `moth_graphics` (see the [moth_toolkit README](https://github.com/instinkt900/moth_toolkit) for background on why these must come from the system).
 
-Using `.conan/profile`, Conan will install these automatically via `apt`:
+Conan installs these through `apt` when you allow it to manage system packages:
 
 ```bash
-conan install . -pr .conan/profile -s build_type=Release --build=missing
+conan install . -s build_type=Release --build=missing \
+    -c tools.system.package_manager:mode=install -c tools.system.package_manager:sudo=True
 cmake --preset conan-release
 cmake --build --preset conan-release
 ```
@@ -96,7 +97,7 @@ sudo apt install libgtk-3-dev libglfw3-dev libfreetype-dev libharfbuzz-dev
 ### Windows
 
 ```bash
-conan install . -pr .conan/profile -s build_type=Release --build=missing
+conan install . -s compiler.cppstd=17 -s build_type=Release --build=missing
 cmake --preset conan-default
 cmake --build --preset conan-release
 ```

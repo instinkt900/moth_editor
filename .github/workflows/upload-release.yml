@@ -1,4 +1,4 @@
-name: Upload Package
+name: Upload Release
 
 on:
   workflow_dispatch:
@@ -18,7 +18,6 @@ on:
       - 'CMakeLists.txt'
       - 'conanfile.py'
       - 'version.txt'
-      - '.conan/**'
       - '.github/workflows/**'
 
 permissions:
@@ -83,18 +82,26 @@ jobs:
       with:
         cache_packages: true
 
+    - name: Allow Conan to install missing system packages
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo 'tools.system.package_manager:mode=install' >> "$(conan config home)/global.conf"
+        echo 'tools.system.package_manager:sudo=True' >> "$(conan config home)/global.conf"
+
     - name: Build package and upload (develop)
       shell: bash
       if: needs.check-version.outputs.changed != 'true'
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
-        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
+        conan remote login artifactory ${{ vars.ARTIFACTORY_USER }} -p ${{ secrets.ARTIFACTORY_TOKEN }}
         # --update on every Conan call in CI. This job restores a Conan cache
         # keyed only on the Conan version and the OS, so it survives every
         # dependency change. Conan resolves a version range against that cache
         # and never asks the remote whether something newer matches, which
         # silently pins an old version. See instinkt900/moth_editor#30.
-        conan create . -pr .conan/profile -s build_type=Release --build=missing --version develop --update
+        # MSVC's detected profile defaults to cppstd=14; the recipe requires 17.
+        conan create . ${{ matrix.os == 'windows' && '-s compiler.cppstd=17' || '' }} -s build_type=Release --build=missing --version develop --update
         conan upload "moth_editor/develop:*" --confirm --remote artifactory
 
     - name: Build package and upload (release)
@@ -102,8 +109,9 @@ jobs:
       if: needs.check-version.outputs.changed == 'true'
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
-        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
-        conan create . -pr .conan/profile -s build_type=Release --build=missing --update
+        conan remote login artifactory ${{ vars.ARTIFACTORY_USER }} -p ${{ secrets.ARTIFACTORY_TOKEN }}
+        # MSVC's detected profile defaults to cppstd=14; the recipe requires 17.
+        conan create . ${{ matrix.os == 'windows' && '-s compiler.cppstd=17' || '' }} -s build_type=Release --build=missing --update
         conan upload "moth_editor/${{ needs.check-version.outputs.version }}:*" --confirm --remote artifactory
 
   build-release:
@@ -134,16 +142,24 @@ jobs:
       with:
         cache_packages: true
 
+    - name: Allow Conan to install missing system packages
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo 'tools.system.package_manager:mode=install' >> "$(conan config home)/global.conf"
+        echo 'tools.system.package_manager:sudo=True' >> "$(conan config home)/global.conf"
+
     - name: Add remotes
       shell: bash
       run: |
         conan remote add artifactory ${{ vars.ARTIFACTORY_URL }} --force
-        conan remote login artifactory ci -p ${{ secrets.ARTIFACTS_TOKEN }}
+        conan remote login artifactory ${{ vars.ARTIFACTORY_USER }} -p ${{ secrets.ARTIFACTORY_TOKEN }}
 
     - name: Configure and build
       shell: bash
       run: |
-        conan install . -pr .conan/profile -s build_type=${{ matrix.build_type }} --build=missing --update
+        # MSVC's detected profile defaults to cppstd=14; the recipe requires 17.
+        conan install . ${{ matrix.os == 'windows' && '-s compiler.cppstd=17' || '' }} -s build_type=${{ matrix.build_type }} --build=missing --update
         cmake --preset ${{ matrix.configure_preset }}
         cmake --build --preset ${{ matrix.build_preset }} --config ${{ matrix.build_type }}
 

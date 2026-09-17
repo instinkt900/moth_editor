@@ -1,4 +1,5 @@
 from conan import ConanFile
+from conan.tools.build import check_min_cppstd
 from conan.tools.cmake import cmake_layout, CMake
 from conan.tools.files import load
 from conan.tools.system.package_manager import Apt
@@ -11,12 +12,16 @@ class MothUIEditor(ConanFile):
     description = "A visual layout and animation editor for the moth_toolkit UI module"
 
     settings = "os", "compiler", "build_type", "arch"
-    generators = "CMakeToolchain", "CMakeDeps", "MSBuildToolchain", "MSBuildDeps"
+    generators = "CMakeToolchain", "CMakeDeps"
     exports_sources = "CMakeLists.txt", "version.txt", "src/*", "external/nativefiledialog/*"
 
     def set_version(self):
         if not self.version:
             self.version = load(self, "version.txt").strip()
+
+    def validate(self):
+        # C++17 is the floor for every moth project.
+        check_min_cppstd(self, 17)
 
     def requirements(self):
         # The toolkit modules the editor includes directly. moth_bridge pulls
