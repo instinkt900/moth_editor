@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 Entries are generated automatically from git history using [git-cliff](https://github.com/orhun/git-cliff).
 
-## [2.0.0] - 2026-09-16
+## [2.0.0] - 2026-09-17
 ### Features
 - Add Help menu with About dialog
 - Swap canvas mousewheel — wheel zooms, ctrl+wheel pans
@@ -40,6 +40,7 @@ Entries are generated automatically from git history using [git-cliff](https://g
 ### Documentation
 - Refresh editor TODO
 - Document Artifactory remote registration for Conan
+- Add the MIT LICENSE file
 
 ### Miscellaneous
 - Bump conan dependencies
@@ -48,6 +49,9 @@ Entries are generated automatically from git history using [git-cliff](https://g
 - Bump moth_packer to 1.0.0-rc.2
 - Describe the package as a moth_toolkit editor
 - Release 2.0.0 against moth_packer 2
+
+### Changes
+- Drop the committed Conan profile and align CI with the moth tools
 
 ## [1.0.0-rc.1] - 2026-04-28
 ### Features
