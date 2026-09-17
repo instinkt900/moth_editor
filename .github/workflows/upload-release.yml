@@ -12,7 +12,7 @@ on:
         type: boolean
         default: false
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'src/**'
       - 'CMakeLists.txt'
@@ -184,7 +184,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: master
+          ref: main
 
       - name: Configure git
         run: |
@@ -220,13 +220,13 @@ jobs:
           OUTPUT: RELEASE_NOTES.md
           GITHUB_REPO: ${{ github.repository }}
 
-      - name: Commit CHANGELOG.md to master
+      - name: Commit CHANGELOG.md to main
         run: |
           git add CHANGELOG.md
           git diff --cached --quiet || git commit -m "chore(release): update CHANGELOG.md for ${{ needs.check-version.outputs.version }} [skip ci]"
-          git fetch origin master
-          git rebase origin/master || { echo "Rebase failed; aborting to avoid overwriting remote history"; git rebase --abort; exit 1; }
-          git push origin master
+          git fetch origin main
+          git rebase origin/main || { echo "Rebase failed; aborting to avoid overwriting remote history"; git rebase --abort; exit 1; }
+          git push origin main
 
       - name: Download all archives
         uses: actions/download-artifact@v4
