@@ -2,6 +2,16 @@ name: Build and Test
 
 on:
   workflow_dispatch:
+  # Tools take direct commits to the default branch as well as pull requests,
+  # so both are built.
+  push:
+    branches: [ master ]
+    paths:
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - 'conanfile.py'
+      - 'version.txt'
+      - '.github/workflows/**'
   pull_request:
     branches: [ master ]
     paths:
